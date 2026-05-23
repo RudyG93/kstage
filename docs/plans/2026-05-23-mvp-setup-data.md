@@ -15,6 +15,7 @@ KStage est une PWA mobile-first qui permet aux fans de k-pop de suivre les event
 - Un **détail tâche-par-tâche** des étapes 1 (Setup) et 2 (Modèle de données + seed).
 
 **Décisions verrouillées** (questions de cadrage répondues le 2026-05-23) :
+
 - Nom : **KStage** (repo, package.json, manifest, domaine).
 - UI : **shadcn/ui** sur Tailwind v4 (Radix UI dessous → a11y par défaut, copié dans le repo, customisable).
 - Tests : **pragmatique** — Vitest sur logique métier (parsing, timezone, idempotence) + Playwright sur golden paths (auth, follow, calendrier). Pas de test UI trivial.
@@ -26,19 +27,20 @@ KStage est une PWA mobile-first qui permet aux fans de k-pop de suivre les event
 
 Chaque étape produit quelque chose de testable. **Une étape = une branche `feat/...` = un PR vers `main` même en solo** (force la relecture, comme indiqué CLAUDE.md B.7).
 
-| # | Étape | Livrable | Skill clé |
-|---|-------|----------|-----------|
-| 1 | **Setup projet** | Repo GitHub branché, Supabase + Vercel hookés, tooling (Prettier, husky, lint-staged), shadcn/ui init, Vitest + Playwright config, CI GH Actions, PWA scaffold (manifest + icons). Déployé sur Vercel ("Hello KStage"). | `superpowers:executing-plans` |
-| 2 | **Modèle de données + seed** | Schéma SQL (8 tables core), RLS activé, types TS générés, clients Supabase server/browser, seed 4 groupes + ~20 events fictifs, page `/test` affichant les events depuis DB. | `claude.ai Supabase` MCP |
-| 3 | **Frontend basique** | Pages `/`, `/groups/[slug]`, vue calendrier mensuel, liste filtrable (groupe + type), design system shadcn appliqué, dark mode, responsive mobile-first, a11y (focus visible, ARIA, contrast WCAG AA). | `frontend-design` |
-| 4 | **Auth + Follow groupes** | Supabase Auth (email/password + OAuth Google), middleware SSR, table `UserFollow`, UI follow/unfollow, vue `/me/upcoming`, sélecteur timezone (Intl.supportedValuesOf). | `superpowers:test-driven-development` (auth flows) |
-| 5 | **Pipeline scraping YouTube** | API route `/api/cron/youtube` protégée par `CRON_SECRET`, Vercel Cron quotidien, table `Source` + `scrape_log`, idempotence sur `source_url`, fallback manuel via admin. | `superpowers:systematic-debugging` (erreurs scraping) |
-| 6 | **Notifications push** | Service worker via Serwist, abonnement Web Push côté client, table `PushSubscription`, cron qui scanne events à venir + envoie via `web-push` lib, préférences user (lead time, types). **Test iOS install + notif obligatoire.** | `verify` (test réel iOS + Android) |
-| 7 | **Sources additionnelles** | Modules isolés `lib/scrapers/{dbkpop,musicshows,weverse}.ts`, chacun avec son test de parsing sur fixture HTML. Cron unifié. | `superpowers:dispatching-parallel-agents` (3 scrapers indépendants) |
-| 8 | **Suggestions communautaires** | Form `/suggest`, table `EventSuggestion`, dashboard admin `/admin/suggestions` (auth role-based), notif email au contributeur via Supabase Edge Functions quand validé. | `code-review` (admin = surface d'attaque) |
-| 9 | **Polish + lancement** | SEO (sitemap, OG images dynamiques via `next/og`), landing page marketing, Plausible analytics, audit a11y (axe-core en CI), Lighthouse > 90 sur les 4 axes, soft launch Reddit/Twitter. | `security-review` avant lancement |
+| #   | Étape                          | Livrable                                                                                                                                                                                                                          | Skill clé                                                           |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1   | **Setup projet**               | Repo GitHub branché, Supabase + Vercel hookés, tooling (Prettier, husky, lint-staged), shadcn/ui init, Vitest + Playwright config, CI GH Actions, PWA scaffold (manifest + icons). Déployé sur Vercel ("Hello KStage").           | `superpowers:executing-plans`                                       |
+| 2   | **Modèle de données + seed**   | Schéma SQL (8 tables core), RLS activé, types TS générés, clients Supabase server/browser, seed 4 groupes + ~20 events fictifs, page `/test` affichant les events depuis DB.                                                      | `claude.ai Supabase` MCP                                            |
+| 3   | **Frontend basique**           | Pages `/`, `/groups/[slug]`, vue calendrier mensuel, liste filtrable (groupe + type), design system shadcn appliqué, dark mode, responsive mobile-first, a11y (focus visible, ARIA, contrast WCAG AA).                            | `frontend-design`                                                   |
+| 4   | **Auth + Follow groupes**      | Supabase Auth (email/password + OAuth Google), middleware SSR, table `UserFollow`, UI follow/unfollow, vue `/me/upcoming`, sélecteur timezone (Intl.supportedValuesOf).                                                           | `superpowers:test-driven-development` (auth flows)                  |
+| 5   | **Pipeline scraping YouTube**  | API route `/api/cron/youtube` protégée par `CRON_SECRET`, Vercel Cron quotidien, table `Source` + `scrape_log`, idempotence sur `source_url`, fallback manuel via admin.                                                          | `superpowers:systematic-debugging` (erreurs scraping)               |
+| 6   | **Notifications push**         | Service worker via Serwist, abonnement Web Push côté client, table `PushSubscription`, cron qui scanne events à venir + envoie via `web-push` lib, préférences user (lead time, types). **Test iOS install + notif obligatoire.** | `verify` (test réel iOS + Android)                                  |
+| 7   | **Sources additionnelles**     | Modules isolés `lib/scrapers/{dbkpop,musicshows,weverse}.ts`, chacun avec son test de parsing sur fixture HTML. Cron unifié.                                                                                                      | `superpowers:dispatching-parallel-agents` (3 scrapers indépendants) |
+| 8   | **Suggestions communautaires** | Form `/suggest`, table `EventSuggestion`, dashboard admin `/admin/suggestions` (auth role-based), notif email au contributeur via Supabase Edge Functions quand validé.                                                           | `code-review` (admin = surface d'attaque)                           |
+| 9   | **Polish + lancement**         | SEO (sitemap, OG images dynamiques via `next/og`), landing page marketing, Plausible analytics, audit a11y (axe-core en CI), Lighthouse > 90 sur les 4 axes, soft launch Reddit/Twitter.                                          | `security-review` avant lancement                                   |
 
 **Risques transverses** (à garder en tête pendant toute la durée) :
+
 - **Sur-modélisation DB** : étendre les tables uniquement quand un besoin concret apparaît.
 - **Burnout d'enthousiasme** : déployer sur Vercel dès étape 1 (visible = motivant), commits petits et fréquents.
 - **iOS PWA** : tester l'install iPhone dès étape 6 sur device réel.
@@ -220,6 +222,7 @@ npx shadcn@latest init
 ```
 
 Réponses :
+
 - Style : `New York` (plus moderne, espacements généreux)
 - Base color : `slate`
 - CSS variables : `yes`
@@ -250,7 +253,7 @@ import { Button } from '@/components/ui/button'
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background">
+    <main className="bg-background flex min-h-screen items-center justify-center">
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight">KStage</h1>
         <p className="text-muted-foreground">Your k-pop calendar — coming soon.</p>
@@ -396,8 +399,18 @@ jobs:
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
 ```
@@ -883,7 +896,7 @@ export default async function TestPage() {
       <ul className="space-y-2" aria-label="Upcoming events">
         {events.map((e) => (
           <li key={e.id} className="rounded-lg border p-3">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               {formatEventDate(e.start_at, 'Asia/Seoul')} KST · {e.type}
             </div>
             <div className="font-medium">
@@ -925,6 +938,7 @@ test('/test displays events from DB', async ({ page }) => {
 ## Notes transversales (à garder en tête sur les 9 étapes)
 
 ### Accessibilité (a11y)
+
 - **Composants shadcn** = a11y de base (Radix UI dessous), mais **vérifier** focus visible + ARIA labels sur composants custom.
 - **Tests axe-core** : ajouter `vitest-axe` + assertion sur les pages critiques (étape 3+).
 - **Contraste WCAG AA** : valider les couleurs custom (les `color_hex` par groupe ne doivent pas servir de background sous du texte sans vérif).
@@ -932,6 +946,7 @@ test('/test displays events from DB', async ({ page }) => {
 - **Préférences user** : respecter `prefers-reduced-motion` + `prefers-color-scheme`.
 
 ### Conventions modernes (Next.js 16 / React 19)
+
 - **Server Components par défaut** — `'use client'` uniquement pour interactivité.
 - **Server Actions** pour mutations (form actions), pas d'API route quand ça suffit.
 - **Streaming + Suspense** pour les listes lentes (events, etc.).
@@ -940,6 +955,7 @@ test('/test displays events from DB', async ({ page }) => {
 - **TypeScript strict** déjà activé — pas de `any` (sauf cas marginal + commentaire).
 
 ### Sécurité
+
 - **RLS sur 100% des tables** avec données users (vérif via `get_advisors`).
 - **`CRON_SECRET`** requis sur toutes les API routes scraping/notif.
 - **Service role key** uniquement côté serveur (jamais `NEXT_PUBLIC_*`).
@@ -947,6 +963,7 @@ test('/test displays events from DB', async ({ page }) => {
 - **Pas de scraping agressif** : 1-2× par jour max, respect `robots.txt`.
 
 ### Performance
+
 - **ISR / cache agressif** sur les pages publiques d'events (`revalidate: 3600`).
 - **Pagination** dès liste > 50 items.
 - **Edge runtime** sur les routes simples (auth check, redirects) — pas sur les routes Supabase.
