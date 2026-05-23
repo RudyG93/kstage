@@ -1,0 +1,7 @@
+node_modules
+.next
+public
+*.log
+package-lock.json
+src/types/database.ts
+src/components/ui/

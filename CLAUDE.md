@@ -18,6 +18,7 @@ Guidelines pour réduire les erreurs LLM courantes en code. À combiner avec les
 **Ne pas supposer. Ne pas masquer la confusion. Faire émerger les tradeoffs.**
 
 Avant d'implémenter :
+
 - Énoncer les hypothèses explicitement. Si incertain, demander.
 - Si plusieurs interprétations sont possibles, les présenter — ne pas choisir silencieusement.
 - Si une approche plus simple existe, le dire. Pousser back quand c'est justifié.
@@ -33,19 +34,21 @@ Avant d'implémenter :
 - Pas de gestion d'erreurs pour des scénarios impossibles.
 - Si 200 lignes pourraient en faire 50, réécrire.
 
-Test : *"Un senior engineer dirait-il que c'est sur-compliqué ?"* Si oui, simplifier.
+Test : _"Un senior engineer dirait-il que c'est sur-compliqué ?"_ Si oui, simplifier.
 
 ## A.3 Changements chirurgicaux
 
 **Toucher uniquement ce qui est nécessaire. Nettoyer uniquement son propre désordre.**
 
 Quand on édite du code existant :
+
 - Ne pas "améliorer" le code adjacent, les commentaires, le formatage.
 - Ne pas refactorer ce qui n'est pas cassé.
 - Respecter le style existant, même si on ferait autrement.
 - Si on remarque du dead code non lié, le signaler — ne pas le supprimer.
 
 Quand les changements créent des orphelins :
+
 - Supprimer les imports/variables/fonctions rendus inutilisés **par nos changements**.
 - Ne pas supprimer du dead code préexistant sans qu'on le demande.
 
@@ -56,6 +59,7 @@ Test : chaque ligne modifiée doit tracer directement à la demande de l'utilisa
 **Définir des critères de succès. Boucler jusqu'à vérification.**
 
 Transformer les tâches en objectifs vérifiables :
+
 - "Ajouter une validation" → "Écrire les tests pour entrées invalides, puis les faire passer"
 - "Fixer le bug" → "Écrire un test qui le reproduit, puis le faire passer"
 - "Refactorer X" → "S'assurer que les tests passent avant et après"
@@ -79,9 +83,11 @@ Des critères de succès forts permettent de boucler en autonomie. Des critères
 ## B.1 Vision
 
 ### Concept
+
 Application web (PWA mobile-first) qui permet aux fans de k-pop de **suivre les events de leurs groupes favoris** dans un calendrier personnalisé, avec notifications push.
 
 ### Positionnement
+
 **Outil personnel**, pas une base de données encyclopédique. Différenciation claire face aux concurrents :
 
 - **kpopping** : média éditorial chargé, calendrier global non personnalisable
@@ -89,12 +95,14 @@ Application web (PWA mobile-first) qui permet aux fans de k-pop de **suivre les 
 - **kprofiles** : wiki encyclopédique, pas un calendrier
 - **biasroom** : photocards, hors sujet schedule
 
-Angle : *"Google Calendar conçu pour les fans de k-pop"* — tu suis tes groupes, l'app filtre tout le reste, te notifie au bon moment dans ton fuseau horaire.
+Angle : _"Google Calendar conçu pour les fans de k-pop"_ — tu suis tes groupes, l'app filtre tout le reste, te notifie au bon moment dans ton fuseau horaire.
 
 ### Public cible
+
 Fans k-pop occidentaux, principalement mobile. Marché niche mais passionné. MVP francophone-friendly mais UI en anglais (standard du fandom international).
 
 ### Nom (à trancher)
+
 Candidats : **KStage** ou **K-Era**. Dispo des domaines à vérifier (`.app`, `.io` plus probables que `.com`).
 
 ---
@@ -102,6 +110,7 @@ Candidats : **KStage** ou **K-Era**. Dispo des domaines à vérifier (`.app`, `.
 ## B.2 Scope du MVP
 
 ### Groupes au lancement (4)
+
 - **aespa** (SM Entertainment)
 - **ILLIT** (HYBE / Belift Lab)
 - **Babymonster** (YG Entertainment)
@@ -110,14 +119,16 @@ Candidats : **KStage** ou **K-Era**. Dispo des domaines à vérifier (`.app`, `.
 Choix volontaire : mix générations (3e/4e gen) et éditeurs (SM/HYBE/YG/Cube) pour tester la pipeline sur des écosystèmes différents.
 
 ### Types d'events couverts au lancement
-1. **Comebacks** (album, single, MV) — *essentiel*
-2. **Music shows** (M Countdown, Music Bank, Show Champion, Inkigayo, Music Core, The Show) — *essentiel, gros volume hebdo*
+
+1. **Comebacks** (album, single, MV) — _essentiel_
+2. **Music shows** (M Countdown, Music Bank, Show Champion, Inkigayo, Music Core, The Show) — _essentiel, gros volume hebdo_
 3. **Lives officiels** (YouTube premieres, Weverse Live programmés)
 4. **Anniversaires** (debut date, members)
 
 Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, sub-units.
 
 ### Features MVP
+
 - Liste/calendrier des events filtrables
 - Auth utilisateur (email/password ou OAuth)
 - Follow/unfollow groupes
@@ -127,6 +138,7 @@ Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, s
 - PWA installable, mode hors-ligne basique
 
 ### Modèle de contenu : hybride
+
 - **80% automatisé** via scraping/APIs
 - **20% communautaire** via suggestions utilisateurs validées en admin (modération asynchrone)
 - L'app est **utile dès le jour 1 sans aucun user contributeur**
@@ -145,6 +157,7 @@ Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, s
 - **Repo** : GitHub (privé au début, public à la sortie MVP éventuellement)
 
 ### Notes PWA
+
 - Manifest + service worker + Web Push API
 - iOS : notifs push uniquement depuis iOS 16.4+ et seulement si app "installée" sur l'écran d'accueil → bien guider les users iPhone à l'install
 
@@ -171,24 +184,29 @@ Source (id, name, url, type, last_scraped_at, ...)
 ## B.5 Sources de données
 
 ### Comebacks
+
 - **dbkpop.com** (scraping) : agrégateur le plus fiable, page "comeback calendar"
 - **YouTube Data API** (officielle, gratuite, quota suffisant) : surveille les chaînes officielles, capture les "Premieres" programmées avec date/heure exacte
 - **Comptes Twitter/X officiels** (backup, plus tard) : `@aespa_official`, `@ILLIT_official`, `@YG_BABYMONSTER`, `@G_I_DLE`
 
 ### Music shows
+
 - Sites officiels (mnetplus, KBS, SBS, MBC, SBS MTV, MBC M)
 - Lineups annoncés mardi-mercredi pour la semaine
 - Scraping nécessaire (pas d'API)
 
 ### Lives
+
 - **YouTube Data API** pour les premieres
 - **Weverse** : pas d'API publique, scraping nécessaire
 
 ### Anniversaires
+
 - **Saisie manuelle** une fois (statique, ~30 dates pour les 4 groupes)
 - Mise à jour si line-up change (rare)
 
 ### Stratégie scraping
+
 - Cron 1-2× par jour, pas plus (respect des sites)
 - Cache agressif côté DB
 - Respect `robots.txt`
@@ -259,24 +277,28 @@ Source (id, name, url, type, last_scraped_at, ...)
 ## B.7 Conventions projet
 
 ### Code
+
 - **TypeScript strict** activé
 - **ESLint + Prettier** configurés dès le départ
 - Composants : `PascalCase`, fichiers : `kebab-case` (ou conventions Next.js App Router)
 - Pas de `any` sauf cas exceptionnel commenté
 
 ### Git
+
 - **Branche par feature** : `feat/auth`, `feat/scraping-youtube`, `fix/timezone-bug`
 - Commits clairs (français ou anglais, mais cohérent)
 - Commits réguliers, petits, atomiques
 - PR vers `main` même en solo (force la relecture)
 
 ### Sécurité
+
 - **Pas de secrets dans le repo** — `.env.local` dans `.gitignore`
 - Supabase RLS (Row Level Security) activé sur toutes les tables avec données users
 - Tokens d'API en variables d'environnement Vercel
 - Rate limiting sur les routes publiques d'API
 
 ### Performance
+
 - Images optimisées via `next/image`
 - ISR / cache agressif sur les pages publiques d'events
 - Pagination dès qu'il y a des listes (50+ items)
