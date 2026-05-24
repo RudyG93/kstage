@@ -196,9 +196,9 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ---
 
-## 9. État actuel (2026-05-24)
+## 9. État actuel (2026-05-25)
 
-**Phase** : étapes 1 (Setup) + 2 (Modèle de données) **DONE et mergées sur `main`**. Prochaine = **étape 3 (frontend basique)**.
+**Phase** : étapes 1 (Setup) + 2 (Modèle de données) **DONE et mergées sur `main`**. Étape 3 (frontend basique) **implémentée sur `feat/frontend-basic`** (commit `70fd97a`, PR à ouvrir) : pages à venir / calendrier / groupes, filtres dans l'URL, dark mode, a11y ; typecheck + lint + Vitest verts. **À faire avant merge : e2e Playwright + vérif visuelle navigateur** (light/dark, mobile/desktop). Prochaine = **étape 4 (auth + follow groupes)**.
 
 - ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + `src/` + alias `@/*`
 - ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
