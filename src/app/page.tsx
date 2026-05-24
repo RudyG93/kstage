@@ -1,13 +1,32 @@
-import { Button } from '@/components/ui/button'
+import { FilterBar } from '@/components/filter-bar'
+import { EventList } from '@/components/event-list'
+import { getUpcomingEvents } from '@/lib/events/queries'
+import { getGroups } from '@/lib/groups/queries'
+import type { Database } from '@/types/database'
 
-export default function Home() {
+type EventType = Database['public']['Enums']['event_type']
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string; type?: string }>
+}) {
+  const { group, type } = await searchParams
+  const [groups, events] = await Promise.all([
+    getGroups(),
+    getUpcomingEvents({ groupSlug: group, type: type as EventType | undefined }),
+  ])
+
   return (
-    <main className="bg-background flex min-h-screen items-center justify-center">
-      <div className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">KStage</h1>
-        <p className="text-muted-foreground">Your k-pop calendar — coming soon.</p>
-        <Button>Notify me</Button>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">Upcoming</h1>
+        <p className="text-muted-foreground text-sm">
+          Comebacks, music shows and lives from your favorite groups.
+        </p>
       </div>
-    </main>
+      <FilterBar groups={groups} />
+      <EventList events={events} emptyMessage="No upcoming events match these filters." />
+    </div>
   )
 }
