@@ -5,6 +5,8 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
+import { AuthMenu } from '@/components/auth/auth-menu'
+import { createClient } from '@/lib/supabase/server'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -29,11 +31,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   return (
     <html
       lang="en"
@@ -52,7 +59,8 @@ export default function RootLayout({
               KStage
             </Link>
             <div className="flex-1" />
-            <SiteNav />
+            <SiteNav isAuthed={!!user} />
+            <AuthMenu email={user?.email ?? null} />
             <ThemeToggle />
           </header>
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-24 md:pb-6">

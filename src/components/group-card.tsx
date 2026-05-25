@@ -1,15 +1,24 @@
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
+import { FollowButton } from '@/components/follow-button'
 import type { GroupSummary } from '@/lib/groups/queries'
 
-export function GroupCard({ group }: { group: GroupSummary }) {
+export function GroupCard({
+  group,
+  isFollowing,
+  isAuthed,
+}: {
+  group: GroupSummary
+  isFollowing: boolean
+  isAuthed: boolean
+}) {
   return (
-    <Link
-      href={`/groups/${group.slug}`}
-      className="focus-visible:ring-ring/50 block rounded-xl outline-none focus-visible:ring-3"
-    >
-      <Card size="sm" className="hover:bg-muted/50 px-4 transition-colors">
-        <div className="flex items-center gap-3">
+    <Card size="sm" className="px-4">
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/groups/${group.slug}`}
+          className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-3"
+        >
           <span
             className="size-3 shrink-0 rounded-full"
             style={{ backgroundColor: group.color_hex ?? 'var(--muted-foreground)' }}
@@ -21,8 +30,14 @@ export function GroupCard({ group }: { group: GroupSummary }) {
               <p className="text-muted-foreground truncate text-xs">{group.agency}</p>
             )}
           </div>
-        </div>
-      </Card>
-    </Link>
+        </Link>
+        <FollowButton
+          groupId={group.id}
+          initialFollowing={isFollowing}
+          isAuthed={isAuthed}
+          className="shrink-0"
+        />
+      </div>
+    </Card>
   )
 }
