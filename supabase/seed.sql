@@ -43,7 +43,7 @@ on conflict (group_id, type, start_at, source_url) do nothing;
 -- Sources YouTube (étape 5)
 -- Les handles @xxx sont à vérifier / corriger si besoin
 insert into sources (name, url, type, group_id)
-select 'aespa YouTube', 'https://www.youtube.com/@aespa_official', 'youtube_api', id
+select 'aespa YouTube', 'https://www.youtube.com/@aespa', 'youtube_api', id
 from groups where slug = 'aespa'
 on conflict (url) do nothing;
 
@@ -53,11 +53,11 @@ from groups where slug = 'illit'
 on conflict (url) do nothing;
 
 insert into sources (name, url, type, group_id)
-select 'BABYMONSTER YouTube', 'https://www.youtube.com/@BABYMONSTER_OFFICIAL', 'youtube_api', id
+select 'BABYMONSTER YouTube', 'https://www.youtube.com/@BABYMONSTER', 'youtube_api', id
 from groups where slug = 'babymonster'
 on conflict (url) do nothing;
 
 insert into sources (name, url, type, group_id)
-select '(G)I-DLE YouTube', 'https://www.youtube.com/@GIDLE', 'youtube_api', id
+select 'i-dle YouTube', 'https://www.youtube.com/@official_i_dle', 'youtube_api', id
 from groups where slug = 'gidle'
 on conflict (url) do nothing;
