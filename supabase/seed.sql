@@ -39,3 +39,25 @@ insert into events (group_id, type, title, start_at, status, source_url) values
   ((select id from g where slug='aespa'),       'comeback',    'aespa — previous single',       '2026-02-10 09:00+00', 'confirmed', 'https://example.com/aespa-old-0210'),
   ((select id from g where slug='illit'),       'music_show',  'Music Bank (rerun)',            '2026-04-18 08:00+00', 'confirmed', null)
 on conflict (group_id, type, start_at, source_url) do nothing;
+
+-- Sources YouTube (étape 5)
+-- Les handles @xxx sont à vérifier / corriger si besoin
+insert into sources (name, url, type, group_id)
+select 'aespa YouTube', 'https://www.youtube.com/@aespa_official', 'youtube_api', id
+from groups where slug = 'aespa'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select 'ILLIT YouTube', 'https://www.youtube.com/@ILLIT_official', 'youtube_api', id
+from groups where slug = 'illit'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select 'BABYMONSTER YouTube', 'https://www.youtube.com/@BABYMONSTER_OFFICIAL', 'youtube_api', id
+from groups where slug = 'babymonster'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select '(G)I-DLE YouTube', 'https://www.youtube.com/@GIDLE', 'youtube_api', id
+from groups where slug = 'gidle'
+on conflict (url) do nothing;
