@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { scrapeGroup } from '@/lib/scrapers/youtube'
 
-export async function POST(req: Request) {
+// Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
+export async function GET(req: Request) {
   const auth = req.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
