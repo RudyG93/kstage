@@ -32,13 +32,22 @@ export type SubscribeResult = 'subscribed' | 'denied' | 'unsupported'
 
 export async function subscribeToPush(): Promise<SubscribeResult> {
   if (!pushSupported()) return 'unsupported'
-  if (!VAPID_PUBLIC_KEY) throw new Error('NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set')
+  if (!VAPID_PUBLIC_KEY) {
+    throw new Error(
+      'NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set (restart dev server after filling .env.local)',
+    )
+  }
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return 'denied'
 
   const reg = await navigator.serviceWorker.register('/sw.js')
   await navigator.serviceWorker.ready
+
+  // Un abonnement existant (clé éventuellement différente) ferait throw
+  // pushManager.subscribe → on le retire d'abord pour re-souscrire proprement.
+  const existing = await reg.pushManager.getSubscription()
+  if (existing) await existing.unsubscribe()
 
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
