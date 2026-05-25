@@ -85,6 +85,7 @@ Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, s
 
 - Manifest + service worker + Web Push API
 - iOS : notifs push uniquement depuis iOS 16.4+ et seulement si app "installée" sur l'écran d'accueil → bien guider les users iPhone à l'install
+- **Service worker (étape 6)** : SW minuscule écrit à la main (`public/sw.js`, listeners `push`/`notificationclick`), servi statiquement → aucune intégration build. Next 16 build/dev en **Turbopack**, donc `@serwist/next` (webpack) ne s'applique pas et imposerait `@serwist/turbopack`. Serwist (precaching offline) **reporté à l'étape 9** quand on fera vraiment l'offline.
 
 > Spécifique Next.js 16 : voir `AGENTS.md` (breaking changes, lire `node_modules/next/dist/docs/` avant d'écrire une API Next inconnue).
 
@@ -152,6 +153,8 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 **Vercel Cron** en primaire (zéro infra, déjà sur Vercel, route `/api/cron/*` protégée par `CRON_SECRET` ; limite Hobby ~1×/jour cohérente avec 1-2×/jour). **GitHub Actions** en fallback si fréquence plus fine (lineups music-shows mardi/mercredi) ou jobs longs. **n8n self-host écarté au MVP** : maintenance + surface de panne disproportionnées pour 2-3 scrapers (revient sur la table en V2+ si workflows nombreux/complexes).
 
+> ⚠️ **Vercel Cron déclenche en GET uniquement** (jamais POST) et ajoute automatiquement l'en-tête `Authorization: Bearer ${CRON_SECRET}` quand la var d'env existe. Les routes `/api/cron/*` doivent donc exporter `GET`. Une route POST-only n'est jamais déclenchée par le cron.
+
 ---
 
 ## 6. Roadmap MVP
@@ -160,10 +163,10 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 1. **Setup projet** — Init Next.js + TS + Tailwind, repo GitHub, projet Supabase, Vercel, env vars. ✅ **DONE & mergé.**
 2. **Modèle de données + seed manuel** — Migrations (8 tables core + RLS), seed 4 groupes + ~20 events, client Supabase typé. ✅ **DONE & mergé.**
-3. **Frontend basique** — Page d'accueil (events à venir), page groupe, filtres groupe/type, vue calendrier mensuelle, design shadcn, dark mode, a11y. Retirer la page `/test`. **← PROCHAINE.**
-4. **Auth + Follow groupes** — Auth Supabase (email/password + OAuth Google bonus), table `user_follows` + UI, vue "mes events", gestion timezone.
-5. **Première pipeline de scraping** — 1 source (YouTube Data API), API route protégée par token, Vercel Cron, logging + idempotence.
-6. **Notifications push** — Manifest + service worker (Serwist), abonnement push, envoi serveur (cron), préférences user. **Test iOS install + notif obligatoire.**
+3. **Frontend basique** — Page d'accueil (events à venir), page groupe, filtres groupe/type, vue calendrier mensuelle, design shadcn, dark mode, a11y. Retirer la page `/test`. ✅ **DONE & mergé.**
+4. **Auth + Follow groupes** — Auth Supabase (email/password + OAuth Google bonus), table `user_follows` + UI, vue "mes events", gestion timezone. ✅ **DONE & mergé.**
+5. **Première pipeline de scraping** — 1 source (YouTube Data API), API route protégée par token, Vercel Cron, logging + idempotence. ✅ **DONE & mergé** (PR #8).
+6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien). **Test iOS install + notif obligatoire.** **← EN COURS** (`feat/notifications-push`).
 7. **Sources supplémentaires** — dbkpop (comebacks), sites music shows, Weverse (lives) ; modules isolés.
 8. **Système de suggestions communautaires** — Form user, interface admin valider/rejeter, notif au contributeur.
 9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
@@ -198,15 +201,23 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ## 9. État actuel (2026-05-25)
 
-**Phase** : étapes 1 (Setup) + 2 (Modèle de données) **DONE et mergées sur `main`**. Étape 3 (frontend basique) **implémentée, testée et prête à merger** sur `feat/frontend-basic` (commits `70fd97a` + `9ea9c99`) : pages à venir / calendrier / groupes, filtres dans l'URL, dark mode, a11y ; typecheck + lint + Vitest + **e2e Playwright verts**, vérif visuelle OK. Design volontairement « basique » → **passe de polish reportée à l'étape 9**. Prochaine = **étape 4 (auth + follow groupes)**.
+**Phase** : étapes 1→5 **DONE et mergées sur `main`** (PR #8 scraping = `77abd4e`). Étape 6 (notifications push) **implémentée sur `feat/notifications-push`** : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. typecheck + lint + Vitest (22) + build verts ; cron testé bout-en-bout en local.
+
+**Reste sur l'étape 6 avant merge** :
+
+- Reporter les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) dans les env vars Vercel (Prod + Preview) — sans ça, pas de push en prod.
+- Test device obligatoire (§6) : desktop Chrome + iPhone (PWA installée sur l'écran d'accueil, iOS 16.4+).
 
 > ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
 
-- ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + `src/` + alias `@/*`
+- ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + shadcn/ui ; déployé Vercel : https://kstage.vercel.app/
 - ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
-- ✅ shadcn/ui init + composants de base ; PWA scaffold (manifest + icônes + viewport)
-- ✅ Déployé sur Vercel : https://kstage.vercel.app/
-- ✅ **Supabase** : projet `kstage` (ref `lgewrmrbksgtjmzzebhz`, région eu-west-3, org `xeffdrkpqzpqcricpmbv`, free tier). 8 tables + RLS (0 advisor) + seed (4 groupes, ~20 events).
-- ✅ Clients Supabase server/browser + middleware SSR ; queries typées ; page `/test` temporaire (à retirer à l'étape 3).
-- ⏳ `.env.local` : clés Supabase remplies (URL, anon, `SUPABASE_SERVICE_ROLE_KEY`). `YOUTUBE_API_KEY` / `VAPID_*` encore vides (étapes 5/6).
-- ⏳ Outillage : `gh` CLI non installé + MCP GitHub non authentifié → PR ouvertes via l'UI web GitHub.
+- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 8 tables + RLS + seed (4 groupes). Scraping YouTube (1 source) opérationnel.
+- ✅ `.env.local` : Supabase (URL/anon/`SERVICE_ROLE`) + `YOUTUBE_API_KEY` + `CRON_SECRET` + VAPID (générées localement).
+- ⏳ Outillage : `gh` CLI inaccessible depuis bash + MCP GitHub sans accès au repo → PR ouvertes via l'UI web GitHub.
+
+### Appris à l'étape 6
+
+- **Vercel Cron déclenche en GET uniquement** → routes `/api/cron/*` en `GET` (cf. §5). Bug latent corrigé : `scrape-youtube` était POST-only, donc jamais déclenché par le cron.
+- **Next 16 = Turbopack** → `@serwist/next` (webpack) ne s'applique pas. Pour du push pur, un SW à la main suffit ; Serwist reporté à l'étape 9 (cf. §3 Notes PWA).
+- **`pushManager.subscribe` peut throw** (push service indispo, navigation privée, clé absente) → try/catch obligatoire côté UI pour ne pas crasher le composant (afficher un état d'erreur lisible).
