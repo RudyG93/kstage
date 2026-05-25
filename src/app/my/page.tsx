@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
+import { IosInstallHint } from '@/components/notifications/ios-install-hint'
+import { PushToggle } from '@/components/notifications/push-toggle'
 import { buttonVariants } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
@@ -39,6 +41,8 @@ export default async function MyPage() {
         <h1 className="text-2xl font-bold tracking-tight">My events</h1>
         <p className="text-muted-foreground text-sm">Upcoming events from the groups you follow.</p>
       </div>
+      <IosInstallHint />
+      <PushToggle />
       <EventList events={events} emptyMessage="No upcoming events from your groups yet." />
     </div>
   )
