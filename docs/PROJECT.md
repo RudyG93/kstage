@@ -198,7 +198,9 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ## 9. État actuel (2026-05-25)
 
-**Phase** : étapes 1 (Setup) + 2 (Modèle de données) **DONE et mergées sur `main`**. Étape 3 (frontend basique) **implémentée sur `feat/frontend-basic`** (commit `70fd97a`, PR à ouvrir) : pages à venir / calendrier / groupes, filtres dans l'URL, dark mode, a11y ; typecheck + lint + Vitest verts. **À faire avant merge : e2e Playwright + vérif visuelle navigateur** (light/dark, mobile/desktop). Prochaine = **étape 4 (auth + follow groupes)**.
+**Phase** : étapes 1 (Setup) + 2 (Modèle de données) **DONE et mergées sur `main`**. Étape 3 (frontend basique) **implémentée, testée et prête à merger** sur `feat/frontend-basic` (commits `70fd97a` + `9ea9c99`) : pages à venir / calendrier / groupes, filtres dans l'URL, dark mode, a11y ; typecheck + lint + Vitest + **e2e Playwright verts**, vérif visuelle OK. Design volontairement « basique » → **passe de polish reportée à l'étape 9**. Prochaine = **étape 4 (auth + follow groupes)**.
+
+> ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
 
 - ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + `src/` + alias `@/*`
 - ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
