@@ -54,7 +54,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-4 border-b px-4 backdrop-blur">
+          <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-4 border-b px-4">
             <Link href="/" className="text-lg font-bold tracking-tight">
               KStage
             </Link>
