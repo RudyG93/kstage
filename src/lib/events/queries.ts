@@ -9,10 +9,12 @@ const EVENT_SELECT = 'id, title, type, start_at, status, groups!inner(slug, name
 export async function getUpcomingEvents({
   groupSlug,
   type,
+  groupIds,
   limit = 50,
 }: {
   groupSlug?: string
   type?: EventType
+  groupIds?: string[]
   limit?: number
 } = {}) {
   const supabase = await createClient()
@@ -24,6 +26,7 @@ export async function getUpcomingEvents({
     .limit(limit)
 
   if (groupSlug) query = query.eq('groups.slug', groupSlug)
+  if (groupIds) query = query.in('group_id', groupIds)
   if (type) query = query.eq('type', type)
 
   const { data, error } = await query

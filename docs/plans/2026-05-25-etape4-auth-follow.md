@@ -66,7 +66,7 @@ Auth : messages via `useActionState`. Follow non authentifié : `redirect('/logi
 ## Tests
 
 - **Vitest** : validation légère des inputs auth (logique pure).
-- **Playwright golden path** : login → follow un groupe → présent dans `/my` → logout. Auto-confirm → pas d'étape email.
-- **Data e2e** : compte test fixe via env (`E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`), créé une fois ; l'e2e se connecte (pas de signup jetable à chaque run).
+- **Playwright golden path** : login → follow un groupe → présent dans `/my` → logout.
+- **Data e2e** : compte test fixe et confirmé via env (`E2E_AUTH_EMAIL` / `E2E_AUTH_PASSWORD`), flux **login** (pas signup). Skip propre si non configuré → CI verte. Choix retenu après que Supabase a rejeté les emails `@example.com` au signup (validation stricte) : un compte fixe évite à la fois la validation d'email et la dépendance à l'auto-confirm.
 
 > ⚠️ E2E : ne jamais laisser un `npm run dev` ouvert pendant `npm run test:e2e` (Next 16 refuse un 2ᵉ serveur dev → le `webServer` Playwright échoue).
