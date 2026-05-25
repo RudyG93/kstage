@@ -240,6 +240,7 @@ export type Database = {
       sources: {
         Row: {
           created_at: string
+          group_id: string | null
           id: string
           last_scraped_at: string | null
           name: string
@@ -248,6 +249,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_id?: string | null
           id?: string
           last_scraped_at?: string | null
           name: string
@@ -256,13 +258,22 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_id?: string | null
           id?: string
           last_scraped_at?: string | null
           name?: string
           type?: string
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sources_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_follows: {
         Row: {
