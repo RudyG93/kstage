@@ -14,6 +14,7 @@ export function PushToggle() {
   const [supported, setSupported] = useState<boolean | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [denied, setDenied] = useState(false)
+  const [failed, setFailed] = useState(false)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -35,19 +36,24 @@ export function PushToggle() {
 
   function onToggle() {
     startTransition(async () => {
-      if (enabled) {
-        await unsubscribeFromPush()
-        setEnabled(false)
-        return
-      }
-      const result = await subscribeToPush()
-      if (result === 'denied') {
-        setDenied(true)
-        return
-      }
-      if (result === 'subscribed') {
-        setEnabled(true)
-        setDenied(false)
+      setFailed(false)
+      try {
+        if (enabled) {
+          await unsubscribeFromPush()
+          setEnabled(false)
+          return
+        }
+        const result = await subscribeToPush()
+        if (result === 'denied') {
+          setDenied(true)
+          return
+        }
+        if (result === 'subscribed') {
+          setEnabled(true)
+          setDenied(false)
+        }
+      } catch {
+        setFailed(true)
       }
     })
   }
@@ -81,6 +87,11 @@ export function PushToggle() {
         <p className="text-muted-foreground mt-3 text-xs">
           Notifications are blocked in your browser settings. Re-enable them for this site to turn
           on daily reminders.
+        </p>
+      )}
+      {failed && (
+        <p className="text-destructive mt-3 text-xs">
+          Couldn&apos;t update notifications. Please try again.
         </p>
       )}
     </div>
