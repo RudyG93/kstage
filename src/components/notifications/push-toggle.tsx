@@ -14,7 +14,7 @@ export function PushToggle() {
   const [supported, setSupported] = useState<boolean | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [denied, setDenied] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function PushToggle() {
 
   function onToggle() {
     startTransition(async () => {
-      setErrorMsg(null)
+      setFailed(false)
       try {
         if (enabled) {
           await unsubscribeFromPush()
@@ -54,7 +54,7 @@ export function PushToggle() {
         }
       } catch (err) {
         console.error('[push] subscribe failed', err)
-        setErrorMsg(err instanceof Error ? err.message : String(err))
+        setFailed(true)
       }
     })
   }
@@ -90,9 +90,9 @@ export function PushToggle() {
           on daily reminders.
         </p>
       )}
-      {errorMsg && (
+      {failed && (
         <p className="text-destructive mt-3 text-xs">
-          Couldn&apos;t update notifications: {errorMsg}
+          Couldn&apos;t update notifications. Please try again.
         </p>
       )}
     </div>
