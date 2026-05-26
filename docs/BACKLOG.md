@@ -17,6 +17,13 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 
 - **Concert** (et éventuellement d'autres types) — réintroduire quand pertinent : rajouter à `FILTERABLE_EVENT_TYPES` (`src/lib/events/labels.ts`), au scraper YouTube, et au formulaire de suggestion (tout s'aligne sur cette constante).
 
+## Scraping / récupération de données
+
+> ⚠️ **Revue dédiée prévue post-MVP** (avec Rudy) : faire le point sur tout le système de scrape/récup avant de l'étendre. Objectifs : **bien capter ce qui est important pour _n'importe quel_ groupe** ajouté à l'app (pas seulement les 4 actuels), et **garantir zéro doublon** (idempotence robuste entre sources). Rudy validera/modifiera l'approche à ce moment-là.
+
+- **YouTube premieres via l'API officielle** — remplacer la détection actuelle (uploads récents `search?order=date` + mots-clés) par `liveStreamingDetails.scheduledStartTime` + `liveBroadcastContent=upcoming` pour capter les **vraies premieres programmées** (futures, datées) plutôt que des uploads passés.
+- **Enrichir `detectEventType`** (`src/lib/scrapers/youtube.ts`) — insight Rudy : les clips/comebacks contiennent quasi toujours **« MV »** (et « M/V », « Official Video ») une fois sortis. Ajouter ces mots-clés améliorerait la détection comeback. Différé : on garde simple au MVP (les comebacks sont déjà couverts par kpopofficial).
+
 ## Vision V2 (étoile polaire — cf. `PROJECT.md §10`)
 
 - Ratings + commentaires par comeback/MV (beachhead communautaire).
