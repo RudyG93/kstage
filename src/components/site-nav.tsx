@@ -6,12 +6,12 @@ import { CalendarIcon, HeartIcon, ListIcon, UsersIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const BASE_ITEMS = [
-  { href: '/', label: 'À venir', Icon: ListIcon },
-  { href: '/calendar', label: 'Calendrier', Icon: CalendarIcon },
-  { href: '/groups', label: 'Groupes', Icon: UsersIcon },
+  { href: '/', label: 'Upcoming', Icon: ListIcon },
+  { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
+  { href: '/groups', label: 'Groups', Icon: UsersIcon },
 ] as const
 
-const MY_ITEM = { href: '/my', label: 'Mes events', Icon: HeartIcon } as const
+const MY_ITEM = { href: '/my', label: 'My events', Icon: HeartIcon } as const
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
