@@ -172,8 +172,8 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 7. **Sources supplémentaires** — modules isolés :
    - **Comebacks** : scraping `kpopofficial.com`. ✅ **DONE & mergé** (PR #11 ; dbkpop abandonné, cf. §5).
    - **Music shows & lives (Weverse)** : ⛔ **reportés à l'étape 8 (communauté)**. Recherche du 2026-05-26 : aucune source propre/scrapable (carrd fan fragile à placeholders/images ; sites diffuseurs JS+coréens, 1 émission chacun ; `kpop.fandom` 403 ; Wikipedia = gagnants _passés_ ; twicehub = backend à session ; pas de feed iCal). Pour nos 4 groupes ces events sont **rares** (fenêtres de promo / lives spontanés) → ROI scraping faible. Mieux servis par les suggestions communautaires.
-8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). Couvre aussi **music shows & lives** (cf. étape 7). **← EN COURS** (`feat/community-suggestions`).
-9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
+8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). Couvre aussi **music shows & lives** (cf. étape 7). ✅ **DONE & mergé** (PR #12).
+9. **Polish + lancement** — SEO/OpenGraph, landing marketing, analytics (Vercel Web Analytics, RGPD-friendly), PWA icônes brandées, redesign dark, audit a11y (Lighthouse 100). ✅ **Code mergé** (PR #13/#14/#15). Reste : **soft launch** (Reddit r/kpop, Twitter) — action produit, pas encore faite.
 
 > Plans d'étape détaillés : `docs/plans/`.
 >
@@ -207,13 +207,15 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ## 9. État actuel (2026-05-26)
 
-**Phase** : étapes 1→6 **DONE et mergées sur `main`** (étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`). Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
+**Phase** : **MVP complet — étapes 1→9 DONE et mergées sur `main`**. L'app est en prod : https://kstage.vercel.app/. Historique des PR : étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`. Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
 
 **Étape 7 clôturée** : comebacks `kpopofficial` mergés (PR #11). Music shows & lives reportés à l'étape 8 (communauté) — aucune source propre (cf. §6). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks).
 
-**En cours** : étape 8 — suggestions communautaires (`feat/community-suggestions`).
+**Étape 8 mergée** (PR #12) : suggestions communautaires + modération admin (`/admin/suggestions`, allowlist `ADMIN_EMAILS`). **Étape 9 mergée** (PR #13/#14/#15) : redesign dark, landing, SEO/OpenGraph, Vercel Analytics, PWA icônes brandées, a11y Lighthouse 100. **MVP terminé.**
 
-**Reste ops (hors repo)** : confirmer les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sur Vercel **Production** (pas seulement Preview) — sans ça, pas de push en prod.
+**Reste produit (hors code)** : **soft launch** (Reddit r/kpop, Twitter) — non encore fait. Backlog post-MVP : `docs/BACKLOG.md`.
+
+**Ops** : les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sont **confirmées OK sur Vercel Production** (push opérationnel en prod).
 
 > ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
 
