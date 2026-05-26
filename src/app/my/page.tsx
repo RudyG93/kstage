@@ -3,10 +3,13 @@ import { redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
 import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { PushToggle } from '@/components/notifications/push-toggle'
+import { MySuggestions } from '@/components/suggestions/my-suggestions'
 import { buttonVariants } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
+import { isAdmin } from '@/lib/auth/admin'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
+import { getMySuggestions } from '@/lib/suggestions/queries'
 
 export const metadata = { title: 'My events' }
 
@@ -17,33 +20,53 @@ export default async function MyPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const followedIds = await getFollowedGroupIds()
+  const [followedIds, mySuggestions] = await Promise.all([
+    getFollowedGroupIds(),
+    getMySuggestions(),
+  ])
+  const admin = isAdmin(user.email)
+  const events =
+    followedIds.size > 0 ? await getUpcomingEvents({ groupIds: [...followedIds], limit: 100 }) : []
 
-  if (followedIds.size === 0) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">My events</h1>
-        <div className="space-y-3 py-12 text-center">
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">My events</h1>
+          <p className="text-muted-foreground text-sm">
+            Upcoming events from the groups you follow.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/suggest" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Suggest an event
+          </Link>
+          {admin && (
+            <Link
+              href="/admin/suggestions"
+              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            >
+              Admin
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <IosInstallHint />
+      <PushToggle />
+
+      {followedIds.size === 0 ? (
+        <div className="space-y-3 py-8 text-center">
           <p className="text-muted-foreground text-sm">You don&apos;t follow any groups yet.</p>
           <Link href="/groups" className={buttonVariants()}>
             Browse groups
           </Link>
         </div>
-      </div>
-    )
-  }
+      ) : (
+        <EventList events={events} emptyMessage="No upcoming events from your groups yet." />
+      )}
 
-  const events = await getUpcomingEvents({ groupIds: [...followedIds], limit: 100 })
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">My events</h1>
-        <p className="text-muted-foreground text-sm">Upcoming events from the groups you follow.</p>
-      </div>
-      <IosInstallHint />
-      <PushToggle />
-      <EventList events={events} emptyMessage="No upcoming events from your groups yet." />
+      <MySuggestions suggestions={mySuggestions} />
     </div>
   )
 }
