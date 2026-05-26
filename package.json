@@ -16,7 +16,7 @@
     "test:e2e": "playwright test"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,css,md}": "prettier --write",
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}": "prettier --write",
     "*.{ts,tsx}": "eslint --fix"
   },
   "dependencies": {
