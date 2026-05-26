@@ -9,9 +9,9 @@ export function LocalTime({ iso }: { iso: string }) {
   if (!hydrated) return null
 
   const label = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
   }).format(new Date(iso))
 
-  return <span>{` · ${label} local`}</span>
+  return <span>{`${label} your time`}</span>
 }

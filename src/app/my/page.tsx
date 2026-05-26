@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { EventList } from '@/components/event-list'
+import { GroupedEventList } from '@/components/grouped-event-list'
 import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { PushToggle } from '@/components/notifications/push-toggle'
 import { MySuggestions } from '@/components/suggestions/my-suggestions'
@@ -64,7 +64,7 @@ export default async function MyPage() {
           </Link>
         </div>
       ) : (
-        <EventList events={events} emptyMessage="No upcoming events from your groups yet." />
+        <GroupedEventList events={events} emptyMessage="No upcoming events from your groups yet." />
       )}
 
       <MySuggestions suggestions={mySuggestions} />
