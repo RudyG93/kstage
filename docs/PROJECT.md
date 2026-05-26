@@ -169,14 +169,15 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 4. **Auth + Follow groupes** — Auth Supabase (email/password + OAuth Google bonus), table `user_follows` + UI, vue "mes events", gestion timezone. ✅ **DONE & mergé.**
 5. **Première pipeline de scraping** — 1 source (YouTube Data API), API route protégée par token, Vercel Cron, logging + idempotence. ✅ **DONE & mergé** (PR #8).
 6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien), guide install iOS. ✅ **DONE & mergé** (PR #9 + #10). Reste ops : confirmer les 4 vars VAPID sur Vercel **Production**.
-7. **Sources supplémentaires** — modules isolés, ajoutés un par un :
-   - **Comebacks** : scraping `kpopofficial.com` (dbkpop abandonné, cf. §5). **← EN COURS** (`feat/scraping-comebacks`).
-   - **Music shows** (gros volume hebdo) : sites diffuseurs (SBS Inkigayo lineup vendredi 14:00 KST, KBS/MBC/Mnet) ou agrégateur fan « Live Show Updates ». Le plus fragile/chronophage.
-   - **Weverse (lives)** : pas d'API publique, JS + auth → le plus dur, en dernier (les YouTube premieres couvrent déjà une partie du besoin).
-8. **Système de suggestions communautaires** — Form user, interface admin valider/rejeter, notif au contributeur.
+7. **Sources supplémentaires** — modules isolés :
+   - **Comebacks** : scraping `kpopofficial.com`. ✅ **DONE & mergé** (PR #11 ; dbkpop abandonné, cf. §5).
+   - **Music shows & lives (Weverse)** : ⛔ **reportés à l'étape 8 (communauté)**. Recherche du 2026-05-26 : aucune source propre/scrapable (carrd fan fragile à placeholders/images ; sites diffuseurs JS+coréens, 1 émission chacun ; `kpop.fandom` 403 ; Wikipedia = gagnants _passés_ ; twicehub = backend à session ; pas de feed iCal). Pour nos 4 groupes ces events sont **rares** (fenêtres de promo / lives spontanés) → ROI scraping faible. Mieux servis par les suggestions communautaires.
+8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). Couvre aussi **music shows & lives** (cf. étape 7). **← EN COURS** (`feat/community-suggestions`).
 9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
 
 > Plans d'étape détaillés : `docs/plans/`.
+>
+> Au-delà du MVP : **vision V2 (plateforme communautaire) → §10**.
 
 ---
 
@@ -208,7 +209,9 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 **Phase** : étapes 1→6 **DONE et mergées sur `main`** (étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`). Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
 
-**En cours** : étape 7, 1ʳᵉ source = scraping comebacks `kpopofficial` (`feat/scraping-comebacks`).
+**Étape 7 clôturée** : comebacks `kpopofficial` mergés (PR #11). Music shows & lives reportés à l'étape 8 (communauté) — aucune source propre (cf. §6). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks).
+
+**En cours** : étape 8 — suggestions communautaires (`feat/community-suggestions`).
 
 **Reste ops (hors repo)** : confirmer les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sur Vercel **Production** (pas seulement Preview) — sans ça, pas de push en prod.
 
@@ -225,3 +228,31 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 - **Vercel Cron déclenche en GET uniquement** → routes `/api/cron/*` en `GET` (cf. §5). Bug latent corrigé : `scrape-youtube` était POST-only, donc jamais déclenché par le cron.
 - **Next 16 = Turbopack** → `@serwist/next` (webpack) ne s'applique pas. Pour du push pur, un SW à la main suffit ; Serwist reporté à l'étape 9 (cf. §3 Notes PWA).
 - **`pushManager.subscribe` peut throw** (push service indispo, navigation privée, clé absente) → try/catch obligatoire côté UI pour ne pas crasher le composant (afficher un état d'erreur lisible).
+
+---
+
+## 10. Vision V2 — plateforme communautaire (étoile polaire)
+
+> Cap long terme, **post-MVP**. Le MVP reste le calendrier perso (utile jour 1 sans aucun contributeur). On ne pivote pas maintenant.
+
+### Modèle de référence : hltv.org / rft.gg
+
+Les deux suivent le même pattern : un **cœur de données structurées** (schedule, stats, classements) qui crée l'usage quotidien, et une **communauté greffée sur les objets de données** (chaque match → sa discussion/ses votes). Le forum n'est jamais le point d'entrée — c'est la data qui attire, la commu qui retient.
+
+**Mappé KStage** : le calendrier perso = le cœur de données. La communauté se grefferait sur chaque **comeback / MV**.
+
+### Beachhead V2 (1ʳᵉ brique commu)
+
+**Ratings + commentaires par comeback/MV**, auto-ancrés aux events déjà scrapés (chaque sortie = un thread de notation généré automatiquement).
+
+- **Vrai gap marché** : la notation k-pop n'est servie que par des blogs solo (The Bias List, KPOPREVIEWED) ou RateYourMusic (non-natif, pas lié au calendrier). Personne ne fait « noter + discuter chaque sortie, ancré à un calendrier perso ».
+- **Pas d'effet ghost-town** : le contenu (les events) pré-existe grâce au scraping → pas une page vide à amorcer.
+- Modération légère vs un forum libre.
+
+### Différé (gaté sur trafic réel)
+
+Forum généraliste, votes topics/messages, **modérateurs bénévoles**. Raison : **cold-start** + incumbents qui possèdent les effets de réseau (Reddit r/kpop = déjà un forum k-pop voté ; Weverse ; apps de vote Choeaedol/Mubeat/Whosfan). Un forum vide **dégraderait** l'utilité du calendrier. À n'ouvrir qu'une fois une audience réelle acquise via le calendrier + ratings.
+
+### Design
+
+Inspiration **dense / dark / data-forward** (style « outil sérieux » à la HLTV), différenciant face au visuel pastel/cutesy ambiant du k-pop. Récupérable tôt comme angle de marque, avant même les features commu.

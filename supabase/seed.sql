@@ -66,3 +66,8 @@ on conflict (url) do nothing;
 insert into sources (name, url, type)
 values ('kpopofficial comebacks', 'https://kpopofficial.com/kpop-comebacks/', 'kpopofficial')
 on conflict (url) do nothing;
+
+-- Source communautaire (étape 8) — attribution des events validés depuis les suggestions.
+insert into sources (name, url, type)
+values ('community suggestions', 'https://kstage.vercel.app/suggest', 'community')
+on conflict (url) do nothing;
