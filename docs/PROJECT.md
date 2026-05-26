@@ -38,7 +38,7 @@ Fans k-pop occidentaux, principalement mobile. Marché niche mais passionné. MV
 - **aespa** (SM Entertainment)
 - **ILLIT** (HYBE / Belift Lab)
 - **Babymonster** (YG Entertainment)
-- **(G)I-DLE** (Cube Entertainment)
+- **i-dle** (Cube Entertainment) — ex-(G)I-DLE, renommé en 2025
 
 Choix volontaire : mix générations (3e/4e gen) et éditeurs (SM/HYBE/YG/Cube) pour tester la pipeline sur des écosystèmes différents.
 

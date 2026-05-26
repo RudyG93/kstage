@@ -5,7 +5,7 @@ const GROUPS: GroupRef[] = [
   { id: 'g-aespa', slug: 'aespa', name: 'aespa' },
   { id: 'g-illit', slug: 'illit', name: 'ILLIT' },
   { id: 'g-bm', slug: 'babymonster', name: 'BABYMONSTER' },
-  { id: 'g-gidle', slug: 'gidle', name: '(G)I-DLE' },
+  { id: 'g-gidle', slug: 'gidle', name: 'i-dle' },
 ]
 
 // Item calqué sur la vraie structure Greenshift de kpopofficial.
