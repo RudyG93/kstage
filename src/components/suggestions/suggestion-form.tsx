@@ -4,17 +4,10 @@ import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { submitSuggestion, type SuggestionState } from '@/lib/suggestions/actions'
 import { SUGGESTABLE_TYPES } from '@/lib/suggestions/validation'
+import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 
 const inputClass =
   'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-
-const TYPE_LABELS: Record<string, string> = {
-  comeback: 'Comeback',
-  music_show: 'Music show',
-  live: 'Live',
-  anniversary: 'Anniversary',
-  concert: 'Concert',
-}
 
 export function SuggestionForm({ groups }: { groups: { id: string; name: string }[] }) {
   const [state, formAction, pending] = useActionState<SuggestionState, FormData>(
@@ -51,7 +44,7 @@ export function SuggestionForm({ groups }: { groups: { id: string; name: string 
           </option>
           {SUGGESTABLE_TYPES.map((t) => (
             <option key={t} value={t}>
-              {TYPE_LABELS[t] ?? t}
+              {EVENT_TYPE_LABELS[t]}
             </option>
           ))}
         </select>
@@ -75,7 +68,14 @@ export function SuggestionForm({ groups }: { groups: { id: string; name: string 
         <label htmlFor="startAt" className="text-sm font-medium">
           Date &amp; time <span className="text-muted-foreground">(KST)</span>
         </label>
-        <input id="startAt" name="startAt" type="datetime-local" required className={inputClass} />
+        <input
+          id="startAt"
+          name="startAt"
+          type="datetime-local"
+          step={300}
+          required
+          className={inputClass}
+        />
       </div>
 
       <div className="space-y-1.5">

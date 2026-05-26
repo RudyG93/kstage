@@ -33,5 +33,19 @@ export async function getPendingSuggestions() {
   return data ?? []
 }
 
+/** Nombre de suggestions en attente (service_role) — pour le badge admin. */
+export async function getPendingSuggestionsCount(): Promise<number> {
+  const admin = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const { count, error } = await admin
+    .from('event_suggestions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  if (error) throw error
+  return count ?? 0
+}
+
 export type MySuggestion = Awaited<ReturnType<typeof getMySuggestions>>[number]
 export type PendingSuggestion = Awaited<ReturnType<typeof getPendingSuggestions>>[number]

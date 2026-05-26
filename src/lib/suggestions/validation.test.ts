@@ -35,8 +35,9 @@ describe('parseSuggestionInput', () => {
     }
   })
 
-  it('rejette un type non suggérable (other) ou inconnu', () => {
+  it('rejette un type non suggérable (other, concert) ou inconnu', () => {
     expect('error' in parseSuggestionInput({ ...base, type: 'other' })).toBe(true)
+    expect('error' in parseSuggestionInput({ ...base, type: 'concert' })).toBe(true)
     expect('error' in parseSuggestionInput({ ...base, type: 'xxx' })).toBe(true)
   })
 
