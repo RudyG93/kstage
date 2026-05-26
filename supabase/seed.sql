@@ -61,3 +61,8 @@ insert into sources (name, url, type, group_id)
 select 'i-dle YouTube', 'https://www.youtube.com/@official_i_dle', 'youtube_api', id
 from groups where slug = 'gidle'
 on conflict (url) do nothing;
+
+-- Source comebacks (étape 7) — groupe-agnostique : le matching se fait en code.
+insert into sources (name, url, type)
+values ('kpopofficial comebacks', 'https://kpopofficial.com/kpop-comebacks/', 'kpopofficial')
+on conflict (url) do nothing;

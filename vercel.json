@@ -5,6 +5,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/scrape-comebacks",
+      "schedule": "30 3 * * *"
+    },
+    {
       "path": "/api/cron/send-digest",
       "schedule": "0 8 * * *"
     }

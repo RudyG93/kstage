@@ -13,6 +13,20 @@ export function getKstMonthRange(year: number, month: number) {
   return { startISO, endISO }
 }
 
+/**
+ * Convertit une horloge KST (heure de Séoul, UTC+9 sans DST) en UTC ISO.
+ * @param monthIndex 0-11
+ */
+export function kstToUtcISO(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+): string {
+  return new Date(Date.UTC(year, monthIndex, day, hour, minute) - KST_OFFSET_MS).toISOString()
+}
+
 /** Clé de jour 'YYYY-MM-DD' du moment, lue en heure de Séoul. */
 export function kstDayKey(iso: string): string {
   const d = new Date(new Date(iso).getTime() + KST_OFFSET_MS)
