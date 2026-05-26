@@ -60,17 +60,21 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 flex h-14 items-center gap-4 border-b px-4 backdrop-blur-lg">
-            <Link
-              href="/"
-              className="font-heading text-lg font-extrabold tracking-tight transition-opacity hover:opacity-80"
-            >
-              <span className="text-primary">K</span>Stage
-            </Link>
-            <div className="flex-1" />
-            <SiteNav isAuthed={!!user} />
-            <AuthMenu email={user?.email ?? null} />
-            <ThemeToggle />
+          <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 border-b backdrop-blur-lg">
+            <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
+              <Link
+                href="/"
+                className="font-heading text-lg font-extrabold tracking-tight transition-opacity hover:opacity-80"
+              >
+                <span className="bg-gradient-to-r from-[#8b5cff] to-[#ff2d87] bg-clip-text text-transparent">
+                  KStage
+                </span>
+              </Link>
+              <div className="flex-1" />
+              <SiteNav isAuthed={!!user} />
+              <AuthMenu email={user?.email ?? null} />
+              <ThemeToggle />
+            </div>
           </header>
           <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-24 md:pb-6">
             {children}

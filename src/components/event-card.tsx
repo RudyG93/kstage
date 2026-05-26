@@ -15,16 +15,21 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
 
   return (
     <article className="group/event bg-card hover:border-primary/40 relative flex items-stretch gap-3.5 overflow-hidden rounded-xl border pr-4 pl-4 transition-colors">
-      {/* barre couleur du groupe + halo au survol (touche de B) */}
+      {/* barre couleur du groupe + teinte permanente + halo renforcé au survol (touche de B) */}
       <span
         className="absolute inset-y-0 left-0 w-1"
         style={{ backgroundColor: color }}
         aria-hidden
       />
       <span
+        className="pointer-events-none absolute inset-0"
+        style={{ background: `linear-gradient(90deg, ${color}1f, transparent 44%)` }}
+        aria-hidden
+      />
+      <span
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/event:opacity-100"
         style={{
-          background: `radial-gradient(120% 130% at 0% 0%, ${color}1f, transparent 55%)`,
+          background: `radial-gradient(130% 140% at 0% 0%, ${color}33, transparent 60%)`,
         }}
         aria-hidden
       />
