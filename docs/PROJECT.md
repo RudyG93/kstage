@@ -169,11 +169,10 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 4. **Auth + Follow groupes** — Auth Supabase (email/password + OAuth Google bonus), table `user_follows` + UI, vue "mes events", gestion timezone. ✅ **DONE & mergé.**
 5. **Première pipeline de scraping** — 1 source (YouTube Data API), API route protégée par token, Vercel Cron, logging + idempotence. ✅ **DONE & mergé** (PR #8).
 6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien), guide install iOS. ✅ **DONE & mergé** (PR #9 + #10). Reste ops : confirmer les 4 vars VAPID sur Vercel **Production**.
-7. **Sources supplémentaires** — modules isolés, ajoutés un par un :
-   - **Comebacks** : scraping `kpopofficial.com` (dbkpop abandonné, cf. §5). **← EN COURS** (`feat/scraping-comebacks`).
-   - **Music shows** (gros volume hebdo) : sites diffuseurs (SBS Inkigayo lineup vendredi 14:00 KST, KBS/MBC/Mnet) ou agrégateur fan « Live Show Updates ». Le plus fragile/chronophage.
-   - **Weverse (lives)** : pas d'API publique, JS + auth → le plus dur, en dernier (les YouTube premieres couvrent déjà une partie du besoin).
-8. **Système de suggestions communautaires** — Form user, interface admin valider/rejeter, notif au contributeur.
+7. **Sources supplémentaires** — modules isolés :
+   - **Comebacks** : scraping `kpopofficial.com`. ✅ **DONE & mergé** (PR #11 ; dbkpop abandonné, cf. §5).
+   - **Music shows & lives (Weverse)** : ⛔ **reportés à l'étape 8 (communauté)**. Recherche du 2026-05-26 : aucune source propre/scrapable (carrd fan fragile à placeholders/images ; sites diffuseurs JS+coréens, 1 émission chacun ; `kpop.fandom` 403 ; Wikipedia = gagnants _passés_ ; twicehub = backend à session ; pas de feed iCal). Pour nos 4 groupes ces events sont **rares** (fenêtres de promo / lives spontanés) → ROI scraping faible. Mieux servis par les suggestions communautaires.
+8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`), notif au contributeur. Couvre aussi **music shows & lives** (cf. étape 7). **← PROCHAINE.**
 9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
 
 > Plans d'étape détaillés : `docs/plans/`.
@@ -208,7 +207,9 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 **Phase** : étapes 1→6 **DONE et mergées sur `main`** (étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`). Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
 
-**En cours** : étape 7, 1ʳᵉ source = scraping comebacks `kpopofficial` (`feat/scraping-comebacks`).
+**Étape 7 clôturée** : comebacks `kpopofficial` mergés (PR #11). Music shows & lives reportés à l'étape 8 (communauté) — aucune source propre (cf. §6). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks).
+
+**En cours** : étape 8 — suggestions communautaires (`feat/community-suggestions`).
 
 **Reste ops (hors repo)** : confirmer les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sur Vercel **Production** (pas seulement Preview) — sans ça, pas de push en prod.
 
