@@ -38,7 +38,7 @@ Fans k-pop occidentaux, principalement mobile. Marché niche mais passionné. MV
 - **aespa** (SM Entertainment)
 - **ILLIT** (HYBE / Belift Lab)
 - **Babymonster** (YG Entertainment)
-- **(G)I-DLE** (Cube Entertainment)
+- **i-dle** (Cube Entertainment) — ex-(G)I-DLE, renommé en 2025
 
 Choix volontaire : mix générations (3e/4e gen) et éditeurs (SM/HYBE/YG/Cube) pour tester la pipeline sur des écosystèmes différents.
 
@@ -120,9 +120,11 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ### Comebacks
 
-- **dbkpop.com** (scraping) : agrégateur le plus fiable, page "comeback calendar"
-- **YouTube Data API** (officielle, gratuite, quota suffisant) : surveille les chaînes officielles, capture les "Premieres" programmées avec date/heure exacte
+- **YouTube Data API** (officielle, gratuite, quota suffisant) : surveille les chaînes officielles, capture les "Premieres" programmées avec date/heure exacte — **opérationnel (étape 5)**
+- **kpopofficial.com** (scraping) : calendrier comeback mensuel, frais et précis (dates + heures KST), `robots.txt` permissif, couvre nos 4 groupes. Page par mois `/kpop-comeback-schedule-<mois>-<année>/` — **cible étape 7**
 - **Comptes Twitter/X officiels** (backup, plus tard) : `@aespa_official`, `@ILLIT_official`, `@YG_BABYMONSTER`, `@G_I_DLE`
+
+> ⚠️ **dbkpop.com abandonné** (vérifié 2026-05-26) : plus maintenu depuis ~juillet 2025, page "comeback calendar" en 404 — devenu une base statique de profils/MV. **kpopping.com** écarté aussi (`robots.txt` bloque ClaudeBot/GPTBot + 403 anti-bot).
 
 ### Music shows
 
@@ -166,8 +168,11 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 3. **Frontend basique** — Page d'accueil (events à venir), page groupe, filtres groupe/type, vue calendrier mensuelle, design shadcn, dark mode, a11y. Retirer la page `/test`. ✅ **DONE & mergé.**
 4. **Auth + Follow groupes** — Auth Supabase (email/password + OAuth Google bonus), table `user_follows` + UI, vue "mes events", gestion timezone. ✅ **DONE & mergé.**
 5. **Première pipeline de scraping** — 1 source (YouTube Data API), API route protégée par token, Vercel Cron, logging + idempotence. ✅ **DONE & mergé** (PR #8).
-6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien). **Test iOS install + notif obligatoire.** **← EN COURS** (`feat/notifications-push`).
-7. **Sources supplémentaires** — dbkpop (comebacks), sites music shows, Weverse (lives) ; modules isolés.
+6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien), guide install iOS. ✅ **DONE & mergé** (PR #9 + #10). Reste ops : confirmer les 4 vars VAPID sur Vercel **Production**.
+7. **Sources supplémentaires** — modules isolés, ajoutés un par un :
+   - **Comebacks** : scraping `kpopofficial.com` (dbkpop abandonné, cf. §5). **← EN COURS** (`feat/scraping-comebacks`).
+   - **Music shows** (gros volume hebdo) : sites diffuseurs (SBS Inkigayo lineup vendredi 14:00 KST, KBS/MBC/Mnet) ou agrégateur fan « Live Show Updates ». Le plus fragile/chronophage.
+   - **Weverse (lives)** : pas d'API publique, JS + auth → le plus dur, en dernier (les YouTube premieres couvrent déjà une partie du besoin).
 8. **Système de suggestions communautaires** — Form user, interface admin valider/rejeter, notif au contributeur.
 9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
 
@@ -199,14 +204,13 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ---
 
-## 9. État actuel (2026-05-25)
+## 9. État actuel (2026-05-26)
 
-**Phase** : étapes 1→5 **DONE et mergées sur `main`** (PR #8 scraping = `77abd4e`). Étape 6 (notifications push) **implémentée sur `feat/notifications-push`** : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. typecheck + lint + Vitest (22) + build verts ; cron testé bout-en-bout en local.
+**Phase** : étapes 1→6 **DONE et mergées sur `main`** (étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`). Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
 
-**Reste sur l'étape 6 avant merge** :
+**En cours** : étape 7, 1ʳᵉ source = scraping comebacks `kpopofficial` (`feat/scraping-comebacks`).
 
-- Reporter les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) dans les env vars Vercel (Prod + Preview) — sans ça, pas de push en prod.
-- Test device obligatoire (§6) : desktop Chrome + iPhone (PWA installée sur l'écran d'accueil, iOS 16.4+).
+**Reste ops (hors repo)** : confirmer les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sur Vercel **Production** (pas seulement Preview) — sans ça, pas de push en prod.
 
 > ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
 
