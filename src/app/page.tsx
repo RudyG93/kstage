@@ -1,5 +1,5 @@
 import { FilterBar } from '@/components/filter-bar'
-import { EventList } from '@/components/event-list'
+import { GroupedEventList } from '@/components/grouped-event-list'
 import { getUpcomingEvents } from '@/lib/events/queries'
 import { getGroups } from '@/lib/groups/queries'
 import type { Database } from '@/types/database'
@@ -26,7 +26,7 @@ export default async function Home({
         </p>
       </div>
       <FilterBar groups={groups} />
-      <EventList events={events} emptyMessage="No upcoming events match these filters." />
+      <GroupedEventList events={events} emptyMessage="No upcoming events match these filters." />
     </div>
   )
 }

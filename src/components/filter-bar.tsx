@@ -44,7 +44,11 @@ export function FilterBar({ groups }: { groups: GroupSummary[] }) {
         onValueChange={(vals) => setParam('type', vals[0] ?? '')}
       >
         {FILTERABLE_EVENT_TYPES.map((t) => (
-          <ToggleGroupItem key={t} value={t}>
+          <ToggleGroupItem
+            key={t}
+            value={t}
+            className="font-mono text-[11px] tracking-wide uppercase"
+          >
             {EVENT_TYPE_LABELS[t]}
           </ToggleGroupItem>
         ))}

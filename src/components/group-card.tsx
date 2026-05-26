@@ -20,8 +20,11 @@ export function GroupCard({
           className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-3"
         >
           <span
-            className="size-3 shrink-0 rounded-full"
-            style={{ backgroundColor: group.color_hex ?? 'var(--muted-foreground)' }}
+            className="size-3.5 shrink-0 rounded-full"
+            style={{
+              backgroundColor: group.color_hex ?? 'var(--muted-foreground)',
+              boxShadow: group.color_hex ? `0 0 10px ${group.color_hex}99` : undefined,
+            }}
             aria-hidden
           />
           <div className="min-w-0">
