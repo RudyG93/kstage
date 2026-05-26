@@ -172,10 +172,12 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 7. **Sources supplémentaires** — modules isolés :
    - **Comebacks** : scraping `kpopofficial.com`. ✅ **DONE & mergé** (PR #11 ; dbkpop abandonné, cf. §5).
    - **Music shows & lives (Weverse)** : ⛔ **reportés à l'étape 8 (communauté)**. Recherche du 2026-05-26 : aucune source propre/scrapable (carrd fan fragile à placeholders/images ; sites diffuseurs JS+coréens, 1 émission chacun ; `kpop.fandom` 403 ; Wikipedia = gagnants _passés_ ; twicehub = backend à session ; pas de feed iCal). Pour nos 4 groupes ces events sont **rares** (fenêtres de promo / lives spontanés) → ROI scraping faible. Mieux servis par les suggestions communautaires.
-8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`), notif au contributeur. Couvre aussi **music shows & lives** (cf. étape 7). **← PROCHAINE.**
+8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). Couvre aussi **music shows & lives** (cf. étape 7). **← EN COURS** (`feat/community-suggestions`).
 9. **Polish + lancement** — SEO, landing marketing, analytics (Plausible, RGPD-friendly), audit a11y, Lighthouse > 90, soft launch (Reddit r/kpop, Twitter).
 
 > Plans d'étape détaillés : `docs/plans/`.
+>
+> Au-delà du MVP : **vision V2 (plateforme communautaire) → §10**.
 
 ---
 
@@ -226,3 +228,31 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 - **Vercel Cron déclenche en GET uniquement** → routes `/api/cron/*` en `GET` (cf. §5). Bug latent corrigé : `scrape-youtube` était POST-only, donc jamais déclenché par le cron.
 - **Next 16 = Turbopack** → `@serwist/next` (webpack) ne s'applique pas. Pour du push pur, un SW à la main suffit ; Serwist reporté à l'étape 9 (cf. §3 Notes PWA).
 - **`pushManager.subscribe` peut throw** (push service indispo, navigation privée, clé absente) → try/catch obligatoire côté UI pour ne pas crasher le composant (afficher un état d'erreur lisible).
+
+---
+
+## 10. Vision V2 — plateforme communautaire (étoile polaire)
+
+> Cap long terme, **post-MVP**. Le MVP reste le calendrier perso (utile jour 1 sans aucun contributeur). On ne pivote pas maintenant.
+
+### Modèle de référence : hltv.org / rft.gg
+
+Les deux suivent le même pattern : un **cœur de données structurées** (schedule, stats, classements) qui crée l'usage quotidien, et une **communauté greffée sur les objets de données** (chaque match → sa discussion/ses votes). Le forum n'est jamais le point d'entrée — c'est la data qui attire, la commu qui retient.
+
+**Mappé KStage** : le calendrier perso = le cœur de données. La communauté se grefferait sur chaque **comeback / MV**.
+
+### Beachhead V2 (1ʳᵉ brique commu)
+
+**Ratings + commentaires par comeback/MV**, auto-ancrés aux events déjà scrapés (chaque sortie = un thread de notation généré automatiquement).
+
+- **Vrai gap marché** : la notation k-pop n'est servie que par des blogs solo (The Bias List, KPOPREVIEWED) ou RateYourMusic (non-natif, pas lié au calendrier). Personne ne fait « noter + discuter chaque sortie, ancré à un calendrier perso ».
+- **Pas d'effet ghost-town** : le contenu (les events) pré-existe grâce au scraping → pas une page vide à amorcer.
+- Modération légère vs un forum libre.
+
+### Différé (gaté sur trafic réel)
+
+Forum généraliste, votes topics/messages, **modérateurs bénévoles**. Raison : **cold-start** + incumbents qui possèdent les effets de réseau (Reddit r/kpop = déjà un forum k-pop voté ; Weverse ; apps de vote Choeaedol/Mubeat/Whosfan). Un forum vide **dégraderait** l'utilité du calendrier. À n'ouvrir qu'une fois une audience réelle acquise via le calendrier + ratings.
+
+### Design
+
+Inspiration **dense / dark / data-forward** (style « outil sérieux » à la HLTV), différenciant face au visuel pastel/cutesy ambiant du k-pop. Récupérable tôt comme angle de marque, avant même les features commu.
