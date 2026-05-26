@@ -9,11 +9,15 @@ export function EventList({
   emptyMessage?: string
 }) {
   if (events.length === 0) {
-    return <p className="text-muted-foreground py-12 text-center text-sm">{emptyMessage}</p>
+    return (
+      <div className="border-border/70 text-muted-foreground rounded-xl border border-dashed px-6 py-12 text-center text-sm">
+        {emptyMessage}
+      </div>
+    )
   }
 
   return (
-    <ul className="space-y-3" aria-label="Events">
+    <ul className="space-y-2.5" aria-label="Events">
       {events.map((event) => (
         <li key={event.id}>
           <EventCard event={event} />
