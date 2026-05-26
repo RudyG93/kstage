@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
 import { AuthMenu } from '@/components/auth/auth-menu'
+import { Analytics } from '@vercel/analytics/next'
 import { createClient } from '@/lib/supabase/server'
 
 const geistSans = Geist({
@@ -97,6 +98,7 @@ export default async function RootLayout({
             {children}
           </main>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
