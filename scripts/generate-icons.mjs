@@ -13,7 +13,9 @@ const targets = [
   { size: 180, out: 'src/app/apple-icon.png' },
 ]
 
-const markup = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+const markup = (
+  size,
+) => `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="k" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#8b5cff" />
@@ -28,6 +30,8 @@ const markup = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 100
 for (const { size, out } of targets) {
   const file = path.resolve(out)
   await mkdir(path.dirname(file), { recursive: true })
-  await sharp(Buffer.from(markup(size))).png().toFile(file)
+  await sharp(Buffer.from(markup(size)))
+    .png()
+    .toFile(file)
   console.log(`✓ ${out}`)
 }
