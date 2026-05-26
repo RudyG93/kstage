@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
-import { getMySuggestions } from '@/lib/suggestions/queries'
+import { getMySuggestions, getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 
 export const metadata = { title: 'My events' }
 
@@ -25,6 +25,7 @@ export default async function MyPage() {
     getMySuggestions(),
   ])
   const admin = isAdmin(user.email)
+  const pendingCount = admin ? await getPendingSuggestionsCount() : 0
   const events =
     followedIds.size > 0 ? await getUpcomingEvents({ groupIds: [...followedIds], limit: 100 }) : []
 
@@ -46,7 +47,7 @@ export default async function MyPage() {
               href="/admin/suggestions"
               className={buttonVariants({ variant: 'ghost', size: 'sm' })}
             >
-              Admin
+              Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
             </Link>
           )}
         </div>

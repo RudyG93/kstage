@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -69,6 +70,14 @@ export async function scrapeGroup(
   for (const item of items) {
     const sourceUrl = `https://www.youtube.com/watch?v=${item.id.videoId}`
 
+    // On n'ingère que les types couverts au MVP (cf. labels.ts) : beaucoup
+    // d'uploads (vlogs, variety…) tombent en 'other' et polluent le calendrier.
+    const eventType = detectEventType(item.snippet.title, item.snippet.description)
+    if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
+      skipped++
+      continue
+    }
+
     // Idempotence : vérifie si cet event existe déjà
     const { data: existing } = await supabase
       .from('events')
@@ -85,7 +94,7 @@ export async function scrapeGroup(
       group_id: source.group_id,
       source_id: source.id,
       source_url: sourceUrl,
-      type: detectEventType(item.snippet.title, item.snippet.description),
+      type: eventType,
       title: item.snippet.title,
       description: item.snippet.description.slice(0, 500) || null,
       start_at: item.snippet.publishedAt,
