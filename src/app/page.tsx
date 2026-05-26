@@ -1,7 +1,9 @@
 import { FilterBar } from '@/components/filter-bar'
 import { GroupedEventList } from '@/components/grouped-event-list'
+import { Landing } from '@/components/landing'
 import { getUpcomingEvents } from '@/lib/events/queries'
 import { getGroups } from '@/lib/groups/queries'
+import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
@@ -11,11 +13,22 @@ export default async function Home({
 }: {
   searchParams: Promise<{ group?: string; type?: string }>
 }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const groups = await getGroups()
+
+  if (!user) {
+    return <Landing groups={groups} />
+  }
+
   const { group, type } = await searchParams
-  const [groups, events] = await Promise.all([
-    getGroups(),
-    getUpcomingEvents({ groupSlug: group, type: type as EventType | undefined }),
-  ])
+  const events = await getUpcomingEvents({
+    groupSlug: group,
+    type: type as EventType | undefined,
+  })
 
   return (
     <div className="space-y-6">
