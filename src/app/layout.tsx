@@ -24,11 +24,28 @@ const bricolage = Bricolage_Grotesque({
   weight: ['600', '700', '800'],
 })
 
+const SITE_URL = 'https://kstage.vercel.app'
+const SITE_DESCRIPTION = 'Your k-pop calendar — events, comebacks, and lives.'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: 'KStage', template: '%s · KStage' },
-  description: 'Your k-pop calendar — events, comebacks, and lives.',
+  description: SITE_DESCRIPTION,
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'KStage', statusBarStyle: 'black-translucent' },
+  openGraph: {
+    type: 'website',
+    siteName: 'KStage',
+    title: 'KStage — your k-pop calendar',
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KStage — your k-pop calendar',
+    description: SITE_DESCRIPTION,
+  },
 }
 
 export const viewport: Viewport = {
