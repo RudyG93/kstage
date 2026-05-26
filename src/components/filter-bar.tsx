@@ -38,6 +38,7 @@ export function FilterBar({ groups }: { groups: GroupSummary[] }) {
       </select>
 
       <ToggleGroup
+        role="toolbar"
         aria-label="Filter by type"
         variant="outline"
         value={currentType ? [currentType] : []}
