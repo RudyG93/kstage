@@ -1,7 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
-import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { TypeBadge } from './type-badge'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
@@ -12,6 +11,11 @@ const kstFormat = (iso: string) =>
     minute: '2-digit',
   }).format(new Date(iso))
 
+// Masque latéral : l'image n'est visible qu'au centre, en fondu, pour ne pas
+// gêner le texte (gauche) ni l'horaire (droite). En style inline (fiable, sans
+// dépendre de l'extraction Tailwind des valeurs arbitraires).
+const CENTER_FADE = 'linear-gradient(to right, transparent, #000 35%, #000 70%, transparent)'
+
 export function HomeEventCard({
   event,
   compact = false,
@@ -20,76 +24,34 @@ export function HomeEventCard({
   compact?: boolean
 }) {
   const group = event.groups
-  const color = EVENT_TYPE_COLORS[event.type]
   const kst = kstFormat(event.start_at)
-
-  if (compact) {
-    return (
-      <Link
-        href={`/groups/${group?.slug ?? ''}`}
-        className="hover:bg-muted/30 group -mx-3 flex h-14 items-center gap-3 rounded-xl px-3 transition-colors duration-200"
-      >
-        <div
-          className="h-8 w-[3px] shrink-0 rounded-full"
-          style={{ backgroundColor: color }}
-          aria-hidden
-        />
-        <span
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: group?.color_hex ?? '#888' }}
-          aria-hidden
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium">{group?.name}</span>
-            <TypeBadge type={event.type} />
-          </div>
-          <p className="text-muted-foreground truncate text-xs">{event.title}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="font-mono text-sm tabular-nums">{kst} KST</p>
-          <p className="text-muted-foreground text-xs">
-            <LocalTime iso={event.start_at} />
-          </p>
-        </div>
-      </Link>
-    )
-  }
 
   return (
     <Link
       href={`/groups/${group?.slug ?? ''}`}
-      className="hover:bg-muted/30 hover:ring-foreground/5 group -mx-3 flex items-center gap-4 rounded-xl p-3 transition-all duration-200 hover:ring-1"
+      className={`group hover:bg-muted/30 relative -mx-3 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-14' : 'h-16'}`}
     >
-      <div
-        className="w-[3px] shrink-0 self-stretch rounded-full"
-        style={{ backgroundColor: color }}
-        aria-hidden
-      />
-      {group?.image_url ? (
+      {group?.image_url && (
         <Image
           src={group.image_url}
-          alt={group.name}
-          width={48}
-          height={48}
-          className="size-12 shrink-0 rounded-xl object-cover"
-        />
-      ) : (
-        <div
-          className="gradient-signature flex size-12 shrink-0 items-center justify-center rounded-xl font-semibold text-white"
+          alt=""
           aria-hidden
-        >
-          {group?.name?.[0] ?? '?'}
-        </div>
+          fill
+          sizes="(max-width: 1024px) 100vw, 640px"
+          className="pointer-events-none object-cover object-center opacity-25 select-none"
+          style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
+        />
       )}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold">{group?.name}</span>
+
+      <div className="relative z-10 min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-semibold">{group?.name}</span>
           <TypeBadge type={event.type} />
         </div>
-        <p className="text-muted-foreground mt-0.5 truncate text-sm">{event.title}</p>
+        <p className="text-muted-foreground truncate text-xs">{event.title}</p>
       </div>
-      <div className="shrink-0 text-right">
+
+      <div className="relative z-10 shrink-0 pl-3 text-right">
         <p className="font-mono text-sm tabular-nums">{kst} KST</p>
         <p className="text-muted-foreground text-xs">
           <LocalTime iso={event.start_at} />
