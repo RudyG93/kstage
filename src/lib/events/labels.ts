@@ -11,5 +11,14 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   other: 'Other',
 }
 
+export const EVENT_TYPE_COLORS: Record<EventType, string> = {
+  comeback: '#ff5ca8',
+  music_show: '#f5c542',
+  live: '#5bc0ff',
+  anniversary: '#cdb4ff',
+  concert: '#9aa0a6',
+  other: '#9aa0a6',
+}
+
 // Types couverts au MVP (cf. PROJECT.md §2), utilisés pour le filtre.
 export const FILTERABLE_EVENT_TYPES: EventType[] = ['comeback', 'music_show', 'live', 'anniversary']

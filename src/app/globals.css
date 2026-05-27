@@ -143,3 +143,15 @@
     background-repeat: no-repeat;
   }
 }
+
+@layer utilities {
+  .gradient-text {
+    background: linear-gradient(135deg, #8b5cff 0%, #ff2d87 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-signature {
+    background: linear-gradient(135deg, #8b5cff 0%, #ff2d87 100%);
+  }
+}
