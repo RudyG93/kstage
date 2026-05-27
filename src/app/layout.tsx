@@ -94,9 +94,7 @@ export default async function RootLayout({
               <ThemeToggle />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-24 md:pb-6">
-            {children}
-          </main>
+          <main className="flex-1 pb-24 md:pb-6">{children}</main>
         </ThemeProvider>
         <Analytics />
       </body>

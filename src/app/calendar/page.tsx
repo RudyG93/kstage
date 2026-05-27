@@ -36,10 +36,12 @@ export default async function CalendarPage({
   ])
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
-      <FilterBar groups={groups} />
-      <CalendarMonth year={year} month={month} events={events} />
+    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
+        <FilterBar groups={groups} />
+        <CalendarMonth year={year} month={month} events={events} />
+      </div>
     </div>
   )
 }

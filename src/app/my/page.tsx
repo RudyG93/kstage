@@ -30,44 +30,49 @@ export default async function MyPage() {
     followedIds.size > 0 ? await getUpcomingEvents({ groupIds: [...followedIds], limit: 100 }) : []
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">My events</h1>
-          <p className="text-muted-foreground text-sm">
-            Upcoming events from the groups you follow.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/suggest" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-            Suggest an event
-          </Link>
-          {admin && (
-            <Link
-              href="/admin/suggestions"
-              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-            >
-              Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">My events</h1>
+            <p className="text-muted-foreground text-sm">
+              Upcoming events from the groups you follow.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/suggest" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              Suggest an event
             </Link>
-          )}
+            {admin && (
+              <Link
+                href="/admin/suggestions"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+              </Link>
+            )}
+          </div>
         </div>
+
+        <IosInstallHint />
+        <PushToggle />
+
+        {followedIds.size === 0 ? (
+          <div className="space-y-3 py-8 text-center">
+            <p className="text-muted-foreground text-sm">You don&apos;t follow any groups yet.</p>
+            <Link href="/groups" className={buttonVariants()}>
+              Browse groups
+            </Link>
+          </div>
+        ) : (
+          <GroupedEventList
+            events={events}
+            emptyMessage="No upcoming events from your groups yet."
+          />
+        )}
+
+        <MySuggestions suggestions={mySuggestions} />
       </div>
-
-      <IosInstallHint />
-      <PushToggle />
-
-      {followedIds.size === 0 ? (
-        <div className="space-y-3 py-8 text-center">
-          <p className="text-muted-foreground text-sm">You don&apos;t follow any groups yet.</p>
-          <Link href="/groups" className={buttonVariants()}>
-            Browse groups
-          </Link>
-        </div>
-      ) : (
-        <GroupedEventList events={events} emptyMessage="No upcoming events from your groups yet." />
-      )}
-
-      <MySuggestions suggestions={mySuggestions} />
     </div>
   )
 }

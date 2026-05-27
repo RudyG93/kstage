@@ -21,7 +21,11 @@ export default async function Home({
   const groups = await getGroups()
 
   if (!user) {
-    return <Landing groups={groups} />
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-6">
+        <Landing groups={groups} />
+      </div>
+    )
   }
 
   const { group, type } = await searchParams
