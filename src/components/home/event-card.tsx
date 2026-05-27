@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
+import { faceCrop } from '@/lib/images/cloudinary'
 import { TypeBadge } from './type-badge'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
@@ -42,17 +43,14 @@ export function HomeEventCard({
       <div className="relative h-full flex-1">
         {group?.image_url && (
           <Image
-            src={group.image_url}
+            src={faceCrop(group.image_url, 400, 160)}
             alt=""
             aria-hidden
             fill
+            unoptimized
             sizes="(max-width: 1024px) 50vw, 320px"
-            className="pointer-events-none object-cover opacity-25 select-none"
-            style={{
-              objectPosition: 'center 30%',
-              maskImage: CENTER_FADE,
-              WebkitMaskImage: CENTER_FADE,
-            }}
+            className="pointer-events-none object-cover object-center opacity-25 select-none"
+            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
           />
         )}
       </div>
