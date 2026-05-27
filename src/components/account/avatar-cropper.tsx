@@ -1,22 +1,19 @@
 'use client'
 
-import { useCallback, useRef, useState, useTransition, type ChangeEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useCallback, useRef, useState, type ChangeEvent } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { updateAvatar } from '@/lib/profiles/actions'
 import { downscaleToObjectURL, getCroppedBlob } from '@/lib/profiles/crop-image'
 
-export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void }) {
-  const router = useRouter()
+export function AvatarCropper({ onCropped }: { onCropped: (blob: Blob) => void }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [src, setSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [areaPixels, setAreaPixels] = useState<Area | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [processing, setProcessing] = useState(false)
 
   const onCropComplete = useCallback((_area: Area, areaPx: Area) => setAreaPixels(areaPx), [])
 
@@ -37,25 +34,18 @@ export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void 
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  function apply() {
+  async function apply() {
     if (!src || !areaPixels) return
-    startTransition(async () => {
-      try {
-        const blob = await getCroppedBlob(src, areaPixels)
-        const fd = new FormData()
-        fd.append('avatar', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }))
-        const res = await updateAvatar(fd)
-        if ('error' in res) {
-          setError(res.error)
-          return
-        }
-        onUpdated(res.avatarUrl)
-        router.refresh()
-        close()
-      } catch {
-        setError('Something went wrong while processing the image.')
-      }
-    })
+    setProcessing(true)
+    try {
+      const blob = await getCroppedBlob(src, areaPixels)
+      onCropped(blob) // l'upload + l'aperçu sont gérés par le parent (optimiste)
+      close()
+    } catch {
+      setError('Something went wrong while processing the image.')
+    } finally {
+      setProcessing(false)
+    }
   }
 
   return (
@@ -114,11 +104,11 @@ export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void 
             </p>
           )}
           <div className="mt-5 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={close} disabled={pending}>
+            <Button type="button" variant="ghost" onClick={close} disabled={processing}>
               Cancel
             </Button>
-            <Button type="button" onClick={apply} disabled={pending || !areaPixels}>
-              {pending ? 'Saving…' : 'Apply'}
+            <Button type="button" onClick={() => void apply()} disabled={processing || !areaPixels}>
+              {processing ? 'Processing…' : 'Apply'}
             </Button>
           </div>
         </DialogContent>
