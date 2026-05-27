@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'kpopofficial.com' },
       { protocol: 'https', hostname: 'lgewrmrbksgtjmzzebhz.supabase.co' },
+      { protocol: 'https', hostname: 'cdn-images.dzcdn.net' },
+      { protocol: 'https', hostname: 'e-cdns-images.dzcdn.net' },
     ],
   },
 }
