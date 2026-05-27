@@ -1,6 +1,7 @@
 import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { NextDropCard } from '@/components/home/next-drop-card'
+import { Feed } from '@/components/home/feed'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
@@ -35,7 +36,7 @@ export default async function Home() {
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
           <NextDropCard event={nextDrop} />
-          <div className="text-muted-foreground rounded-xl border p-4 text-sm">Feed (TODO)</div>
+          <Feed events={events.slice(1)} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">
           <div className="text-muted-foreground rounded-xl border p-4 text-sm">
