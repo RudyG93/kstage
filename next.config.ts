@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'kpopofficial.com' },
+      { protocol: 'https', hostname: 'lgewrmrbksgtjmzzebhz.supabase.co' },
     ],
   },
 }

@@ -1,0 +1,95 @@
+'use client'
+
+import { useActionState } from 'react'
+import { Avatar } from '@/components/avatar'
+import { Button } from '@/components/ui/button'
+import { updateProfile, type ProfileState } from '@/lib/profiles/actions'
+import { USERNAME_MIN, USERNAME_MAX } from '@/lib/profiles/validation'
+
+const inputClass =
+  'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+
+export function AccountForm({
+  email,
+  username,
+  avatarUrl,
+}: {
+  email: string
+  username: string
+  avatarUrl: string | null
+}) {
+  const [state, formAction, pending] = useActionState<ProfileState, FormData>(updateProfile, null)
+  const ok = state !== null && 'ok' in state
+
+  return (
+    <form
+      action={formAction}
+      className="bg-card ring-foreground/10 space-y-5 rounded-2xl p-6 ring-1"
+    >
+      <div className="flex items-center gap-4">
+        <Avatar email={email} username={username || undefined} avatarUrl={avatarUrl} size={64} />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <label htmlFor="avatar" className="text-sm font-medium">
+            Avatar
+          </label>
+          <input
+            id="avatar"
+            name="avatar"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="text-muted-foreground file:bg-muted block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+          />
+          <p className="text-muted-foreground text-xs">PNG, JPEG or WebP, up to 2 MB.</p>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="username" className="text-sm font-medium">
+          Username
+        </label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          required
+          minLength={USERNAME_MIN}
+          maxLength={USERNAME_MAX}
+          defaultValue={username}
+          placeholder="your_handle"
+          className={inputClass}
+        />
+        <p className="text-muted-foreground text-xs">
+          {USERNAME_MIN}–{USERNAME_MAX} characters · lowercase letters, numbers and underscores.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="text-sm font-medium">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          disabled
+          className={`${inputClass} opacity-60`}
+        />
+      </div>
+
+      {state !== null && 'error' in state && (
+        <p role="alert" className="text-destructive text-sm">
+          {state.error}
+        </p>
+      )}
+      {ok && (
+        <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">
+          Profile saved.
+        </p>
+      )}
+
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? 'Saving…' : 'Save changes'}
+      </Button>
+    </form>
+  )
+}

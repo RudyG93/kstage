@@ -65,6 +65,10 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser()
 
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle()
+    : { data: null }
+
   return (
     <html
       lang="en"
@@ -90,7 +94,11 @@ export default async function RootLayout({
               </Link>
               <div className="flex-1" />
               <SiteNav isAuthed={!!user} />
-              <AuthMenu email={user?.email ?? null} />
+              <AuthMenu
+                email={user?.email ?? null}
+                username={profile?.username ?? null}
+                avatarUrl={profile?.avatar_url ?? null}
+              />
               <ThemeToggle />
             </div>
           </header>
