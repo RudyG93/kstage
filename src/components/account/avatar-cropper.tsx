@@ -6,7 +6,7 @@ import Cropper, { type Area } from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { updateAvatar } from '@/lib/profiles/actions'
-import { getCroppedBlob } from '@/lib/profiles/crop-image'
+import { downscaleToObjectURL, getCroppedBlob } from '@/lib/profiles/crop-image'
 
 export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void }) {
   const router = useRouter()
@@ -20,13 +20,14 @@ export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void 
 
   const onCropComplete = useCallback((_area: Area, areaPx: Area) => setAreaPixels(areaPx), [])
 
-  function pickFile(e: ChangeEvent<HTMLInputElement>) {
+  async function pickFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
     setCrop({ x: 0, y: 0 })
     setZoom(1)
-    setSrc(URL.createObjectURL(file))
+    // downscale d'abord → drag/zoom fluides même sur une grosse photo
+    setSrc(await downscaleToObjectURL(file))
   }
 
   function close() {
@@ -68,7 +69,7 @@ export function AvatarCropper({ onUpdated }: { onUpdated: (url: string) => void 
         accept="image/png,image/jpeg,image/webp"
         aria-label="Upload avatar"
         className="hidden"
-        onChange={pickFile}
+        onChange={(e) => void pickFile(e)}
       />
 
       <Dialog
