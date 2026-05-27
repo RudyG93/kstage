@@ -31,8 +31,9 @@ test.describe('auth golden path', () => {
     await expect(page.getByRole('heading', { name: 'My events', level: 1 })).toBeVisible()
     await expect(page.getByText("You don't follow any groups yet.")).toHaveCount(0)
 
-    // Sign out → retour à l'accueil.
-    await page.getByRole('button', { name: 'Sign out' }).click()
+    // Sign out → ouvrir le menu compte (avatar) puis Sign out → retour à l'accueil.
+    await page.getByRole('button', { name: 'Account menu' }).click()
+    await page.getByRole('menuitem', { name: 'Sign out' }).click()
     await expect(page).toHaveURL(/\/$/)
   })
 })
