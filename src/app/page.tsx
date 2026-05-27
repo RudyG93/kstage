@@ -1,18 +1,8 @@
-import { FilterBar } from '@/components/filter-bar'
-import { GroupedEventList } from '@/components/grouped-event-list'
 import { Landing } from '@/components/landing'
-import { getUpcomingEvents } from '@/lib/events/queries'
 import { getGroups } from '@/lib/groups/queries'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database'
 
-type EventType = Database['public']['Enums']['event_type']
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ group?: string; type?: string }>
-}) {
+export default async function Home() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -28,22 +18,25 @@ export default async function Home({
     )
   }
 
-  const { group, type } = await searchParams
-  const events = await getUpcomingEvents({
-    groupSlug: group,
-    type: type as EventType | undefined,
-  })
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Upcoming</h1>
-        <p className="text-muted-foreground text-sm">
-          Comebacks, music shows and lives from your favorite groups.
-        </p>
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
+          <div className="text-muted-foreground rounded-xl border p-4 text-sm">
+            Sidebar left (TODO)
+          </div>
+        </aside>
+        <div className="order-1 min-w-0 flex-1 lg:order-2">
+          <div className="text-muted-foreground rounded-xl border p-4 text-sm">
+            Center feed (TODO)
+          </div>
+        </div>
+        <aside className="order-3 shrink-0 lg:w-80">
+          <div className="text-muted-foreground rounded-xl border p-4 text-sm">
+            Sidebar right (TODO)
+          </div>
+        </aside>
       </div>
-      <FilterBar groups={groups} />
-      <GroupedEventList events={events} emptyMessage="No upcoming events match these filters." />
     </div>
   )
 }
