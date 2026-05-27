@@ -17,12 +17,14 @@ export default async function AdminSuggestionsPage() {
   const pending = await getPendingSuggestions()
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Moderate suggestions</h1>
-        <p className="text-muted-foreground text-sm">{pending.length} pending</p>
+    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Moderate suggestions</h1>
+          <p className="text-muted-foreground text-sm">{pending.length} pending</p>
+        </div>
+        <ModerationList suggestions={pending} />
       </div>
-      <ModerationList suggestions={pending} />
     </div>
   )
 }

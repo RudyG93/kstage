@@ -4,7 +4,8 @@ import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
 
-const EVENT_SELECT = 'id, title, type, start_at, status, groups!inner(slug, name, color_hex)'
+const EVENT_SELECT =
+  'id, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url)'
 
 export async function getUpcomingEvents({
   groupSlug,
@@ -62,4 +63,36 @@ export async function getEventsForMonth({
   return data ?? []
 }
 
+export async function getUpcomingEventCountsByGroup(
+  groupIds: string[],
+): Promise<Map<string, number>> {
+  if (groupIds.length === 0) return new Map()
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('group_id')
+    .in('group_id', groupIds)
+    .gte('start_at', new Date().toISOString())
+  if (error) throw error
+  const counts = new Map<string, number>()
+  for (const row of data ?? []) {
+    counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
+  }
+  return counts
+}
+
+export async function getRecentComebacks(limit = 3) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, title, start_at, image_url, groups!inner(name, slug)')
+    .eq('type', 'comeback')
+    .lt('start_at', new Date().toISOString())
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
+export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]

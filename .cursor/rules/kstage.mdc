@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+shadcn = base-nova / @base-ui/react (PAS Radix).
+JAMAIS asChild. Toujours render={<Element />} pour rendre un autre tag.
+RSC par défaut. 'use client' uniquement pour l'interactivité.
+Réutiliser les helpers existants : kstDayKey, kstToUtcISO, groupEventsByKstDay,
+splitUpcomingByWeek, LocalTime, FilterBar.
+Filtres via URL search params, jamais useState local.
+next/image obligatoire, jamais <img>.
+Pas d'emoji.
+Code en anglais, conversation en français.

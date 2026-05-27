@@ -1,18 +1,14 @@
-import { FilterBar } from '@/components/filter-bar'
-import { GroupedEventList } from '@/components/grouped-event-list'
 import { Landing } from '@/components/landing'
-import { getUpcomingEvents } from '@/lib/events/queries'
+import { SidebarLeft } from '@/components/home/sidebar-left'
+import { NextDropCard } from '@/components/home/next-drop-card'
+import { Feed } from '@/components/home/feed'
+import { SidebarRight } from '@/components/home/sidebar-right'
 import { getGroups } from '@/lib/groups/queries'
+import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { getUpcomingEvents } from '@/lib/events/queries'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database'
 
-type EventType = Database['public']['Enums']['event_type']
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ group?: string; type?: string }>
-}) {
+export default async function Home() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -21,25 +17,32 @@ export default async function Home({
   const groups = await getGroups()
 
   if (!user) {
-    return <Landing groups={groups} />
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-6">
+        <Landing groups={groups} />
+      </div>
+    )
   }
 
-  const { group, type } = await searchParams
-  const events = await getUpcomingEvents({
-    groupSlug: group,
-    type: type as EventType | undefined,
-  })
+  const followedIds = await getFollowedGroupIds()
+  const events =
+    followedIds.size > 0 ? await getUpcomingEvents({ groupIds: [...followedIds], limit: 50 }) : []
+  const nextDrop = events[0] ?? null
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Upcoming</h1>
-        <p className="text-muted-foreground text-sm">
-          Comebacks, music shows and lives from your favorite groups.
-        </p>
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
+          <SidebarLeft />
+        </aside>
+        <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+          <NextDropCard event={nextDrop} />
+          <Feed events={events.slice(1)} />
+        </div>
+        <aside className="order-3 shrink-0 lg:w-80">
+          <SidebarRight />
+        </aside>
       </div>
-      <FilterBar groups={groups} />
-      <GroupedEventList events={events} emptyMessage="No upcoming events match these filters." />
     </div>
   )
 }
