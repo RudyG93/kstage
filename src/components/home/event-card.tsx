@@ -39,19 +39,22 @@ export function HomeEventCard({
         <p className="text-muted-foreground truncate text-xs">{event.title}</p>
       </div>
 
-      {/* colonne centrale : image du groupe en fondu, occupe l'espace libre */}
-      <div className="relative h-full flex-1">
+      {/* colonne centrale : image du groupe en fondu, format ~4:3 centré (plus
+          étroit que le gap → on voit têtes + épaules sans sur-recadrage) */}
+      <div className="flex h-full flex-1 items-center justify-center">
         {group?.image_url && (
-          <Image
-            src={faceCrop(group.image_url, 400, 160)}
-            alt=""
-            aria-hidden
-            fill
-            unoptimized
-            sizes="(max-width: 1024px) 50vw, 320px"
-            className="pointer-events-none object-cover object-center opacity-25 select-none"
-            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
-          />
+          <div className="relative h-full" style={{ aspectRatio: '4 / 3' }}>
+            <Image
+              src={faceCrop(group.image_url, 320, 240)}
+              alt=""
+              aria-hidden
+              fill
+              unoptimized
+              sizes="160px"
+              className="pointer-events-none object-cover object-center opacity-25 select-none"
+              style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
+            />
+          </div>
         )}
       </div>
 
