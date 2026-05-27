@@ -81,4 +81,18 @@ export async function getUpcomingEventCountsByGroup(
   return counts
 }
 
+export async function getRecentComebacks(limit = 3) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, title, start_at, image_url, groups!inner(name, slug)')
+    .eq('type', 'comeback')
+    .lt('start_at', new Date().toISOString())
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
+export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]

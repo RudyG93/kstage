@@ -2,6 +2,7 @@ import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { Feed } from '@/components/home/feed'
+import { SidebarRight } from '@/components/home/sidebar-right'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
@@ -39,9 +40,7 @@ export default async function Home() {
           <Feed events={events.slice(1)} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">
-          <div className="text-muted-foreground rounded-xl border p-4 text-sm">
-            Sidebar right (TODO)
-          </div>
+          <SidebarRight />
         </aside>
       </div>
     </div>
