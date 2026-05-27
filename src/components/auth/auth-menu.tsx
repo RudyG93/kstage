@@ -11,7 +11,15 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 
-export function AuthMenu({ email }: { email: string | null }) {
+export function AuthMenu({
+  email,
+  username,
+  avatarUrl,
+}: {
+  email: string | null
+  username?: string | null
+  avatarUrl?: string | null
+}) {
   if (!email) {
     return (
       <div className="flex items-center gap-2">
@@ -39,7 +47,7 @@ export function AuthMenu({ email }: { email: string | null }) {
           />
         }
       >
-        <Avatar email={email} size={32} />
+        <Avatar email={email} username={username ?? undefined} avatarUrl={avatarUrl} size={32} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8}>
         <DropdownMenuItem render={<Link href="/account" />}>
