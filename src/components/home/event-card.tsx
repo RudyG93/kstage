@@ -25,13 +25,11 @@ export function HomeEventCard({
 }) {
   const group = event.groups
   const kst = kstFormat(event.start_at)
-  // backdrop : image paysage (TheAudioDB) si dispo, sinon le carré Deezer
-  // recadré sur le visage via Cloudinary.
-  const bannerSrc = group?.image_landscape
-    ? group.image_landscape
-    : group?.image_url
-      ? faceCrop(group.image_url, 400, 220)
-      : null
+  // backdrop : image paysage (TheAudioDB) si dispo, sinon le carré Deezer —
+  // dans les deux cas recadré sur le visage par Cloudinary g_auto (sinon un
+  // object-cover centré tombe sur les torses).
+  const rawImage = group?.image_landscape ?? group?.image_url ?? null
+  const bannerSrc = rawImage ? faceCrop(rawImage, 400, 220) : null
 
   return (
     <Link
