@@ -24,6 +24,21 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 - **YouTube premieres via l'API officielle** — remplacer la détection actuelle (uploads récents `search?order=date` + mots-clés) par `liveStreamingDetails.scheduledStartTime` + `liveBroadcastContent=upcoming` pour capter les **vraies premieres programmées** (futures, datées) plutôt que des uploads passés.
 - **Enrichir `detectEventType`** (`src/lib/scrapers/youtube.ts`) — insight Rudy : les clips/comebacks contiennent quasi toujours **« MV »** (et « M/V », « Official Video ») une fois sortis. Ajouter ces mots-clés améliorerait la détection comeback. Différé : on garde simple au MVP (les comebacks sont déjà couverts par kpopofficial).
 
+## Compte utilisateur (post home-redesign)
+
+- **Table `profiles`** : `id` (= `auth.users.id`), `username` (unique, citext), `avatar_url`. RLS own-rows.
+- **Storage Supabase** : bucket `avatars`, policies upload own.
+- **Page `/account`** : formulaire username + upload avatar (le lien _Account settings_ du dropdown header pointe déjà dessus → 404 tant que la page n'existe pas). Composant `src/components/avatar.tsx` à mettre à jour pour préférer `avatar_url` puis fallback initiales.
+- **Migration des initiales** : remplacer la dérivation depuis l'email par le `username` quand présent.
+
+## Wiring V2 des mocks home
+
+- Quand le système de ratings + articles existera, remplacer les imports depuis `src/lib/mocks/home.ts` dans `src/components/home/sidebar-right.tsx` par de vraies queries (`getMvOfTheMonth`, `getReleaseOfTheMonth`, `getRecentActivity`). Supprimer `src/lib/mocks/home.ts` à ce moment-là.
+
+## Tests E2E à rafraîchir
+
+- `tests/e2e/smoke.spec.ts` teste la home déconnectée comme une liste d'events filtrable (heading "Upcoming", filtre groupe, filtre type). Or depuis l'étape 9 la home déconnectée = `Landing`, et depuis la refonte la home connectée = layout 3 colonnes → ces 3 tests sont **périmés** (échouent). À réécrire : tester la `Landing` en déconnecté (CTA _Get started_ / _Sign in_) et déplacer la couverture des filtres dans le golden path authentifié (`auth.spec.ts` — le filtre type vit maintenant dans la sidebar gauche). NB : l'e2e n'est **pas** dans la CI (`.github/workflows/ci.yml`), donc non bloquant pour la PR.
+
 ## Vision V2 (étoile polaire — cf. `PROJECT.md §10`)
 
 - Ratings + commentaires par comeback/MV (beachhead communautaire).

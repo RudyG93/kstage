@@ -213,6 +213,8 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 **En cours** : étape 8 — suggestions communautaires (`feat/community-suggestions`).
 
+**Post-MVP — refonte home** (`feat/home-redesign`) : vue connectée passée en layout 3 colonnes (sidebar gauche _My groups_ + filtres par type, centre _Next drop_ + countdown + feed This week/Later, sidebar droite). Blocs _MV of the month_, _Release of the month_ et _Recent activity_ **mockés** isolément dans `src/lib/mocks/home.ts` en attendant le système ratings + articles (V2, cf. §10). Fix au passage : la nav mobile fixe (`SiteNav`) était piégée par le `backdrop-filter` du header (containing block) — header repassé en opaque.
+
 **Reste ops (hors repo)** : confirmer les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sur Vercel **Production** (pas seulement Preview) — sans ça, pas de push en prod.
 
 > ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
