@@ -47,8 +47,12 @@ export function HomeEventCard({
             aria-hidden
             fill
             sizes="(max-width: 1024px) 50vw, 320px"
-            className="pointer-events-none object-cover object-top opacity-25 select-none"
-            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
+            className="pointer-events-none object-cover opacity-25 select-none"
+            style={{
+              objectPosition: 'center 30%',
+              maskImage: CENTER_FADE,
+              WebkitMaskImage: CENTER_FADE,
+            }}
           />
         )}
       </div>

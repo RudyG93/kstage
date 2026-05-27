@@ -38,7 +38,7 @@ function FeedSection({
             <p className="text-muted-foreground/70 mb-1 font-mono text-[11px] tracking-[0.12em]">
               {dayLabel(dayEvents[0].start_at)}
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               {dayEvents.map((event) => (
                 <HomeEventCard key={event.id} event={event} compact={compact} />
               ))}
