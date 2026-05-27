@@ -359,12 +359,13 @@ export type Database = {
     Enums: {
       event_status: "confirmed" | "tentative" | "cancelled"
       event_type:
-        | "comeback"
+        | "mv"
         | "music_show"
         | "live"
         | "anniversary"
         | "concert"
         | "other"
+        | "release"
       suggestion_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -495,12 +496,13 @@ export const Constants = {
     Enums: {
       event_status: ["confirmed", "tentative", "cancelled"],
       event_type: [
-        "comeback",
+        "mv",
         "music_show",
         "live",
         "anniversary",
         "concert",
         "other",
+        "release",
       ],
       suggestion_status: ["pending", "approved", "rejected"],
     },

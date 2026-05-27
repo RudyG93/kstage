@@ -1,12 +1,11 @@
 import { kstToUtcISO } from '@/lib/events/date'
-import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
 
-// Types suggérables = types couverts au MVP (cf. labels.ts) :
-// comeback, music_show, live, anniversary. ('other' et 'concert' exclus.)
-export const SUGGESTABLE_TYPES: EventType[] = FILTERABLE_EVENT_TYPES
+// Types suggérables par la communauté. `anniversary` est exclu (généré
+// automatiquement depuis les dates de naissance/début) ; `live`/`other` aussi.
+export const SUGGESTABLE_TYPES: EventType[] = ['mv', 'release', 'music_show', 'concert']
 export const MAX_TITLE = 120
 export const MAX_DESCRIPTION = 500
 export const DAILY_SUGGESTION_CAP = 10

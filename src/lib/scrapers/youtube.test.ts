@@ -2,9 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { detectEventType } from './youtube'
 
 describe('detectEventType', () => {
-  it('détecte comeback', () => {
-    expect(detectEventType('aespa - Mini Album', '')).toBe('comeback')
-    expect(detectEventType('ILLIT 2nd Single', '')).toBe('comeback')
+  it('détecte mv', () => {
+    expect(detectEventType("aespa 'Whiplash' MV", '')).toBe('mv')
+    expect(detectEventType('LE SSERAFIM CRAZY Official Video', '')).toBe('mv')
+  })
+
+  it('détecte release', () => {
+    expect(detectEventType('aespa - Mini Album', '')).toBe('release')
+    expect(detectEventType('ILLIT 2nd Single', '')).toBe('release')
   })
 
   it('détecte concert', () => {

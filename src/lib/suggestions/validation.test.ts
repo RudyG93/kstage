@@ -18,7 +18,7 @@ describe('parseKstLocal', () => {
 describe('parseSuggestionInput', () => {
   const base: RawSuggestion = {
     groupId: 'g1',
-    type: 'comeback',
+    type: 'mv',
     title: 'aespa — new MV',
     startAtLocal: '2026-06-15T18:00',
     sourceUrl: '',
@@ -31,13 +31,13 @@ describe('parseSuggestionInput', () => {
     if ('value' in r) {
       expect(r.value.startAt).toBe('2026-06-15T09:00:00.000Z')
       expect(r.value.sourceUrl).toBeNull()
-      expect(r.value.type).toBe('comeback')
+      expect(r.value.type).toBe('mv')
     }
   })
 
-  it('rejette un type non suggérable (other, concert) ou inconnu', () => {
+  it('rejette un type non suggérable (other, anniversary) ou inconnu', () => {
     expect('error' in parseSuggestionInput({ ...base, type: 'other' })).toBe(true)
-    expect('error' in parseSuggestionInput({ ...base, type: 'concert' })).toBe(true)
+    expect('error' in parseSuggestionInput({ ...base, type: 'anniversary' })).toBe(true)
     expect('error' in parseSuggestionInput({ ...base, type: 'xxx' })).toBe(true)
   })
 

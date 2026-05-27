@@ -22,7 +22,10 @@ interface ScrapeResult {
 
 export function detectEventType(title: string, description: string): EventType {
   const text = `${title} ${description}`.toLowerCase()
-  if (/comeback|mini album|full album|single|ep release/.test(text)) return 'comeback'
+  // MV (clip) en premier : un titre de clip peut aussi mentionner l'album.
+  if (/\bmv\b|\bm\/v\b|music video|official video/.test(text)) return 'mv'
+  if (/mini album|full album|single album|\bsingle\b|\bep\b|album release|comeback/.test(text))
+    return 'release'
   if (/concert|tour/.test(text)) return 'concert'
   if (/m countdown|music bank|inkigayo|show champion|the show|music core/.test(text))
     return 'music_show'
