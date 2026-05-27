@@ -86,7 +86,7 @@ export async function getRecentComebacks(limit = 3) {
   const { data, error } = await supabase
     .from('events')
     .select('id, title, start_at, image_url, groups!inner(name, slug)')
-    .eq('type', 'comeback')
+    .eq('type', 'mv')
     .lt('start_at', new Date().toISOString())
     .order('start_at', { ascending: false })
     .limit(limit)

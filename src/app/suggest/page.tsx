@@ -19,8 +19,8 @@ export default async function SuggestPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Suggest an event</h1>
           <p className="text-muted-foreground text-sm">
-            Spotted a comeback, music show or live we&apos;re missing? Submit it — a moderator will
-            review it before it appears on the calendar.
+            Spotted an MV, release, music show or concert we&apos;re missing? Submit it — a
+            moderator will review it before it appears on the calendar.
           </p>
         </div>
         <SuggestionForm groups={groups ?? []} />

@@ -224,7 +224,8 @@ export async function scrapeComebacks(
         group_id: group.id,
         source_id: source.id,
         source_url: cb.sourceUrl,
-        type: 'comeback',
+        // le calendrier "comeback" de kpopofficial = l'ancre comeback → mv
+        type: 'mv',
         title: cb.title,
         start_at: cb.startAt,
         status: cb.status,
