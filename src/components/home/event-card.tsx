@@ -14,7 +14,7 @@ const kstFormat = (iso: string) =>
 
 // Fondu latéral : l'image s'estompe sur ses bords pour se fondre entre le texte
 // (gauche) et l'horaire (droite). En style inline (fiable sans Tailwind JIT).
-const CENTER_FADE = 'linear-gradient(to right, transparent, #000 25%, #000 75%, transparent)'
+const CENTER_FADE = 'linear-gradient(to right, transparent, #000 30%, #000 70%, transparent)'
 
 export function HomeEventCard({
   event,
@@ -29,9 +29,9 @@ export function HomeEventCard({
   return (
     <Link
       href={`/groups/${group?.slug ?? ''}`}
-      className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-14' : 'h-16'}`}
+      className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-16' : 'h-20'}`}
     >
-      <div className="max-w-[55%] min-w-0 shrink">
+      <div className="max-w-[42%] min-w-0 shrink">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-semibold">{group?.name}</span>
           <TypeBadge type={event.type} />
@@ -39,22 +39,20 @@ export function HomeEventCard({
         <p className="text-muted-foreground truncate text-xs">{event.title}</p>
       </div>
 
-      {/* colonne centrale : image du groupe en fondu, format ~4:3 centré (plus
-          étroit que le gap → on voit têtes + épaules sans sur-recadrage) */}
-      <div className="flex h-full flex-1 items-center justify-center">
+      {/* image du groupe, remplit l'espace central en fondu (recadrée visage par
+          Cloudinary). Bandeau plus haut → on en voit davantage. */}
+      <div className="relative h-full flex-1">
         {group?.image_url && (
-          <div className="relative h-full" style={{ aspectRatio: '4 / 3' }}>
-            <Image
-              src={faceCrop(group.image_url, 320, 240)}
-              alt=""
-              aria-hidden
-              fill
-              unoptimized
-              sizes="160px"
-              className="pointer-events-none object-cover object-center opacity-25 select-none"
-              style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
-            />
-          </div>
+          <Image
+            src={faceCrop(group.image_url, 400, 220)}
+            alt=""
+            aria-hidden
+            fill
+            unoptimized
+            sizes="(max-width: 1024px) 50vw, 360px"
+            className="pointer-events-none object-cover object-center opacity-40 select-none"
+            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
+          />
         )}
       </div>
 
