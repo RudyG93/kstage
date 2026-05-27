@@ -25,6 +25,13 @@ export function HomeEventCard({
 }) {
   const group = event.groups
   const kst = kstFormat(event.start_at)
+  // backdrop : image paysage (TheAudioDB) si dispo, sinon le carré Deezer
+  // recadré sur le visage via Cloudinary.
+  const bannerSrc = group?.image_landscape
+    ? group.image_landscape
+    : group?.image_url
+      ? faceCrop(group.image_url, 400, 220)
+      : null
 
   return (
     <Link
@@ -42,9 +49,9 @@ export function HomeEventCard({
       {/* image du groupe, remplit l'espace central en fondu (recadrée visage par
           Cloudinary). Bandeau plus haut → on en voit davantage. */}
       <div className="relative h-full flex-1">
-        {group?.image_url && (
+        {bannerSrc && (
           <Image
-            src={faceCrop(group.image_url, 400, 220)}
+            src={bannerSrc}
             alt=""
             aria-hidden
             fill

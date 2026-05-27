@@ -141,7 +141,9 @@ export type Database = {
           debut_date: string | null
           fandom_name: string | null
           id: string
+          image_landscape: string | null
           image_url: string | null
+          links: Json
           name: string
           slug: string
         }
@@ -152,7 +154,9 @@ export type Database = {
           debut_date?: string | null
           fandom_name?: string | null
           id?: string
+          image_landscape?: string | null
           image_url?: string | null
+          links?: Json
           name: string
           slug: string
         }
@@ -163,7 +167,9 @@ export type Database = {
           debut_date?: string | null
           fandom_name?: string | null
           id?: string
+          image_landscape?: string | null
           image_url?: string | null
+          links?: Json
           name?: string
           slug?: string
         }

@@ -13,6 +13,7 @@ interface AnnivGroup {
   name: string
   color_hex: string | null
   image_url: string | null
+  image_landscape: string | null
   debut_date: string | null
 }
 interface AnnivMember {
@@ -63,7 +64,13 @@ export function generateAnniversaries(
       type: 'anniversary',
       start_at: kstToUtcISO(occ.y, occ.month - 1, occ.day, 0, 0),
       status: 'confirmed',
-      groups: { slug: g.slug, name: g.name, color_hex: g.color_hex, image_url: g.image_url },
+      groups: {
+        slug: g.slug,
+        name: g.name,
+        color_hex: g.color_hex,
+        image_url: g.image_url,
+        image_landscape: g.image_landscape,
+      },
     } as UpcomingEvent)
   }
 
@@ -97,7 +104,7 @@ export async function getUpcomingAnniversaries(
   const [{ data: groups }, { data: members }] = await Promise.all([
     supabase
       .from('groups')
-      .select('id, slug, name, color_hex, image_url, debut_date')
+      .select('id, slug, name, color_hex, image_url, image_landscape, debut_date')
       .in('id', groupIds),
     supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
   ])

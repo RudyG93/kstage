@@ -8,6 +8,7 @@ const group = (over: Partial<Parameters<typeof generateAnniversaries>[0][number]
   name: 'aespa',
   color_hex: null,
   image_url: null,
+  image_landscape: null,
   debut_date: null,
   ...over,
 })
