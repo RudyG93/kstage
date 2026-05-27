@@ -62,4 +62,22 @@ export async function getEventsForMonth({
   return data ?? []
 }
 
+export async function getUpcomingEventCountsByGroup(
+  groupIds: string[],
+): Promise<Map<string, number>> {
+  if (groupIds.length === 0) return new Map()
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('group_id')
+    .in('group_id', groupIds)
+    .gte('start_at', new Date().toISOString())
+  if (error) throw error
+  const counts = new Map<string, number>()
+  for (const row of data ?? []) {
+    counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
+  }
+  return counts
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
