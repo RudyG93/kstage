@@ -72,7 +72,7 @@ Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, s
 ## 3. Stack technique
 
 - **Frontend** : Next.js 16 (App Router) + TypeScript strict + React 19
-- **Styling** : Tailwind CSS v4 + **shadcn/ui** (New York, base slate ; Radix dessous → a11y par défaut)
+- **Styling** : Tailwind CSS v4 + **shadcn/ui** (style `base-nova`, base `neutral` ; **Base UI** `@base-ui/react` dessous → a11y par défaut). ⚠️ Pas Radix — Base UI utilise la prop `render` (et non `asChild`).
 - **Backend / DB** : Supabase (PostgreSQL + Auth + Storage + RLS)
 - **Hébergement** : Vercel
 - **PWA** : Serwist (`@serwist/next`) — fallback `next-pwa` si problèmes
@@ -205,7 +205,7 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ---
 
-## 9. État actuel (2026-05-26)
+## 9. État actuel (2026-05-27)
 
 **Phase** : **MVP complet — étapes 1→9 DONE et mergées sur `main`**. L'app est en prod : https://kstage.vercel.app/. Historique des PR : étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`. Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
 
@@ -223,7 +223,7 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 - ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + shadcn/ui ; déployé Vercel : https://kstage.vercel.app/
 - ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
-- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 8 tables + RLS + seed (4 groupes). Scraping YouTube (1 source) opérationnel.
+- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 8 tables + RLS + seed (4 groupes). Scraping opérationnel : YouTube (premieres) + kpopofficial (comebacks).
 - ✅ `.env.local` : Supabase (URL/anon/`SERVICE_ROLE`) + `YOUTUBE_API_KEY` + `CRON_SECRET` + VAPID (générées localement).
 - ⏳ Outillage : `gh` CLI inaccessible depuis bash + MCP GitHub sans accès au repo → PR ouvertes via l'UI web GitHub.
 
