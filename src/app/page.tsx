@@ -6,6 +6,7 @@ import { SidebarRight } from '@/components/home/sidebar-right'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
+import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Home() {
@@ -25,9 +26,20 @@ export default async function Home() {
   }
 
   const followedIds = await getFollowedGroupIds()
-  const events =
-    followedIds.size > 0 ? await getUpcomingEvents({ groupIds: [...followedIds], limit: 50 }) : []
-  const nextDrop = events[0] ?? null
+  const ids = [...followedIds]
+  const [dbEvents, anniversaries] =
+    ids.length > 0
+      ? await Promise.all([
+          getUpcomingEvents({ groupIds: ids, limit: 50 }),
+          getUpcomingAnniversaries(ids, 90),
+        ])
+      : [[], []]
+  // "Next drop" = vrai event (sortie), pas un anniversaire ; les anniversaires
+  // sont fusionnés dans le feed, triés par date.
+  const nextDrop = dbEvents[0] ?? null
+  const feedEvents = [...dbEvents.slice(1), ...anniversaries].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
+  )
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
@@ -37,7 +49,7 @@ export default async function Home() {
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
           <NextDropCard event={nextDrop} />
-          <Feed events={events.slice(1)} />
+          <Feed events={feedEvents} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">
           <SidebarRight />
