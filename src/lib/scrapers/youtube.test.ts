@@ -85,5 +85,51 @@ describe('detectEventType', () => {
       expect(detectEventType("aespa 'Whiplash' Official MV", '')).toBe('mv')
       expect(detectEventType("(G)I-DLE 'Klaxon' Official Music Video", '')).toBe('mv')
     })
+
+    // Markers hangul ajoutés après audit MCP : voir docs/SCRAPING.md §3.6
+    describe('markers hangul (audit prod 2026-05-28)', () => {
+      it('비하인드 (behind) → other', () => {
+        expect(
+          detectEventType(
+            "(여자)아이들((G)I-DLE) - I-TALK #36 : 'Uh-Oh' M/V 촬영 비하인드 (Part 1)",
+            '',
+          ),
+        ).toBe('other')
+      })
+
+      it('리액션 (reaction) → other (mix EN/KR aussi)', () => {
+        expect(
+          detectEventType(
+            "쉬는 시간에 Cherish (My Love) 뮤비 리액션은 못 참지 | ILLIT 'Cherish (My Love)' MV Reaction",
+            '',
+          ),
+        ).toBe('other')
+      })
+
+      it('현장 비하인드 (on-site behind) → other', () => {
+        expect(
+          detectEventType(
+            "전소연(JEON SOYEON) - '아이들 쏭(Idle song)' M/V 촬영 현장 비하인드",
+            '',
+          ),
+        ).toBe('other')
+      })
+
+      it('티저 (teaser) hangul → other', () => {
+        expect(detectEventType("aespa 'Supernova' MV 티저", '')).toBe('other')
+      })
+
+      it('메이킹 (making) hangul → other', () => {
+        expect(detectEventType("aespa 'Drama' MV 메이킹", '')).toBe('other')
+      })
+
+      it('Reaction EN seul → other', () => {
+        expect(detectEventType('aespa Whiplash MV Reaction', '')).toBe('other')
+      })
+
+      it('Highlight Clip EN → other (différent de highlight medley)', () => {
+        expect(detectEventType("BABYMONSTER - 'CHOOM' M/V HIGHLIGHT CLIP", '')).toBe('other')
+      })
+    })
   })
 })

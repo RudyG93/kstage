@@ -90,6 +90,33 @@ Récupère les **50 résultats les plus pertinents** pour la requête "${groupNa
 
 **Fix** : la 2-pass §2. Pass B utilise `q="${groupName} Music Video"` qui cible les MVs sur tout l'historique de la chaîne, indépendamment de la date.
 
+### 3.6 — Markers derivative en hangul + Reaction + Highlight Clip (résolu 2026-05-28 fin de journée)
+
+**Symptôme** : après activation du fix §3.4 (2-pass search), 104 MVs ingérés, mais audit MCP révèle **18 derivatives mal classés** en `'mv'` (~17%). Patterns récurrents : 11 i-talk episodes "M/V 촬영 비하인드", 3 ILLIT "MV Reaction" / "MV 리액션", 1 SHEESH "M/V REACTION", 1 SHEESH "M/V Highlight Clip #Shorts", 1 CHOOM "M/V HIGHLIGHT CLIP", 1 aespa réagissant à un MV SHINee.
+
+**Cause** : `DERIVATIVE_RE` n'avait que des markers latins. Or :
+
+- Les chaînes officielles K-pop postent massivement en coréen. `비하인드` (behind), `메이킹` (making), `티저` (teaser), `리액션` (reaction), `현장` (on-site/scene), `예고` (preview) — aucun ne matchait.
+- `\breaction\b` en anglais manquait aussi (seulement `replay` + `r(ae)cord` étaient là).
+- `highlight clip` (différent de `highlight medley` qui était déjà couvert).
+
+**Fix** : étendre `DERIVATIVE_RE` avec les 6 markers hangul + `reaction` EN + `highlight clip` EN. Tests Vitest pour chaque pattern. Script `scripts/backfill-reclassify-mvs.ts` re-run `detectEventType` sur tous les `type='mv'` et demote en `'other'` les nouveaux matches.
+
+**Méthode de découverte** (à reproduire après chaque scrape massif) :
+
+```sql
+-- Détecte les derivatives potentiels mal classés
+select e.slug, e.title
+from events e
+where e.type = 'mv'
+  and (
+    e.title ~ '비하인드|메이킹|티저|리액션|현장|예고'
+    or e.title ~* '\breaction\b|\bhighlight clip\b'
+  );
+```
+
+Si la query renvoie quelque chose, lancer le backfill script.
+
 ### 3.5 — Filtre nom de groupe vs variantes Hangul/typographiques (résolu 2026-05-28)
 
 **Symptôme** : MVs i-dle dont le titre est en hangul (`(여자)아이들 'Klaxon' Official Music Video`) ne sont pas reconnus comme "i-dle".

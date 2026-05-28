@@ -23,13 +23,19 @@ interface ScrapeResult {
   skipped: number
 }
 
-// Contenu dérivé d'un MV (teasers, behinds, makings…) qu'on ne veut PAS classer
-// comme 'mv' : sinon la page /mv/[slug] et la section "MV of the month" se
-// remplissent de teasers et behind-the-scenes au lieu des vrais clips.
-// `\b` autour des mots ambigus pour éviter les faux négatifs (ex. "preview"
-// dans "Recipe Preview" doit matcher mais pas "approval").
+// Contenu dérivé d'un MV (teasers, behinds, makings, reactions…) qu'on ne veut
+// PAS classer comme 'mv' : sinon la page /mv/[slug] et la section "MV of the
+// month" se remplissent de teasers, behind-the-scenes et reactions au lieu des
+// vrais clips. `\b` autour des mots ambigus EN pour éviter les faux négatifs
+// (ex. "preview" dans "Recipe Preview" doit matcher mais pas "approval").
+//
+// Markers hangul ajoutés après audit MCP (cf. SCRAPING.md §3.6) : les chaînes
+// officielles K-pop postent massivement du contenu en coréen. Sans ces markers,
+// les séries "I-TALK #X : 'XXX' M/V 촬영 비하인드" passaient en 'mv'.
+//   비하인드 = "behind"   메이킹 = "making"   티저 = "teaser"
+//   리액션 = "reaction"   현장 = "on-site/scene"   예고 = "preview"
 const DERIVATIVE_RE =
-  /\bbehind\b|\bteaser\b|\btrailer\b|\bmaking[- ]of\b|\brecording\b|\brehearsal\b|\bpractice\b|\bpreview\b|highlight medley|schedule poster|\brecipe\b|cheering guide|performance video|dance practice|documentary|r\(ae\)cord|\breplay\b|compilation|\bepisode\b|\bep\.\s*\d+|\bvlog\b/i
+  /\bbehind\b|\bteaser\b|\btrailer\b|\bmaking[- ]of\b|\brecording\b|\brehearsal\b|\bpractice\b|\bpreview\b|\breaction\b|highlight medley|highlight clip|schedule poster|\brecipe\b|cheering guide|performance video|dance practice|documentary|r\(ae\)cord|\breplay\b|compilation|\bepisode\b|\bep\.\s*\d+|\bvlog\b|비하인드|메이킹|티저|리액션|현장|예고/i
 
 export function detectEventType(title: string, description: string): EventType {
   const text = `${title} ${description}`
