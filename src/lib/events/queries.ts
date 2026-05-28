@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 type EventType = Database['public']['Enums']['event_type']
 
 const EVENT_SELECT =
-  'id, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, slug, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 export async function getUpcomingEvents({
   groupSlug,
@@ -85,7 +85,7 @@ export async function getRecentComebacks(limit = 3) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('events')
-    .select('id, title, start_at, image_url, groups!inner(name, slug)')
+    .select('id, slug, type, title, start_at, image_url, groups!inner(name, slug)')
     .eq('type', 'mv')
     .lt('start_at', new Date().toISOString())
     .order('start_at', { ascending: false })

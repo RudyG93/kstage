@@ -1,0 +1,133 @@
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
+import { getEventBySlug, getEventRatingSummary } from '@/lib/events/community'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
+import { displayEventTitle } from '@/lib/events/title'
+import { YouTubeEmbed } from '@/components/mv/youtube-embed'
+import { StarRating } from '@/components/mv/star-rating'
+
+const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
+
+async function loadMv(slug: string) {
+  const event = await getEventBySlug(slug)
+  if (!event || event.type !== 'mv' || !event.slug) return null
+  return event
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const event = await loadMv(slug)
+  if (!event) return { title: 'MV not found · KStage' }
+  const group = event.groups
+  const title = displayEventTitle(event.title, group?.name)
+  return {
+    title: `${title} — ${group?.name ?? 'KStage'}`,
+    description: event.description ?? `${group?.name} music video.`,
+  }
+}
+
+export default async function MvPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const event = await loadMv(slug)
+  if (!event) notFound()
+
+  const group = event.groups
+  const color = group?.color_hex ?? '#7c5cff'
+  const title = displayEventTitle(event.title, group?.name)
+
+  const [rating, userRes] = await Promise.all([
+    getEventRatingSummary(event.id),
+    (async () => {
+      const supabase = await createClient()
+      return supabase.auth.getUser()
+    })(),
+  ])
+  const isAuthed = Boolean(userRes.data.user)
+  const videoId = extractYouTubeId(event.source_url)
+
+  const dateLabel = kstFormat(event.start_at, {
+    weekday: 'short',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  })
+  const timeLabel = kstFormat(event.start_at, { hour: 'numeric', minute: '2-digit' })
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 py-6">
+      <div className="space-y-6">
+        <header className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href={`/groups/${group?.slug ?? ''}`}
+              className="hover:text-foreground text-muted-foreground inline-flex items-center gap-2"
+            >
+              <span
+                className="size-3 rounded-full"
+                style={{ backgroundColor: color }}
+                aria-hidden
+              />
+              {group?.name}
+            </Link>
+            <span className="text-muted-foreground">·</span>
+            <span
+              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase"
+              style={{ color, backgroundColor: `${color}24` }}
+            >
+              MV
+            </span>
+          </div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-balance">{title}</h1>
+          <p className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
+            {dateLabel} · {timeLabel} KST
+          </p>
+        </header>
+
+        {videoId ? (
+          <YouTubeEmbed videoId={videoId} title={title} />
+        ) : (
+          <div className="bg-muted text-muted-foreground flex aspect-video w-full items-center justify-center rounded-xl text-sm">
+            Video unavailable
+          </div>
+        )}
+
+        <section aria-labelledby="rating-heading" className="space-y-2">
+          <h2 id="rating-heading" className="text-sm font-medium">
+            Your rating
+          </h2>
+          <StarRating
+            eventId={event.id}
+            slug={event.slug as string}
+            initialScore={rating.userScore}
+            avgScore={rating.avg}
+            count={rating.count}
+            isAuthed={isAuthed}
+          />
+        </section>
+
+        {event.description && (
+          <section aria-labelledby="about-heading" className="space-y-2">
+            <h2 id="about-heading" className="text-sm font-medium">
+              About
+            </h2>
+            <p className="text-muted-foreground text-sm whitespace-pre-line">{event.description}</p>
+          </section>
+        )}
+
+        <section aria-labelledby="comments-heading" className="space-y-2 border-t pt-6">
+          <h2 id="comments-heading" className="text-sm font-medium">
+            Comments
+          </h2>
+          <p className="text-muted-foreground text-sm">Coming soon</p>
+        </section>
+      </div>
+    </div>
+  )
+}

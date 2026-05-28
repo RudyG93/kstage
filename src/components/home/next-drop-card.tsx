@@ -1,7 +1,9 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { Countdown } from './countdown'
 import { TypeBadge } from './type-badge'
 import { displayEventTitle } from '@/lib/events/title'
+import { eventHref } from '@/lib/events/href'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
@@ -9,7 +11,10 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
   const group = event.groups
   const title = displayEventTitle(event.title, group?.name)
   return (
-    <div className="bg-card animate-in fade-in slide-in-from-bottom-2 ring-foreground/10 relative overflow-hidden rounded-2xl p-6 ring-1 duration-500">
+    <Link
+      href={eventHref(event)}
+      className="bg-card animate-in fade-in slide-in-from-bottom-2 ring-foreground/10 hover:ring-foreground/20 focus-visible:ring-primary/40 relative block overflow-hidden rounded-2xl p-6 ring-1 transition-shadow duration-500 focus-visible:outline-none"
+    >
       <div
         className="pointer-events-none absolute inset-0 opacity-10"
         style={{
@@ -51,6 +56,6 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
       <div className="border-border mt-4 border-t pt-4 sm:hidden">
         <Countdown targetIso={event.start_at} />
       </div>
-    </div>
+    </Link>
   )
 }
