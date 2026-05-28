@@ -1,11 +1,13 @@
 import Image from 'next/image'
 import { Countdown } from './countdown'
 import { TypeBadge } from './type-badge'
+import { displayEventTitle } from '@/lib/events/title'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
   if (!event) return null
   const group = event.groups
+  const title = displayEventTitle(event.title, group?.name)
   return (
     <div className="bg-card animate-in fade-in slide-in-from-bottom-2 ring-foreground/10 relative overflow-hidden rounded-2xl p-6 ring-1 duration-500">
       <div
@@ -36,7 +38,7 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
         <div className="min-w-0 flex-1">
           <TypeBadge type={event.type} />
           <h2 className="font-heading mt-2 text-2xl font-bold tracking-tight text-balance">
-            {event.title}
+            {title}
           </h2>
           <p className="text-muted-foreground mt-1 font-mono text-xs tracking-[0.1em] uppercase">
             {group?.name}

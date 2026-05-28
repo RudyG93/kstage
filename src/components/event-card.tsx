@@ -1,5 +1,6 @@
 import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
+import { displayEventTitle } from '@/lib/events/title'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
@@ -49,7 +50,9 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
             </span>
           )}
         </div>
-        <p className="text-muted-foreground mt-1 line-clamp-2 text-[13px]">{event.title}</p>
+        <p className="text-muted-foreground mt-1 line-clamp-2 text-[13px]">
+          {displayEventTitle(event.title, group?.name)}
+        </p>
       </div>
 
       <div className="flex shrink-0 flex-col items-end justify-center py-3 text-right">

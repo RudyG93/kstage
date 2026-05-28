@@ -9,10 +9,11 @@ import { setGroupBanner } from '@/lib/groups/banner-actions'
 import { getCroppedBlob } from '@/lib/profiles/crop-image'
 import { cloudinaryProxy } from '@/lib/images/cloudinary'
 
-// Format 4:1 du bandeau (identique au container affiché) ; sortie 1000×250.
-const ASPECT = 4
-const OUT_W = 1000
-const OUT_H = 250
+// Format 8:1 — rapprochement raisonnable du ratio rendu desktop (~12.5:1) sans
+// rendre le cropper inutilisable sur mobile (~4:1). Sortie 1600×200.
+const ASPECT = 8
+const OUT_W = 1600
+const OUT_H = 200
 
 export function BannerCropper({
   groupId,
@@ -68,7 +69,7 @@ export function BannerCropper({
           <DialogTitle>Adjust banner — {name}</DialogTitle>
           <div
             className="bg-muted relative mt-4 w-full overflow-hidden rounded-xl"
-            style={{ aspectRatio: '4 / 1' }}
+            style={{ aspectRatio: '8 / 1' }}
           >
             <Cropper
               image={src}
