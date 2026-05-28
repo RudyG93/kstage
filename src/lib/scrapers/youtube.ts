@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
+import { matchesGroup } from './group-match'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -51,6 +52,7 @@ async function resolveChannelId(channelUrl: string, apiKey: string): Promise<str
   const res = await fetch(
     `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`,
   )
+  if (!res.ok) throw new Error(`YouTube channels API ${res.status} for handle ${handle}`)
   const data = await res.json()
   const id: string | undefined = data.items?.[0]?.id
   if (!id) throw new Error(`Channel not found for handle: ${handle}`)
@@ -76,8 +78,9 @@ export async function scrapeGroup(
   const groupName = group?.name ?? null
 
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`,
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=50&key=${apiKey}`,
   )
+  if (!res.ok) throw new Error(`YouTube search API ${res.status} for channel ${channelId}`)
   const data = await res.json()
 
   if (!data.items) throw new Error(`YouTube API error: ${JSON.stringify(data.error ?? data)}`)
@@ -93,6 +96,19 @@ export async function scrapeGroup(
     // d'uploads (vlogs, variety…) tombent en 'other' et polluent le calendrier.
     const eventType = detectEventType(item.snippet.title, item.snippet.description)
     if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
+      skipped++
+      continue
+    }
+
+    // Filtre nom de groupe : sur une chaîne d'agence (SMTOWN, YG, HYBE…),
+    // évite d'ingérer les MVs des autres groupes signés à la même agence.
+    // Sur une chaîne officielle, skip aussi les vlogs persos d'un membre dont
+    // le titre ne mentionne pas le groupe. Si groupName est null pour une
+    // raison quelconque, on garde le comportement non filtré.
+    if (
+      groupName &&
+      !matchesGroup(`${item.snippet.title} ${item.snippet.description}`, groupName)
+    ) {
       skipped++
       continue
     }

@@ -62,6 +62,30 @@ select 'i-dle YouTube', 'https://www.youtube.com/@official_i_dle', 'youtube_api'
 from groups where slug = 'idle'
 on conflict (url) do nothing;
 
+-- Chaînes d'agence (4.B.1) : la plupart des MVs k-pop sont publiés sur la
+-- chaîne du label, pas celle du groupe. scrapeGroup() filtre par groups.name
+-- (cf. group-match.ts) pour ne pas attraper les MVs des autres groupes signés
+-- à la même agence.
+insert into sources (name, url, type, group_id)
+select 'aespa SMTOWN', 'https://www.youtube.com/@SMTOWN', 'youtube_api', id
+from groups where slug = 'aespa'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select 'BABYMONSTER YG', 'https://www.youtube.com/@YGEntertainment', 'youtube_api', id
+from groups where slug = 'babymonster'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select 'ILLIT HYBE LABELS', 'https://www.youtube.com/@HYBELABELS', 'youtube_api', id
+from groups where slug = 'illit'
+on conflict (url) do nothing;
+
+insert into sources (name, url, type, group_id)
+select 'i-dle CUBE', 'https://www.youtube.com/@CUBEent', 'youtube_api', id
+from groups where slug = 'idle'
+on conflict (url) do nothing;
+
 -- Source comebacks (étape 7) — groupe-agnostique : le matching se fait en code.
 insert into sources (name, url, type)
 values ('kpopofficial comebacks', 'https://kpopofficial.com/kpop-comebacks/', 'kpopofficial')
