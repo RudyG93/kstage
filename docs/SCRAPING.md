@@ -117,6 +117,29 @@ where e.type = 'mv'
 
 Si la query renvoie quelque chose, lancer le backfill script.
 
+### 3.7 — Faux anniversaries par "Debut" keyword (résolu 2026-05-28 soirée)
+
+**Symptôme** : 6 events `type='anniversary'` apparaissent en DB après scrape, alors que les anniversaires sont censés être générés à la volée (cf. `src/lib/events/anniversaries.ts`). Exemples :
+
+- BABYMONSTER — 'DREAM' (PRE-DEBUT SONG)
+- BABYMONSTER — DEBUT MEMBER ANNOUNCEMENT REACTION
+- BABYMONSTER — 'BATTER UP' DANCE PERFORMANCE (DEBUT SPECIAL)
+- ILLIT — 'Magnetic' #IROHA Focus | PRESS START♥︎
+- 미연의 JJ50th Anniversary Fest 2026 비하인드 [i-talk] #248
+
+**Cause** : la regex `/anniversary|debut/` dans `detectEventType` matchait tout titre contenant "Debut" ou "Anniversary" — un mot fréquent dans les retro-clips et descriptions K-pop.
+
+**Fix** : retirer entièrement la ligne `if (/anniversary|debut/.test(lower)) return 'anniversary'` du scraper (cf. `youtube.ts:52`). Les anniversaires sont auto-générés à la volée par `generateAnniversaries()` depuis `members.birthday` + `groups.debut_date` ; le scraper n'a pas à en produire.
+
+**Backfill prod** :
+
+```sql
+update events set type='other'
+where type='anniversary' and source_url like 'https://www.youtube.com/%';
+```
+
+**Méthode de découverte récurrente** : `SELECT count(*), source_url IS NULL FROM events WHERE type='anniversary' GROUP BY source_url IS NULL;` — si on voit des `false` (source_url non-null) c'est qu'un scraper a injecté des fakes.
+
 ### 3.5 — Filtre nom de groupe vs variantes Hangul/typographiques (résolu 2026-05-28)
 
 **Symptôme** : MVs i-dle dont le titre est en hangul (`(여자)아이들 'Klaxon' Official Music Video`) ne sont pas reconnus comme "i-dle".

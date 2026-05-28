@@ -55,7 +55,10 @@ export function detectEventType(title: string, description: string): EventType {
   if (/concert|tour/.test(lower)) return 'concert'
   if (/m countdown|music bank|inkigayo|show champion|the show|music core/.test(lower))
     return 'music_show'
-  if (/anniversary|debut/.test(lower)) return 'anniversary'
+  // 'anniversary' n'est jamais scrapé : les anniversaires sont auto-générés à
+  // la volée depuis members.birthday + groups.debut_date (cf. anniversaries.ts).
+  // Le scraper YT classait en faux positif tout titre contenant "Debut"
+  // (BABYMONSTER "DEBUT SPECIAL"/"PRE-DEBUT SONG"…).
   if (/live|vlive|weverse live|stream/.test(lower)) return 'live'
   return 'other'
 }

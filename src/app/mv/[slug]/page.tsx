@@ -112,15 +112,6 @@ export default async function MvPage({ params }: { params: Promise<{ slug: strin
           />
         </section>
 
-        {event.description && (
-          <section aria-labelledby="about-heading" className="space-y-2">
-            <h2 id="about-heading" className="text-sm font-medium">
-              About
-            </h2>
-            <p className="text-muted-foreground text-sm whitespace-pre-line">{event.description}</p>
-          </section>
-        )}
-
         <section aria-labelledby="comments-heading" className="space-y-2 border-t pt-6">
           <h2 id="comments-heading" className="text-sm font-medium">
             Comments

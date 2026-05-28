@@ -21,8 +21,12 @@ describe('detectEventType', () => {
     expect(detectEventType('Inkigayo stage', '')).toBe('music_show')
   })
 
-  it('détecte anniversary', () => {
-    expect(detectEventType('Debut Anniversary', '')).toBe('anniversary')
+  it('"Debut Anniversary" ne renvoie plus anniversary (généré à la volée)', () => {
+    // Anniversaries calculés via src/lib/events/anniversaries.ts ; le scraper
+    // ne doit pas en produire. "Debut" comme keyword captait BABYMONSTER
+    // "PRE-DEBUT SONG" / "DEBUT MEMBER ANNOUNCEMENT" en faux positifs.
+    expect(detectEventType('Debut Anniversary', '')).toBe('other')
+    expect(detectEventType("BABYMONSTER - 'DREAM' (PRE-DEBUT SONG)", '')).toBe('other')
   })
 
   it('détecte live', () => {
