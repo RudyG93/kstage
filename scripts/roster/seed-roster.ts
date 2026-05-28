@@ -5,7 +5,7 @@
  *   npx tsx scripts/roster/seed-roster.ts            (dry-run)
  *   npx tsx scripts/roster/seed-roster.ts --write     (insertion réelle)
  *
- * - slug = nom normalisé (reproduit les slugs existants : aespa, illit, gidle…).
+ * - slug = nom normalisé (reproduit les slugs existants : aespa, illit, idle…).
  * - Groupes existants (match par slug) → update image/debut, sans clobber le nom.
  * - Membres (girls kpopnet) : delete+insert pour idempotence.
  */

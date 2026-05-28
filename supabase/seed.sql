@@ -8,7 +8,7 @@ insert into groups (slug, name, agency, fandom_name, debut_date, color_hex) valu
   ('aespa',       'aespa',       'SM Entertainment',   'MY',        '2020-11-17', '#FF1B6B'),
   ('illit',       'ILLIT',       'BELIFT LAB',         'GLLIT',     '2024-03-25', '#F5C6D6'),
   ('babymonster', 'BABYMONSTER', 'YG Entertainment',   'MONSTIEZ',  '2023-11-27', '#F2A900'),
-  ('gidle',       'i-dle',       'CUBE Entertainment', 'NEVERLAND', '2018-05-02', '#D4145A')
+  ('idle',       'i-dle',       'CUBE Entertainment', 'NEVERLAND', '2018-05-02', '#D4145A')
 on conflict (slug) do nothing;
 
 with g as (select id, slug from groups)
@@ -30,11 +30,11 @@ insert into events (group_id, type, title, start_at, status, source_url) values
   ((select id from g where slug='babymonster'), 'anniversary', 'BABYMONSTER — debut anniversary', '2025-11-27 00:00+00', 'confirmed', null),
   ((select id from g where slug='babymonster'), 'live',        'BABYMONSTER — Weverse Live',    '2026-05-31 11:00+00', 'tentative', null),
   -- i-dle
-  ((select id from g where slug='gidle'),       'mv',    'i-dle —9th mini album',     '2026-07-21 09:00+00', 'tentative', 'https://example.com/gidle-comeback-0721'),
-  ((select id from g where slug='gidle'),       'music_show',  'The Show',                      '2026-07-22 09:00+00', 'tentative', null),
-  ((select id from g where slug='gidle'),       'live',        'i-dle —V Live special',     '2026-06-05 12:00+00', 'confirmed', null),
-  ((select id from g where slug='gidle'),       'anniversary', 'i-dle —debut anniversary',  '2026-05-02 00:00+00', 'confirmed', null),
-  ((select id from g where slug='gidle'),       'music_show',  'Music Core',                    '2026-07-25 07:00+00', 'tentative', null),
+  ((select id from g where slug='idle'),       'mv',    'i-dle —9th mini album',     '2026-07-21 09:00+00', 'tentative', 'https://example.com/idle-comeback-0721'),
+  ((select id from g where slug='idle'),       'music_show',  'The Show',                      '2026-07-22 09:00+00', 'tentative', null),
+  ((select id from g where slug='idle'),       'live',        'i-dle —V Live special',     '2026-06-05 12:00+00', 'confirmed', null),
+  ((select id from g where slug='idle'),       'anniversary', 'i-dle —debut anniversary',  '2026-05-02 00:00+00', 'confirmed', null),
+  ((select id from g where slug='idle'),       'music_show',  'Music Core',                    '2026-07-25 07:00+00', 'tentative', null),
   -- événements passés (pour tester le filtrage "upcoming")
   ((select id from g where slug='aespa'),       'mv',    'aespa — previous single',       '2026-02-10 09:00+00', 'confirmed', 'https://example.com/aespa-old-0210'),
   ((select id from g where slug='illit'),       'music_show',  'Music Bank (rerun)',            '2026-04-18 08:00+00', 'confirmed', null)
@@ -59,7 +59,7 @@ on conflict (url) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'i-dle YouTube', 'https://www.youtube.com/@official_i_dle', 'youtube_api', id
-from groups where slug = 'gidle'
+from groups where slug = 'idle'
 on conflict (url) do nothing;
 
 -- Source comebacks (étape 7) — groupe-agnostique : le matching se fait en code.
