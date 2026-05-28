@@ -3,6 +3,7 @@
 > Règles de comportement **spécifiques à KStage**. Les 4 principes universels (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) sont fournis par le `CLAUDE.md` parent du dossier au-dessus — **non répétés ici** pour éviter le doublon.
 >
 > - **Contexte produit & technique** (vision, scope, DB, sources, roadmap) → `docs/PROJECT.md`
+> - **Scraping (architecture, pièges traversés, diagnostics)** → `docs/SCRAPING.md`
 > - **Spécifique Next.js 16** (breaking changes) → `AGENTS.md`
 > - **Plans d'étape détaillés** → `docs/plans/`
 
@@ -14,6 +15,21 @@
 - Réponses **concises**, paragraphes courts. Pas de filler, pas de récap de ce qui vient d'être fait.
 - **Contredire quand l'user se trompe** plutôt que valider par défaut. La profondeur est bienvenue, le volume non.
 - **Code et identifiants en anglais** (standard du fandom k-pop international). Commentaires de code en EN ou FR mais cohérents.
+
+---
+
+## Méthodologie de recherche (à appliquer à chaque demande)
+
+Pour **chaque** tâche, avant d'implémenter ou de proposer une solution :
+
+1. **Analyser profondément** — ne pas se contenter du premier WebSearch superficiel. Croiser les sources : oembed YouTube, Jina reader (`r.jina.ai`), fetch direct, API officielle quand dispo, MCP Supabase / Playwright pour vérifier l'état réel en prod.
+2. **Prendre le temps** — pas d'optimisation prématurée vers une réponse rapide quand la réponse correcte demande de l'investigation.
+3. **Utiliser plusieurs outils en concertation** — sous-agents (`Explore`, specialists `ecc:typescript-reviewer` / `ecc:a11y-architect` / `ecc:database-reviewer`) en parallèle quand les sujets sont indépendants ; chacun sa tâche bien cadrée dans son prompt.
+4. **Poser des questions** dès qu'un doute ou un choix architectural se présente — `AskUserQuestion` avec options concrètes (Recommended marquée, descriptions explicitant les tradeoffs) plutôt qu'hypothèses cachées.
+5. **Synthétiser** — restituer un résultat consolidé, pas un dump brut de chaque outil.
+6. **Vérifier avant de claim** — MCP Supabase / Playwright / curl pour confirmer que ça marche en prod, pas juste « tests verts ».
+
+Cf. mémoire `feedback-deep-research-methodology` (persistant cross-session). Pour les pièges scraping spécifiques déjà traversés, lire `docs/SCRAPING.md §3` AVANT de toucher au code.
 
 ---
 

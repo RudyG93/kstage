@@ -73,6 +73,27 @@ async function resolveChannelId(channelUrl: string, apiKey: string): Promise<str
   return id
 }
 
+/**
+ * Une passe de `search.list` sur une chaîne. Encapsule l'URL, le check `res.ok`
+ * et la vérification `data.items` pour pouvoir appeler le scrape plusieurs fois
+ * avec des paramètres différents (order=date vs q-filtered).
+ */
+async function fetchSearch(args: {
+  channelId: string
+  apiKey: string
+  params: string
+}): Promise<YouTubeSearchItem[]> {
+  const { channelId, apiKey, params } = args
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}` +
+      `&type=video&${params}&key=${apiKey}`,
+  )
+  if (!res.ok) throw new Error(`YouTube search API ${res.status} for channel ${channelId}`)
+  const data = await res.json()
+  if (!data.items) throw new Error(`YouTube API error: ${JSON.stringify(data.error ?? data)}`)
+  return data.items as YouTubeSearchItem[]
+}
+
 export async function scrapeGroup(
   source: { id: string; url: string; group_id: string },
   apiKey: string,
@@ -91,15 +112,38 @@ export async function scrapeGroup(
   const groupSlug = group?.slug ?? null
   const groupName = group?.name ?? null
 
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=50&key=${apiKey}`,
-  )
-  if (!res.ok) throw new Error(`YouTube search API ${res.status} for channel ${channelId}`)
-  const data = await res.json()
+  // Pass A : 50 derniers uploads (toutes catégories) — capte les nouveaux events
+  // au fil de l'eau (music_show, anniversary, concert, vraiment-récent-MV, etc.).
+  const itemsA = await fetchSearch({
+    channelId,
+    apiKey,
+    params: 'order=date&maxResults=50',
+  })
 
-  if (!data.items) throw new Error(`YouTube API error: ${JSON.stringify(data.error ?? data)}`)
+  // Pass B : MVs sur tout l'historique de la chaîne — résout la fenêtre étroite
+  // d'order=date. Sur les chaînes officielles à fort débit (vlogs/i-talk/etc.),
+  // les 50 derniers uploads ne remontent que ~1-2 mois et ratent les MVs sortis
+  // il y a 6-12 mois (Klaxon, Whiplash, Magnetic…). Sur les chaînes d'agence
+  // (SMTOWN, YG, HYBE…), la query filtre directement les MVs du groupe ciblé.
+  // Skip si groupName est null (cas dégénéré, on retombe sur Pass A seule).
+  const itemsB = groupName
+    ? await fetchSearch({
+        channelId,
+        apiKey,
+        params: `q=${encodeURIComponent(`${groupName} Music Video`)}&maxResults=50`,
+      })
+    : []
 
-  const items: YouTubeSearchItem[] = data.items
+  // Dédup par videoId : un MV récemment uploadé peut apparaître dans les 2 passes.
+  // On le voit une seule fois pour ne pas faire double idempotence-check.
+  const seen = new Set<string>()
+  const items: YouTubeSearchItem[] = []
+  for (const it of [...itemsA, ...itemsB]) {
+    if (seen.has(it.id.videoId)) continue
+    seen.add(it.id.videoId)
+    items.push(it)
+  }
+
   let inserted = 0
   let skipped = 0
 
