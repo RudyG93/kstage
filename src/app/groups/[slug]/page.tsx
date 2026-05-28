@@ -4,6 +4,7 @@ import { FollowButton } from '@/components/follow-button'
 import { MvsGrid } from '@/components/group/mvs-grid'
 import { getGroupBySlug } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
+import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { createClient } from '@/lib/supabase/server'
 
@@ -26,6 +27,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     getGroupMvs(slug, 24),
     getFollowedGroupIds(),
   ])
+  const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
   const subtitle = [group.agency, group.fandom_name].filter(Boolean).join(' · ')
 
   return (
@@ -55,7 +57,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
         {mvs.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
-            <MvsGrid mvs={mvs} />
+            <MvsGrid mvs={mvs} ratings={ratings} />
           </section>
         )}
       </div>

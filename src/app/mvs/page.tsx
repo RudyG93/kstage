@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { MvsGrid } from '@/components/group/mvs-grid'
 import { getAllMvs } from '@/lib/events/queries'
+import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 
 export const metadata: Metadata = {
@@ -22,6 +23,12 @@ export default async function MvsPage() {
   const followedIdsSet = new Set(followedMvs.map((m) => m.id))
   const otherMvs = allMvs.filter((m) => !followedIdsSet.has(m.id))
 
+  // Une seule query batch pour toutes les notes affichées (followed + others).
+  const ratings = await getRatingsForEvents([
+    ...followedMvs.map((m) => m.id),
+    ...otherMvs.map((m) => m.id),
+  ])
+
   const total = allMvs.length
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6">
@@ -36,7 +43,7 @@ export default async function MvsPage() {
         {followedMvs.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-sm font-medium">From your groups</h2>
-            <MvsGrid mvs={followedMvs} />
+            <MvsGrid mvs={followedMvs} ratings={ratings} />
           </section>
         )}
 
@@ -45,7 +52,7 @@ export default async function MvsPage() {
             <h2 className="text-sm font-medium">
               {followedMvs.length > 0 ? 'More music videos' : 'All music videos'}
             </h2>
-            <MvsGrid mvs={otherMvs} />
+            <MvsGrid mvs={otherMvs} ratings={ratings} />
           </section>
         )}
       </div>

@@ -31,6 +31,32 @@ export async function getEventRatingSummary(eventId: string): Promise<RatingSumm
 }
 
 /**
+ * Version batch de la rating summary : agrège (avg, count) pour un set d'event
+ * ids. Utile pour afficher les notes sur les grilles MV (`/groups/[slug]` et
+ * `/mvs`) sans faire 1 query par card.
+ *
+ * Map vide renvoyée si la liste est vide (évite une query inutile).
+ */
+export async function getRatingsForEvents(
+  eventIds: string[],
+): Promise<Map<string, { avg: number; count: number }>> {
+  const out = new Map<string, { avg: number; count: number }>()
+  if (eventIds.length === 0) return out
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('event_ratings')
+    .select('event_id, score')
+    .in('event_id', eventIds)
+  for (const row of data ?? []) {
+    const prev = out.get(row.event_id) ?? { avg: 0, count: 0 }
+    const newCount = prev.count + 1
+    const newAvg = (prev.avg * prev.count + row.score) / newCount
+    out.set(row.event_id, { avg: newAvg, count: newCount })
+  }
+  return out
+}
+
+/**
  * Charge un event par son slug (route `/mv/[slug]`). Retourne null si absent.
  * Joint les infos groupe nécessaires pour la page article.
  */
