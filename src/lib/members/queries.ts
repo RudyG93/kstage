@@ -4,18 +4,50 @@ import { createClient } from '@/lib/supabase/server'
  * Récupère un membre par son slug composite (`{groupSlug}-{stageName}`).
  * Joint les infos du groupe parent pour le header (lien retour + color_hex
  * pour le placeholder gradient quand `photo_url` est null).
+ *
+ * `canonical_id` non-null signifie que cette row est un membership historique
+ * (ex. ILLIT Youngseo pre_debut). Le caller (route /artists/[slug]) redirige
+ * vers la canonique dans ce cas.
  */
 export async function getMemberBySlug(slug: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('members')
     .select(
-      'id, slug, stage_name, real_name, birthday, position, photo_url, status, former_reason, groups!inner(id, slug, name, color_hex, agency)',
+      'id, slug, stage_name, real_name, birthday, position, photo_url, status, former_reason, canonical_id, groups!inner(id, slug, name, color_hex, agency)',
     )
     .eq('slug', slug)
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+/**
+ * Lookup d'un slug par id — utilisé par la route pour résoudre la redirection
+ * vers la canonique sans refaire un select complet.
+ */
+export async function getMemberSlugById(id: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('members').select('slug').eq('id', id).maybeSingle()
+  if (error) throw error
+  return data?.slug ?? null
+}
+
+/**
+ * Retourne le parcours (career path) d'un artiste canonique : toutes les rows
+ * où `id = canonicalId` (la canonique elle-même) ou `canonical_id = canonicalId`
+ * (les memberships historiques). Triées par priorité d'affichage :
+ * active → pre_debut → former.
+ */
+export async function getCareerPath(canonicalId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, slug, status, former_reason, position, groups!inner(slug, name, color_hex)')
+    .or(`id.eq.${canonicalId},canonical_id.eq.${canonicalId}`)
+  if (error) throw error
+  const priority: Record<string, number> = { active: 0, pre_debut: 1, former: 2 }
+  return (data ?? []).sort((a, b) => (priority[a.status] ?? 9) - (priority[b.status] ?? 9))
 }
 
 /**

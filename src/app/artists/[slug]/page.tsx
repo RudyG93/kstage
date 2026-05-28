@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { getMemberBySlug } from '@/lib/members/queries'
+import { getCareerPath, getMemberBySlug, getMemberSlugById } from '@/lib/members/queries'
 
 const formatBirthday = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
@@ -23,6 +23,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const member = await getMemberBySlug(slug)
   if (!member) notFound()
 
+  // Membership historique → redirect 308 vers la canonique (= identité actuelle
+  // de l'artiste). Cf. PR-D-3.1 : ILLIT Youngseo → Allday Project Youngseo,
+  // i-dle Soojin → Soojin solo.
+  if (member.canonical_id) {
+    const canonicalSlug = await getMemberSlugById(member.canonical_id)
+    if (canonicalSlug && canonicalSlug !== slug) redirect(`/artists/${canonicalSlug}`)
+  }
+
   // Supabase embed renvoie soit un objet (single FK), soit un array selon la cardinality.
   // `groups!inner` sur un FK simple → objet. On le narrow ici.
   const groupRaw = (member as { groups: unknown }).groups
@@ -36,6 +44,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const color = group?.color_hex ?? '#888'
   const initial = member.stage_name.slice(0, 1).toUpperCase()
   const statusText = statusLabel[member.status]
+  const career = await getCareerPath(member.id)
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -109,6 +118,43 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             )}
           </dl>
         </section>
+
+        {career.length > 1 && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Career</h2>
+            <ul className="space-y-2">
+              {career.map((step) => {
+                const stepGroupRaw = (step as { groups: unknown }).groups
+                const stepGroup = (
+                  Array.isArray(stepGroupRaw) ? stepGroupRaw[0] : stepGroupRaw
+                ) as { slug: string; name: string; color_hex: string | null } | null
+                if (!stepGroup) return null
+                const label = statusLabel[step.status] ?? 'Active'
+                return (
+                  <li key={step.id} className="text-sm">
+                    <span
+                      className="mr-2 inline-block size-2 rounded-full align-middle"
+                      style={{ backgroundColor: stepGroup.color_hex ?? 'var(--muted-foreground)' }}
+                      aria-hidden
+                    />
+                    <Link
+                      href={`/groups/${stepGroup.slug}`}
+                      className="font-medium hover:underline"
+                    >
+                      {stepGroup.name}
+                    </Link>
+                    <span className="text-muted-foreground"> — {label}</span>
+                    {step.former_reason && (
+                      <p className="text-muted-foreground mt-0.5 ml-4 text-xs">
+                        {step.former_reason}
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   )
