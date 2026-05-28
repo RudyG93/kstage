@@ -20,6 +20,7 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 ## Types d'events
 
 - **Concert** (et éventuellement d'autres types) — réintroduire quand pertinent : rajouter à `FILTERABLE_EVENT_TYPES` (`src/lib/events/labels.ts`), au scraper YouTube, et au formulaire de suggestion (tout s'aligne sur cette constante).
+- **Music show — repenser l'affichage** : aujourd'hui un Music Bank avec 8 groupes invités génère 8 events redondants pour qui suit plusieurs groupes (mêmes date/heure/visuel, seul le nom change). Idée : modéliser le **show comme "artiste"** (Music Bank, Inkigayo… comme entrée dédiée — table `groups` réutilisée ou table `shows` séparée), le **titre = lineup** ("aespa, NewJeans, IVE, …"), et "follow" un show devient possible. Implique de revoir la query `getUpcomingEvents` (un event music_show ne se rattache plus 1-pour-1 à un groupe via `event_groups`) et la carte home (pas de groupe principal → bandeau neutre du show). À cadrer avec Rudy.
 
 ## Scraping / récupération de données
 

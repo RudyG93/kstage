@@ -14,11 +14,12 @@ const kstFormat = (iso: string) =>
   }).format(new Date(iso))
 
 // Le nom du groupe est déjà affiché à gauche du bandeau — si un titre scrapé
-// le répète ("aespa - Whiplash MV"), on le retire pour ne pas perdre de place.
+// le répète (ex. "aespa - Whiplash MV", "ATEEZ Album - Golden Hour"), on le
+// retire jusqu'au premier séparateur pour ne pas perdre de place.
 function stripGroupPrefix(title: string, groupName?: string | null): string {
   if (!groupName) return title
   const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return title.replace(new RegExp(`^${escaped}\\s*[—\\-:]\\s*`, 'i'), '')
+  return title.replace(new RegExp(`^${escaped}(?:\\s+\\w+)*\\s*[—\\-:]\\s*`, 'i'), '')
 }
 
 // Fondu latéral : l'image s'estompe sur ses bords pour se fondre entre le texte
@@ -38,10 +39,10 @@ export function HomeEventCard({
   const displayTitle = stripGroupPrefix(event.title, group?.name)
 
   // backdrop : recadrage manuel admin (banner_url, déjà au bon format) en
-  // priorité ; sinon Deezer (image_url) recadré visage Cloudinary en 3:1 —
-  // même aspect que le cropper admin, pour des crops cohérents partout.
+  // priorité ; sinon Deezer (image_url) recadré visage Cloudinary en 4:1 —
+  // identique au cropper admin (WYSIWYG, sans re-crop par object-cover).
   const bannerSrc =
-    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 600, 200) : null)
+    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 800, 200) : null)
 
   return (
     <Link
@@ -62,20 +63,22 @@ export function HomeEventCard({
         <p className="text-muted-foreground truncate text-xs">{displayTitle}</p>
       </div>
 
-      {/* image du groupe, remplit l'espace central en fondu (recadrée visage
-          Cloudinary g_auto en 3:1, identique au cropper admin). */}
-      <div className="relative h-full flex-1">
+      {/* image du groupe, format fixe 4:1 centré dans l'espace dispo (= aspect
+          du cropper admin → WYSIWYG, l'object-cover ne re-recadre pas). */}
+      <div className="flex h-full flex-1 items-center justify-center">
         {bannerSrc && (
-          <Image
-            src={bannerSrc}
-            alt=""
-            aria-hidden
-            fill
-            unoptimized
-            sizes="(max-width: 1024px) 50vw, 360px"
-            className="pointer-events-none object-cover object-center opacity-40 select-none"
-            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
-          />
+          <div className="relative h-full" style={{ aspectRatio: '4 / 1' }}>
+            <Image
+              src={bannerSrc}
+              alt=""
+              aria-hidden
+              fill
+              unoptimized
+              sizes="320px"
+              className="pointer-events-none object-cover object-center opacity-40 select-none"
+              style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
+            />
+          </div>
         )}
       </div>
 

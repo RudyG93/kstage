@@ -24,7 +24,11 @@ export function detectEventType(title: string, description: string): EventType {
   const text = `${title} ${description}`.toLowerCase()
   // MV (clip) en premier : un titre de clip peut aussi mentionner l'album.
   if (/\bmv\b|\bm\/v\b|music video|official video/.test(text)) return 'mv'
-  if (/mini album|full album|single album|\bsingle\b|\bep\b|album release|comeback/.test(text))
+  if (
+    /mini album|full album|single album|\balbum\b|\bsingle\b|\bep\b|album release|comeback/.test(
+      text,
+    )
+  )
     return 'release'
   if (/concert|tour/.test(text)) return 'concert'
   if (/m countdown|music bank|inkigayo|show champion|the show|music core/.test(text))

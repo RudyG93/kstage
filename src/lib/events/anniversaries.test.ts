@@ -21,7 +21,7 @@ describe('generateAnniversaries', () => {
       days: 30,
     })
     expect(res).toHaveLength(1)
-    expect(res[0].title).toBe('Debut anniversary')
+    expect(res[0].title).toBe('Debut anniversary · 6 ans')
     expect(res[0].type).toBe('anniversary')
     expect(kstDayKey(res[0].start_at)).toBe('2026-11-17')
   })
@@ -41,23 +41,24 @@ describe('generateAnniversaries', () => {
     })
     expect(res).toHaveLength(1)
     expect(kstDayKey(res[0].start_at)).toBe('2027-01-05')
+    expect(res[0].title).toBe('Debut anniversary · 7 ans')
   })
 
-  it('birthday de soliste : pas de "(groupe)"', () => {
+  it('birthday de soliste : âge seul, pas de "(groupe)"', () => {
     const res = generateAnniversaries(
       [group({ id: 's1', slug: 'iu', name: 'IU' })],
       [{ group_id: 's1', stage_name: 'IU', birthday: '1993-05-16' }],
       { todayKey: '2026-05-10', days: 30 },
     )
-    expect(res.some((e) => e.title === 'Birthday')).toBe(true)
+    expect(res.some((e) => e.title === '33 ans')).toBe(true)
   })
 
-  it('birthday de membre de groupe affiche "(groupe)"', () => {
+  it('birthday de membre de groupe affiche stage_name + âge', () => {
     const res = generateAnniversaries(
       [group({ debut_date: null })],
       [{ group_id: 'g1', stage_name: 'Karina', birthday: '2000-04-11' }],
       { todayKey: '2026-04-01', days: 30 },
     )
-    expect(res[0].title).toBe('Karina — birthday')
+    expect(res[0].title).toBe('Karina — 26 ans')
   })
 })

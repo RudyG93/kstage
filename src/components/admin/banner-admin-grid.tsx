@@ -22,7 +22,7 @@ function GroupItem({ g }: { g: BannerGroup }) {
   const router = useRouter()
   // source = Deezer (image_url, plus récente que la fanart TheAudioDB)
   const source = g.image_url
-  const preview = banner ?? (source ? faceCrop(source, 600, 200) : null)
+  const preview = banner ?? (source ? faceCrop(source, 800, 200) : null)
 
   function reset() {
     startReset(async () => {
@@ -37,7 +37,7 @@ function GroupItem({ g }: { g: BannerGroup }) {
     <div className="bg-card ring-foreground/10 space-y-2 rounded-xl p-3 ring-1">
       <div
         className="bg-muted relative w-full overflow-hidden rounded-lg"
-        style={{ aspectRatio: '3 / 1' }}
+        style={{ aspectRatio: '4 / 1' }}
       >
         {preview && <Image src={preview} alt="" fill unoptimized className="object-cover" />}
       </div>
