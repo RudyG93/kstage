@@ -102,10 +102,14 @@ async function main() {
 
   let ok = 0
   for (const u of updates) {
-    const patch: Record<string, string | null> = {}
-    if (u.title) patch.title = u.title.to
-    if (u.description) patch.description = u.description.to || null
-    if (u.slug) patch.slug = u.slug.to
+    // Spread conditionnel : TS infère le type depuis le littéral et matche
+    // exactement `events.Update` (vs `Record<string, ...>` qui est trop large
+    // pour le check strict de Next.js / Vercel).
+    const patch = {
+      ...(u.title && { title: u.title.to }),
+      ...(u.description && { description: u.description.to || null }),
+      ...(u.slug && { slug: u.slug.to }),
+    }
     if (Object.keys(patch).length === 0) continue
 
     const { error: upErr } = await supabase.from('events').update(patch).eq('id', u.id)

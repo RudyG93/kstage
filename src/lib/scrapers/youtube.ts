@@ -23,21 +23,34 @@ interface ScrapeResult {
   skipped: number
 }
 
+// Contenu dérivé d'un MV (teasers, behinds, makings…) qu'on ne veut PAS classer
+// comme 'mv' : sinon la page /mv/[slug] et la section "MV of the month" se
+// remplissent de teasers et behind-the-scenes au lieu des vrais clips.
+// `\b` autour des mots ambigus pour éviter les faux négatifs (ex. "preview"
+// dans "Recipe Preview" doit matcher mais pas "approval").
+const DERIVATIVE_RE =
+  /\bbehind\b|\bteaser\b|\btrailer\b|\bmaking[- ]of\b|\brecording\b|\brehearsal\b|\bpractice\b|\bpreview\b|highlight medley|schedule poster|\brecipe\b|cheering guide|performance video|dance practice|documentary|r\(ae\)cord|\breplay\b|compilation|\bepisode\b|\bep\.\s*\d+|\bvlog\b/i
+
 export function detectEventType(title: string, description: string): EventType {
-  const text = `${title} ${description}`.toLowerCase()
+  const text = `${title} ${description}`
+  // Early-reject derivatives : ils peuvent contenir "MV", "Album", etc. sans
+  // pour autant représenter l'event réel — on les renvoie tous en 'other'.
+  if (DERIVATIVE_RE.test(text)) return 'other'
+
+  const lower = text.toLowerCase()
   // MV (clip) en premier : un titre de clip peut aussi mentionner l'album.
-  if (/\bmv\b|\bm\/v\b|music video|official video/.test(text)) return 'mv'
+  if (/\bmv\b|\bm\/v\b|music video|official video/.test(lower)) return 'mv'
   if (
     /mini album|full album|single album|\balbum\b|\bsingle\b|\bep\b|album release|comeback/.test(
-      text,
+      lower,
     )
   )
     return 'release'
-  if (/concert|tour/.test(text)) return 'concert'
-  if (/m countdown|music bank|inkigayo|show champion|the show|music core/.test(text))
+  if (/concert|tour/.test(lower)) return 'concert'
+  if (/m countdown|music bank|inkigayo|show champion|the show|music core/.test(lower))
     return 'music_show'
-  if (/anniversary|debut/.test(text)) return 'anniversary'
-  if (/live|vlive|weverse live|stream/.test(text)) return 'live'
+  if (/anniversary|debut/.test(lower)) return 'anniversary'
+  if (/live|vlive|weverse live|stream/.test(lower)) return 'live'
   return 'other'
 }
 
