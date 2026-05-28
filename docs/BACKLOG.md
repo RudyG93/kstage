@@ -3,6 +3,10 @@
 Idées d'amélioration différées **post-MVP** (cf. roadmap `PROJECT.md §6`, vision V2 `§10`).
 On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedback réel re-priorisera.
 
+## Admin
+
+- **Page admin hub** (`/admin`) — point d'entrée centralisé pour la modération : grille de liens vers les sous-sections (`/admin/banners`, `/admin/suggestions`, …) au lieu d'URLs séparées à connaître. Au fil de l'eau, y rattacher les futures sections (gestion groupes/membres, scraping logs, etc.).
+
 ## Suggestions communautaires (suite de l'étape 8)
 
 - **Édition admin d'une suggestion** — permettre à l'admin de corriger une suggestion (titre, date, type…) avant de l'approuver, au lieu de seulement approuver/rejeter. Nouveau flux : formulaire d'édition côté `/admin/suggestions` + action `updateSuggestion` (service_role).

@@ -15,7 +15,8 @@ export interface BannerGroup {
 
 function GroupItem({ g }: { g: BannerGroup }) {
   const [banner, setBanner] = useState<string | null>(g.banner_url)
-  const source = g.image_landscape ?? g.image_url
+  // source = Deezer (image_url, plus récente que la fanart TheAudioDB)
+  const source = g.image_url
   const preview = banner ?? (source ? faceCrop(source, 600, 200) : null)
 
   return (

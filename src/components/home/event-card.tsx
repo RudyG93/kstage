@@ -26,16 +26,16 @@ export function HomeEventCard({
   const group = event.groups
   const kst = kstFormat(event.start_at)
   // backdrop : recadrage manuel admin (banner_url, déjà au bon format) en
-  // priorité ; sinon l'image paysage/carré recadrée visage par Cloudinary g_auto.
-  const autoSrc = group?.image_landscape ?? group?.image_url ?? null
-  const bannerSrc = group?.banner_url ?? (autoSrc ? faceCrop(autoSrc, 400, 220) : null)
+  // priorité ; sinon Deezer (image_url, plus récente) recadré visage Cloudinary.
+  const bannerSrc =
+    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 400, 220) : null)
 
   return (
     <Link
       href={`/groups/${group?.slug ?? ''}`}
       className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-16' : 'h-20'}`}
     >
-      <div className="max-w-[42%] min-w-0 shrink">
+      <div className="w-40 max-w-[50%] shrink-0">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-semibold">{group?.name}</span>
           <TypeBadge type={event.type} />
