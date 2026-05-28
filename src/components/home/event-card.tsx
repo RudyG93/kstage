@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
+import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { TypeBadge } from './type-badge'
 import type { UpcomingEvent } from '@/lib/events/queries'
@@ -11,6 +12,14 @@ const kstFormat = (iso: string) =>
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(iso))
+
+// Le nom du groupe est déjà affiché à gauche du bandeau — si un titre scrapé
+// le répète ("aespa - Whiplash MV"), on le retire pour ne pas perdre de place.
+function stripGroupPrefix(title: string, groupName?: string | null): string {
+  if (!groupName) return title
+  const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return title.replace(new RegExp(`^${escaped}\\s*[—\\-:]\\s*`, 'i'), '')
+}
 
 // Fondu latéral : l'image s'estompe sur ses bords pour se fondre entre le texte
 // (gauche) et l'horaire (droite). En style inline (fiable sans Tailwind JIT).
@@ -25,26 +34,36 @@ export function HomeEventCard({
 }) {
   const group = event.groups
   const kst = kstFormat(event.start_at)
+  const typeColor = EVENT_TYPE_COLORS[event.type]
+  const displayTitle = stripGroupPrefix(event.title, group?.name)
+
   // backdrop : recadrage manuel admin (banner_url, déjà au bon format) en
-  // priorité ; sinon Deezer (image_url, plus récente) recadré visage Cloudinary.
+  // priorité ; sinon Deezer (image_url) recadré visage Cloudinary en 3:1 —
+  // même aspect que le cropper admin, pour des crops cohérents partout.
   const bannerSrc =
-    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 400, 220) : null)
+    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 600, 200) : null)
 
   return (
     <Link
       href={`/groups/${group?.slug ?? ''}`}
       className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-16' : 'h-20'}`}
     >
+      <div
+        className="h-10 w-1 shrink-0 rounded-full"
+        style={{ backgroundColor: typeColor }}
+        aria-hidden
+      />
+
       <div className="w-40 max-w-[50%] shrink-0">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-semibold">{group?.name}</span>
           <TypeBadge type={event.type} />
         </div>
-        <p className="text-muted-foreground truncate text-xs">{event.title}</p>
+        <p className="text-muted-foreground truncate text-xs">{displayTitle}</p>
       </div>
 
-      {/* image du groupe, remplit l'espace central en fondu (recadrée visage par
-          Cloudinary). Bandeau plus haut → on en voit davantage. */}
+      {/* image du groupe, remplit l'espace central en fondu (recadrée visage
+          Cloudinary g_auto en 3:1, identique au cropper admin). */}
       <div className="relative h-full flex-1">
         {bannerSrc && (
           <Image

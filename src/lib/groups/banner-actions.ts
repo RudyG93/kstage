@@ -45,3 +45,21 @@ export async function setGroupBanner(groupId: string, formData: FormData): Promi
   revalidatePath('/admin/banners')
   return { ok: true, bannerUrl }
 }
+
+/** Efface l'override manuel pour qu'un groupe retombe sur le crop automatique. */
+export async function resetGroupBanner(groupId: string): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  if (!isAdmin(user.email)) return { error: 'Forbidden.' }
+
+  const admin = serviceClient()
+  const { error } = await admin.from('groups').update({ banner_url: null }).eq('id', groupId)
+  if (error) return { error: 'Could not reset the banner.' }
+
+  revalidatePath('/', 'layout')
+  revalidatePath('/admin/banners')
+  return { ok: true }
+}

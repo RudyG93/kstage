@@ -79,8 +79,8 @@ export function generateAnniversaries(
   for (const g of groups) {
     if (!g.debut_date) continue
     const md = parseMonthDay(g.debut_date)
-    if (md)
-      push(g, nextOccurrence(md, today), `anniv-debut-${g.id}`, `${g.name} — debut anniversary`)
+    // Le nom du groupe est déjà affiché à gauche du bandeau, on ne le répète pas.
+    if (md) push(g, nextOccurrence(md, today), `anniv-debut-${g.id}`, 'Debut anniversary')
   }
   for (const m of members) {
     const g = groupById.get(m.group_id)
@@ -88,9 +88,10 @@ export function generateAnniversaries(
     const md = parseMonthDay(m.birthday)
     if (md) {
       const occ = nextOccurrence(md, today)
-      // soliste : stage_name == nom du groupe → on n'affiche pas "(groupe)"
-      const who = m.stage_name === g.name ? g.name : `${m.stage_name} (${g.name})`
-      push(g, occ, `anniv-bday-${m.group_id}-${m.stage_name}`, `${who} — birthday`)
+      // soliste : stage_name == nom du groupe → titre court ;
+      // membre : on garde le stage_name (utile, ≠ du nom du groupe affiché à gauche).
+      const title = m.stage_name === g.name ? 'Birthday' : `${m.stage_name} — birthday`
+      push(g, occ, `anniv-bday-${m.group_id}-${m.stage_name}`, title)
     }
   }
   return out.sort((a, b) => a.start_at.localeCompare(b.start_at))

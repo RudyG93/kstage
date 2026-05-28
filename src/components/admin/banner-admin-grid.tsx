@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { resetGroupBanner } from '@/lib/groups/banner-actions'
 import { BannerCropper } from './banner-cropper'
 
 export interface BannerGroup {
@@ -15,9 +18,20 @@ export interface BannerGroup {
 
 function GroupItem({ g }: { g: BannerGroup }) {
   const [banner, setBanner] = useState<string | null>(g.banner_url)
+  const [resetPending, startReset] = useTransition()
+  const router = useRouter()
   // source = Deezer (image_url, plus récente que la fanart TheAudioDB)
   const source = g.image_url
   const preview = banner ?? (source ? faceCrop(source, 600, 200) : null)
+
+  function reset() {
+    startReset(async () => {
+      const res = await resetGroupBanner(g.id)
+      if ('error' in res) return
+      setBanner(null)
+      router.refresh()
+    })
+  }
 
   return (
     <div className="bg-card ring-foreground/10 space-y-2 rounded-xl p-3 ring-1">
@@ -32,9 +46,16 @@ function GroupItem({ g }: { g: BannerGroup }) {
           {g.name}
           {banner && <span className="text-emerald-500"> ✓</span>}
         </span>
-        {source && (
-          <BannerCropper groupId={g.id} name={g.name} sourceUrl={source} onDone={setBanner} />
-        )}
+        <div className="flex shrink-0 gap-2">
+          {banner && (
+            <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={resetPending}>
+              {resetPending ? '…' : 'Reset'}
+            </Button>
+          )}
+          {source && (
+            <BannerCropper groupId={g.id} name={g.name} sourceUrl={source} onDone={setBanner} />
+          )}
+        </div>
       </div>
     </div>
   )
