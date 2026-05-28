@@ -5,7 +5,7 @@ import { Star, Lightbulb } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getRecentComebacks } from '@/lib/events/queries'
-import { displayEventTitle } from '@/lib/events/title'
+import { displaySongTitle } from '@/lib/events/title'
 import { eventHref } from '@/lib/events/href'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 import {
@@ -131,7 +131,7 @@ export async function SidebarRight() {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
-                        {displayEventTitle(cb.title, cb.groups?.name)}
+                        {displaySongTitle(cb.title, cb.groups?.name)}
                       </p>
                       <p className="text-muted-foreground text-xs">{cb.groups?.name}</p>
                     </div>

@@ -90,6 +90,9 @@ export async function getUpcomingEventCountsByGroup(
 }
 
 export async function getRecentComebacks(limit = 3) {
+  // mv_kind='main' uniquement : la sidebar Recent comebacks doit montrer le
+  // clip principal, pas les versions Performance/Member/Other (cf. matrice
+  // de visibilité §8 SCRAPING.md).
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('events')

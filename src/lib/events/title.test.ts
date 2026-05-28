@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { displayEventTitle } from './title'
+import { displayEventTitle, displaySongTitle } from './title'
 
 describe('displayEventTitle', () => {
   it('retire le préfixe groupe + année + normalise Part.N (cas avec hyphen)', () => {
@@ -34,5 +34,63 @@ describe('displayEventTitle', () => {
 
   it('limite connue : le pattern .N normalise aussi v2.0 → v2 0 (acceptable, Part.N domine côté YT)', () => {
     expect(displayEventTitle('Album v2.0 release', 'IVE')).toBe('Album v2 0 release')
+  })
+})
+
+describe('displaySongTitle', () => {
+  // Priorité 1 : extraction entre quotes (greedy)
+  it('apostrophe straight outer + apostrophe straight possessive interne (cas ILLIT prod réel)', () => {
+    // Critique : la regex doit être greedy pour ne pas s'arrêter au "It's" interne.
+    expect(displaySongTitle("ILLIT (아일릿) 'It's Me' Official MV")).toBe("It's Me")
+    expect(displaySongTitle("ILLIT (아일릿) 'It's Me' Official MV (MOKA ver.)")).toBe("It's Me")
+  })
+
+  it('quotes straight greedy : WDA (Feat. G-DRAGON) reste complet', () => {
+    expect(
+      displaySongTitle("aespa 에스파 'WDA (Whole Different Animal) (Feat. G-DRAGON)' MV"),
+    ).toBe('WDA (Whole Different Animal) (Feat. G-DRAGON)')
+  })
+
+  it('chanson hangul avec parens, groupe en hangul aussi : strip groupe, garde chanson', () => {
+    expect(
+      displaySongTitle("(여자)아이들((G)I-DLE) - '클락션 (Klaxon)' Official Music Video"),
+    ).toBe('클락션 (Klaxon)')
+  })
+
+  it('chanson hangul simple', () => {
+    expect(displaySongTitle("BABYMONSTER - '춤 (CHOOM)' M/V")).toBe('춤 (CHOOM)')
+  })
+
+  it('chanson mono-mot', () => {
+    expect(displaySongTitle("aespa 'Whiplash' Official MV")).toBe('Whiplash')
+  })
+
+  it('curly quotes ‘ ’ (priorité 1, avant straight)', () => {
+    expect(displaySongTitle('aespa ‘Drama’ Official MV')).toBe('Drama')
+  })
+
+  // Priorité 2 : fallback (strip groupName + (hangul) + trailing MV)
+  it("fallback sans quotes : strip 'ILLIT' au début + 'Official Music Video' à la fin", () => {
+    expect(displaySongTitle('ILLIT Magnetic Official Music Video', 'ILLIT')).toBe('Magnetic')
+  })
+
+  it("fallback sans quotes : strip 'ILLIT (아일릿) ' (hangul entre parens)", () => {
+    expect(displaySongTitle('ILLIT (아일릿) Magnetic MV', 'ILLIT')).toBe('Magnetic')
+  })
+
+  it("fallback sans quotes : strip 'aespa (에스파) ' (hangul entre parens, autre groupe)", () => {
+    expect(displaySongTitle('aespa (에스파) WDA Official MV', 'aespa')).toBe('WDA')
+  })
+
+  it('pas de quotes ni MV suffix : retourne le titre nettoyé', () => {
+    expect(displaySongTitle('Just a title', null)).toBe('Just a title')
+  })
+
+  it('titre vide → vide', () => {
+    expect(displaySongTitle('', null)).toBe('')
+  })
+
+  it("fallback avec séparateur classique : '-' fonctionne comme displayEventTitle", () => {
+    expect(displaySongTitle('aespa - Hot Mess Official MV', 'aespa')).toBe('Hot Mess')
   })
 })
