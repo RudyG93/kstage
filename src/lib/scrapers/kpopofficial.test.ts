@@ -5,7 +5,7 @@ const GROUPS: GroupRef[] = [
   { id: 'g-aespa', slug: 'aespa', name: 'aespa' },
   { id: 'g-illit', slug: 'illit', name: 'ILLIT' },
   { id: 'g-bm', slug: 'babymonster', name: 'BABYMONSTER' },
-  { id: 'g-gidle', slug: 'gidle', name: 'i-dle' },
+  { id: 'g-idle', slug: 'idle', name: 'i-dle' },
 ]
 
 // Item calqué sur la vraie structure Greenshift de kpopofficial.
@@ -36,7 +36,7 @@ function item(opts: {
 const HTML = `<html><body><ul class="gspbgrid">
   ${item({ title: 'BABYMONSTER 3rd Mini Album – CHOOM (2026)', href: 'https://kpopofficial.com/album/babymonster-choom/', artist: 'BABYMONSTER', date: 'May 4 (Mon) · 6 PM KST' })}
   ${item({ title: 'aespa 2nd Album – LEMONADE (2026)', href: 'https://kpopofficial.com/album/aespa-lemonade/', artist: 'aespa', date: 'May 29 (Fri) · 1 PM KST' })}
-  ${item({ title: '(G)I-DLE 9th Mini Album – I SWAY (2026)', href: 'https://kpopofficial.com/album/gidle-i-sway/', artist: '(G)I-DLE', date: 'July 21 (Tue) · TBC' })}
+  ${item({ title: '(G)I-DLE 9th Mini Album – I SWAY (2026)', href: 'https://kpopofficial.com/album/idle-i-sway/', artist: '(G)I-DLE', date: 'July 21 (Tue) · TBC' })}
   ${item({ title: 'Krystal Single – PWLT (2026)', href: 'https://kpopofficial.com/album/krystal-pwlt/', artist: 'Krystal', date: 'May 26 (Tue) · 6 PM KST' })}
   ${item({ title: 'BABYMONSTER duplicate (2026)', href: 'https://kpopofficial.com/album/babymonster-choom/', artist: 'BABYMONSTER', date: 'May 4 (Mon) · 6 PM KST' })}
 </ul></body></html>`
@@ -67,10 +67,10 @@ describe('parseComebacks', () => {
   })
 
   it('marque tentative quand l’heure est absente (TBC)', () => {
-    const gidle = parsed.find((p) => p.artist === '(G)I-DLE')!
-    expect(gidle.status).toBe('tentative')
+    const idle = parsed.find((p) => p.artist === '(G)I-DLE')!
+    expect(idle.status).toBe('tentative')
     // minuit KST 21 juillet = 20 juillet 15:00 UTC
-    expect(gidle.startAt).toBe('2026-07-20T15:00:00.000Z')
+    expect(idle.startAt).toBe('2026-07-20T15:00:00.000Z')
   })
 })
 
@@ -82,10 +82,10 @@ describe('matchGroup', () => {
   })
 
   it('matche les variantes de (G)I-DLE', () => {
-    expect(matchGroup('(G)I-DLE', GROUPS)?.slug).toBe('gidle')
-    expect(matchGroup('GIDLE', GROUPS)?.slug).toBe('gidle')
-    expect(matchGroup('G-IDLE', GROUPS)?.slug).toBe('gidle')
-    expect(matchGroup('I-DLE', GROUPS)?.slug).toBe('gidle')
+    expect(matchGroup('(G)I-DLE', GROUPS)?.slug).toBe('idle')
+    expect(matchGroup('GIDLE', GROUPS)?.slug).toBe('idle')
+    expect(matchGroup('G-IDLE', GROUPS)?.slug).toBe('idle')
+    expect(matchGroup('I-DLE', GROUPS)?.slug).toBe('idle')
   })
 
   it('retourne null pour un groupe non suivi', () => {

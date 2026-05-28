@@ -71,6 +71,6 @@ describe('buildEventSlug', () => {
   })
 
   it('laisse intact si le titre ne contient pas le nom du groupe (Music Core)', () => {
-    expect(buildEventSlug('gidle', 'Music Core', 'i-dle')).toBe('gidle-music-core')
+    expect(buildEventSlug('idle', 'Music Core', 'i-dle')).toBe('idle-music-core')
   })
 })

@@ -74,8 +74,11 @@ function normalize(s: string): string {
 }
 
 // Variantes normalisées non couvertes par la normalisation simple.
+// "G-IDLE" / "GIDLE" / "(G)I-DLE" normalisent tous en "gidle" → on les mappe
+// vers le slug actuel `idle`. "I-DLE" normalise en "idle" et matche déjà
+// directement le slug, donc pas besoin d'entrée pour lui.
 const GROUP_ALIASES: Record<string, string> = {
-  idle: 'gidle', // "(G)I-DLE" parfois écrit "I-DLE"
+  gidle: 'idle',
 }
 
 /** Matche un nom d'artiste scrapé vers un de nos groupes suivis, sinon null. */
