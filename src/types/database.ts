@@ -188,6 +188,8 @@ export type Database = {
           group_id: string
           id: string
           image_url: string | null
+          member_id: string | null
+          mv_kind: Database['public']['Enums']['mv_kind'] | null
           slug: string | null
           source_id: string | null
           source_url: string | null
@@ -204,6 +206,8 @@ export type Database = {
           group_id: string
           id?: string
           image_url?: string | null
+          member_id?: string | null
+          mv_kind?: Database['public']['Enums']['mv_kind'] | null
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
@@ -220,6 +224,8 @@ export type Database = {
           group_id?: string
           id?: string
           image_url?: string | null
+          member_id?: string | null
+          mv_kind?: Database['public']['Enums']['mv_kind'] | null
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
@@ -235,6 +241,13 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'events_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'members'
             referencedColumns: ['id']
           },
           {
@@ -488,6 +501,7 @@ export type Database = {
         | 'concert'
         | 'other'
         | 'release'
+      mv_kind: 'main' | 'performance' | 'member' | 'other_version'
       suggestion_status: 'pending' | 'approved' | 'rejected'
     }
     CompositeTypes: {
@@ -519,7 +533,8 @@ export type Tables<
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])
     ? (DefaultSchema['Tables'] &
         DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
@@ -617,6 +632,7 @@ export const Constants = {
     Enums: {
       event_status: ['confirmed', 'tentative', 'cancelled'],
       event_type: ['mv', 'music_show', 'live', 'anniversary', 'concert', 'other', 'release'],
+      mv_kind: ['main', 'performance', 'member', 'other_version'],
       suggestion_status: ['pending', 'approved', 'rejected'],
     },
   },

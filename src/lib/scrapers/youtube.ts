@@ -4,6 +4,7 @@ import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { matchesGroup } from './group-match'
 import { decodeHtmlEntities } from './html-entities'
+import { detectMvVersion, type MemberRef } from './mv-version'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -121,6 +122,13 @@ export async function scrapeGroup(
   const groupSlug = group?.slug ?? null
   const groupName = group?.name ?? null
 
+  // Membres du groupe (pour detectMvVersion). Charge une seule fois par scrape.
+  const { data: membersData } = await supabase
+    .from('members')
+    .select('id, stage_name')
+    .eq('group_id', source.group_id)
+  const members: MemberRef[] = membersData ?? []
+
   // Pass A : 50 derniers uploads (toutes catégories) — capte les nouveaux events
   // au fil de l'eau (music_show, anniversary, concert, vraiment-récent-MV, etc.).
   const itemsA = await fetchSearch({
@@ -211,6 +219,16 @@ export async function scrapeGroup(
       })
     }
 
+    // mv_kind + member_id : seulement pour les MVs. Pour les autres types,
+    // valeur null (default DB) — préserve l'invariant CHECK de la migration.
+    let mvKind: 'main' | 'performance' | 'member' | 'other_version' | null = null
+    let memberId: string | null = null
+    if (eventType === 'mv') {
+      const v = detectMvVersion(title, members)
+      mvKind = v.kind
+      memberId = v.memberId
+    }
+
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
       source_id: source.id,
@@ -222,6 +240,8 @@ export async function scrapeGroup(
       status: 'confirmed',
       image_url: item.snippet.thumbnails.default.url,
       slug,
+      mv_kind: mvKind,
+      member_id: memberId,
     })
 
     if (error) {

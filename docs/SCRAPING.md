@@ -150,6 +150,66 @@ where type='anniversary' and source_url like 'https://www.youtube.com/%';
 
 ---
 
+## 8. Versions de MV (`mv_kind` + `member_id`)
+
+Système introduit par migration `0010_mv_versions.sql` (PR-B `feat/mv-versions-and-filtering`). Chaque event `type='mv'` est classifié par `mv_kind`. Les autres types ont `mv_kind=NULL` (default).
+
+### Enum `mv_kind`
+
+| Valeur          | Sémantique                              | Exemples de titres                                                                                           |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `main`          | Clip principal officiel                 | `aespa 'Whiplash' Official MV`, `(G)I-DLE 'Klaxon' Official Music Video`                                     |
+| `performance`   | Performance / Dance / Choreography ver. | `'Armageddon' MV (Performance Ver.)`, `'Queencard' M/V (Performance Ver.)`                                   |
+| `member`        | Version centrée sur un membre           | `ILLIT 'It's Me' Official MV (MOKA ver.)`, `(WONHEE ver.)` — `member_id` renseigné                           |
+| `other_version` | English / Remake / sub-unit / etc.      | `'Life's Too Short (English Ver.)' MV`, `'Better Things' MV (æ-aespa Ver.)`, `'(2024 aespa Remake Ver.)' MV` |
+
+### Algorithme de détection
+
+Implémenté dans `src/lib/scrapers/mv-version.ts:detectMvVersion(title, members)` :
+
+1. Cherche dans le titre la **dernière paire de parens flat (non-nested)** contenant `Ver.` ou `ver` (case-sensitive sur le `[Vv]`). Si rien → `main`.
+2. Strip `Ver.`/`ver` du contenu pour obtenir le **descripteur**. Vide → `other_version`.
+3. Si descripteur ∈ {`performance`, `dance`, `choreography`, `choreo`} (case-insensitive) → `performance`.
+4. Sinon, compare le descripteur normalisé (Unicode-aware, lowercase, strip non-alphanum) à chaque `stage_name` du groupe par **égalité stricte**. Match → `member` + `memberId`.
+5. Sinon → `other_version`.
+
+L'égalité stricte (pas `includes`) évite que "moka choreography ver." matche Moka quand c'est en réalité une Performance. L'ordre des règles (Performance d'abord) couvre les ambiguïtés.
+
+### Matrice de visibilité par surface
+
+Configurée dans `src/lib/events/queries.ts` :
+
+| Surface                                                                     | Filtre `mv_kind`                                                |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `/` (Upcoming), `/calendar`, `/my`, `/mvs` global, sidebar Recent comebacks | `main` uniquement (les non-MV passent via `OR mv_kind IS NULL`) |
+| `/groups/[slug]` section MVs                                                | `main` + `performance` (versions de groupe utiles)              |
+| `/artists/[slug]` (PR-C futur) via `getMemberMvs(memberId)`                 | tout MV où `member_id` = membre courant                         |
+
+### Invariant DB
+
+CHECK constraint `events_member_id_implies_member_kind` : `member_id IS NULL OR mv_kind = 'member'`. Empêche d'INSERT un member_id avec une autre kind. Le cas inverse (kind='member' + member_id=NULL) reste autorisé pour gérer la `ON DELETE SET NULL` quand un membre est retiré du roster.
+
+### Audit récurrent
+
+```sql
+-- Distribution des kinds (sanity check après chaque scrape majeur)
+SELECT mv_kind, count(*) FROM events WHERE type='mv' GROUP BY mv_kind ORDER BY count(*) DESC;
+
+-- MVs récemment scrapés et leur classification
+SELECT slug, title, mv_kind, member_id FROM events
+WHERE type='mv' AND created_at > now() - interval '1 day'
+ORDER BY created_at DESC;
+
+-- Versions qui sont sorties en 'other_version' — auditer périodiquement pour
+-- voir si des markers (ex: "Bilingual Ver.") méritent d'être ajoutés à la
+-- detection comme un nouveau kind.
+SELECT title FROM events
+WHERE type='mv' AND mv_kind='other_version'
+ORDER BY start_at DESC LIMIT 20;
+```
+
+---
+
 ## 4. Découverte de chaînes pour nouveaux artistes (futur)
 
 Quand on étendra le roster au-delà des 4 groupes MVP, **ne pas refaire l'erreur §3.3** : ne jamais ajouter une chaîne sans la vérifier.
