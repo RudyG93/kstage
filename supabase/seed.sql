@@ -82,7 +82,7 @@ from groups where slug = 'illit'
 on conflict (url) do nothing;
 
 insert into sources (name, url, type, group_id)
-select 'i-dle CUBE', 'https://www.youtube.com/@CUBEent', 'youtube_api', id
+select 'i-dle United CUBE', 'https://www.youtube.com/@theunitedcube', 'youtube_api', id
 from groups where slug = 'idle'
 on conflict (url) do nothing;
 
