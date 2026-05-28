@@ -36,6 +36,16 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 - **Page `/account`** : formulaire username + upload avatar (le lien _Account settings_ du dropdown header pointe déjà dessus → 404 tant que la page n'existe pas). Composant `src/components/avatar.tsx` à mettre à jour pour préférer `avatar_url` puis fallback initiales.
 - **Migration des initiales** : remplacer la dérivation depuis l'email par le `username` quand présent.
 
+## Polish UX (round 4 — Phase 3.y+) — notes Rudy
+
+Items remontés en revue post-Phase 3 ; petits/medium, à dégager dans une phase dédiée entre Phase 4 et Phase 5.
+
+- **Filtres multi-sélection + actifs en surbrillance** — `src/components/home/sidebar-left.tsx` (et équivalent calendar) : passer du single-select au multi-select. État actif visuellement marqué (ring + fond teinté). Adapter `getUpcomingEvents` pour accepter `types: EventType[]` (OR sur le filtre). Impact UI faible, query modéré.
+- **Groupage temporel** — `src/components/home/upcoming-list.tsx` : aujourd'hui flat list triée. Bucketer en **"Aujourd'hui > Demain > Cette semaine > Plus tard"** selon `start_at` vs `Date.now()` en KST (réutiliser `kstDayKey` de `src/lib/events/date.ts`). **Skip empty** : si "Demain" n'a aucun event, ne pas afficher la section du tout.
+- **Page Groups — agence cohérente** : seuls 4 groupes (héritage seed) ont une agence affichée. Décision : (a) retirer le champ tant qu'on n'a pas de source, OU (b) backfill via Wikidata/kpopofficial. Recommandation : retirer pour l'instant, backfill quand on aura une source fiable.
+- **Max 10 events par bucket + "voir les N autres"** — chaque section (aujourd'hui, demain, cette semaine, later) plafonne à 10 items triés par date/horaire. Au-delà : footer `<Link href="/calendar?day=YYYY-MM-DD">voir les N autres events</Link>` qui pointe sur le calendrier filtré sur la date concernée. Évite les flat lists infinies.
+- **Community pulse — modal + suggest-fix + toast** — actuellement le formulaire "Suggest event" vit dans une page dédiée. Refactor : (i) passer en **modal** (`src/components/ui/dialog.tsx`), (ii) ajouter un 2ème form **"Suggest fix"** (signaler une donnée incorrecte sur un event existant → soit nouveau type de suggestion, soit champ `target_event_id` nullable sur `event_suggestions`), (iii) à la validation, fermer la modal + **toast bas-droite** "Suggestion envoyée" (probablement ajouter Sonner si pas déjà présent).
+
 ## Wiring V2 des mocks home
 
 - Quand le système de ratings + articles existera, remplacer les imports depuis `src/lib/mocks/home.ts` dans `src/components/home/sidebar-right.tsx` par de vraies queries (`getMvOfTheMonth`, `getReleaseOfTheMonth`, `getRecentActivity`). Supprimer `src/lib/mocks/home.ts` à ce moment-là.

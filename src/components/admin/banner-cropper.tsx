@@ -35,7 +35,8 @@ export function BannerCropper({
   const [pending, start] = useTransition()
 
   // chargé via Cloudinary → CORS activé pour l'export canvas
-  const src = cloudinaryProxy(sourceUrl, 1000)
+  // source ≥ sortie cible (OUT_W=1600) → pas d'upscaling au canvas, image nette.
+  const src = cloudinaryProxy(sourceUrl, 1600)
   const onCropComplete = useCallback((_a: Area, px: Area) => setAreaPixels(px), [])
 
   function apply() {
@@ -65,7 +66,7 @@ export function BannerCropper({
         Adjust banner
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-[min(95vw,1400px)]">
           <DialogTitle>Adjust banner — {name}</DialogTitle>
           <div
             className="bg-muted relative mt-4 w-full overflow-hidden rounded-xl"

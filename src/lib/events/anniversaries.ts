@@ -81,17 +81,9 @@ export function generateAnniversaries(
     return m ? Number(m[1]) : null
   }
 
-  for (const g of groups) {
-    if (!g.debut_date) continue
-    const md = parseMonthDay(g.debut_date)
-    if (!md) continue
-    const occ = nextOccurrence(md, today)
-    const debutYear = yearOf(g.debut_date)
-    const years = debutYear ? occ.y - debutYear : null
-    // Le nom du groupe est déjà affiché à gauche du bandeau, on ne le répète pas.
-    const title = years && years > 0 ? `Debut anniversary · ${years} ans` : 'Debut anniversary'
-    push(g, occ, `anniv-debut-${g.id}`, title)
-  }
+  // Note : les "Debut anniversary" ne sont volontairement plus générés (peu
+  // d'intérêt côté commu k-pop). On garde `groups.debut_date` en DB pour des
+  // stats futures, mais on ne pollue plus le flux d'events avec ça.
   for (const m of members) {
     const g = groupById.get(m.group_id)
     if (!g || !m.birthday) continue
