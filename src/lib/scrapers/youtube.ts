@@ -3,6 +3,7 @@ import type { Database } from '@/types/database'
 import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { matchesGroup } from './group-match'
+import { decodeHtmlEntities } from './html-entities'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -92,9 +93,15 @@ export async function scrapeGroup(
   for (const item of items) {
     const sourceUrl = `https://www.youtube.com/watch?v=${item.id.videoId}`
 
+    // L'API YouTube renvoie les titres/descriptions HTML-encodés (`&#39;` etc.).
+    // On décode une fois en entrée pour que tous les usages aval (detectType,
+    // slug, insert, affichage) voient du texte propre.
+    const title = decodeHtmlEntities(item.snippet.title)
+    const description = decodeHtmlEntities(item.snippet.description)
+
     // On n'ingère que les types couverts au MVP (cf. labels.ts) : beaucoup
     // d'uploads (vlogs, variety…) tombent en 'other' et polluent le calendrier.
-    const eventType = detectEventType(item.snippet.title, item.snippet.description)
+    const eventType = detectEventType(title, description)
     if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
       skipped++
       continue
@@ -105,10 +112,7 @@ export async function scrapeGroup(
     // Sur une chaîne officielle, skip aussi les vlogs persos d'un membre dont
     // le titre ne mentionne pas le groupe. Si groupName est null pour une
     // raison quelconque, on garde le comportement non filtré.
-    if (
-      groupName &&
-      !matchesGroup(`${item.snippet.title} ${item.snippet.description}`, groupName)
-    ) {
+    if (groupName && !matchesGroup(`${title} ${description}`, groupName)) {
       skipped++
       continue
     }
@@ -130,7 +134,7 @@ export async function scrapeGroup(
     // rattrapé par le backfill).
     let slug: string | null = null
     if (groupSlug) {
-      const base = buildEventSlug(groupSlug, item.snippet.title, groupName)
+      const base = buildEventSlug(groupSlug, title, groupName)
       slug = await generateUniqueSlug(base, async (candidate) => {
         const { data } = await supabase
           .from('events')
@@ -146,8 +150,8 @@ export async function scrapeGroup(
       source_id: source.id,
       source_url: sourceUrl,
       type: eventType,
-      title: item.snippet.title,
-      description: item.snippet.description.slice(0, 500) || null,
+      title,
+      description: description.slice(0, 500) || null,
       start_at: item.snippet.publishedAt,
       status: 'confirmed',
       image_url: item.snippet.thumbnails.default.url,
