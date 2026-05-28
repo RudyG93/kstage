@@ -94,5 +94,45 @@ export async function getRecentComebacks(limit = 3) {
   return data ?? []
 }
 
+const MV_SELECT =
+  'id, slug, title, type, start_at, source_url, image_url, groups!inner(slug, name, color_hex, image_url)'
+
+/**
+ * Tous les MVs d'un groupe (passés inclus), pour la section "Music videos"
+ * de la page /groups/[slug] et le listing /mvs.
+ */
+export async function getGroupMvs(slug: string, limit = 48) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select(MV_SELECT)
+    .eq('groups.slug', slug)
+    .eq('type', 'mv')
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Liste globale des MVs, optionnellement restreinte à un set de groupes
+ * (utilisé pour la section "From your groups" sur /mvs).
+ */
+export async function getAllMvs(options: { groupIds?: string[]; limit?: number } = {}) {
+  const { groupIds, limit = 100 } = options
+  const supabase = await createClient()
+  let query = supabase
+    .from('events')
+    .select(MV_SELECT)
+    .eq('type', 'mv')
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (groupIds && groupIds.length > 0) query = query.in('group_id', groupIds)
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
+export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]

@@ -11,34 +11,11 @@ insert into groups (slug, name, agency, fandom_name, debut_date, color_hex) valu
   ('idle',       'i-dle',       'CUBE Entertainment', 'NEVERLAND', '2018-05-02', '#D4145A')
 on conflict (slug) do nothing;
 
-with g as (select id, slug from groups)
-insert into events (group_id, type, title, start_at, status, source_url) values
-  -- aespa
-  ((select id from g where slug='aespa'),       'mv',    'aespa — new mini album',        '2026-06-15 09:00+00', 'confirmed', 'https://example.com/aespa-comeback-0615'),
-  ((select id from g where slug='aespa'),       'music_show',  'M Countdown',                   '2026-05-29 11:00+00', 'confirmed', 'https://example.com/aespa-mcd-0529'),
-  ((select id from g where slug='aespa'),       'live',        'aespa — Weverse Live',          '2026-05-25 12:00+00', 'confirmed', null),
-  ((select id from g where slug='aespa'),       'anniversary', 'aespa — debut anniversary',     '2025-11-17 00:00+00', 'confirmed', null),
-  ((select id from g where slug='aespa'),       'music_show',  'Music Bank',                    '2026-06-19 08:00+00', 'tentative', null),
-  -- ILLIT
-  ((select id from g where slug='illit'),       'mv',    'ILLIT — 2nd single album',      '2026-07-08 09:00+00', 'confirmed', 'https://example.com/illit-comeback-0708'),
-  ((select id from g where slug='illit'),       'music_show',  'Inkigayo',                      '2026-06-01 06:00+00', 'confirmed', null),
-  ((select id from g where slug='illit'),       'live',        'ILLIT — YouTube premiere',      '2026-07-08 09:00+00', 'confirmed', 'https://youtube.com/illit-premiere'),
-  ((select id from g where slug='illit'),       'anniversary', 'ILLIT — debut anniversary',     '2026-03-25 00:00+00', 'confirmed', null),
-  -- BABYMONSTER
-  ((select id from g where slug='babymonster'), 'mv',    'BABYMONSTER — 1st full album',  '2026-06-27 09:00+00', 'confirmed', 'https://example.com/bm-comeback-0627'),
-  ((select id from g where slug='babymonster'), 'music_show',  'Show Champion',                 '2026-07-01 09:30+00', 'confirmed', null),
-  ((select id from g where slug='babymonster'), 'anniversary', 'BABYMONSTER — debut anniversary', '2025-11-27 00:00+00', 'confirmed', null),
-  ((select id from g where slug='babymonster'), 'live',        'BABYMONSTER — Weverse Live',    '2026-05-31 11:00+00', 'tentative', null),
-  -- i-dle
-  ((select id from g where slug='idle'),       'mv',    'i-dle —9th mini album',     '2026-07-21 09:00+00', 'tentative', 'https://example.com/idle-comeback-0721'),
-  ((select id from g where slug='idle'),       'music_show',  'The Show',                      '2026-07-22 09:00+00', 'tentative', null),
-  ((select id from g where slug='idle'),       'live',        'i-dle —V Live special',     '2026-06-05 12:00+00', 'confirmed', null),
-  ((select id from g where slug='idle'),       'anniversary', 'i-dle —debut anniversary',  '2026-05-02 00:00+00', 'confirmed', null),
-  ((select id from g where slug='idle'),       'music_show',  'Music Core',                    '2026-07-25 07:00+00', 'tentative', null),
-  -- événements passés (pour tester le filtrage "upcoming")
-  ((select id from g where slug='aespa'),       'mv',    'aespa — previous single',       '2026-02-10 09:00+00', 'confirmed', 'https://example.com/aespa-old-0210'),
-  ((select id from g where slug='illit'),       'music_show',  'Music Bank (rerun)',            '2026-04-18 08:00+00', 'confirmed', null)
-on conflict (group_id, type, start_at, source_url) do nothing;
+-- Note : le bloc INSERT INTO events fictif a été retiré (cf. feat/mv-discovery-
+-- and-seed-cleanup). Les events viennent désormais uniquement du scraping
+-- (YouTube + kpopofficial + community suggestions). Pour peupler une DB de
+-- dev local, déclencher manuellement le cron /api/cron/scrape-youtube après
+-- avoir seedé les sources ci-dessous.
 
 -- Sources YouTube (étape 5)
 -- Les handles @xxx sont à vérifier / corriger si besoin
