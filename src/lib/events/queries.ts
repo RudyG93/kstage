@@ -7,6 +7,11 @@ type EventType = Database['public']['Enums']['event_type']
 const EVENT_SELECT =
   'id, slug, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
+// Predicate appliqué partout sauf getGroupMvs (cf. matrice §8 SCRAPING.md) :
+// les MVs `main` + les non-MV (mv_kind=NULL) sont visibles. Les versions
+// performance/member/other_version sont filtrées.
+const isMainOrNonMv = 'mv_kind.eq.main,mv_kind.is.null'
+
 export async function getUpcomingEvents({
   groupSlug,
   type,
@@ -23,6 +28,7 @@ export async function getUpcomingEvents({
     .from('events')
     .select(EVENT_SELECT)
     .gte('start_at', new Date().toISOString())
+    .or(isMainOrNonMv)
     .order('start_at', { ascending: true })
     .limit(limit)
 
@@ -53,6 +59,7 @@ export async function getEventsForMonth({
     .select(EVENT_SELECT)
     .gte('start_at', startISO)
     .lt('start_at', endISO)
+    .or(isMainOrNonMv)
     .order('start_at', { ascending: true })
 
   if (groupSlug) query = query.eq('groups.slug', groupSlug)
@@ -73,6 +80,7 @@ export async function getUpcomingEventCountsByGroup(
     .select('group_id')
     .in('group_id', groupIds)
     .gte('start_at', new Date().toISOString())
+    .or(isMainOrNonMv)
   if (error) throw error
   const counts = new Map<string, number>()
   for (const row of data ?? []) {
@@ -87,6 +95,7 @@ export async function getRecentComebacks(limit = 3) {
     .from('events')
     .select('id, slug, type, title, start_at, image_url, groups!inner(name, slug)')
     .eq('type', 'mv')
+    .eq('mv_kind', 'main')
     .lt('start_at', new Date().toISOString())
     .order('start_at', { ascending: false })
     .limit(limit)
@@ -99,7 +108,8 @@ const MV_SELECT =
 
 /**
  * Tous les MVs d'un groupe (passés inclus), pour la section "Music videos"
- * de la page /groups/[slug] et le listing /mvs.
+ * de la page /groups/[slug]. Garde main + performance (versions de groupe) ;
+ * exclut member (réservé à /artists/[slug]) et other_version.
  */
 export async function getGroupMvs(slug: string, limit = 48) {
   const supabase = await createClient()
@@ -108,6 +118,7 @@ export async function getGroupMvs(slug: string, limit = 48) {
     .select(MV_SELECT)
     .eq('groups.slug', slug)
     .eq('type', 'mv')
+    .in('mv_kind', ['main', 'performance'])
     .order('start_at', { ascending: false })
     .limit(limit)
   if (error) throw error
@@ -115,8 +126,8 @@ export async function getGroupMvs(slug: string, limit = 48) {
 }
 
 /**
- * Liste globale des MVs, optionnellement restreinte à un set de groupes
- * (utilisé pour la section "From your groups" sur /mvs).
+ * Liste globale des MVs (main only), optionnellement restreinte à un set de
+ * groupes (utilisé pour la section "From your groups" sur /mvs).
  */
 export async function getAllMvs(options: { groupIds?: string[]; limit?: number } = {}) {
   const { groupIds, limit = 100 } = options
@@ -125,10 +136,30 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
     .from('events')
     .select(MV_SELECT)
     .eq('type', 'mv')
+    .eq('mv_kind', 'main')
     .order('start_at', { ascending: false })
     .limit(limit)
   if (groupIds && groupIds.length > 0) query = query.in('group_id', groupIds)
   const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Tous les MVs liés à un membre spécifique (member_id = X) — pour la future
+ * page /artists/[slug] de PR-C. Inclut les MVs `main` du groupe ? Non — ici
+ * on retourne uniquement les versions centrées sur ce membre. PR-C décidera
+ * si on combine avec les MVs du groupe.
+ */
+export async function getMemberMvs(memberId: string, limit = 48) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select(MV_SELECT)
+    .eq('type', 'mv')
+    .eq('member_id', memberId)
+    .order('start_at', { ascending: false })
+    .limit(limit)
   if (error) throw error
   return data ?? []
 }
