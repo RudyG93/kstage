@@ -23,7 +23,7 @@ const supabase = createClient<Database>(
 async function main() {
   const { data: events, error } = await supabase
     .from('events')
-    .select('id, title, slug, group_id, groups!inner(slug)')
+    .select('id, title, slug, group_id, groups!inner(slug, name)')
     .is('slug', null)
   if (error) throw error
   if (!events || events.length === 0) {
@@ -42,12 +42,13 @@ async function main() {
 
   const updates: { id: string; title: string; slug: string }[] = []
   for (const ev of events) {
-    const groupSlug = (ev.groups as { slug: string } | null)?.slug
+    const group = ev.groups as { slug: string; name: string } | null
+    const groupSlug = group?.slug
     if (!groupSlug) {
       console.warn(`Skip ${ev.id}: no group slug`)
       continue
     }
-    const base = buildEventSlug(groupSlug, ev.title)
+    const base = buildEventSlug(groupSlug, ev.title, group?.name)
     let candidate = base || `event-${ev.id.slice(0, 8)}`
     let i = 2
     while (taken.has(candidate)) {

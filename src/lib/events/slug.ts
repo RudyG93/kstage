@@ -15,10 +15,38 @@ export function slugify(input: string): string {
 
 /**
  * Construit un slug d'event canonique : `{groupSlug}-{titleSlug}`.
- * Si la combinaison est déjà prise, le caller incrémente (`-2`, `-3`, …).
+ *
+ * Si le titre commence déjà par le nom du groupe (cas dominant : kpopofficial
+ * publie `ATEEZ Album – GOLDEN HOUR …` pour le groupe `ATEEZ`), on dédupliquerait
+ * le préfixe ⇒ `ateez-ateez-album-…`. On strip donc en amont, en tenant compte
+ * de deux formes possibles du nom :
+ *   - `groupSlug` lui-même (cas où il matche slugify(title) en tête)
+ *   - `slugify(groupName)` (cas où group.slug ≠ slugify(group.name), ex.
+ *     `nflying` vs `n-flying`, `fiftyfifty` vs `fifty-fifty`)
+ *
+ * Si la combinaison résultante est déjà prise en DB, le caller incrémente
+ * (`-2`, `-3`, …) via `generateUniqueSlug`.
  */
-export function buildEventSlug(groupSlug: string, title: string): string {
-  const titleSlug = slugify(title)
+export function buildEventSlug(
+  groupSlug: string,
+  title: string,
+  groupName?: string | null,
+): string {
+  let titleSlug = slugify(title)
+  if (titleSlug) {
+    const prefixes = new Set<string>()
+    prefixes.add(`${groupSlug}-`)
+    if (groupName) {
+      const nameSlug = slugify(groupName)
+      if (nameSlug) prefixes.add(`${nameSlug}-`)
+    }
+    for (const p of prefixes) {
+      if (titleSlug.startsWith(p)) {
+        titleSlug = titleSlug.slice(p.length)
+        break
+      }
+    }
+  }
   const base = titleSlug ? `${groupSlug}-${titleSlug}` : groupSlug
   // Limite raisonnable pour URL lisible et compatible index DB.
   return base.slice(0, 80).replace(/-+$/, '')

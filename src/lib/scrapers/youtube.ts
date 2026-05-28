@@ -64,13 +64,16 @@ export async function scrapeGroup(
 ): Promise<ScrapeResult> {
   const channelId = await resolveChannelId(source.url, apiKey)
 
-  // Charge le slug du groupe une fois pour générer les slugs d'events.
+  // Charge le slug + name du groupe pour générer les slugs d'events.
+  // Le name est nécessaire pour dédupliquer les préfixes quand le titre scrapé
+  // commence par le nom du groupe (cf. buildEventSlug).
   const { data: group } = await supabase
     .from('groups')
-    .select('slug')
+    .select('slug, name')
     .eq('id', source.group_id)
     .maybeSingle()
   const groupSlug = group?.slug ?? null
+  const groupName = group?.name ?? null
 
   const res = await fetch(
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`,
@@ -111,7 +114,7 @@ export async function scrapeGroup(
     // rattrapé par le backfill).
     let slug: string | null = null
     if (groupSlug) {
-      const base = buildEventSlug(groupSlug, item.snippet.title)
+      const base = buildEventSlug(groupSlug, item.snippet.title, groupName)
       slug = await generateUniqueSlug(base, async (candidate) => {
         const { data } = await supabase
           .from('events')

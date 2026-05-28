@@ -94,15 +94,16 @@ export async function approveSuggestion(id: string): Promise<ActionResult> {
     .eq('type', 'community')
     .maybeSingle()
 
-  // Slug pour la route article — récupère le slug du groupe puis résout collisions.
+  // Slug pour la route article — récupère slug + name du groupe (name pour la
+  // déduplication du préfixe quand le titre commence par le nom du groupe).
   const { data: group } = await admin
     .from('groups')
-    .select('slug')
+    .select('slug, name')
     .eq('id', suggestion.group_id)
     .maybeSingle()
   let slug: string | null = null
   if (group?.slug) {
-    const base = buildEventSlug(group.slug, suggestion.title)
+    const base = buildEventSlug(group.slug, suggestion.title, group.name)
     slug = await generateUniqueSlug(base, async (candidate) => {
       const { data } = await admin.from('events').select('id').eq('slug', candidate).maybeSingle()
       return Boolean(data)

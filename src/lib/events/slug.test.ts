@@ -46,4 +46,31 @@ describe('buildEventSlug', () => {
     expect(result.length).toBeLessThanOrEqual(80)
     expect(result.endsWith('-')).toBe(false)
   })
+
+  // Cas réels prod : le titre commence par le nom du groupe → ne pas dupliquer.
+  it('dédoublonne quand le titre commence par le nom du groupe (ATEEZ kpopofficial)', () => {
+    expect(buildEventSlug('ateez', 'ATEEZ Album – GOLDEN HOUR : Part.5 (2026)', 'ATEEZ')).toBe(
+      'ateez-album-golden-hour-part-5-2026',
+    )
+  })
+
+  it('dédoublonne quand group.slug ≠ slugify(group.name) (N.Flying → nflying vs n-flying)', () => {
+    expect(
+      buildEventSlug('nflying', 'N.Flying Digital Single – In Between Seasons (2026)', 'N.Flying'),
+    ).toBe('nflying-digital-single-in-between-seasons-2026')
+  })
+
+  it('dédoublonne FIFTY FIFTY (slug fiftyfifty vs name → fifty-fifty)', () => {
+    expect(
+      buildEventSlug(
+        'fiftyfifty',
+        "FIFTY FIFTY 4th Mini Album – Imperfect-I'mperfect (2026)",
+        'Fifty Fifty',
+      ),
+    ).toBe('fiftyfifty-4th-mini-album-imperfect-i-mperfect-2026')
+  })
+
+  it('laisse intact si le titre ne contient pas le nom du groupe (Music Core)', () => {
+    expect(buildEventSlug('gidle', 'Music Core', 'i-dle')).toBe('gidle-music-core')
+  })
 })
