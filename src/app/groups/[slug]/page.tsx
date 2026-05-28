@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import { EventList } from '@/components/event-list'
 import { FollowButton } from '@/components/follow-button'
+import { MvsGrid } from '@/components/group/mvs-grid'
 import { getGroupBySlug } from '@/lib/groups/queries'
-import { getUpcomingEvents } from '@/lib/events/queries'
+import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { createClient } from '@/lib/supabase/server'
 
@@ -17,10 +18,12 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
       data: { user },
     },
     events,
+    mvs,
     followedIds,
   ] = await Promise.all([
     supabase.auth.getUser(),
     getUpcomingEvents({ groupSlug: slug, limit: 100 }),
+    getGroupMvs(slug, 24),
     getFollowedGroupIds(),
   ])
   const subtitle = [group.agency, group.fandom_name].filter(Boolean).join(' · ')
@@ -49,6 +52,12 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           <h2 className="text-sm font-medium">Upcoming events</h2>
           <EventList events={events} emptyMessage="No upcoming events." />
         </section>
+        {mvs.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
+            <MvsGrid mvs={mvs} />
+          </section>
+        )}
       </div>
     </div>
   )

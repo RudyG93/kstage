@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarIcon, HeartIcon, ListIcon, UsersIcon } from 'lucide-react'
+import { CalendarIcon, HeartIcon, ListIcon, PlayCircleIcon, UsersIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const BASE_ITEMS = [
   { href: '/', label: 'Upcoming', Icon: ListIcon },
   { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
+  { href: '/mvs', label: 'MVs', Icon: PlayCircleIcon },
   { href: '/groups', label: 'Groups', Icon: UsersIcon },
 ] as const
 
