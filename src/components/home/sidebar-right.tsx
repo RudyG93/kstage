@@ -6,6 +6,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getRecentComebacks } from '@/lib/events/queries'
 import { displayEventTitle } from '@/lib/events/title'
+import { eventHref } from '@/lib/events/href'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 import {
   MOCK_MV_OF_THE_MONTH,
@@ -108,7 +109,7 @@ export async function SidebarRight() {
             {recentComebacks.map((cb) => (
               <li key={cb.id}>
                 <Link
-                  href={`/groups/${cb.groups?.slug ?? ''}`}
+                  href={eventHref(cb)}
                   className="hover:bg-muted/30 -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
                 >
                   {cb.image_url ? (

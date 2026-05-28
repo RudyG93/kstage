@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
+import { eventHref } from '@/lib/events/href'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { TypeBadge } from './type-badge'
 import type { UpcomingEvent } from '@/lib/events/queries'
@@ -38,7 +39,7 @@ export function HomeEventCard({
 
   return (
     <Link
-      href={`/groups/${group?.slug ?? ''}`}
+      href={eventHref(event)}
       className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-16' : 'h-20'}`}
     >
       <div
