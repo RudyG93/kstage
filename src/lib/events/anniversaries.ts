@@ -14,6 +14,7 @@ interface AnnivGroup {
   color_hex: string | null
   image_url: string | null
   image_landscape: string | null
+  banner_url: string | null
   debut_date: string | null
 }
 interface AnnivMember {
@@ -70,6 +71,7 @@ export function generateAnniversaries(
         color_hex: g.color_hex,
         image_url: g.image_url,
         image_landscape: g.image_landscape,
+        banner_url: g.banner_url,
       },
     } as UpcomingEvent)
   }
@@ -104,7 +106,7 @@ export async function getUpcomingAnniversaries(
   const [{ data: groups }, { data: members }] = await Promise.all([
     supabase
       .from('groups')
-      .select('id, slug, name, color_hex, image_url, image_landscape, debut_date')
+      .select('id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date')
       .in('id', groupIds),
     supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
   ])

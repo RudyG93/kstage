@@ -11,3 +11,13 @@ export function faceCrop(url: string, width: number, height: number): string {
   const t = `c_fill,g_auto,w_${width},h_${height},f_auto,q_auto`
   return `https://res.cloudinary.com/${CLOUD}/image/fetch/${t}/${encodeURIComponent(url)}`
 }
+
+/**
+ * Proxy l'image entière (sans recadrage) via Cloudinary — sert à charger une
+ * source distante avec CORS activé (Access-Control-Allow-Origin: *) pour
+ * pouvoir l'exporter sur un canvas (cropper admin).
+ */
+export function cloudinaryProxy(url: string, width: number): string {
+  if (!CLOUD || !url) return url
+  return `https://res.cloudinary.com/${CLOUD}/image/fetch/w_${width},f_auto,q_auto/${encodeURIComponent(url)}`
+}

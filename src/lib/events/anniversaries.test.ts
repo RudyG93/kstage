@@ -9,6 +9,7 @@ const group = (over: Partial<Parameters<typeof generateAnniversaries>[0][number]
   color_hex: null,
   image_url: null,
   image_landscape: null,
+  banner_url: null,
   debut_date: null,
   ...over,
 })

@@ -136,6 +136,7 @@ export type Database = {
       groups: {
         Row: {
           agency: string | null
+          banner_url: string | null
           color_hex: string | null
           created_at: string
           debut_date: string | null
@@ -149,6 +150,7 @@ export type Database = {
         }
         Insert: {
           agency?: string | null
+          banner_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
@@ -162,6 +164,7 @@ export type Database = {
         }
         Update: {
           agency?: string | null
+          banner_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
