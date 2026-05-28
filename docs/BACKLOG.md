@@ -3,6 +3,10 @@
 Idées d'amélioration différées **post-MVP** (cf. roadmap `PROJECT.md §6`, vision V2 `§10`).
 On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedback réel re-priorisera.
 
+## Admin
+
+- **Page admin hub** (`/admin`) — point d'entrée centralisé pour la modération : grille de liens vers les sous-sections (`/admin/banners`, `/admin/suggestions`, …) au lieu d'URLs séparées à connaître. Au fil de l'eau, y rattacher les futures sections (gestion groupes/membres, scraping logs, etc.).
+
 ## Suggestions communautaires (suite de l'étape 8)
 
 - **Édition admin d'une suggestion** — permettre à l'admin de corriger une suggestion (titre, date, type…) avant de l'approuver, au lieu de seulement approuver/rejeter. Nouveau flux : formulaire d'édition côté `/admin/suggestions` + action `updateSuggestion` (service_role).
@@ -16,6 +20,7 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 ## Types d'events
 
 - **Concert** (et éventuellement d'autres types) — réintroduire quand pertinent : rajouter à `FILTERABLE_EVENT_TYPES` (`src/lib/events/labels.ts`), au scraper YouTube, et au formulaire de suggestion (tout s'aligne sur cette constante).
+- **Music show — repenser l'affichage** : aujourd'hui un Music Bank avec 8 groupes invités génère 8 events redondants pour qui suit plusieurs groupes (mêmes date/heure/visuel, seul le nom change). Idée : modéliser le **show comme "artiste"** (Music Bank, Inkigayo… comme entrée dédiée — table `groups` réutilisée ou table `shows` séparée), le **titre = lineup** ("aespa, NewJeans, IVE, …"), et "follow" un show devient possible. Implique de revoir la query `getUpcomingEvents` (un event music_show ne se rattache plus 1-pour-1 à un groupe via `event_groups`) et la carte home (pas de groupe principal → bandeau neutre du show). À cadrer avec Rudy.
 
 ## Scraping / récupération de données
 
@@ -30,6 +35,16 @@ On finit l'étape 9 (polish + lancement) avant d'attaquer ces points ; le feedba
 - **Storage Supabase** : bucket `avatars`, policies upload own.
 - **Page `/account`** : formulaire username + upload avatar (le lien _Account settings_ du dropdown header pointe déjà dessus → 404 tant que la page n'existe pas). Composant `src/components/avatar.tsx` à mettre à jour pour préférer `avatar_url` puis fallback initiales.
 - **Migration des initiales** : remplacer la dérivation depuis l'email par le `username` quand présent.
+
+## Polish UX (round 4 — Phase 3.y+) — notes Rudy
+
+Items remontés en revue post-Phase 3 ; petits/medium, à dégager dans une phase dédiée entre Phase 4 et Phase 5.
+
+- **Filtres multi-sélection + actifs en surbrillance** — `src/components/home/sidebar-left.tsx` (et équivalent calendar) : passer du single-select au multi-select. État actif visuellement marqué (ring + fond teinté). Adapter `getUpcomingEvents` pour accepter `types: EventType[]` (OR sur le filtre). Impact UI faible, query modéré.
+- **Groupage temporel** — `src/components/home/upcoming-list.tsx` : aujourd'hui flat list triée. Bucketer en **"Aujourd'hui > Demain > Cette semaine > Plus tard"** selon `start_at` vs `Date.now()` en KST (réutiliser `kstDayKey` de `src/lib/events/date.ts`). **Skip empty** : si "Demain" n'a aucun event, ne pas afficher la section du tout.
+- **Page Groups — agence cohérente** : seuls 4 groupes (héritage seed) ont une agence affichée. Décision : (a) retirer le champ tant qu'on n'a pas de source, OU (b) backfill via Wikidata/kpopofficial. Recommandation : retirer pour l'instant, backfill quand on aura une source fiable.
+- **Max 10 events par bucket + "voir les N autres"** — chaque section (aujourd'hui, demain, cette semaine, later) plafonne à 10 items triés par date/horaire. Au-delà : footer `<Link href="/calendar?day=YYYY-MM-DD">voir les N autres events</Link>` qui pointe sur le calendrier filtré sur la date concernée. Évite les flat lists infinies.
+- **Community pulse — modal + suggest-fix + toast** — actuellement le formulaire "Suggest event" vit dans une page dédiée. Refactor : (i) passer en **modal** (`src/components/ui/dialog.tsx`), (ii) ajouter un 2ème form **"Suggest fix"** (signaler une donnée incorrecte sur un event existant → soit nouveau type de suggestion, soit champ `target_event_id` nullable sur `event_suggestions`), (iii) à la validation, fermer la modal + **toast bas-droite** "Suggestion envoyée" (probablement ajouter Sonner si pas déjà présent).
 
 ## Wiring V2 des mocks home
 

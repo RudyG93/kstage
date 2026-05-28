@@ -5,6 +5,7 @@ import { Star, Lightbulb } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getRecentComebacks } from '@/lib/events/queries'
+import { displayEventTitle } from '@/lib/events/title'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 import {
   MOCK_MV_OF_THE_MONTH,
@@ -127,7 +128,9 @@ export async function SidebarRight() {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{cb.title}</p>
+                    <p className="truncate text-sm font-medium">
+                      {displayEventTitle(cb.title, cb.groups?.name)}
+                    </p>
                     <p className="text-muted-foreground text-xs">{cb.groups?.name}</p>
                   </div>
                   <span className="text-muted-foreground shrink-0 font-mono text-[11px] tabular-nums">

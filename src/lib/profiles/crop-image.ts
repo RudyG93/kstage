@@ -11,6 +11,7 @@ const MAX_SOURCE_DIM = 1024
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    img.crossOrigin = 'anonymous' // canvas export d'images distantes (Cloudinary, CORS *)
     img.addEventListener('load', () => resolve(img))
     img.addEventListener('error', () => reject(new Error('Could not load image')))
     img.src = src
@@ -45,16 +46,22 @@ export async function downscaleToObjectURL(file: File, maxDim = MAX_SOURCE_DIM):
 }
 
 // Recadre `src` selon la zone (en pixels source) renvoyée par react-easy-crop
-// et produit un JPEG carré 512×512 (l'affichage rond se fait en CSS).
-export async function getCroppedBlob(src: string, crop: PixelCrop): Promise<Blob> {
+// et produit un JPEG aux dimensions de sortie demandées (512² par défaut = avatar ;
+// rectangulaire pour les bandeaux).
+export async function getCroppedBlob(
+  src: string,
+  crop: PixelCrop,
+  outWidth = OUTPUT_SIZE,
+  outHeight = OUTPUT_SIZE,
+): Promise<Blob> {
   const image = await loadImage(src)
   const canvas = document.createElement('canvas')
-  canvas.width = OUTPUT_SIZE
-  canvas.height = OUTPUT_SIZE
+  canvas.width = outWidth
+  canvas.height = outHeight
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas is not supported')
 
-  ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
+  ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, outWidth, outHeight)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

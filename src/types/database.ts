@@ -136,34 +136,43 @@ export type Database = {
       groups: {
         Row: {
           agency: string | null
+          banner_url: string | null
           color_hex: string | null
           created_at: string
           debut_date: string | null
           fandom_name: string | null
           id: string
+          image_landscape: string | null
           image_url: string | null
+          links: Json
           name: string
           slug: string
         }
         Insert: {
           agency?: string | null
+          banner_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
           fandom_name?: string | null
           id?: string
+          image_landscape?: string | null
           image_url?: string | null
+          links?: Json
           name: string
           slug: string
         }
         Update: {
           agency?: string | null
+          banner_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
           fandom_name?: string | null
           id?: string
+          image_landscape?: string | null
           image_url?: string | null
+          links?: Json
           name?: string
           slug?: string
         }

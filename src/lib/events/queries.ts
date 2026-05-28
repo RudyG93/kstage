@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 type EventType = Database['public']['Enums']['event_type']
 
 const EVENT_SELECT =
-  'id, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url)'
+  'id, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 export async function getUpcomingEvents({
   groupSlug,
