@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
+import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -63,6 +64,14 @@ export async function scrapeGroup(
 ): Promise<ScrapeResult> {
   const channelId = await resolveChannelId(source.url, apiKey)
 
+  // Charge le slug du groupe une fois pour générer les slugs d'events.
+  const { data: group } = await supabase
+    .from('groups')
+    .select('slug')
+    .eq('id', source.group_id)
+    .maybeSingle()
+  const groupSlug = group?.slug ?? null
+
   const res = await fetch(
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`,
   )
@@ -97,6 +106,22 @@ export async function scrapeGroup(
       continue
     }
 
+    // Slug pour la route article (`/mv/[slug]`). Skip si on n'a pas pu récupérer
+    // le slug du groupe (cas dégénéré ; l'event est inséré sans slug et sera
+    // rattrapé par le backfill).
+    let slug: string | null = null
+    if (groupSlug) {
+      const base = buildEventSlug(groupSlug, item.snippet.title)
+      slug = await generateUniqueSlug(base, async (candidate) => {
+        const { data } = await supabase
+          .from('events')
+          .select('id')
+          .eq('slug', candidate)
+          .maybeSingle()
+        return Boolean(data)
+      })
+    }
+
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
       source_id: source.id,
@@ -107,6 +132,7 @@ export async function scrapeGroup(
       start_at: item.snippet.publishedAt,
       status: 'confirmed',
       image_url: item.snippet.thumbnails.default.url,
+      slug,
     })
 
     if (error) {

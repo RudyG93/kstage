@@ -6,6 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import { isAdmin } from '@/lib/auth/admin'
+import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { parseSuggestionInput, DAILY_SUGGESTION_CAP } from './validation'
 
 export type SuggestionState = { error: string } | { ok: true } | null
@@ -93,6 +94,21 @@ export async function approveSuggestion(id: string): Promise<ActionResult> {
     .eq('type', 'community')
     .maybeSingle()
 
+  // Slug pour la route article — récupère le slug du groupe puis résout collisions.
+  const { data: group } = await admin
+    .from('groups')
+    .select('slug')
+    .eq('id', suggestion.group_id)
+    .maybeSingle()
+  let slug: string | null = null
+  if (group?.slug) {
+    const base = buildEventSlug(group.slug, suggestion.title)
+    slug = await generateUniqueSlug(base, async (candidate) => {
+      const { data } = await admin.from('events').select('id').eq('slug', candidate).maybeSingle()
+      return Boolean(data)
+    })
+  }
+
   const { error: insertErr } = await admin.from('events').insert({
     group_id: suggestion.group_id,
     type: suggestion.type,
@@ -102,6 +118,7 @@ export async function approveSuggestion(id: string): Promise<ActionResult> {
     status: 'confirmed',
     source_id: source?.id ?? null,
     source_url: suggestion.source_url,
+    slug,
   })
   // Collision sur la contrainte unique events = event déjà présent → on continue.
   if (insertErr && !/duplicate key|unique/i.test(insertErr.message)) {
