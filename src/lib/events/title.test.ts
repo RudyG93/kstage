@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { displayEventTitle } from './title'
+import { displayEventTitle, displaySongTitle } from './title'
 
 describe('displayEventTitle', () => {
   it('retire le préfixe groupe + année + normalise Part.N (cas avec hyphen)', () => {
@@ -34,5 +34,60 @@ describe('displayEventTitle', () => {
 
   it('limite connue : le pattern .N normalise aussi v2.0 → v2 0 (acceptable, Part.N domine côté YT)', () => {
     expect(displayEventTitle('Album v2.0 release', 'IVE')).toBe('Album v2 0 release')
+  })
+})
+
+describe('displaySongTitle', () => {
+  it('quotes straight : extrait WDA (Feat. G-DRAGON) — apostrophe curly intérieure OK', () => {
+    expect(
+      displaySongTitle("aespa 에스파 'WDA (Whole Different Animal) (Feat. G-DRAGON)' MV"),
+    ).toBe('WDA (Whole Different Animal) (Feat. G-DRAGON)')
+  })
+
+  it('groupe en hangul + chanson en hangul : strip groupe, garde Klaxon hangul', () => {
+    expect(
+      displaySongTitle("(여자)아이들((G)I-DLE) - '클락션 (Klaxon)' Official Music Video"),
+    ).toBe('클락션 (Klaxon)')
+  })
+
+  it("apostrophe curly U+2019 à l'intérieur de quotes straight — straight outer matche", () => {
+    expect(displaySongTitle("ILLIT (아일릿) 'It’s Me' Official MV (MOKA ver.)")).toBe('It’s Me')
+  })
+
+  it('chanson en hangul seul', () => {
+    expect(displaySongTitle("BABYMONSTER - '춤 (CHOOM)' M/V")).toBe('춤 (CHOOM)')
+  })
+
+  it('chanson mono-mot', () => {
+    expect(displaySongTitle("aespa 'Whiplash' Official MV")).toBe('Whiplash')
+  })
+
+  it('curly quotes ‘ ’ (priorité 1, avant straight)', () => {
+    expect(displaySongTitle('aespa ‘Drama’ Official MV')).toBe('Drama')
+  })
+
+  it('pas de quotes : fallback strip MV suffix + groupe', () => {
+    expect(displaySongTitle('Random Title Sans Quotes MV', 'aespa')).toBe(
+      'Random Title Sans Quotes',
+    )
+  })
+
+  it('pas de quotes ni MV suffix : retourne le titre nettoyé', () => {
+    expect(displaySongTitle('Just a title', null)).toBe('Just a title')
+  })
+
+  it('titre vide → vide', () => {
+    expect(displaySongTitle('', null)).toBe('')
+  })
+
+  it('fallback : "Official Music Video" trailing strippé (groupe sans séparateur reste, limitation displayEventTitle)', () => {
+    // displayEventTitle requiert un séparateur (—/–/-/:) après le nom du groupe
+    // pour le strip. Sans, le préfixe groupe reste. C'est OK en pratique car
+    // 95% des MVs ont des quotes (priorité 1 du helper).
+    expect(displaySongTitle('aespa Hot Mess Official Music Video', 'aespa')).toBe('aespa Hot Mess')
+  })
+
+  it('fallback avec séparateur : strip groupe ET MV suffix', () => {
+    expect(displaySongTitle('aespa - Hot Mess Official MV', 'aespa')).toBe('Hot Mess')
   })
 })

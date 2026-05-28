@@ -15,3 +15,29 @@ export function displayEventTitle(title: string, groupName?: string | null): str
   t = t.replace(/\b(\w+)\.(\d+)\b/g, '$1 $2')
   return t.trim()
 }
+
+// Suffixes "MV"-style strippés en fallback : ce qu'on enlève quand le titre
+// n'a pas de quotes pour la chanson. Order matters : longest patterns first.
+const TRAILING_MV_RE =
+  /\s*[—–\-:]?\s*(Official Music Video|Music Video|Official MV|Official Video|MV|M\/V)\s*$/i
+
+/**
+ * Extrait uniquement le titre de la chanson depuis un titre scrapé YouTube.
+ *
+ * Priorité 1 : contenu de la première paire de quotes — curly ‘ ’ (YT majoritaire),
+ * straight ' ', ou double " ". Couvre 95% des MVs car YT met systématiquement
+ * la chanson entre quotes (`aespa 에스파 'Whiplash' Official MV` → `Whiplash`).
+ *
+ * Priorité 2 (fallback) : `displayEventTitle` puis strip des suffixes "MV /
+ * Official Music Video / M/V" en fin de titre.
+ *
+ * Utilisé sur les surfaces où on veut un label court (sidebar Recent
+ * comebacks). Pour les surfaces où on garde plus de contexte (cards MV grid,
+ * page article), continuer d'utiliser `displayEventTitle`.
+ */
+export function displaySongTitle(title: string, groupName?: string | null): string {
+  const m = title.match(/[‘]([^’]+)[’]/) || title.match(/'([^']+)'/) || title.match(/"([^"]+)"/)
+  if (m) return m[1].trim()
+
+  return displayEventTitle(title, groupName).replace(TRAILING_MV_RE, '').trim()
+}
