@@ -7,7 +7,9 @@ export function displayEventTitle(title: string, groupName?: string | null): str
   let t = title
   if (groupName) {
     const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    t = t.replace(new RegExp(`^${escaped}(?:\\s+\\w+)*\\s*[—\\-:]\\s*`, 'i'), '')
+    // Séparateurs supportés : em-dash (—), en-dash (–), hyphen (-), colon (:).
+    // kpopofficial utilise en-dash, YouTube/MV utilisent souvent em-dash ou hyphen.
+    t = t.replace(new RegExp(`^${escaped}(?:\\s+\\w+)*\\s*[—–\\-:]\\s*`, 'i'), '')
   }
   t = t.replace(/\s*\(\d{4}\)\s*$/, '')
   t = t.replace(/\b(\w+)\.(\d+)\b/g, '$1 $2')

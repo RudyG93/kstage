@@ -2,10 +2,18 @@ import { describe, it, expect } from 'vitest'
 import { displayEventTitle } from './title'
 
 describe('displayEventTitle', () => {
-  it('retire le préfixe groupe + année + normalise Part.N (cas réel ATEEZ)', () => {
+  it('retire le préfixe groupe + année + normalise Part.N (cas avec hyphen)', () => {
     expect(displayEventTitle('ATEEZ Album - Golden Hour : Part.5 (2026)', 'ATEEZ')).toBe(
       'Golden Hour : Part 5',
     )
+  })
+
+  it('retire le préfixe groupe avec en-dash U+2013 (séparateur kpopofficial)', () => {
+    // Titre exactement comme stocké en prod (events.title hex confirmé = …e28093…).
+    expect(displayEventTitle('ATEEZ Album – GOLDEN HOUR : Part.5 (2026)', 'ATEEZ')).toBe(
+      'GOLDEN HOUR : Part 5',
+    )
+    expect(displayEventTitle('aespa 2nd Album – LEMONADE (2026)', 'aespa')).toBe('LEMONADE')
   })
 
   it('strip simple : "aespa - Whiplash MV" → "Whiplash MV"', () => {
