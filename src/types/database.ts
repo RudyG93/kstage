@@ -309,6 +309,7 @@ export type Database = {
       members: {
         Row: {
           birthday: string | null
+          canonical_id: string | null
           created_at: string
           former_reason: string | null
           group_id: string
@@ -322,6 +323,7 @@ export type Database = {
         }
         Insert: {
           birthday?: string | null
+          canonical_id?: string | null
           created_at?: string
           former_reason?: string | null
           group_id: string
@@ -335,6 +337,7 @@ export type Database = {
         }
         Update: {
           birthday?: string | null
+          canonical_id?: string | null
           created_at?: string
           former_reason?: string | null
           group_id?: string
@@ -347,6 +350,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["member_status"]
         }
         Relationships: [
+          {
+            foreignKeyName: "members_canonical_id_fkey"
+            columns: ["canonical_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "members_group_id_fkey"
             columns: ["group_id"]
