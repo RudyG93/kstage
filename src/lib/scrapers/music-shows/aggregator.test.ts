@@ -140,9 +140,15 @@ async function runAggregate(
   return { lineups, primaryOk, fallbacksUsed, errors }
 }
 
-describe('FALLBACK_SOURCES contient les 3 broadcasters', () => {
-  it('expose KBS, MnetPlus, imbc', () => {
+describe('FALLBACK_SOURCES contient les 5 broadcasters', () => {
+  it('expose KBS, MnetPlus, imbc, SBS Inkigayo, SBS The Show', () => {
     const labels = FALLBACK_SOURCES.map((s) => s.label).sort()
-    expect(labels).toEqual(['kbs-music-bank', 'mbc-music-core', 'mnet-mcountdown'])
+    expect(labels).toEqual([
+      'kbs-music-bank',
+      'mbc-music-core',
+      'mnet-mcountdown',
+      'sbs-inkigayo',
+      'sbs-the-show',
+    ])
   })
 })
