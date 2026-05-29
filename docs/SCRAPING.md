@@ -312,3 +312,72 @@ Listés ici pour ne pas oublier au prochain run :
 - [ ] Pagination Pass B via `pageToken` pour les artistes seniors (BTS, EXO) qui ont >50 MVs historiques.
 - [ ] Quota tracking / retry / backoff sur erreurs API.
 - [ ] Décider si on garde les chaînes d'agence après N runs prouvant qu'elles n'ajoutent rien (probable pour HYBE LABELS, YG si la Pass B sur chaîne officielle suffit).
+
+---
+
+## 9. Music shows hebdomadaires (livré 2026-05-29)
+
+Étape 7 du MVP enfin clos. Architecture multi-source avec primary `liveshowupdatess.carrd.co` (fan-aggregator) + 6 fallbacks officiels par broadcaster.
+
+### Créneaux KST verrouillés
+
+| Show          | Day | Time KST | Broadcaster |
+| ------------- | --- | -------- | ----------- |
+| The Show      | Tue | 18:00    | SBS Fun-E   |
+| Show Champion | Wed | 17:00    | MBC M       |
+| M Countdown   | Thu | 18:00    | Mnet        |
+| Music Bank    | Fri | 17:00    | KBS 2TV     |
+| Music Core    | Sat | 15:15    | MBC         |
+| Inkigayo      | Sun | 15:25    | SBS         |
+
+Cf. `src/lib/scrapers/music-shows/types.ts:SHOW_DESCRIPTORS`.
+
+### Architecture aggregator
+
+`src/lib/scrapers/music-shows/aggregator.ts:aggregateLineups()` :
+
+1. Tente `liveShowUpdatesSource` (primary) — 1 fetch couvre les 6 shows.
+2. Pour chaque show NON couvert par primary, tente le fallback officiel.
+3. Catch erreurs par source — un fallback qui échoue n'arrête pas les autres.
+
+Renvoie `AggregateResult { lineups, primaryOk, fallbacksUsed, errors }`.
+
+### Sources scrapables validées (Jina reader proxy)
+
+| Show                | Source URL                                     | Pattern                                                                                                                                                                                                                      |
+| ------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **All 6 (primary)** | `liveshowupdatess.carrd.co`                    | Sections `## ✧*̥˚ {SHOW} *̥˚✧` + `Episode: N` + lineup `Artist1 / Artist2 / …`                                                                                                                                                 |
+| The Show            | `programs.sbs.co.kr/fune/theshow/boards/64513` | 2-level scrape (board → post `# The Show … Stage #` + `**ARTIST [SONG]**`)                                                                                                                                                   |
+| Show Champion       | `m.imbc.com/program/1003864100000100000`       | Bloc `**NNN**회 Show Champion (쇼 챔피언) - HEADLINERS 등 [FULL_LIST] YYYY.MM.DD` ; parser anchored sur `**NNN**회` (le titre apparaît aussi dans l'alt-text image) ; split sur `등` → liste complète ou fallback headliners |
+| M Countdown         | `mnetplus.world/.../lineup`                    | Blocs `![Image N]` + ligne artiste séquentiels                                                                                                                                                                               |
+| Music Bank          | `program.kbs.co.kr/.../musicbank`              | Marker `<<뮤직뱅크 X월 Y일 출연자>>` + comma list ; date `오늘 방송 YYYY.MM.DD`                                                                                                                                              |
+| Music Core          | `playvod.imbc.com/Templete/PreView`            | Italique `_artist . artist . …_` + `[NNN회]YYYY-MM-DD`                                                                                                                                                                       |
+| Inkigayo            | `programs.sbs.co.kr/enter/gayo/boards/54772`   | 2-level scrape (board → post `# NNNN 회 인기가요 출연자 #` + comma list)                                                                                                                                                     |
+
+Helper partagé pour les 2-level SBS : `src/lib/scrapers/music-shows/sources/sbs-board.ts`.
+
+### Cron
+
+Vercel cron `/api/cron/scrape-music-shows` daily 13:00 UTC = 22:00 KST. Catche les lineups posted night-before (weekday) + 2-3 jours en avance (weekend).
+
+Idempotence via unique constraint `events (group_id, type, start_at, source_url)`. `source_url` = URL primary carrd même quand un fallback a fourni les données — la stabilité de la clé prime sur la traçabilité.
+
+### Méthodologie de re-vérification de sources
+
+Quand une source change ou tombe :
+
+1. Capturer une fixture fraîche via `curl -s "https://r.jina.ai/<url>" -o __fixtures__/<source>-<date>.txt`.
+2. Inspecter le format (grep + sed).
+3. Adapter le parser ; vérifier que tous les tests fixture passent avant push.
+
+Cf. [[reference-jina-reader-universal-proxy]] memory.
+
+### Sources écartées
+
+- `kpopofficial.com` : pas de section music shows
+- `kpopping.com/calendar/music-shows` : agenda events, pas de lineups
+- `kprofiles.com` : HTTP 451
+- `reddit.com/r/kpop/wiki/...` : 403 anti-bot
+- `youtube.com/@SBSKPOP/posts` : marketing seulement
+- `youtube.com/@thekpop/posts` : posts "Ep.X LINE UP" sans détail
+- Twitter `@MnetMcountdown` etc. : verbatim accessible mais X API payant

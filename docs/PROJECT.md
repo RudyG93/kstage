@@ -205,15 +205,35 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ---
 
-## 9. État actuel (2026-05-27)
+## 9. État actuel (2026-05-29)
 
-**Phase** : **MVP complet — étapes 1→9 DONE et mergées sur `main`**. L'app est en prod : https://kstage.vercel.app/. Historique des PR : étape 5 scraping = PR #8 `77abd4e` ; étape 6 notifications = PR #9 `39edaa4` + PR #10 `26ce698`. Étape 6 livrée : SW minimal (`public/sw.js`), abonnement (Server Actions + toggle sur `/my`), guide install iOS, cron `GET /api/cron/send-digest` (digest quotidien des events des 48 h via web-push, cleanup des abonnements périmés), `buildDigest` pur testé. Tests PC + iOS passés en conditions prod.
+**Phase** : **MVP complet + post-MVP V2 amorcée** (Phase 4 community + member pages + music shows). L'app est en prod : https://kstage.vercel.app/. Historique de la session 2026-05-29 résumé dans [[session-log-2026-05-29-pr-d-to-ms]] (10 PRs livrés).
 
-**Étape 7 clôturée** : comebacks `kpopofficial` mergés (PR #11). Music shows & lives reportés à l'étape 8 (communauté) — aucune source propre (cf. §6). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks).
+**Pages live** : `/`, `/calendar` (Feed-style cards), `/mvs`, `/mv/[slug]` (ratings + comments Reddit-style), `/groups`, `/groups?tab=solo`, `/groups/[slug]` (Members + Former sections), `/artists/[slug]` (avec parcours canonical), `/my`.
+
+**Étape 7 100 % clôturée** : music shows hebdo via `liveshowupdatess.carrd.co` primary + 6 fallbacks officiels par broadcaster (KBS Music Bank, MnetPlus M Countdown, imbc Music Core, SBS Inkigayo, SBS The Show, imbc Show Champion — cf. `docs/SCRAPING.md §9`). Comebacks `kpopofficial` opérationnel (PR #11). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks) + 6 music shows.
 
 **Étape 8 mergée** (PR #12) : suggestions communautaires + modération admin (`/admin/suggestions`, allowlist `ADMIN_EMAILS`). **Étape 9 mergée** (PR #13/#14/#15) : redesign dark, landing, SEO/OpenGraph, Vercel Analytics, PWA icônes brandées, a11y Lighthouse 100. **MVP terminé.**
 
 **Post-MVP — refonte home** (`feat/home-redesign`) : vue connectée passée en layout 3 colonnes (sidebar gauche _My groups_ + filtres par type, centre _Next drop_ + countdown + feed This week/Later, sidebar droite). Blocs _MV of the month_, _Release of the month_ et _Recent activity_ **mockés** isolément dans `src/lib/mocks/home.ts` en attendant le système ratings + articles (V2, cf. §10). Fix au passage : la nav mobile fixe (`SiteNav`) était piégée par le `backdrop-filter` du header (containing block) — header repassé en opaque.
+
+**Phase 4 community** (V2 beachhead) :
+
+- 4.A migration `0009_community.sql` : `events.slug` + `event_ratings` + `comments` + `comment_votes` + RLS.
+- 4.B `/mv/[slug]` : YouTube embed + StarRating /10 + Server Action `rateEvent`.
+- 4.C `feat/comments-tree` (livré 2026-05-29) : commentaires Reddit-style (threads, votes +/-, tri top/new, soft-delete) sur `/mv/[slug]`. Architecture : `tree.ts` pure + 4 Server Actions + 5 client components. Hotfix : split l'embed `profiles(...)` en 2 queries séparées (pas de FK directe `comments → profiles`, cf. [[feedback-postgrest-embed-fk-required]]).
+
+**Member pages canonical** (livré 2026-05-29) :
+
+- 0011 `members.{slug, photo_url, status enum active|former|pre_debut, former_reason}` + page `/artists/[slug]` + sections Members / Former sur `/groups/[slug]`.
+- 0012 `members.canonical_id` self-FK : 1 page par personne (Soojin solo, ALLDAY PROJECT Youngseo). Redirect 308 côté route + bloc Career qui liste les memberships passés.
+- 0013 `groups.is_solo` + tabs Groups/Solo sur `/groups` + GroupCard pointe direct vers `/artists/[slug]` côté tab Solo.
+- Seed photos + real_names via `scripts/roster/seed-photos-realnames.ts` (kpopnet.json CC0) : 349/833 members patchés, real_names 443→791. ALLDAY PROJECT + Soojin solo + 5 ADP membres seedés. BABYMONSTER + ADP autres photos en file (post-freeze kpopnet).
+
+**Auth & UX follow-ups** (livrés 2026-05-29 PM) :
+
+- 0015 trigger Postgres `handle_new_user()` (`SECURITY DEFINER`) qui crée auto une row `profiles` au signup + backfill. Fixe le bug Phase 4.C où les commentaires des users sans profile s'affichaient « unknown ».
+- `/groups/[slug]` redirect 308 vers `/artists/[memberSlug]` quand `groups.is_solo=true`. Résout le slug via `group_id` car la parité `groups.slug = members.slug` ne tient que sur 28/42 solos (14 ont un slug composite type `agustd-agust-d`). Finalise PR-D-3.2.
 
 **Reste produit (hors code)** : **soft launch** (Reddit r/kpop, Twitter) — non encore fait. Backlog post-MVP : `docs/BACKLOG.md`.
 
@@ -223,7 +243,7 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 - ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + shadcn/ui ; déployé Vercel : https://kstage.vercel.app/
 - ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
-- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 8 tables + RLS + seed (4 groupes). Scraping opérationnel : YouTube (premieres) + kpopofficial (comebacks).
+- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 12+ tables + RLS + seed étendu (173 groupes, 833 members, 42 solos). Scraping opérationnel : YouTube (premieres) + kpopofficial (comebacks) + music shows multi-source.
 - ✅ `.env.local` : Supabase (URL/anon/`SERVICE_ROLE`) + `YOUTUBE_API_KEY` + `CRON_SECRET` + VAPID (générées localement).
 - ⏳ Outillage : `gh` CLI inaccessible depuis bash + MCP GitHub sans accès au repo → PR ouvertes via l'UI web GitHub.
 
