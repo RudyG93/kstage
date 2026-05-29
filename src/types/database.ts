@@ -272,6 +272,7 @@ export type Database = {
           id: string
           image_landscape: string | null
           image_url: string | null
+          is_solo: boolean
           links: Json
           name: string
           slug: string
@@ -286,6 +287,7 @@ export type Database = {
           id?: string
           image_landscape?: string | null
           image_url?: string | null
+          is_solo?: boolean
           links?: Json
           name: string
           slug: string
@@ -300,6 +302,7 @@ export type Database = {
           id?: string
           image_landscape?: string | null
           image_url?: string | null
+          is_solo?: boolean
           links?: Json
           name?: string
           slug?: string
