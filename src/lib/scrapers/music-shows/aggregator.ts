@@ -19,6 +19,7 @@ import { mbcMusicCoreSource } from './sources/mbc-music-core'
 import { mnetMcountdownSource } from './sources/mnet-mcountdown'
 import { sbsInkigayoSource } from './sources/sbs-inkigayo'
 import { sbsTheShowSource } from './sources/sbs-the-show'
+import { showChampionSource } from './sources/show-champion'
 import type { ParsedLineup, ShowId, SourceScraper } from './types'
 
 export const PRIMARY_SOURCE: SourceScraper = liveShowUpdatesSource
@@ -28,6 +29,7 @@ export const FALLBACK_SOURCES: SourceScraper[] = [
   mbcMusicCoreSource,
   sbsInkigayoSource,
   sbsTheShowSource,
+  showChampionSource,
 ]
 
 export interface AggregateResult {
