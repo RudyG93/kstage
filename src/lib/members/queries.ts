@@ -34,6 +34,24 @@ export async function getMemberSlugById(id: string) {
 }
 
 /**
+ * Lookup du slug du single member d'un groupe is_solo — utilisé par
+ * /groups/[slug] pour rediriger vers /artists/[memberSlug]. Le slug member
+ * peut différer du slug du groupe (cas composite `agustd-agust-d` vs
+ * `agustd`), d'où la résolution via group_id plutôt que par parité.
+ */
+export async function getSoloMemberSlugByGroupId(groupId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('members')
+    .select('slug')
+    .eq('group_id', groupId)
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data?.slug ?? null
+}
+
+/**
  * Retourne le parcours (career path) d'un artiste canonique : toutes les rows
  * où `id = canonicalId` (la canonique elle-même) ou `canonical_id = canonicalId`
  * (les memberships historiques). Triées par priorité d'affichage :
