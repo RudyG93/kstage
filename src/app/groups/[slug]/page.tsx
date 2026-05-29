@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
 import { FollowButton } from '@/components/follow-button'
 import { MvsGrid } from '@/components/group/mvs-grid'
@@ -7,13 +7,18 @@ import { getGroupBySlug } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { getMembersForGroup } from '@/lib/members/queries'
+import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function GroupPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const group = await getGroupBySlug(slug)
   if (!group) notFound()
+
+  if (group.is_solo) {
+    const memberSlug = await getSoloMemberSlugByGroupId(group.id)
+    if (memberSlug) redirect(`/artists/${memberSlug}`)
+  }
 
   const supabase = await createClient()
   const [
