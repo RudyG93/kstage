@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
-import { EventList } from '@/components/event-list'
+import { HomeEventCard } from '@/components/home/event-card'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -128,7 +128,17 @@ export function CalendarMonth({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium">{selectedTitle ?? 'Select a day'}</h3>
-        <EventList events={selectedEvents} emptyMessage="No events this day." />
+        {selectedEvents.length === 0 ? (
+          <div className="border-border/70 text-muted-foreground rounded-xl border border-dashed px-6 py-12 text-center text-sm">
+            No events this day.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {selectedEvents.map((event) => (
+              <HomeEventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
