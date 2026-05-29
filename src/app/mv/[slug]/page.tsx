@@ -3,10 +3,13 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getEventBySlug, getEventRatingSummary } from '@/lib/events/community'
+import { getCommentsForEvent } from '@/lib/comments/queries'
+import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displayEventTitle } from '@/lib/events/title'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { StarRating } from '@/components/mv/star-rating'
+import { CommentSection } from '@/components/mv/comments/comment-section'
 
 const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
@@ -33,10 +36,19 @@ export async function generateMetadata({
   }
 }
 
-export default async function MvPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function MvPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ sort?: string }>
+}) {
   const { slug } = await params
   const event = await loadMv(slug)
   if (!event) notFound()
+
+  const sp = await searchParams
+  const sort: SortMode = sp.sort === 'new' ? 'new' : 'top'
 
   const group = event.groups
   const color = group?.color_hex ?? '#7c5cff'
@@ -49,8 +61,12 @@ export default async function MvPage({ params }: { params: Promise<{ slug: strin
       return supabase.auth.getUser()
     })(),
   ])
+  const viewerId = userRes.data.user?.id ?? null
   const isAuthed = Boolean(userRes.data.user)
   const videoId = extractYouTubeId(event.source_url)
+
+  const flatComments = await getCommentsForEvent(event.id, viewerId)
+  const commentRoots = sortTree(buildCommentTree(flatComments), sort)
 
   const dateLabel = kstFormat(event.start_at, {
     weekday: 'short',
@@ -112,12 +128,14 @@ export default async function MvPage({ params }: { params: Promise<{ slug: strin
           />
         </section>
 
-        <section aria-labelledby="comments-heading" className="space-y-2 border-t pt-6">
-          <h2 id="comments-heading" className="text-sm font-medium">
-            Comments
-          </h2>
-          <p className="text-muted-foreground text-sm">Coming soon</p>
-        </section>
+        <CommentSection
+          eventId={event.id}
+          slug={event.slug as string}
+          isAuthed={isAuthed}
+          viewerId={viewerId}
+          roots={commentRoots}
+          sort={sort}
+        />
       </div>
     </div>
   )
