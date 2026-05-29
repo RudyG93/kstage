@@ -214,7 +214,25 @@ ORDER BY start_at DESC LIMIT 20;
 
 Quand on étendra le roster au-delà des 4 groupes MVP, **ne pas refaire l'erreur §3.3** : ne jamais ajouter une chaîne sans la vérifier.
 
-### Stratégie (à scripter dans un futur `scripts/discover-yt-channels.ts`)
+### Méthode de vérification rapide (validée 2026-05-28)
+
+Sans clé API, sans dépendance, marche pour toute candidate :
+
+1. **Identifier un MV connu** de l'artiste sur YouTube (ex: chercher "{artist} {known song} Official Music Video" via Google ou YT search). Récupérer le `videoId` (11 chars dans `youtube.com/watch?v=<id>`).
+2. **oembed query** (public, sans auth) :
+   ```
+   https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=<videoId>&format=json
+   ```
+   Retourne `{ title, author_name, author_url, ... }`. `author_url` = la **vraie chaîne** qui a uploadé ce MV.
+3. **Confirmation visuelle** via [Jina reader proxy](https://r.jina.ai/) (public, gratuit, contourne le consent YT et les pages JS-only) :
+   ```
+   https://r.jina.ai/<channel URL>
+   ```
+   Retourne le contenu rendu de la page chaîne : liste de vidéos visibles + nom de chaîne + handle.
+
+Cette méthode a évité l'erreur du PR-B initial où on avait choisi `@theunitedcube` (umbrella CUBE Entertainment) au lieu de `@official_i_dle` (channel ID `UCritGVo7pLJLUS8wEu32vow`) pour les MVs i-dle. Cf. [[reference-yt-channel-discovery]] memory.
+
+### Stratégie de discovery proactive (à scripter dans un futur `scripts/discover-yt-channels.ts`)
 
 1. **Requête YouTube search globale** : `search.list?type=video&q="${artist} Official Music Video"&maxResults=20` (sans `channelId`).
 2. **Histogramme des `channelId`** sur les 20 résultats → la chaîne qui revient le plus souvent est probablement la chaîne hôte des MVs.

@@ -33,6 +33,21 @@ Cf. mémoire `feedback-deep-research-methodology` (persistant cross-session). Po
 
 ---
 
+## Pre-/clear ritual
+
+Avant chaque `/clear` ou reset de contexte demandé par Rudy, exécuter en plan mode :
+
+1. **Identifier les leçons** apprises au cours de la session (techniques + méthodologiques + erreurs commises).
+2. **Capturer dans memory** chaque leçon comme un fichier `feedback_*.md` ou `reference_*.md` séparé (Why + How to apply pour les feedback ; étapes reproductibles pour les reference).
+3. **Mettre à jour les markdowns** concernés selon pertinence : `CLAUDE.md` (règles), `docs/SCRAPING.md` (pièges scraper §3 + discovery §4), `docs/PROJECT.md` (état projet).
+4. **Session log court** : `session_log_<date>_<topic>.md` listant PRs livrés / restants / état prod. Permet à la session suivante de reprendre vite.
+5. **Update `MEMORY.md` index** : ligne par nouvelle memory.
+6. **Confirmer à Rudy** ce qui a été capturé avant qu'il fasse le `/clear`.
+
+Validation : voir `feedback-pre-clear-ritual`, `feedback-real-data-over-fixtures`, `feedback-pr-superseding-awareness`, `reference-yt-channel-discovery` pour les leçons capturées au 2026-05-28.
+
+---
+
 ## Conventions Next.js 16 / React 19
 
 - **Server Components par défaut** — `'use client'` uniquement pour l'interactivité.
