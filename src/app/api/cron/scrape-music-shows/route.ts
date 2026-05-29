@@ -1,25 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import {
-  fetchAllLineups,
-  SHOWS,
-  SOURCE_URL,
-  type ShowId,
-} from '@/lib/scrapers/music-shows/live-show-updates'
+import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
+import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
+import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
-// Cf. /api/cron/scrape-comebacks/route.ts pour le pattern.
 
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-// Aliases DB ↔ noms scrappés non couverts par la normalisation simple.
-// Aligné avec src/lib/scrapers/kpopofficial.ts:80.
+// Aliases DB ↔ noms scrappés (aligné src/lib/scrapers/kpopofficial.ts:80).
 const GROUP_ALIASES: Record<string, string> = {
-  gidle: 'idle', // "(G)I-DLE" → slug `idle`
+  gidle: 'idle',
 }
 
 interface GroupRef {
@@ -40,7 +35,7 @@ function matchGroup(artistName: string, groups: readonly GroupRef[]): GroupRef |
 }
 
 const SHOW_DISPLAY_NAME: Record<ShowId, string> = Object.fromEntries(
-  SHOWS.map((s) => [s.id, s.displayName]),
+  SHOW_DESCRIPTORS.map((s) => [s.id, s.displayName]),
 ) as Record<ShowId, string>
 
 export async function GET(req: Request) {
@@ -60,8 +55,7 @@ export async function GET(req: Request) {
     .eq('url', SOURCE_URL)
     .maybeSingle()
   if (sourceError) return NextResponse.json({ error: sourceError.message }, { status: 500 })
-  if (!source)
-    return NextResponse.json({ error: 'live-show-updates source not seeded' }, { status: 500 })
+  if (!source) return NextResponse.json({ error: 'music-shows source not seeded' }, { status: 500 })
 
   const { data: groups, error: groupsError } = await supabase
     .from('groups')
@@ -73,19 +67,14 @@ export async function GET(req: Request) {
     name: g.name,
   }))
 
-  let lineups
-  try {
-    lineups = await fetchAllLineups()
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 })
-  }
+  const aggregateResult = await aggregateLineups()
 
   let created = 0
   let matchedTotal = 0
   const unmatched: string[] = []
   const byShow: Record<string, { matched: number; created: number; skipped: number }> = {}
 
-  for (const lineup of lineups) {
+  for (const lineup of aggregateResult.lineups) {
     const showStats = (byShow[lineup.show] ??= { matched: 0, created: 0, skipped: 0 })
     const showLabel = SHOW_DISPLAY_NAME[lineup.show]
 
@@ -120,7 +109,6 @@ export async function GET(req: Request) {
         type: 'music_show',
         title: showLabel,
         start_at: lineup.startAtIso,
-        // Highlight broadcast Show Champion = rediffusion → tentative.
         status: lineup.isHighlight ? 'tentative' : 'confirmed',
       })
       if (insertErr) {
@@ -140,7 +128,10 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    lineups_fetched: lineups.length,
+    primary_ok: aggregateResult.primaryOk,
+    fallbacks_used: aggregateResult.fallbacksUsed,
+    errors: aggregateResult.errors,
+    lineups_fetched: aggregateResult.lineups.length,
     matched_total: matchedTotal,
     created,
     unmatched_count: unmatched.length,

@@ -17,37 +17,26 @@
  * champs, lineups multi-paragraphe pour Inkigayo).
  */
 
+import type { ParsedLineup, ShowId, SourceScraper } from '../types'
+
 export const SOURCE_URL = 'https://liveshowupdatess.carrd.co/'
+const SOURCE_LABEL = 'live-show-updates'
 const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
-export type ShowId =
-  | 'the-show'
-  | 'show-champion'
-  | 'm-countdown'
-  | 'music-bank'
-  | 'music-core'
-  | 'inkigayo'
-
-export interface ShowDefinition {
+interface SectionPattern {
   id: ShowId
-  displayName: string
-  // Mot-clé qui identifie de manière unique le header de section de ce show.
   headerMarker: RegExp
 }
 
-export const SHOWS: ShowDefinition[] = [
-  // Ordre = ordre du fichier source. Le check `SHOW CHAMPION` doit passer avant
-  // `THE SHOW` car le second matche le premier en substring lâche.
-  { id: 'show-champion', displayName: 'Show Champion', headerMarker: /SHOW CHAMPION/i },
-  {
-    id: 'm-countdown',
-    displayName: 'M Countdown',
-    headerMarker: /M Countdown|MCountdown|Mnet.*Countdown/i,
-  },
-  { id: 'music-bank', displayName: 'Music Bank', headerMarker: /Music Bank/i },
-  { id: 'music-core', displayName: 'Music Core', headerMarker: /Music Core/i },
-  { id: 'inkigayo', displayName: 'Inkigayo', headerMarker: /INKIGAYO/i },
-  { id: 'the-show', displayName: 'The Show', headerMarker: /THE SHOW/i },
+// Ordre = ordre des matchers. Le check `SHOW CHAMPION` doit passer avant
+// `THE SHOW` car le second matche le premier en substring lâche.
+const SECTION_PATTERNS: SectionPattern[] = [
+  { id: 'show-champion', headerMarker: /SHOW CHAMPION/i },
+  { id: 'm-countdown', headerMarker: /M Countdown|MCountdown|Mnet.*Countdown/i },
+  { id: 'music-bank', headerMarker: /Music Bank/i },
+  { id: 'music-core', headerMarker: /Music Core/i },
+  { id: 'inkigayo', headerMarker: /INKIGAYO/i },
+  { id: 'the-show', headerMarker: /THE SHOW/i },
 ]
 
 export interface RawLineup {
@@ -55,13 +44,11 @@ export interface RawLineup {
   episodeNumber: number
   monthDay: string // "MM/DD"
   time12h: string // ex "6:00pm", "4:57pm"
-  isHighlight: boolean // true si "highlight broadcast with previous stages"
-  artistsRaw: string[] // bruts, à passer à extractCanonicalName côté caller
+  isHighlight: boolean
+  artistsRaw: string[]
 }
 
-export interface ParsedLineup extends RawLineup {
-  startAtIso: string // UTC ISO 8601, déduit de monthDay + time12h + année inférée
-}
+export type { ParsedLineup, ShowId }
 
 /**
  * Découpe le markdown carrd en blocs de section (un par show) en se basant sur
@@ -90,7 +77,7 @@ function splitSections(markdown: string): string[] {
 function detectShow(section: string): ShowId | null {
   // On lit le header (1ʳᵉ ligne) pour matcher le bon show.
   const headerLine = section.split('\n', 1)[0] ?? ''
-  for (const def of SHOWS) {
+  for (const def of SECTION_PATTERNS) {
     if (def.headerMarker.test(headerLine)) return def.id
   }
   return null
@@ -265,7 +252,14 @@ export function withStartAt(lineups: RawLineup[], now: Date): ParsedLineup[] {
   for (const l of lineups) {
     const iso = buildStartAtIso(l.monthDay, l.time12h, now)
     if (!iso) continue
-    out.push({ ...l, startAtIso: iso })
+    out.push({
+      show: l.show,
+      episodeNumber: l.episodeNumber,
+      startAtIso: iso,
+      isHighlight: l.isHighlight,
+      artistsRaw: l.artistsRaw,
+      sourceLabel: SOURCE_LABEL,
+    })
   }
   return out
 }
@@ -278,4 +272,10 @@ export async function fetchAllLineups(now: Date = new Date()): Promise<ParsedLin
   if (!res.ok) throw new Error(`liveshowupdatess fetch failed: HTTP ${res.status}`)
   const markdown = await res.text()
   return withStartAt(parseLineups(markdown), now)
+}
+
+export const liveShowUpdatesSource: SourceScraper = {
+  label: SOURCE_LABEL,
+  shows: ['the-show', 'show-champion', 'm-countdown', 'music-bank', 'music-core', 'inkigayo'],
+  fetch: fetchAllLineups,
 }
