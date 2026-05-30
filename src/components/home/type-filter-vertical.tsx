@@ -2,17 +2,24 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
+import { parseTypesParam, serializeTypesParam } from '@/lib/events/filters'
 import { cn } from '@/lib/utils'
+import type { Database } from '@/types/database'
+
+type EventType = Database['public']['Enums']['event_type']
 
 export function TypeFilterVertical() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const current = searchParams.get('type') ?? ''
+  const active = new Set<EventType>(parseTypesParam(searchParams.get('type') ?? undefined))
 
-  function setType(value: string) {
+  function toggle(value: EventType) {
+    const next = new Set(active)
+    if (next.has(value)) next.delete(value)
+    else next.add(value)
     const params = new URLSearchParams(searchParams.toString())
-    if (value && value !== current) params.set('type', value)
+    if (next.size > 0) params.set('type', serializeTypesParam([...next]))
     else params.delete('type')
     const qs = params.toString()
     router.push(qs ? `${pathname}?${qs}` : pathname)
@@ -21,16 +28,18 @@ export function TypeFilterVertical() {
   return (
     <div className="space-y-1">
       {FILTERABLE_EVENT_TYPES.map((t) => {
-        const active = current === t
+        const isActive = active.has(t)
         return (
           <button
             key={t}
             type="button"
-            onClick={() => setType(t)}
-            aria-pressed={active}
+            onClick={() => toggle(t)}
+            aria-pressed={isActive}
             className={cn(
               'flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors duration-200',
-              active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/40',
+              isActive
+                ? 'bg-muted text-foreground ring-foreground/15 ring-1'
+                : 'text-muted-foreground hover:bg-muted/40',
             )}
           >
             <span
