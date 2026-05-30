@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 
-const GROUP_FIELDS = 'id, slug, name, agency, fandom_name, debut_date, color_hex, image_url'
+const GROUP_FIELDS = 'id, slug, name, fandom_name, debut_date, color_hex, image_url'
 
 /**
  * Liste tous les groupes (solos + multi-membres). Utilisé par les surfaces qui
