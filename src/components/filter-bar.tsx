@@ -3,7 +3,11 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EVENT_TYPE_LABELS, FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
+import { parseTypesParam, serializeTypesParam } from '@/lib/events/filters'
 import type { GroupSummary } from '@/lib/groups/queries'
+import type { Database } from '@/types/database'
+
+type EventType = Database['public']['Enums']['event_type']
 
 export function FilterBar({ groups }: { groups: GroupSummary[] }) {
   const router = useRouter()
@@ -11,7 +15,7 @@ export function FilterBar({ groups }: { groups: GroupSummary[] }) {
   const searchParams = useSearchParams()
 
   const currentGroup = searchParams.get('group') ?? ''
-  const currentType = searchParams.get('type') ?? ''
+  const currentTypes = parseTypesParam(searchParams.get('type') ?? undefined)
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -19,6 +23,13 @@ export function FilterBar({ groups }: { groups: GroupSummary[] }) {
     else params.delete(key)
     const qs = params.toString()
     router.push(qs ? `${pathname}?${qs}` : pathname)
+  }
+
+  function setTypes(values: string[]) {
+    const filtered = values.filter((v): v is EventType =>
+      (FILTERABLE_EVENT_TYPES as readonly string[]).includes(v),
+    )
+    setParam('type', serializeTypesParam(filtered))
   }
 
   return (
@@ -41,8 +52,9 @@ export function FilterBar({ groups }: { groups: GroupSummary[] }) {
         role="toolbar"
         aria-label="Filter by type"
         variant="outline"
-        value={currentType ? [currentType] : []}
-        onValueChange={(vals) => setParam('type', vals[0] ?? '')}
+        multiple
+        value={currentTypes}
+        onValueChange={setTypes}
       >
         {FILTERABLE_EVENT_TYPES.map((t) => (
           <ToggleGroupItem

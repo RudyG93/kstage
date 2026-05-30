@@ -7,9 +7,10 @@ import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
+import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -25,21 +26,27 @@ export default async function Home() {
     )
   }
 
+  const sp = await searchParams
+  const types = parseTypesParam(sp.type)
+  const wantAnniversaries = types.length === 0 || types.includes('anniversary')
+
   const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
   const [dbEvents, anniversaries] =
     ids.length > 0
       ? await Promise.all([
-          getUpcomingEvents({ groupIds: ids, limit: 50 }),
-          getUpcomingAnniversaries(ids, 90),
+          getUpcomingEvents({ groupIds: ids, types, limit: 50 }),
+          wantAnniversaries ? getUpcomingAnniversaries(ids, 90) : Promise.resolve([]),
         ])
       : [[], []]
-  // "Next drop" = vrai event (sortie), pas un anniversaire ; les anniversaires
-  // sont fusionnés dans le feed, triés par date.
-  const nextDrop = dbEvents[0] ?? null
-  const feedEvents = [...dbEvents.slice(1), ...anniversaries].sort((a, b) =>
+  // "Next drop" et le feed se basent sur le même flux trié (DB events +
+  // anniversaires), pour que le filtre type s'applique de manière cohérente
+  // (ex: type=anniversary → nextDrop = prochain anniversaire).
+  const merged = [...dbEvents, ...anniversaries].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )
+  const nextDrop = merged[0] ?? null
+  const feedEvents = merged.slice(1)
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6">

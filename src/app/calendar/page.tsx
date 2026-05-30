@@ -3,9 +3,7 @@ import { CalendarMonth } from '@/components/calendar-month'
 import { getEventsForMonth } from '@/lib/events/queries'
 import { getGroups } from '@/lib/groups/queries'
 import { kstDayKey } from '@/lib/events/date'
-import type { Database } from '@/types/database'
-
-type EventType = Database['public']['Enums']['event_type']
+import { parseTypesParam } from '@/lib/events/filters'
 
 function parseMonth(raw?: string): { year: number; month: number } {
   if (raw && /^\d{4}-\d{2}$/.test(raw)) {
@@ -31,7 +29,7 @@ export default async function CalendarPage({
       year,
       month,
       groupSlug: sp.group,
-      type: sp.type as EventType | undefined,
+      types: parseTypesParam(sp.type),
     }),
   ])
 

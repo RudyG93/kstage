@@ -14,12 +14,12 @@ const isMainOrNonMv = 'mv_kind.eq.main,mv_kind.is.null'
 
 export async function getUpcomingEvents({
   groupSlug,
-  type,
+  types,
   groupIds,
   limit = 50,
 }: {
   groupSlug?: string
-  type?: EventType
+  types?: readonly EventType[]
   groupIds?: string[]
   limit?: number
 } = {}) {
@@ -34,7 +34,7 @@ export async function getUpcomingEvents({
 
   if (groupSlug) query = query.eq('groups.slug', groupSlug)
   if (groupIds) query = query.in('group_id', groupIds)
-  if (type) query = query.eq('type', type)
+  if (types && types.length > 0) query = query.in('type', types as EventType[])
 
   const { data, error } = await query
   if (error) throw error
@@ -45,12 +45,12 @@ export async function getEventsForMonth({
   year,
   month,
   groupSlug,
-  type,
+  types,
 }: {
   year: number
   month: number
   groupSlug?: string
-  type?: EventType
+  types?: readonly EventType[]
 }) {
   const supabase = await createClient()
   const { startISO, endISO } = getKstMonthRange(year, month)
@@ -63,7 +63,7 @@ export async function getEventsForMonth({
     .order('start_at', { ascending: true })
 
   if (groupSlug) query = query.eq('groups.slug', groupSlug)
-  if (type) query = query.eq('type', type)
+  if (types && types.length > 0) query = query.in('type', types as EventType[])
 
   const { data, error } = await query
   if (error) throw error
