@@ -27,27 +27,46 @@ export function kstToUtcISO(
   return new Date(Date.UTC(year, monthIndex, day, hour, minute) - KST_OFFSET_MS).toISOString()
 }
 
+/**
+ * Clé de jour 'YYYY-MM-DD' d'un instant, lue dans un fuseau IANA donné.
+ * Via Intl (résout DST + offsets), contrairement à un offset fixe.
+ */
+export function localDayKey(iso: string, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(iso))
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+
 /** Clé de jour 'YYYY-MM-DD' du moment, lue en heure de Séoul. */
 export function kstDayKey(iso: string): string {
-  const d = new Date(new Date(iso).getTime() + KST_OFFSET_MS)
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return localDayKey(iso, 'Asia/Seoul')
+}
+
+/** Regroupe des events par jour dans un fuseau IANA donné. */
+export function groupEventsByDay<T extends { start_at: string }>(
+  events: readonly T[],
+  timeZone: string,
+): Map<string, T[]> {
+  const map = new Map<string, T[]>()
+  for (const event of events) {
+    const key = localDayKey(event.start_at, timeZone)
+    const bucket = map.get(key)
+    if (bucket) bucket.push(event)
+    else map.set(key, [event])
+  }
+  return map
 }
 
 /** Regroupe des events par jour KST. */
 export function groupEventsByKstDay<T extends { start_at: string }>(
   events: readonly T[],
 ): Map<string, T[]> {
-  const map = new Map<string, T[]>()
-  for (const event of events) {
-    const key = kstDayKey(event.start_at)
-    const bucket = map.get(key)
-    if (bucket) bucket.push(event)
-    else map.set(key, [event])
-  }
-  return map
+  return groupEventsByDay(events, 'Asia/Seoul')
 }
 
 export function formatEventDate(iso: string, timezone: string) {
