@@ -30,9 +30,16 @@ export function CalendarMonth({
 
   const monthPrefix = `${year}-${pad(month)}`
   const todayKey = kstDayKey(new Date().toISOString())
-  const [selectedKey, setSelectedKey] = useState<string | null>(
-    todayKey.startsWith(monthPrefix) ? todayKey : null,
-  )
+  // `?day=YYYY-MM-DD` permet à un lien externe (footer Feed) de préselectionner
+  // un jour précis. Doit appartenir au mois affiché pour être respecté.
+  const dayParam = searchParams.get('day')
+  const initialSelectedKey =
+    dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam.startsWith(monthPrefix)
+      ? dayParam
+      : todayKey.startsWith(monthPrefix)
+        ? todayKey
+        : null
+  const [selectedKey, setSelectedKey] = useState<string | null>(initialSelectedKey)
 
   const firstWeekday = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
