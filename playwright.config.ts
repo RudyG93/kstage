@@ -19,6 +19,10 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    // Next 16 + Turbopack peut prendre 60-120s au cold start selon le
+    // filesystem (warning observé sur E:\ Windows). Default Playwright est
+    // 60s, trop court pour un dev build cold.
+    timeout: 180_000,
   },
   projects: [
     { name: 'chromium', use: devices['Desktop Chrome'] },
