@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono, Bricolage_Grotesque } from 'next/font/google'
 import Link from 'next/link'
+import { Toaster } from 'sonner'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
 import { AuthMenu } from '@/components/auth/auth-menu'
+import { SuggestEventDialog } from '@/components/suggestions/suggest-event-dialog'
 import { Analytics } from '@vercel/analytics/next'
 import { createClient } from '@/lib/supabase/server'
 
@@ -69,6 +71,14 @@ export default async function RootLayout({
     ? await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle()
     : { data: null }
 
+  // Liste minimale (id, name) servie au Dialog Suggest si le user est connecté.
+  // La liste complète d'events ciblables (Fix tab) est récupérée lazy via une
+  // Route Handler côté composant pour éviter de payer 200 events sur chaque
+  // page render.
+  const { data: dialogGroups } = user
+    ? await supabase.from('groups').select('id, name').order('name')
+    : { data: null }
+
   return (
     <html
       lang="en"
@@ -94,6 +104,7 @@ export default async function RootLayout({
               </Link>
               <div className="flex-1" />
               <SiteNav isAuthed={!!user} />
+              {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
               <AuthMenu
                 email={user?.email ?? null}
                 username={profile?.username ?? null}
@@ -103,6 +114,7 @@ export default async function RootLayout({
             </div>
           </header>
           <main className="flex-1 pb-24 md:pb-6">{children}</main>
+          <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>
         <Analytics />
       </body>

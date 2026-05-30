@@ -39,19 +39,14 @@ export default async function MyPage() {
               Upcoming events from the groups you follow.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/suggest" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              Suggest an event
+          {admin && (
+            <Link
+              href="/admin/suggestions"
+              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            >
+              Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
             </Link>
-            {admin && (
-              <Link
-                href="/admin/suggestions"
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-              >
-                Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-              </Link>
-            )}
-          </div>
+          )}
         </div>
 
         <IosInstallHint />

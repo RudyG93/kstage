@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { submitSuggestion, type SuggestionState } from '@/lib/suggestions/actions'
 import { SUGGESTABLE_TYPES } from '@/lib/suggestions/validation'
@@ -9,15 +10,30 @@ import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 const inputClass =
   'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
-export function SuggestionForm({ groups }: { groups: { id: string; name: string }[] }) {
+export function SuggestionForm({
+  groups,
+  onSuccess,
+}: {
+  groups: { id: string; name: string }[]
+  onSuccess?: () => void
+}) {
   const [state, formAction, pending] = useActionState<SuggestionState, FormData>(
     submitSuggestion,
     null,
   )
   const ok = state !== null && 'ok' in state
 
+  useEffect(() => {
+    if (ok) {
+      toast.success('Suggestion sent — a moderator will review it.')
+      onSuccess?.()
+    }
+  }, [ok, onSuccess])
+
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="kind" value="new" />
+
       <div className="space-y-1.5">
         <label htmlFor="groupId" className="text-sm font-medium">
           Group
@@ -94,11 +110,6 @@ export function SuggestionForm({ groups }: { groups: { id: string; name: string 
       {state !== null && 'error' in state && (
         <p role="alert" className="text-destructive text-sm">
           {state.error}
-        </p>
-      )}
-      {ok && (
-        <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">
-          Thanks! Your suggestion was submitted and is awaiting review.
         </p>
       )}
 
