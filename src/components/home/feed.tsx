@@ -1,7 +1,19 @@
-import { splitUpcomingByWeek } from '@/lib/events/grouping'
-import { groupEventsByKstDay } from '@/lib/events/date'
+import Link from 'next/link'
+import { splitUpcomingByBuckets, type UpcomingBuckets } from '@/lib/events/grouping'
+import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
 import { HomeEventCard } from './event-card'
 import type { UpcomingEvent } from '@/lib/events/queries'
+
+const BUCKET_CAP = 10
+
+type BucketKey = keyof UpcomingBuckets
+
+const BUCKET_LABELS: Record<BucketKey, string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  thisWeek: 'This week',
+  later: 'Later',
+}
 
 function dayLabel(iso: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -14,6 +26,12 @@ function dayLabel(iso: string): string {
   return `${part('weekday')} · ${part('month')} ${part('day')}`.toUpperCase()
 }
 
+function overflowHref(firstHiddenEvent: UpcomingEvent): string {
+  const dayKey = kstDayKey(firstHiddenEvent.start_at)
+  // dayKey format YYYY-MM-DD → month YYYY-MM
+  return `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}`
+}
+
 function FeedSection({
   label,
   events,
@@ -23,7 +41,9 @@ function FeedSection({
   events: UpcomingEvent[]
   compact: boolean
 }) {
-  const byDay = groupEventsByKstDay(events)
+  const visible = events.slice(0, BUCKET_CAP)
+  const hidden = events.length - visible.length
+  const byDay = groupEventsByKstDay(visible)
   return (
     <section>
       <div className="mb-4 flex items-center gap-4">
@@ -46,6 +66,14 @@ function FeedSection({
           </div>
         ))}
       </div>
+      {hidden > 0 && (
+        <Link
+          href={overflowHref(events[BUCKET_CAP])}
+          className="text-muted-foreground hover:text-foreground mt-4 inline-block font-mono text-xs underline underline-offset-4"
+        >
+          + {hidden} more event{hidden > 1 ? 's' : ''} in {label.toLowerCase()}
+        </Link>
+      )}
     </section>
   )
 }
@@ -59,12 +87,25 @@ export function Feed({ events }: { events: UpcomingEvent[] }) {
     )
   }
 
-  const { thisWeek, later } = splitUpcomingByWeek(events)
+  const buckets = splitUpcomingByBuckets(events)
+  const order: BucketKey[] = ['today', 'tomorrow', 'thisWeek', 'later']
 
   return (
     <div className="space-y-8">
-      {thisWeek.length > 0 && <FeedSection label="This week" events={thisWeek} compact={false} />}
-      {later.length > 0 && <FeedSection label="Later" events={later} compact={true} />}
+      {order.map((key) => {
+        const bucketEvents = buckets[key]
+        if (bucketEvents.length === 0) return null
+        return (
+          <FeedSection
+            key={key}
+            label={BUCKET_LABELS[key]}
+            events={bucketEvents}
+            // `later` reste en compact (cartes plus denses) ; les 3 autres
+            // buckets affichent la carte hero comme avant.
+            compact={key === 'later'}
+          />
+        )
+      })}
     </div>
   )
 }

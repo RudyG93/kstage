@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitUpcomingByWeek } from './grouping'
+import { splitUpcomingByWeek, splitUpcomingByBuckets } from './grouping'
 import type { UpcomingEvent } from './queries'
 
 const ev = (id: string, start_at: string) => ({ id, start_at }) as unknown as UpcomingEvent
@@ -20,5 +20,67 @@ describe('splitUpcomingByWeek', () => {
 
   it('liste vide → deux buckets vides', () => {
     expect(splitUpcomingByWeek([], now)).toEqual({ thisWeek: [], later: [] })
+  })
+})
+
+describe('splitUpcomingByBuckets', () => {
+  // 2026-06-01T00:00:00Z = 2026-06-01T09:00:00 KST
+  // kstDayKey(now) = '2026-06-01'
+  const now = new Date('2026-06-01T00:00:00Z').getTime()
+
+  it('liste vide → 4 buckets vides', () => {
+    expect(splitUpcomingByBuckets([], now)).toEqual({
+      today: [],
+      tomorrow: [],
+      thisWeek: [],
+      later: [],
+    })
+  })
+
+  it("event à 23h KST aujourd'hui reste dans today (pas tomorrow)", () => {
+    // 2026-06-01T14:00:00Z = 2026-06-01T23:00:00 KST
+    const events = [ev('a', '2026-06-01T14:00:00Z')]
+    const { today, tomorrow } = splitUpcomingByBuckets(events, now)
+    expect(today.map((e) => e.id)).toEqual(['a'])
+    expect(tomorrow).toEqual([])
+  })
+
+  it('event J+1 KST classé dans tomorrow', () => {
+    // 2026-06-02T03:00:00Z = 2026-06-02T12:00:00 KST → tomorrow
+    const events = [ev('a', '2026-06-02T03:00:00Z')]
+    const { tomorrow } = splitUpcomingByBuckets(events, now)
+    expect(tomorrow.map((e) => e.id)).toEqual(['a'])
+  })
+
+  it('events J+2 à J+7 KST dans thisWeek (J+7 inclus)', () => {
+    const events = [
+      ev('a', '2026-06-03T05:00:00Z'), // 2026-06-03 14:00 KST
+      ev('b', '2026-06-08T14:00:00Z'), // 2026-06-08 23:00 KST → kstDayKey = 2026-06-08, weekEndKey = 2026-06-08
+    ]
+    const { thisWeek } = splitUpcomingByBuckets(events, now)
+    expect(thisWeek.map((e) => e.id)).toEqual(['a', 'b'])
+  })
+
+  it('event J+8 KST classé dans later', () => {
+    // 2026-06-09T14:00:00Z = 2026-06-09 23:00 KST → later
+    const events = [ev('a', '2026-06-09T14:00:00Z')]
+    const { later } = splitUpcomingByBuckets(events, now)
+    expect(later.map((e) => e.id)).toEqual(['a'])
+  })
+
+  it('mix complet réparti correctement', () => {
+    const events = [
+      ev('today1', '2026-06-01T05:00:00Z'), // today
+      ev('today2', '2026-06-01T14:00:00Z'), // today
+      ev('tom', '2026-06-02T10:00:00Z'), // tomorrow
+      ev('week1', '2026-06-04T10:00:00Z'), // this week
+      ev('week2', '2026-06-08T10:00:00Z'), // this week (limit J+7)
+      ev('later1', '2026-06-20T10:00:00Z'), // later
+    ]
+    const { today, tomorrow, thisWeek, later } = splitUpcomingByBuckets(events, now)
+    expect(today.map((e) => e.id)).toEqual(['today1', 'today2'])
+    expect(tomorrow.map((e) => e.id)).toEqual(['tom'])
+    expect(thisWeek.map((e) => e.id)).toEqual(['week1', 'week2'])
+    expect(later.map((e) => e.id)).toEqual(['later1'])
   })
 })
