@@ -3,6 +3,8 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { USERNAME_MIN, USERNAME_MAX } from '@/lib/profiles/validation'
+import { PASSWORD_MIN } from '@/lib/auth/validation'
 import type { AuthState } from '@/lib/auth/actions'
 
 type AuthAction = (state: AuthState, formData: FormData) => Promise<AuthState>
@@ -16,6 +18,25 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
 
   return (
     <form action={formAction} className="space-y-4">
+      {!isLogin && (
+        <div className="space-y-1.5">
+          <label htmlFor="username" className="text-sm font-medium">
+            Username
+          </label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            required
+            minLength={USERNAME_MIN}
+            maxLength={USERNAME_MAX}
+            pattern="[A-Za-z0-9_]+"
+            className={inputClass}
+          />
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <label htmlFor="email" className="text-sm font-medium">
           Email
@@ -29,6 +50,7 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
           className={inputClass}
         />
       </div>
+
       <div className="space-y-1.5">
         <label htmlFor="password" className="text-sm font-medium">
           Password
@@ -39,10 +61,32 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
           type="password"
           autoComplete={isLogin ? 'current-password' : 'new-password'}
           required
-          minLength={6}
+          minLength={isLogin ? undefined : PASSWORD_MIN}
           className={inputClass}
         />
+        {!isLogin && (
+          <p className="text-muted-foreground text-xs">
+            At least {PASSWORD_MIN} characters, one uppercase letter and one digit.
+          </p>
+        )}
       </div>
+
+      {!isLogin && (
+        <div className="space-y-1.5">
+          <label htmlFor="confirm" className="text-sm font-medium">
+            Confirm password
+          </label>
+          <input
+            id="confirm"
+            name="confirm"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={PASSWORD_MIN}
+            className={inputClass}
+          />
+        </div>
+      )}
 
       {state?.error && (
         <p role="alert" className="text-destructive text-sm">
