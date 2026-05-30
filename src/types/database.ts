@@ -382,26 +382,117 @@ export type Database = {
           },
         ]
       }
+      monthly_winner: {
+        Row: {
+          computed_at: string
+          id: string
+          period_month: string
+          score: number
+          type: Database["public"]["Enums"]["event_type"]
+          winner_event_id: string
+        }
+        Insert: {
+          computed_at?: string
+          id?: string
+          period_month: string
+          score: number
+          type: Database["public"]["Enums"]["event_type"]
+          winner_event_id: string
+        }
+        Update: {
+          computed_at?: string
+          id?: string
+          period_month?: string
+          score?: number
+          type?: Database["public"]["Enums"]["event_type"]
+          winner_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_winner_winner_event_id_fkey"
+            columns: ["winner_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mv_like: {
+        Row: {
+          created_at: string
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mv_like_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bias_member_id: string | null
           created_at: string
+          favorite_group_id: string | null
           id: string
+          role: Database["public"]["Enums"]["user_role"]
+          tier: Database["public"]["Enums"]["tier_type"]
+          timezone: string | null
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bias_member_id?: string | null
           created_at?: string
+          favorite_group_id?: string | null
           id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          tier?: Database["public"]["Enums"]["tier_type"]
+          timezone?: string | null
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bias_member_id?: string | null
           created_at?: string
+          favorite_group_id?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          tier?: Database["public"]["Enums"]["tier_type"]
+          timezone?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_bias_member_id_fkey"
+            columns: ["bias_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_favorite_group_id_fkey"
+            columns: ["favorite_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_subscriptions: {
         Row: {
@@ -430,6 +521,33 @@ export type Database = {
           p256dh?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      scrape_log: {
+        Row: {
+          ended_at: string | null
+          error_msg: string | null
+          id: string
+          source: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          ended_at?: string | null
+          error_msg?: string | null
+          id?: string
+          source: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          ended_at?: string | null
+          error_msg?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -544,6 +662,8 @@ export type Database = {
       member_status: "active" | "former" | "pre_debut"
       mv_kind: "main" | "performance" | "member" | "other_version"
       suggestion_status: "pending" | "approved" | "rejected"
+      tier_type: "free" | "premium"
+      user_role: "user" | "admin" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -684,6 +804,8 @@ export const Constants = {
       member_status: ["active", "former", "pre_debut"],
       mv_kind: ["main", "performance", "member", "other_version"],
       suggestion_status: ["pending", "approved", "rejected"],
+      tier_type: ["free", "premium"],
+      user_role: ["user", "admin", "moderator"],
     },
   },
 } as const
