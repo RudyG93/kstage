@@ -30,6 +30,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   const types = parseTypesParam(sp.type)
   const wantAnniversaries = types.length === 0 || types.includes('anniversary')
 
+  // Fuseau de tri today/tomorrow/later : préférence user, fallback Séoul.
+  // (la détection client pour l'anonyme + l'affichage heure-locale → §3.1)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('timezone')
+    .eq('id', user.id)
+    .single()
+  const timeZone = profile?.timezone ?? 'Asia/Seoul'
+
   const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
   const [dbEvents, anniversaries] =
@@ -56,7 +65,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
           <NextDropCard event={nextDrop} />
-          <Feed events={feedEvents} />
+          <Feed events={feedEvents} timeZone={timeZone} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">
           <SidebarRight />

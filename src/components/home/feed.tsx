@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { splitUpcomingByBuckets, type UpcomingBuckets } from '@/lib/events/grouping'
-import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
+import { groupEventsByDay, kstDayKey } from '@/lib/events/date'
 import { HomeEventCard } from './event-card'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
@@ -15,12 +15,12 @@ const BUCKET_LABELS: Record<BucketKey, string> = {
   later: 'Later',
 }
 
-function dayLabel(iso: string): string {
+function dayLabel(iso: string, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'Asia/Seoul',
+    timeZone,
   }).formatToParts(new Date(iso))
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
   return `${part('weekday')} · ${part('month')} ${part('day')}`.toUpperCase()
@@ -36,14 +36,16 @@ function FeedSection({
   label,
   events,
   compact,
+  timeZone,
 }: {
   label: string
   events: UpcomingEvent[]
   compact: boolean
+  timeZone: string
 }) {
   const visible = events.slice(0, BUCKET_CAP)
   const hidden = events.length - visible.length
-  const byDay = groupEventsByKstDay(visible)
+  const byDay = groupEventsByDay(visible, timeZone)
   return (
     <section>
       <div className="mb-4 flex items-center gap-4">
@@ -56,7 +58,7 @@ function FeedSection({
         {[...byDay.entries()].map(([dayKey, dayEvents]) => (
           <div key={dayKey}>
             <p className="text-muted-foreground/70 mb-1 font-mono text-[11px] tracking-[0.12em]">
-              {dayLabel(dayEvents[0].start_at)}
+              {dayLabel(dayEvents[0].start_at, timeZone)}
             </p>
             <div className="space-y-3">
               {dayEvents.map((event) => (
@@ -78,7 +80,7 @@ function FeedSection({
   )
 }
 
-export function Feed({ events }: { events: UpcomingEvent[] }) {
+export function Feed({ events, timeZone }: { events: UpcomingEvent[]; timeZone: string }) {
   if (events.length === 0) {
     return (
       <div className="border-border/70 text-muted-foreground rounded-xl border border-dashed px-6 py-12 text-center text-sm">
@@ -87,7 +89,9 @@ export function Feed({ events }: { events: UpcomingEvent[] }) {
     )
   }
 
-  const buckets = splitUpcomingByBuckets(events)
+  // nowMs laissé au défaut (Date.now() dans la lib) pour ne pas appeler une
+  // fonction impure dans le render ; on n'injecte que le fuseau utilisateur.
+  const buckets = splitUpcomingByBuckets(events, undefined, timeZone)
   const order: BucketKey[] = ['today', 'tomorrow', 'thisWeek', 'later']
 
   return (
@@ -103,6 +107,7 @@ export function Feed({ events }: { events: UpcomingEvent[] }) {
             // `later` reste en compact (cartes plus denses) ; les 3 autres
             // buckets affichent la carte hero comme avant.
             compact={key === 'later'}
+            timeZone={timeZone}
           />
         )
       })}

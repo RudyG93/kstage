@@ -84,3 +84,31 @@ describe('splitUpcomingByBuckets', () => {
     expect(later.map((e) => e.id)).toEqual(['later1'])
   })
 })
+
+describe('splitUpcomingByBuckets — fuseau utilisateur (§1.3)', () => {
+  // now = 2026-05-30T15:00:00Z
+  //   Europe/Paris (UTC+2, CEST) → 17:00 le 30 mai → today = 2026-05-30
+  //   Asia/Seoul   (UTC+9)       → 00:00 le 31 mai → today = 2026-05-31
+  const now = new Date('2026-05-30T15:00:00Z').getTime()
+  // event = 2026-05-31T13:00:00Z
+  //   Paris → 15:00 le 31 mai → J+1 pour l'utilisateur parisien (tomorrow)
+  //   Seoul → 22:00 le 31 mai → même jour que `now` en KST
+  const event = ev('e', '2026-05-31T13:00:00Z')
+
+  it('classe en tomorrow dans le fuseau de l’utilisateur (Europe/Paris)', () => {
+    const { today, tomorrow } = splitUpcomingByBuckets([event], now, 'Europe/Paris')
+    expect(today).toEqual([])
+    expect(tomorrow.map((e) => e.id)).toEqual(['e'])
+  })
+
+  it('reproduit le bug historique : en KST le même event tombe à tort dans today', () => {
+    const { today } = splitUpcomingByBuckets([event], now, 'Asia/Seoul')
+    expect(today.map((e) => e.id)).toEqual(['e'])
+  })
+
+  it('fuseau par défaut = Asia/Seoul (compat ascendante)', () => {
+    expect(splitUpcomingByBuckets([event], now)).toEqual(
+      splitUpcomingByBuckets([event], now, 'Asia/Seoul'),
+    )
+  })
+})
