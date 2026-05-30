@@ -15,8 +15,9 @@ describe('parseKstLocal', () => {
   })
 })
 
-describe('parseSuggestionInput', () => {
+describe('parseSuggestionInput (kind=new)', () => {
   const base: RawSuggestion = {
+    kind: 'new',
     groupId: 'g1',
     type: 'mv',
     title: 'aespa — new MV',
@@ -28,11 +29,19 @@ describe('parseSuggestionInput', () => {
   it('valide et normalise une saisie correcte', () => {
     const r = parseSuggestionInput(base)
     expect('value' in r).toBe(true)
-    if ('value' in r) {
+    if ('value' in r && r.value.kind === 'new') {
       expect(r.value.startAt).toBe('2026-06-15T09:00:00.000Z')
       expect(r.value.sourceUrl).toBeNull()
       expect(r.value.type).toBe('mv')
     }
+  })
+
+  it('par défaut kind=new si absent (back-compat)', () => {
+    const { kind: _kind, ...rest } = base
+    void _kind
+    const r = parseSuggestionInput(rest)
+    expect('value' in r).toBe(true)
+    if ('value' in r) expect(r.value.kind).toBe('new')
   })
 
   it('rejette un type non suggérable (other, anniversary) ou inconnu', () => {
@@ -57,5 +66,46 @@ describe('parseSuggestionInput', () => {
 
   it('rejette une date invalide', () => {
     expect('error' in parseSuggestionInput({ ...base, startAtLocal: 'nope' })).toBe(true)
+  })
+})
+
+describe('parseSuggestionInput (kind=fix)', () => {
+  const validUuid = '11111111-2222-3333-4444-555555555555'
+  const base: RawSuggestion = {
+    kind: 'fix',
+    targetEventId: validUuid,
+    description: 'Wrong release date — should be June 16, not 15.',
+    sourceUrl: '',
+  }
+
+  it('valide une suggestion fix avec UUID + description', () => {
+    const r = parseSuggestionInput(base)
+    expect('value' in r).toBe(true)
+    if ('value' in r && r.value.kind === 'fix') {
+      expect(r.value.targetEventId).toBe(validUuid)
+      expect(r.value.description.startsWith('Wrong release date')).toBe(true)
+      expect(r.value.sourceUrl).toBeNull()
+    }
+  })
+
+  it('rejette un targetEventId manquant ou mal formé', () => {
+    expect('error' in parseSuggestionInput({ ...base, targetEventId: '' })).toBe(true)
+    expect('error' in parseSuggestionInput({ ...base, targetEventId: 'not-a-uuid' })).toBe(true)
+  })
+
+  it('rejette une description vide', () => {
+    expect('error' in parseSuggestionInput({ ...base, description: '' })).toBe(true)
+    expect('error' in parseSuggestionInput({ ...base, description: '   ' })).toBe(true)
+  })
+
+  it('valide une source URL http(s)', () => {
+    expect('value' in parseSuggestionInput({ ...base, sourceUrl: 'https://x.com/post/1' })).toBe(
+      true,
+    )
+    expect('error' in parseSuggestionInput({ ...base, sourceUrl: 'ftp://x' })).toBe(true)
+  })
+
+  it('rejette un kind inconnu', () => {
+    expect('error' in parseSuggestionInput({ ...base, kind: 'bogus' })).toBe(true)
   })
 })

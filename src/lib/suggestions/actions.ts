@@ -30,12 +30,14 @@ export async function submitSuggestion(
   if (!user) redirect('/login')
 
   const parsed = parseSuggestionInput({
+    kind: String(formData.get('kind') ?? 'new'),
     groupId: String(formData.get('groupId') ?? ''),
     type: String(formData.get('type') ?? ''),
     title: String(formData.get('title') ?? ''),
     startAtLocal: String(formData.get('startAt') ?? ''),
     sourceUrl: String(formData.get('sourceUrl') ?? ''),
     description: String(formData.get('description') ?? ''),
+    targetEventId: String(formData.get('targetEventId') ?? ''),
   })
   if ('error' in parsed) return { error: parsed.error }
   const v = parsed.value
@@ -51,16 +53,42 @@ export async function submitSuggestion(
     return { error: `Daily limit reached (${DAILY_SUGGESTION_CAP}/day). Try again tomorrow.` }
   }
 
-  const { error } = await supabase.from('event_suggestions').insert({
-    user_id: user.id,
-    group_id: v.groupId,
-    type: v.type,
-    title: v.title,
-    description: v.description,
-    start_at: v.startAt,
-    source_url: v.sourceUrl,
-  })
-  if (error) return { error: 'Could not submit suggestion. Please check the group and try again.' }
+  if (v.kind === 'new') {
+    const { error } = await supabase.from('event_suggestions').insert({
+      kind: 'new',
+      user_id: user.id,
+      group_id: v.groupId,
+      type: v.type,
+      title: v.title,
+      description: v.description,
+      start_at: v.startAt,
+      source_url: v.sourceUrl,
+    })
+    if (error)
+      return { error: 'Could not submit suggestion. Please check the group and try again.' }
+  } else {
+    // kind = 'fix' : on copie les colonnes NOT NULL depuis l'event ciblé pour
+    // satisfaire le schéma, puis on stocke ce qui est faux dans `description`.
+    const { data: target, error: readErr } = await supabase
+      .from('events')
+      .select('id, group_id, type, title, start_at')
+      .eq('id', v.targetEventId)
+      .maybeSingle()
+    if (readErr || !target) return { error: 'Target event not found.' }
+
+    const { error } = await supabase.from('event_suggestions').insert({
+      kind: 'fix',
+      user_id: user.id,
+      group_id: target.group_id,
+      type: target.type,
+      title: target.title,
+      start_at: target.start_at,
+      target_event_id: target.id,
+      description: v.description,
+      source_url: v.sourceUrl,
+    })
+    if (error) return { error: 'Could not submit fix suggestion.' }
+  }
 
   revalidatePath('/my')
   return { ok: true }

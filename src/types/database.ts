@@ -135,11 +135,13 @@ export type Database = {
           description: string | null
           group_id: string
           id: string
+          kind: string
           reviewed_at: string | null
           reviewed_by: string | null
           source_url: string | null
           start_at: string
           status: Database["public"]["Enums"]["suggestion_status"]
+          target_event_id: string | null
           title: string
           type: Database["public"]["Enums"]["event_type"]
           user_id: string
@@ -149,11 +151,13 @@ export type Database = {
           description?: string | null
           group_id: string
           id?: string
+          kind?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           source_url?: string | null
           start_at: string
           status?: Database["public"]["Enums"]["suggestion_status"]
+          target_event_id?: string | null
           title: string
           type: Database["public"]["Enums"]["event_type"]
           user_id: string
@@ -163,11 +167,13 @@ export type Database = {
           description?: string | null
           group_id?: string
           id?: string
+          kind?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           source_url?: string | null
           start_at?: string
           status?: Database["public"]["Enums"]["suggestion_status"]
+          target_event_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["event_type"]
           user_id?: string
@@ -178,6 +184,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_suggestions_target_event_id_fkey"
+            columns: ["target_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
