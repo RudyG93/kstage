@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// Golden path : login → follow → mes events → logout.
+// Golden path : login → follow → filtres sidebar → mes events → logout.
 // Utilise un compte test fixe (confirmé côté Supabase) fourni via env.
 // Skip proprement si non configuré, pour ne pas casser la CI.
 const email = process.env.E2E_AUTH_EMAIL ?? ''
@@ -12,7 +12,7 @@ test.describe('auth golden path', () => {
     'Set E2E_AUTH_EMAIL / E2E_AUTH_PASSWORD (a confirmed Supabase user) to run.',
   )
 
-  test('sign in, follow a group, see it in My events, sign out', async ({ page }) => {
+  test('sign in, follow, multi-filter, see My events, sign out', async ({ page }) => {
     // Sign in → redirigé vers /my.
     await page.goto('/login')
     await page.getByLabel('Email').fill(email)
@@ -25,6 +25,27 @@ test.describe('auth golden path', () => {
     const firstFollow = page.getByRole('button', { name: 'Follow' }).first()
     if (await firstFollow.count()) await firstFollow.click()
     await expect(page.getByRole('button', { name: 'Following' }).first()).toBeVisible()
+
+    // Home connectée : sidebar gauche TypeFilterVertical (post round-4 layout).
+    await page.goto('/')
+
+    // 1er filtre : "MV" → URL contient `type=mv`.
+    const mvBtn = page.getByRole('button', { name: 'MV', exact: true })
+    await mvBtn.scrollIntoViewIfNeeded()
+    await mvBtn.click()
+    await expect(page).toHaveURL(/[?&]type=mv(?:[,&]|$)/)
+    await expect(mvBtn).toHaveAttribute('aria-pressed', 'true')
+
+    // 2e filtre : "Release" → URL CSV `type=mv,release` (insertion order).
+    const releaseBtn = page.getByRole('button', { name: 'Release', exact: true })
+    await releaseBtn.click()
+    await expect(page).toHaveURL(/[?&]type=mv,release(?:[,&]|$)/)
+    await expect(releaseBtn).toHaveAttribute('aria-pressed', 'true')
+
+    // Re-click MV → URL ne contient plus que `release`.
+    await mvBtn.click()
+    await expect(page).toHaveURL(/[?&]type=release(?:[,&]|$)/)
+    await expect(mvBtn).toHaveAttribute('aria-pressed', 'false')
 
     // L'état "aucun groupe suivi" a disparu de /my.
     await page.goto('/my')
