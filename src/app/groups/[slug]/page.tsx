@@ -37,7 +37,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     getMembersForGroup(group.id),
   ])
   const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
-  const subtitle = [group.agency, group.fandom_name].filter(Boolean).join(' · ')
+  const subtitle = group.fandom_name ?? ''
   const activeMembers = members.filter((m) => m.status === 'active')
   const inactiveMembers = members.filter((m) => m.status !== 'active')
 

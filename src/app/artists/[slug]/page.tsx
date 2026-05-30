@@ -39,7 +39,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     slug: string
     name: string
     color_hex: string | null
-    agency: string | null
   } | null
   const color = group?.color_hex ?? '#888'
   const initial = member.stage_name.slice(0, 1).toUpperCase()
@@ -79,7 +78,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
                 <Link href={`/groups/${group.slug}`} className="hover:underline">
                   {group.name}
                 </Link>
-                {group.agency && <span> · {group.agency}</span>}
               </p>
             )}
             {statusText && (

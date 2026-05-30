@@ -36,9 +36,6 @@ export function GroupCard({
           />
           <div className="min-w-0">
             <p className="font-medium">{group.name}</p>
-            {group.agency && (
-              <p className="text-muted-foreground truncate text-xs">{group.agency}</p>
-            )}
           </div>
         </Link>
         <FollowButton
