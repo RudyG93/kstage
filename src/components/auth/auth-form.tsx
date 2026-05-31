@@ -39,13 +39,13 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
 
       <div className="space-y-1.5">
         <label htmlFor="email" className="text-sm font-medium">
-          Email
+          {isLogin ? 'Email or username' : 'Email'}
         </label>
         <input
           id="email"
           name="email"
-          type="email"
-          autoComplete="email"
+          type={isLogin ? 'text' : 'email'}
+          autoComplete={isLogin ? 'username' : 'email'}
           required
           className={inputClass}
         />
@@ -64,7 +64,16 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
           minLength={isLogin ? undefined : PASSWORD_MIN}
           className={inputClass}
         />
-        {!isLogin && (
+        {isLogin ? (
+          <div className="text-right">
+            <Link
+              href="/reset-password"
+              className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-4"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        ) : (
           <p className="text-muted-foreground text-xs">
             At least {PASSWORD_MIN} characters, one uppercase letter and one digit.
           </p>
