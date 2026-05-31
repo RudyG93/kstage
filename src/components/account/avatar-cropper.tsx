@@ -1,12 +1,21 @@
 'use client'
 
-import { useCallback, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { downscaleToObjectURL, getCroppedBlob } from '@/lib/profiles/crop-image'
 
-export function AvatarCropper({ onCropped }: { onCropped: (blob: Blob) => void }) {
+export function AvatarCropper({
+  onCropped,
+  children,
+  triggerClassName,
+}: {
+  onCropped: (blob: Blob) => void
+  // Déclencheur personnalisé (ex. PP cliquable du profil) ; défaut = bouton.
+  children?: ReactNode
+  triggerClassName?: string
+}) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [src, setSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -50,9 +59,15 @@ export function AvatarCropper({ onCropped }: { onCropped: (blob: Blob) => void }
 
   return (
     <>
-      <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-        Change avatar
-      </Button>
+      {children !== undefined ? (
+        <button type="button" onClick={() => fileRef.current?.click()} className={triggerClassName}>
+          {children}
+        </button>
+      ) : (
+        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+          Change avatar
+        </Button>
+      )}
       <input
         ref={fileRef}
         type="file"

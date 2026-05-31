@@ -2,26 +2,24 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarIcon, HeartIcon, ListIcon, PlayCircleIcon, UsersIcon } from 'lucide-react'
+import { CalendarIcon, ListIcon, PlayCircleIcon, UsersIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const BASE_ITEMS = [
+const ITEMS = [
   { href: '/', label: 'Upcoming', Icon: ListIcon },
   { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
   { href: '/mvs', label: 'MVs', Icon: PlayCircleIcon },
   { href: '/groups', label: 'Groups', Icon: UsersIcon },
 ] as const
 
-const MY_ITEM = { href: '/my', label: 'My events', Icon: HeartIcon } as const
-
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function SiteNav({ isAuthed }: { isAuthed: boolean }) {
+export function SiteNav() {
   const pathname = usePathname()
-  const items = isAuthed ? [...BASE_ITEMS, MY_ITEM] : BASE_ITEMS
+  const items = ITEMS
 
   return (
     <nav

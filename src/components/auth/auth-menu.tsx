@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Settings, LogOut } from 'lucide-react'
+import { Settings, LogOut, User } from 'lucide-react'
 import { signOut } from '@/lib/auth/actions'
 import { buttonVariants } from '@/components/ui/button'
 import { Avatar } from '@/components/avatar'
@@ -50,6 +50,10 @@ export function AuthMenu({
         <Avatar email={email} username={username ?? undefined} avatarUrl={avatarUrl} size={32} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8}>
+        <DropdownMenuItem render={<Link href={username ? `/u/${username}` : '/account'} />}>
+          <User className="size-4" />
+          My profile
+        </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/account" />}>
           <Settings className="size-4" />
           Account settings

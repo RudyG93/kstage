@@ -31,7 +31,7 @@ function buildPayload(events: readonly DigestEvent[]): DigestPayload {
   return {
     title: `${n} upcoming event${n > 1 ? 's' : ''}`,
     body: listed + more,
-    url: '/my',
+    url: '/',
   }
 }
 

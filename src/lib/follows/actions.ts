@@ -25,6 +25,6 @@ export async function toggleFollow(groupId: string, isFollowing: boolean) {
     if (error) throw error
   }
 
-  revalidatePath('/my')
+  revalidatePath('/')
   revalidatePath('/groups')
 }
