@@ -44,12 +44,12 @@ export async function getUpcomingEvents({
 export async function getEventsForMonth({
   year,
   month,
-  groupSlug,
+  groupSlugs,
   types,
 }: {
   year: number
   month: number
-  groupSlug?: string
+  groupSlugs?: string[]
   types?: readonly EventType[]
 }) {
   const supabase = await createClient()
@@ -62,7 +62,7 @@ export async function getEventsForMonth({
     .or(isMainOrNonMv)
     .order('start_at', { ascending: true })
 
-  if (groupSlug) query = query.eq('groups.slug', groupSlug)
+  if (groupSlugs && groupSlugs.length > 0) query = query.in('groups.slug', groupSlugs)
   if (types && types.length > 0) query = query.in('type', types as EventType[])
 
   const { data, error } = await query

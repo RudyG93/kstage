@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
@@ -8,7 +9,14 @@ import { TypeFilterVertical } from './type-filter-vertical'
 // Cap d'affichage des groupes suivis pour les comptes free. Premium = illimité.
 const FREE_VISIBLE_FOLLOWS = 10
 
-export async function SidebarLeft({ tier }: { tier: Database['public']['Enums']['tier_type'] }) {
+export async function SidebarLeft({
+  tier,
+  groupFilter,
+}: {
+  tier: Database['public']['Enums']['tier_type']
+  // Slot optionnel injecté dans la section Filters (filtre Group du calendrier).
+  groupFilter?: ReactNode
+}) {
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
   const followed = groups.filter((g) => followedIds.has(g.id))
@@ -27,6 +35,7 @@ export async function SidebarLeft({ tier }: { tier: Database['public']['Enums'][
           </span>
         </div>
         <TypeFilterVertical />
+        {groupFilter && <div className="mt-3">{groupFilter}</div>}
       </section>
 
       <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
