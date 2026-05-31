@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AccountForm } from '@/components/account/account-form'
+import { ChangePasswordForm } from '@/components/account/change-password-form'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profiles/queries'
 
@@ -29,6 +30,7 @@ export default async function AccountPage() {
           username={profile?.username ?? ''}
           avatarUrl={profile?.avatar_url ?? null}
         />
+        <ChangePasswordForm />
       </div>
     </div>
   )
