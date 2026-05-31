@@ -1,60 +1,108 @@
 import type { Metadata } from 'next'
-import { MvsGrid } from '@/components/group/mvs-grid'
-import { getAllMvs } from '@/lib/events/queries'
+import { SidebarLeft } from '@/components/home/sidebar-left'
+import { SidebarRight } from '@/components/home/sidebar-right'
+import { MvCard } from '@/components/group/mv-card'
+import { MvScrollRow } from '@/components/mv/mv-scroll-row'
+import { getAllMvs, type MvEvent } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Music videos',
   description: 'Browse all k-pop music videos tracked on KStage.',
 }
 
+const PER_GROUP = 10
+
 export default async function MvsPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const followedIds = await getFollowedGroupIds()
-  const followedArr = Array.from(followedIds)
+  const followedArr = [...followedIds]
 
-  // Two queries en parallèle : MVs des followed + tous (avec un cap raisonnable).
-  // On filtre côté JS pour exclure du "All" ceux déjà montrés dans "From your groups".
-  const [followedMvs, allMvs] = await Promise.all([
-    followedArr.length > 0 ? getAllMvs({ groupIds: followedArr, limit: 60 }) : Promise.resolve([]),
-    getAllMvs({ limit: 120 }),
+  let tier: 'free' | 'premium' = 'free'
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', user.id)
+      .single()
+    tier = profile?.tier ?? 'free'
+  }
+
+  const [followedMvs, latest] = await Promise.all([
+    followedArr.length > 0 ? getAllMvs({ groupIds: followedArr, limit: 300 }) : Promise.resolve([]),
+    getAllMvs({ limit: 30 }),
   ])
 
-  const followedIdsSet = new Set(followedMvs.map((m) => m.id))
-  const otherMvs = allMvs.filter((m) => !followedIdsSet.has(m.id))
+  // 1 ligne par groupe suivi (ordre = MV le plus récent), 10 MV max chacun.
+  const byGroup = new Map<string, { name: string; slug: string; mvs: MvEvent[] }>()
+  for (const mv of followedMvs) {
+    const g = mv.groups
+    if (!g?.slug) continue
+    let row = byGroup.get(g.slug)
+    if (!row) {
+      row = { name: g.name, slug: g.slug, mvs: [] }
+      byGroup.set(g.slug, row)
+    }
+    if (row.mvs.length < PER_GROUP) row.mvs.push(mv)
+  }
+  const rows = [...byGroup.values()]
 
-  // Une seule query batch pour toutes les notes affichées (followed + others).
   const ratings = await getRatingsForEvents([
-    ...followedMvs.map((m) => m.id),
-    ...otherMvs.map((m) => m.id),
+    ...rows.flatMap((r) => r.mvs.map((m) => m.id)),
+    ...latest.map((m) => m.id),
   ])
 
-  const total = allMvs.length
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6">
-      <div className="space-y-8">
-        <header>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Music videos</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {total === 0 ? 'No music videos tracked yet.' : `${total} music videos tracked.`}
-          </p>
-        </header>
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
+          <SidebarLeft tier={tier} showFilters={false} />
+        </aside>
 
-        {followedMvs.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">From your groups</h2>
-            <MvsGrid mvs={followedMvs} ratings={ratings} />
-          </section>
-        )}
+        <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+          {rows.length > 0 && (
+            <div className="space-y-6">
+              <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
+                From your groups
+              </span>
+              {rows.map((row) => (
+                <MvScrollRow
+                  key={row.slug}
+                  title={row.name}
+                  href={`/groups/${row.slug}`}
+                  mvs={row.mvs}
+                  ratings={ratings}
+                />
+              ))}
+            </div>
+          )}
 
-        {otherMvs.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-sm font-medium">
-              {followedMvs.length > 0 ? 'More music videos' : 'All music videos'}
-            </h2>
-            <MvsGrid mvs={otherMvs} ratings={ratings} />
+            <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
+              Latest MVs
+            </span>
+            {latest.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No music videos tracked yet.</p>
+            ) : (
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {latest.map((mv) => (
+                  <li key={mv.id}>
+                    <MvCard mv={mv} rating={ratings.get(mv.id)} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-        )}
+        </div>
+
+        <aside className="order-3 shrink-0 lg:w-80">
+          <SidebarRight />
+        </aside>
       </div>
     </div>
   )
