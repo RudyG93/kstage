@@ -1,11 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
-import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref } from '@/lib/events/href'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { TypeBadge } from './type-badge'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const kstFormat = (iso: string) =>
@@ -14,10 +13,6 @@ const kstFormat = (iso: string) =>
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(iso))
-
-// Fondu latéral : l'image s'estompe sur ses bords pour se fondre entre le texte
-// (gauche) et l'horaire (droite). En style inline (fiable sans Tailwind JIT).
-const CENTER_FADE = 'linear-gradient(to right, transparent, #000 30%, #000 70%, transparent)'
 
 export function HomeEventCard({
   event,
@@ -31,55 +26,61 @@ export function HomeEventCard({
   const typeColor = EVENT_TYPE_COLORS[event.type]
   const displayTitle = displayEventTitle(event.title, group?.name)
 
-  // backdrop : recadrage manuel admin (banner_url) en priorité ; sinon Deezer
-  // (image_url) recadré visage Cloudinary en 8:1 — même format que le cropper
-  // admin (WYSIWYG). L'image remplit toute la colonne flex-1 via object-cover.
+  // Image de fond plein cover (banner_url admin prioritaire, sinon Deezer
+  // recadré visage Cloudinary). Le texte 3 lignes est posé dessus, lisible
+  // grâce au scrim sombre.
   const bannerSrc =
-    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 1600, 200) : null)
+    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 1600, 400) : null)
 
   return (
     <Link
       href={eventHref(event)}
-      className={`group hover:bg-muted/30 flex items-center gap-3 overflow-hidden rounded-xl px-3 transition-colors duration-200 ${compact ? 'h-16' : 'h-20'}`}
+      className={`group relative block overflow-hidden rounded-xl ${compact ? 'h-20' : 'h-28'}`}
     >
+      {bannerSrc ? (
+        <Image
+          src={bannerSrc}
+          alt=""
+          aria-hidden
+          fill
+          unoptimized
+          sizes="(min-width: 1024px) 1000px, 320px"
+          className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <div className="gradient-signature absolute inset-0" aria-hidden />
+      )}
+
+      {/* scrim pour la lisibilité du texte par-dessus l'image */}
       <div
-        className="h-10 w-1 shrink-0 rounded-full"
+        className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20"
+        aria-hidden
+      />
+      {/* accent couleur du type d'event */}
+      <div
+        className="absolute top-0 left-0 h-full w-1"
         style={{ backgroundColor: typeColor }}
         aria-hidden
       />
 
-      <div className="w-40 max-w-[50%] shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-semibold">{group?.name}</span>
-          <TypeBadge type={event.type} />
+      <div className="relative flex h-full items-center justify-between gap-3 py-2 pr-4 pl-5">
+        <div className="min-w-0 flex-1 space-y-1">
+          <span
+            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase"
+            style={{ backgroundColor: typeColor }}
+          >
+            {EVENT_TYPE_LABELS[event.type]}
+          </span>
+          <p className="truncate text-sm leading-tight font-semibold text-white">{group?.name}</p>
+          <p className="truncate text-xs text-white/80">{displayTitle}</p>
         </div>
-        <p className="text-muted-foreground truncate text-xs">{displayTitle}</p>
-      </div>
 
-      {/* image du groupe en full-bleed sur toute la colonne flex-1 ; les bords
-          gauche/droite sont masqués par le fondu CENTER_FADE pour atténuer le
-          décalage de cadrage entre le cropper (8:1 fixe) et le rendu réel
-          (ratio variable selon la viewport). */}
-      <div className="relative h-full flex-1">
-        {bannerSrc && (
-          <Image
-            src={bannerSrc}
-            alt=""
-            aria-hidden
-            fill
-            unoptimized
-            sizes="(min-width: 1024px) 1000px, 320px"
-            className="pointer-events-none object-cover object-center opacity-40 select-none"
-            style={{ maskImage: CENTER_FADE, WebkitMaskImage: CENTER_FADE }}
-          />
-        )}
-      </div>
-
-      <div className="shrink-0 text-right">
-        <p className="font-mono text-sm tabular-nums">{kst} KST</p>
-        <p className="text-muted-foreground text-xs">
-          <LocalTime iso={event.start_at} />
-        </p>
+        <div className="shrink-0 text-right">
+          <p className="font-mono text-sm font-medium text-white tabular-nums">
+            <LocalTime iso={event.start_at} />
+          </p>
+          <p className="font-mono text-[11px] text-white/70 tabular-nums">{kst} KST</p>
+        </div>
       </div>
     </Link>
   )

@@ -8,10 +8,13 @@ export function LocalTime({ iso }: { iso: string }) {
   const hydrated = useHydrated()
   if (!hydrated) return null
 
+  // `timeZoneName: 'short'` ajoute l'abréviation du fuseau local du visiteur
+  // (ex « 3:30 PM EDT », ou « GMT+2 » selon le runtime ICU). Plus de « your time ».
   const label = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: 'short',
   }).format(new Date(iso))
 
-  return <span>{`${label} your time`}</span>
+  return <span>{label}</span>
 }
