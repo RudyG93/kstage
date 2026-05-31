@@ -1,14 +1,17 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { getEventBySlug, getEventRatingSummary } from '@/lib/events/community'
+import { getEventBySlug, getEventRatingSummary, getLikeSummary } from '@/lib/events/community'
 import { getCommentsForEvent } from '@/lib/comments/queries'
 import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displayEventTitle } from '@/lib/events/title'
+import { faceCrop } from '@/lib/images/cloudinary'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { StarRating } from '@/components/mv/star-rating'
+import { LikeButton } from '@/components/mv/like-button'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 
 const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
@@ -64,6 +67,7 @@ export default async function MvPage({
   const viewerId = userRes.data.user?.id ?? null
   const isAuthed = Boolean(userRes.data.user)
   const videoId = extractYouTubeId(event.source_url)
+  const like = await getLikeSummary(event.id, viewerId)
 
   const flatComments = await getCommentsForEvent(event.id, viewerId)
   const commentRoots = sortTree(buildCommentTree(flatComments), sort)
@@ -85,11 +89,22 @@ export default async function MvPage({
               href={`/groups/${group?.slug ?? ''}`}
               className="hover:text-foreground text-muted-foreground inline-flex items-center gap-2"
             >
-              <span
-                className="size-3 rounded-full"
-                style={{ backgroundColor: color }}
-                aria-hidden
-              />
+              {group?.image_url ? (
+                <Image
+                  src={faceCrop(group.image_url, 56, 56)}
+                  alt=""
+                  width={20}
+                  height={20}
+                  unoptimized
+                  className="size-5 rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  className="size-3 rounded-full"
+                  style={{ backgroundColor: color }}
+                  aria-hidden
+                />
+              )}
               {group?.name}
             </Link>
             <span className="text-muted-foreground">·</span>
@@ -113,6 +128,18 @@ export default async function MvPage({
             Video unavailable
           </div>
         )}
+
+        <section aria-labelledby="like-heading" className="space-y-2">
+          <h2 id="like-heading" className="text-sm font-medium">
+            Like
+          </h2>
+          <LikeButton
+            eventId={event.id}
+            initialLiked={like.liked}
+            count={like.count}
+            isAuthed={isAuthed}
+          />
+        </section>
 
         <section aria-labelledby="rating-heading" className="space-y-2">
           <h2 id="rating-heading" className="text-sm font-medium">

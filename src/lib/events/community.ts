@@ -56,6 +56,31 @@ export async function getRatingsForEvents(
   return out
 }
 
+export interface LikeSummary {
+  liked: boolean // le viewer a liké
+  count: number // total des likes
+}
+
+/** Résumé des likes (mv_like) d'un event : total + état du viewer. */
+export async function getLikeSummary(
+  eventId: string,
+  viewerId: string | null,
+): Promise<LikeSummary> {
+  const supabase = await createClient()
+  const [{ count }, mine] = await Promise.all([
+    supabase.from('mv_like').select('*', { count: 'exact', head: true }).eq('event_id', eventId),
+    viewerId
+      ? supabase
+          .from('mv_like')
+          .select('user_id')
+          .eq('event_id', eventId)
+          .eq('user_id', viewerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+  return { liked: Boolean(mine.data), count: count ?? 0 }
+}
+
 /**
  * Charge un event par son slug (route `/mv/[slug]`). Retourne null si absent.
  * Joint les infos groupe nécessaires pour la page article.
