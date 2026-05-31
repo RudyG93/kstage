@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { GroupCard } from '@/components/group-card'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
+import { GroupSort } from '@/components/home/group-sort'
 import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { createClient } from '@/lib/supabase/server'
@@ -10,9 +11,9 @@ import { cn } from '@/lib/utils'
 export const metadata = { title: 'Groups' }
 
 type TabKey = 'groups' | 'solo'
-type SortKey = 'az' | 'debut'
+type SortKey = 'az' | 'za' | 'pop_desc' | 'pop_asc'
 
-const SORT_LABELS: Record<SortKey, string> = { az: 'A–Z', debut: 'Debut' }
+const SORT_KEYS: readonly SortKey[] = ['az', 'za', 'pop_desc', 'pop_asc']
 
 function buildHref(tab: TabKey, sort: SortKey): string {
   const params = new URLSearchParams()
@@ -29,7 +30,9 @@ export default async function GroupsPage({
 }) {
   const sp = await searchParams
   const activeTab: TabKey = sp.tab === 'solo' ? 'solo' : 'groups'
-  const activeSort: SortKey = sp.sort === 'debut' ? 'debut' : 'az'
+  const activeSort: SortKey = (SORT_KEYS as string[]).includes(sp.sort ?? '')
+    ? (sp.sort as SortKey)
+    : 'az'
 
   const supabase = await createClient()
   const [
@@ -38,10 +41,12 @@ export default async function GroupsPage({
     },
     items,
     followedIds,
+    { data: countRows },
   ] = await Promise.all([
     supabase.auth.getUser(),
     activeTab === 'solo' ? getSoloArtists() : getNonSoloGroups(),
     getFollowedGroupIds(),
+    supabase.rpc('group_follow_counts'),
   ])
 
   let tier: 'free' | 'premium' = 'free'
@@ -54,14 +59,20 @@ export default async function GroupsPage({
     tier = profile?.tier ?? 'free'
   }
 
+  const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
+  const popOf = (id: string) => followCount.get(id) ?? 0
+
   const sorted = [...items].sort((a, b) => {
-    if (activeSort === 'debut') {
-      if (!a.debut_date && !b.debut_date) return 0
-      if (!a.debut_date) return 1
-      if (!b.debut_date) return -1
-      return b.debut_date.localeCompare(a.debut_date)
+    switch (activeSort) {
+      case 'za':
+        return b.name.localeCompare(a.name)
+      case 'pop_desc':
+        return popOf(b.id) - popOf(a.id) || a.name.localeCompare(b.name)
+      case 'pop_asc':
+        return popOf(a.id) - popOf(b.id) || a.name.localeCompare(b.name)
+      default:
+        return a.name.localeCompare(b.name)
     }
-    return a.name.localeCompare(b.name)
   })
 
   return (
@@ -85,13 +96,7 @@ export default async function GroupsPage({
               </SegmentLink>
             </nav>
 
-            <nav aria-label="Sort" className="bg-muted inline-flex rounded-lg p-0.5 text-sm">
-              {(['az', 'debut'] as SortKey[]).map((s) => (
-                <SegmentLink key={s} href={buildHref(activeTab, s)} active={activeSort === s}>
-                  {SORT_LABELS[s]}
-                </SegmentLink>
-              ))}
-            </nav>
+            <GroupSort value={activeSort} />
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
