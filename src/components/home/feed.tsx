@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { splitUpcomingByBuckets, type UpcomingBuckets } from '@/lib/events/grouping'
+import { splitUpcomingByBuckets, capLaterEvents, type UpcomingBuckets } from '@/lib/events/grouping'
 import { groupEventsByDay, kstDayKey } from '@/lib/events/date'
 import { HomeEventCard } from './event-card'
 import type { UpcomingEvent } from '@/lib/events/queries'
@@ -37,14 +37,20 @@ function FeedSection({
   events,
   compact,
   timeZone,
+  more,
 }: {
   label: string
   events: UpcomingEvent[]
   compact: boolean
   timeZone: string
+  // `later` fournit une liste déjà bornée (≤ 10, ≤ 1 mois) + son overflow.
+  // Les autres buckets cappent génériquement à BUCKET_CAP.
+  more?: { count: number; href: string | null }
 }) {
-  const visible = events.slice(0, BUCKET_CAP)
-  const hidden = events.length - visible.length
+  const override = more !== undefined
+  const visible = override ? events : events.slice(0, BUCKET_CAP)
+  const hidden = override ? more.count : events.length - visible.length
+  const moreHref = override ? more.href : hidden > 0 ? overflowHref(events[BUCKET_CAP]) : null
   const byDay = groupEventsByDay(visible, timeZone)
   return (
     <section>
@@ -68,12 +74,13 @@ function FeedSection({
           </div>
         ))}
       </div>
-      {hidden > 0 && (
+      {hidden > 0 && moreHref && (
         <Link
-          href={overflowHref(events[BUCKET_CAP])}
+          href={moreHref}
           className="text-muted-foreground hover:text-foreground mt-4 inline-block font-mono text-xs underline underline-offset-4"
         >
-          + {hidden} more event{hidden > 1 ? 's' : ''} in {label.toLowerCase()}
+          + {hidden} more event{hidden > 1 ? 's' : ''}{' '}
+          {override ? 'later' : `in ${label.toLowerCase()}`}
         </Link>
       )}
     </section>
@@ -92,11 +99,25 @@ export function Feed({ events, timeZone }: { events: UpcomingEvent[]; timeZone: 
   // nowMs laissé au défaut (Date.now() dans la lib) pour ne pas appeler une
   // fonction impure dans le render ; on n'injecte que le fuseau utilisateur.
   const buckets = splitUpcomingByBuckets(events, undefined, timeZone)
+  const later = capLaterEvents(buckets.later, undefined, timeZone)
   const order: BucketKey[] = ['today', 'tomorrow', 'thisWeek', 'later']
 
   return (
     <div className="space-y-8">
       {order.map((key) => {
+        if (key === 'later') {
+          if (later.display.length === 0) return null
+          return (
+            <FeedSection
+              key="later"
+              label={BUCKET_LABELS.later}
+              events={later.display}
+              compact
+              timeZone={timeZone}
+              more={{ count: later.moreCount, href: later.moreHref }}
+            />
+          )
+        }
         const bucketEvents = buckets[key]
         if (bucketEvents.length === 0) return null
         return (
@@ -104,9 +125,7 @@ export function Feed({ events, timeZone }: { events: UpcomingEvent[]; timeZone: 
             key={key}
             label={BUCKET_LABELS[key]}
             events={bucketEvents}
-            // `later` reste en compact (cartes plus denses) ; les 3 autres
-            // buckets affichent la carte hero comme avant.
-            compact={key === 'later'}
+            compact={false}
             timeZone={timeZone}
           />
         )

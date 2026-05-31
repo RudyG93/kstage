@@ -4,6 +4,36 @@ import type { UpcomingEvent } from './queries'
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEK_MS = 7 * DAY_MS
 
+// Section « Later » : au plus 10 bannières et 1 mois dans le futur (§3.1).
+const LATER_CAP = 10
+const LATER_MAX_AHEAD_DAYS = 31
+
+export interface CappedLater {
+  display: UpcomingEvent[]
+  moreCount: number
+  moreHref: string | null
+}
+
+/**
+ * Borne le bucket « later » : ≤ 1 mois ET ≤ 10 events affichés. `moreCount`
+ * compte tout le reste (au-delà du mois ou du cap) ; `moreHref` pointe le
+ * calendrier au dernier jour affiché (fuseau utilisateur).
+ */
+export function capLaterEvents(
+  later: UpcomingEvent[],
+  nowMs: number = Date.now(),
+  timeZone: string = 'Asia/Seoul',
+): CappedLater {
+  const limit = nowMs + LATER_MAX_AHEAD_DAYS * DAY_MS
+  const within = later.filter((e) => new Date(e.start_at).getTime() <= limit)
+  const display = within.slice(0, LATER_CAP)
+  const moreCount = later.length - display.length
+  const last = display[display.length - 1]
+  const dayKey = last ? localDayKey(last.start_at, timeZone) : null
+  const moreHref = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : null
+  return { display, moreCount, moreHref }
+}
+
 /** Sépare des events (triés par start_at) en « cette semaine » (≤ 7 j) et « plus tard ». */
 export function splitUpcomingByWeek(events: UpcomingEvent[], nowMs: number = Date.now()) {
   const weekEnd = nowMs + WEEK_MS
