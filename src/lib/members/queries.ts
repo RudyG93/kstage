@@ -14,7 +14,7 @@ export async function getMemberBySlug(slug: string) {
   const { data, error } = await supabase
     .from('members')
     .select(
-      'id, slug, stage_name, real_name, birthday, position, photo_url, status, former_reason, canonical_id, groups!inner(id, slug, name, color_hex, agency, image_url)',
+      'id, slug, stage_name, real_name, birthday, position, photo_url, status, former_reason, canonical_id, groups!inner(id, slug, name, color_hex, agency, image_url, is_solo, links, banner_url, image_landscape)',
     )
     .eq('slug', slug)
     .maybeSingle()

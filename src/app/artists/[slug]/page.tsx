@@ -2,8 +2,17 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import { ArtistHero } from '@/components/group/artist-hero'
+import { CollapsibleMvs } from '@/components/group/collapsible-mvs'
+import { LinksBar } from '@/components/group/links-bar'
+import { EventList } from '@/components/event-list'
+import { FollowButton } from '@/components/follow-button'
 import { getCareerPath, getMemberBySlug, getMemberSlugById } from '@/lib/members/queries'
+import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
+import { getRatingsForEvents } from '@/lib/events/community'
+import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { createClient } from '@/lib/supabase/server'
 
 const formatBirthday = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
@@ -19,36 +28,161 @@ const statusLabel = {
   pre_debut: 'Pre-debut',
 } as const
 
+type CareerStep = Awaited<ReturnType<typeof getCareerPath>>[number]
+
+function CareerSection({ career }: { career: CareerStep[] }) {
+  if (career.length <= 1) return null
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-medium">Career</h2>
+      <ul className="space-y-2">
+        {career.map((step) => {
+          const stepGroupRaw = (step as { groups: unknown }).groups
+          const stepGroup = (Array.isArray(stepGroupRaw) ? stepGroupRaw[0] : stepGroupRaw) as {
+            slug: string
+            name: string
+            color_hex: string | null
+          } | null
+          if (!stepGroup) return null
+          const label = statusLabel[step.status] ?? 'Active'
+          return (
+            <li key={step.id} className="text-sm">
+              <span
+                className="mr-2 inline-block size-2 rounded-full align-middle"
+                style={{ backgroundColor: stepGroup.color_hex ?? 'var(--muted-foreground)' }}
+                aria-hidden
+              />
+              <Link href={`/groups/${stepGroup.slug}`} className="font-medium hover:underline">
+                {stepGroup.name}
+              </Link>
+              <span className="text-muted-foreground"> — {label}</span>
+              {step.former_reason && (
+                <p className="text-muted-foreground mt-0.5 ml-4 text-xs">{step.former_reason}</p>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+type ArtistGroup = {
+  id: string
+  slug: string
+  name: string
+  color_hex: string | null
+  agency: string | null
+  image_url: string | null
+  is_solo: boolean
+  links: Record<string, string> | null
+  banner_url: string | null
+  image_landscape: string | null
+}
+
 export default async function ArtistPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const member = await getMemberBySlug(slug)
   if (!member) notFound()
 
-  // Membership historique → redirect 308 vers la canonique (= identité actuelle
-  // de l'artiste). Cf. PR-D-3.1 : ILLIT Youngseo → Allday Project Youngseo,
-  // i-dle Soojin → Soojin solo.
+  // Membership historique → redirect 308 vers la canonique (identité actuelle).
   if (member.canonical_id) {
     const canonicalSlug = await getMemberSlugById(member.canonical_id)
     if (canonicalSlug && canonicalSlug !== slug) redirect(`/artists/${canonicalSlug}`)
   }
 
-  // Supabase embed renvoie soit un objet (single FK), soit un array selon la cardinality.
-  // `groups!inner` sur un FK simple → objet. On le narrow ici.
+  // `groups!inner` sur un FK simple → objet (parfois array selon cardinality).
   const groupRaw = (member as { groups: unknown }).groups
-  const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw) as {
-    id: string
-    slug: string
-    name: string
-    color_hex: string | null
-    image_url: string | null
-  } | null
+  const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw) as ArtistGroup | null
+
+  const career = await getCareerPath(member.id)
+
+  // ── Artiste solo : même traitement que la page groupe (bandeau, follow, liens,
+  // events, MVs via le groupe is_solo). ──────────────────────────────────────
+  if (group?.is_solo) {
+    const supabase = await createClient()
+    const [
+      {
+        data: { user },
+      },
+      events,
+      mvs,
+      followedIds,
+    ] = await Promise.all([
+      supabase.auth.getUser(),
+      getUpcomingEvents({ groupSlug: group.slug, limit: 10 }),
+      getGroupMvs(group.slug, 48),
+      getFollowedGroupIds(),
+    ])
+    const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
+    const heroSrc = member.photo_url ?? group.image_url
+    const bannerSrc =
+      group.banner_url ?? group.image_landscape ?? (heroSrc ? faceCrop(heroSrc, 1600, 500) : null)
+
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-6">
+        <div className="space-y-6">
+          <ArtistHero
+            name={member.stage_name}
+            image={bannerSrc}
+            follow={
+              <FollowButton
+                groupId={group.id}
+                initialFollowing={followedIds.has(group.id)}
+                isAuthed={!!user}
+                iconOnly
+                large
+              />
+            }
+          />
+
+          <div className="space-y-3">
+            {group.agency && <p className="text-muted-foreground text-sm">{group.agency}</p>}
+            <LinksBar links={group.links} />
+          </div>
+
+          {(member.real_name || member.birthday) && (
+            <section className="text-sm">
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                {member.real_name && (
+                  <>
+                    <dt className="text-muted-foreground">Real name</dt>
+                    <dd>{member.real_name}</dd>
+                  </>
+                )}
+                {member.birthday && (
+                  <>
+                    <dt className="text-muted-foreground">Birthday</dt>
+                    <dd>{formatBirthday(member.birthday)}</dd>
+                  </>
+                )}
+              </dl>
+            </section>
+          )}
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Upcoming events</h2>
+            <EventList events={events} emptyMessage="No upcoming events." />
+          </section>
+
+          {mvs.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
+              <CollapsibleMvs mvs={mvs} ratings={ratings} />
+            </section>
+          )}
+
+          <CareerSection career={career} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Membre de groupe : vue centrée membre (inchangée). ─────────────────────
   const color = group?.color_hex ?? '#888'
   const initial = member.stage_name.slice(0, 1).toUpperCase()
-  // Image : photo du membre en priorité ; à défaut l'image du groupe (cas solo
-  // type Jennie où le membre n'a pas de photo mais le groupe is_solo si).
   const photo = member.photo_url ?? (group?.image_url ? faceCrop(group.image_url, 192, 192) : null)
   const statusText = statusLabel[member.status]
-  const career = await getCareerPath(member.id)
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -60,9 +194,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             ) : (
               <div
                 className="flex h-full w-full items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, ${color} 0%, ${color}33 100%)`,
-                }}
+                style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}33 100%)` }}
                 aria-hidden
               >
                 <span className="text-4xl font-bold text-white/90 drop-shadow-sm">{initial}</span>
@@ -115,42 +247,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </dl>
         </section>
 
-        {career.length > 1 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Career</h2>
-            <ul className="space-y-2">
-              {career.map((step) => {
-                const stepGroupRaw = (step as { groups: unknown }).groups
-                const stepGroup = (
-                  Array.isArray(stepGroupRaw) ? stepGroupRaw[0] : stepGroupRaw
-                ) as { slug: string; name: string; color_hex: string | null } | null
-                if (!stepGroup) return null
-                const label = statusLabel[step.status] ?? 'Active'
-                return (
-                  <li key={step.id} className="text-sm">
-                    <span
-                      className="mr-2 inline-block size-2 rounded-full align-middle"
-                      style={{ backgroundColor: stepGroup.color_hex ?? 'var(--muted-foreground)' }}
-                      aria-hidden
-                    />
-                    <Link
-                      href={`/groups/${stepGroup.slug}`}
-                      className="font-medium hover:underline"
-                    >
-                      {stepGroup.name}
-                    </Link>
-                    <span className="text-muted-foreground"> — {label}</span>
-                    {step.former_reason && (
-                      <p className="text-muted-foreground mt-0.5 ml-4 text-xs">
-                        {step.former_reason}
-                      </p>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
-        )}
+        <CareerSection career={career} />
       </div>
     </div>
   )
