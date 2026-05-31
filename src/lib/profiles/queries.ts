@@ -13,3 +13,14 @@ export async function getProfile(userId: string): Promise<PublicProfile | null> 
     .maybeSingle()
   return data
 }
+
+/** Profil public résolu par username (citext) — pour la page /u/[username]. */
+export async function getProfileByUsername(username: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, username, avatar_url, created_at, role, bias_member_id, favorite_group_id')
+    .eq('username', username)
+    .maybeSingle()
+  return data
+}

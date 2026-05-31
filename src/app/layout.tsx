@@ -103,7 +103,7 @@ export default async function RootLayout({
                 </span>
               </Link>
               <div className="flex-1" />
-              <SiteNav isAuthed={!!user} />
+              <SiteNav />
               {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
               <AuthMenu
                 email={user?.email ?? null}

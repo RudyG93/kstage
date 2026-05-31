@@ -170,3 +170,16 @@ export async function getMemberMvs(memberId: string, limit = 48) {
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]
+
+/** MVs likés par un user (table mv_like), du plus récent au plus ancien. */
+export async function getLikedMvs(userId: string, limit = 30): Promise<MvEvent[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('mv_like')
+    .select(`created_at, event:events!inner(${MV_SELECT})`)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r) => (r as unknown as { event: MvEvent }).event)
+}

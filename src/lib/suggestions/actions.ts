@@ -90,7 +90,7 @@ export async function submitSuggestion(
     if (error) return { error: 'Could not submit fix suggestion.' }
   }
 
-  revalidatePath('/my')
+  revalidatePath('/')
   return { ok: true }
 }
 
@@ -161,7 +161,7 @@ export async function approveSuggestion(id: string): Promise<ActionResult> {
   if (updateErr) return { error: 'Event created but the suggestion status could not be updated.' }
 
   revalidatePath('/admin/suggestions')
-  revalidatePath('/my')
+  revalidatePath('/')
   revalidatePath('/')
   return { ok: true }
 }
@@ -178,6 +178,6 @@ export async function rejectSuggestion(id: string): Promise<ActionResult> {
   if (error) return { error: 'Could not reject the suggestion.' }
 
   revalidatePath('/admin/suggestions')
-  revalidatePath('/my')
+  revalidatePath('/')
   return { ok: true }
 }
