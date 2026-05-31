@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitUpcomingByWeek, splitUpcomingByBuckets } from './grouping'
+import { splitUpcomingByWeek, splitUpcomingByBuckets, capLaterEvents } from './grouping'
 import type { UpcomingEvent } from './queries'
 
 const ev = (id: string, start_at: string) => ({ id, start_at }) as unknown as UpcomingEvent
@@ -82,6 +82,35 @@ describe('splitUpcomingByBuckets', () => {
     expect(tomorrow.map((e) => e.id)).toEqual(['tom'])
     expect(thisWeek.map((e) => e.id)).toEqual(['week1', 'week2'])
     expect(later.map((e) => e.id)).toEqual(['later1'])
+  })
+})
+
+describe('capLaterEvents (§3.1)', () => {
+  const now = new Date('2026-06-01T00:00:00Z').getTime() // limite ≈ 2026-07-02
+
+  it('borne à ≤10 events dans le mois et compte le reste', () => {
+    const within = Array.from({ length: 12 }, (_, i) =>
+      ev(`w${i}`, `2026-06-${String(i + 2).padStart(2, '0')}T03:00:00Z`),
+    ) // 2..13 juin, tous dans le mois
+    const beyond = [ev('b1', '2026-08-01T03:00:00Z')] // > 1 mois
+    const { display, moreCount, moreHref } = capLaterEvents(
+      [...within, ...beyond],
+      now,
+      'Asia/Seoul',
+    )
+    expect(display).toHaveLength(10)
+    expect(moreCount).toBe(3) // 13 total - 10 affichés
+    expect(moreHref).toMatch(/^\/calendar\?month=\d{4}-\d{2}&day=\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('exclut les events au-delà d’1 mois du display', () => {
+    const { display, moreCount } = capLaterEvents([ev('b', '2026-08-01T03:00:00Z')], now)
+    expect(display).toEqual([])
+    expect(moreCount).toBe(1)
+  })
+
+  it('liste vide → display vide, pas de lien', () => {
+    expect(capLaterEvents([], 0)).toEqual({ display: [], moreCount: 0, moreHref: null })
   })
 })
 

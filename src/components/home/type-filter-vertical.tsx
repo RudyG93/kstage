@@ -36,7 +36,7 @@ export function TypeFilterVertical() {
             onClick={() => toggle(t)}
             aria-pressed={isActive}
             className={cn(
-              'flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors duration-200',
+              'flex h-10 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors duration-200',
               isActive
                 ? 'bg-muted text-foreground ring-foreground/15 ring-1'
                 : 'text-muted-foreground hover:bg-muted/40',
