@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { getCareerPath, getMemberBySlug, getMemberSlugById } from '@/lib/members/queries'
+import { faceCrop } from '@/lib/images/cloudinary'
 
 const formatBirthday = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
@@ -39,9 +40,13 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     slug: string
     name: string
     color_hex: string | null
+    image_url: string | null
   } | null
   const color = group?.color_hex ?? '#888'
   const initial = member.stage_name.slice(0, 1).toUpperCase()
+  // Image : photo du membre en priorité ; à défaut l'image du groupe (cas solo
+  // type Jennie où le membre n'a pas de photo mais le groupe is_solo si).
+  const photo = member.photo_url ?? (group?.image_url ? faceCrop(group.image_url, 192, 192) : null)
   const statusText = statusLabel[member.status]
   const career = await getCareerPath(member.id)
 
@@ -50,15 +55,8 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       <div className="space-y-6">
         <header className="flex items-start gap-4">
           <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-xl">
-            {member.photo_url ? (
-              <Image
-                src={member.photo_url}
-                alt=""
-                fill
-                unoptimized
-                sizes="96px"
-                className="object-cover"
-              />
+            {photo ? (
+              <Image src={photo} alt="" fill unoptimized sizes="96px" className="object-cover" />
             ) : (
               <div
                 className="flex h-full w-full items-center justify-center"
