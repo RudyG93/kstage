@@ -12,10 +12,13 @@ const FREE_VISIBLE_FOLLOWS = 10
 export async function SidebarLeft({
   tier,
   groupFilter,
+  showFilters = true,
 }: {
   tier: Database['public']['Enums']['tier_type']
   // Slot optionnel injecté dans la section Filters (filtre Group du calendrier).
   groupFilter?: ReactNode
+  // /groups réutilise le template SANS le bloc Filters (§3.4).
+  showFilters?: boolean
 }) {
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
@@ -28,15 +31,17 @@ export async function SidebarLeft({
 
   return (
     <div className="space-y-6 lg:sticky lg:top-20">
-      <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
-        <div className="mb-3">
-          <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-            Filters
-          </span>
-        </div>
-        <TypeFilterVertical />
-        {groupFilter && <div className="mt-3">{groupFilter}</div>}
-      </section>
+      {showFilters && (
+        <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
+          <div className="mb-3">
+            <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
+              Filters
+            </span>
+          </div>
+          <TypeFilterVertical />
+          {groupFilter && <div className="mt-3">{groupFilter}</div>}
+        </section>
+      )}
 
       <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
         <div className="mb-3 flex items-center justify-between">

@@ -647,7 +647,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      group_follow_counts: {
+        Args: never
+        Returns: {
+          follows: number
+          group_id: string
+        }[]
+      }
     }
     Enums: {
       event_status: "confirmed" | "tentative" | "cancelled"
