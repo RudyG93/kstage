@@ -34,10 +34,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   // (la détection client pour l'anonyme + l'affichage heure-locale → §3.1)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('timezone')
+    .select('timezone, tier')
     .eq('id', user.id)
     .single()
   const timeZone = profile?.timezone ?? 'Asia/Seoul'
+  const tier = profile?.tier ?? 'free'
 
   const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
@@ -61,7 +62,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft />
+          <SidebarLeft tier={tier} />
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
           <NextDropCard event={nextDrop} />
