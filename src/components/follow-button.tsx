@@ -13,6 +13,7 @@ export function FollowButton({
   isAuthed,
   className,
   iconOnly = false,
+  large = false,
 }: {
   groupId: string
   initialFollowing: boolean
@@ -20,20 +21,25 @@ export function FollowButton({
   className?: string
   // Variante cœur-seul pour les cards en overlay sur image (§3.4).
   iconOnly?: boolean
+  // Variante agrandie (bandeau page artiste §3.5).
+  large?: boolean
 }) {
   const [optimistic, setOptimistic] = useOptimistic(initialFollowing)
   const [pending, startTransition] = useTransition()
 
   // Bouton rond cœur-seul posé sur l'image : fond sombre translucide pour le
   // contraste, cœur rempli rouge si suivi, contour blanc sinon.
-  const iconClass =
-    'flex size-9 cursor-pointer items-center justify-center rounded-full bg-black/45 backdrop-blur-sm transition hover:bg-black/60 focus-visible:ring-3 focus-visible:ring-ring/50 outline-none'
+  const iconClass = cn(
+    'flex cursor-pointer items-center justify-center rounded-full bg-black/45 backdrop-blur-sm transition hover:bg-black/60 focus-visible:ring-3 focus-visible:ring-ring/50 outline-none',
+    large ? 'size-12' : 'size-9',
+  )
+  const heartSize = large ? 'size-6' : 'size-5'
 
   if (!isAuthed) {
     if (iconOnly) {
       return (
         <Link href="/login" aria-label="Follow" className={cn(iconClass, className)}>
-          <HeartIcon className="size-5 text-white" aria-hidden />
+          <HeartIcon className={cn(heartSize, 'text-white')} aria-hidden />
         </Link>
       )
     }
@@ -65,7 +71,7 @@ export function FollowButton({
         className={cn(iconClass, className)}
       >
         <HeartIcon
-          className={cn('size-5', optimistic ? 'fill-red-500 text-red-500' : 'text-white')}
+          className={cn(heartSize, optimistic ? 'fill-red-500 text-red-500' : 'text-white')}
           aria-hidden
         />
       </button>
