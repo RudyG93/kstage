@@ -57,12 +57,17 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 }
 
 export async function verifySignupOtp(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  const email = String(formData.get('email') ?? '').trim()
+  // Supabase stocke l'email en minuscules ; on aligne pour éviter tout mismatch.
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase()
   const token = String(formData.get('token') ?? '').trim()
   if (!/^\d{6}$/.test(token)) return { error: 'Enter the 6-digit code.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' })
+  // Saisie d'un code 6 chiffres ({{ .Token }}) → type 'email' (le 'signup' est
+  // réservé au flux par lien token_hash). Cf. doc Supabase Email Templates.
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
   if (error) return { error: 'Invalid or expired code.' }
 
   redirect('/')
