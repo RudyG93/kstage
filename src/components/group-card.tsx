@@ -1,12 +1,13 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { Card } from '@/components/ui/card'
 import { FollowButton } from '@/components/follow-button'
+import { faceCrop } from '@/lib/images/cloudinary'
 import type { GroupSummary } from '@/lib/groups/queries'
 
 /**
- * Carte groupe. `href` optionnel permet de pointer directement vers
- * `/artists/[memberSlug]` côté tab Solo (évite le détour /groups → re-clic
- * sur le membre unique). Default = `/groups/[slug]` (comportement legacy).
+ * Carte groupe carrée : image plein cadre, nom en overlay, cœur de suivi.
+ * `href` optionnel pointe `/artists/[memberSlug]` côté tab Solo ; défaut
+ * `/groups/[slug]`.
  */
 export function GroupCard({
   group,
@@ -19,32 +20,53 @@ export function GroupCard({
   isAuthed: boolean
   href?: string
 }) {
+  const img = group.image_url ? faceCrop(group.image_url, 600, 600) : null
+
   return (
-    <Card size="sm" className="px-4">
-      <div className="flex items-center gap-3">
-        <Link
-          href={href ?? `/groups/${group.slug}`}
-          className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-3"
+    <div className="group ring-foreground/10 relative aspect-square overflow-hidden rounded-xl ring-1 transition hover:ring-2 hover:ring-white/20">
+      {img ? (
+        <Image
+          src={img}
+          alt=""
+          aria-hidden
+          fill
+          unoptimized
+          sizes="(min-width: 768px) 320px, 50vw"
+          className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <div
+          className="gradient-signature flex h-full w-full items-center justify-center text-3xl font-bold text-white"
+          aria-hidden
         >
-          <span
-            className="size-3.5 shrink-0 rounded-full"
-            style={{
-              backgroundColor: group.color_hex ?? 'var(--muted-foreground)',
-              boxShadow: group.color_hex ? `0 0 10px ${group.color_hex}99` : undefined,
-            }}
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <p className="font-medium">{group.name}</p>
-          </div>
-        </Link>
+          {group.name[0]}
+        </div>
+      )}
+
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent"
+        aria-hidden
+      />
+
+      {/* zone cliquable plein cadre (sous le cœur) */}
+      <Link
+        href={href ?? `/groups/${group.slug}`}
+        aria-label={group.name}
+        className="focus-visible:ring-ring/60 absolute inset-0 rounded-xl outline-none focus-visible:ring-2"
+      />
+
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate p-3 font-semibold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+        {group.name}
+      </span>
+
+      <div className="absolute top-2 right-2 z-10">
         <FollowButton
           groupId={group.id}
           initialFollowing={isFollowing}
           isAuthed={isAuthed}
-          className="shrink-0"
+          iconOnly
         />
       </div>
-    </Card>
+    </div>
   )
 }
