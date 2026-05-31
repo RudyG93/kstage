@@ -7,6 +7,8 @@ import { validateSignup, validatePassword } from './validation'
 import type { Database } from '@/types/database'
 
 export type AuthState = { error: string } | null
+// Pour les actions qui restent sur la même page au succès (pas de redirect).
+export type AuthResult = { error: string } | { ok: true } | null
 
 // Longueur de l'OTP = réglage Supabase (6 à 10) ; on reste agnostique pour ne
 // pas casser si "Email OTP Length" change (8 en prod).
@@ -155,6 +157,35 @@ export async function resendRecoveryOtp(email: string): Promise<{ error: string 
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email)
   if (error) return { error: 'Could not resend the code.' }
+  return { ok: true }
+}
+
+export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
+  const current = String(formData.get('current') ?? '')
+  const password = String(formData.get('password') ?? '')
+  const confirm = String(formData.get('confirm') ?? '')
+
+  const pwError = validatePassword(password)
+  if (pwError) return { error: pwError }
+  if (password !== confirm) return { error: 'Passwords do not match.' }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user?.email) redirect('/login')
+
+  // Ré-authentification : on confirme l'identité avec le mot de passe actuel
+  // avant d'autoriser le changement.
+  const { error: reauthErr } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: current,
+  })
+  if (reauthErr) return { error: 'Current password is incorrect.' }
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) return { error: 'Could not update the password.' }
+
   return { ok: true }
 }
 
