@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
 import { FollowButton } from '@/components/follow-button'
 import { CollapsibleMvs } from '@/components/group/collapsible-mvs'
+import { LinksBar } from '@/components/group/links-bar'
 import { MembersGrid } from '@/components/member/members-grid'
 import { getGroupBySlug } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
@@ -11,14 +12,6 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
-
-const fmtDate = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(iso))
 
 export default async function GroupPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -55,11 +48,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     group.image_landscape ??
     (group.image_url ? faceCrop(group.image_url, 1600, 500) : null)
 
-  const info = [
-    group.agency,
-    group.debut_date ? `Debuted ${fmtDate(group.debut_date)}` : null,
-    group.fandom_name,
-  ].filter(Boolean) as string[]
+  const links = group.links as Record<string, string> | null
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -97,17 +86,11 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           </h1>
         </div>
 
-        {/* Infos */}
-        {info.length > 0 && (
-          <p className="text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 text-sm">
-            {info.map((part, i) => (
-              <span key={i} className="flex items-center gap-2">
-                {i > 0 && <span aria-hidden>·</span>}
-                {part}
-              </span>
-            ))}
-          </p>
-        )}
+        {/* Infos + liens */}
+        <div className="space-y-3">
+          {group.agency && <p className="text-muted-foreground text-sm">{group.agency}</p>}
+          <LinksBar links={links} />
+        </div>
 
         {/* Membres */}
         {activeMembers.length > 0 && (

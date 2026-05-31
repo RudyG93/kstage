@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'e-cdns-images.dzcdn.net' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'r2.theaudiodb.com' },
+      { protocol: 'https', hostname: 'i.scdn.co' },
     ],
   },
 }
