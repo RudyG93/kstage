@@ -40,15 +40,15 @@ export function OtpForm({ email }: { email: string }) {
 
       <div className="space-y-1.5">
         <label htmlFor="token" className="text-sm font-medium">
-          6-digit code
+          Verification code
         </label>
         <input
           id="token"
           name="token"
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
+          pattern="\d{6,10}"
+          maxLength={10}
           required
           className={inputClass}
         />

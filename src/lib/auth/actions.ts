@@ -62,11 +62,13 @@ export async function verifySignupOtp(_prev: AuthState, formData: FormData): Pro
     .trim()
     .toLowerCase()
   const token = String(formData.get('token') ?? '').trim()
-  if (!/^\d{6}$/.test(token)) return { error: 'Enter the 6-digit code.' }
+  // Longueur de l'OTP = réglage Supabase (6 à 10) ; on reste agnostique pour ne
+  // pas casser si "Email OTP Length" change (ici 8 en prod).
+  if (!/^\d{6,10}$/.test(token)) return { error: 'Enter the code from the email.' }
 
   const supabase = await createClient()
-  // Saisie d'un code 6 chiffres ({{ .Token }}) → type 'email' (le 'signup' est
-  // réservé au flux par lien token_hash). Cf. doc Supabase Email Templates.
+  // Saisie d'un code ({{ .Token }}) → type 'email' (le 'signup' est réservé au
+  // flux par lien token_hash). Cf. doc Supabase Email Templates.
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
   if (error) return { error: 'Invalid or expired code.' }
 
