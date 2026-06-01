@@ -654,6 +654,22 @@ export type Database = {
           group_id: string
         }[]
       }
+      recent_activity: {
+        Args: { p_limit?: number }
+        Returns: {
+          actor_avatar: string
+          actor_username: string
+          event_id: string
+          event_slug: string
+          event_title: string
+          event_type: string
+          group_name: string
+          group_slug: string
+          kind: string
+          score: number
+          ts: string
+        }[]
+      }
     }
     Enums: {
       event_status: "confirmed" | "tentative" | "cancelled"

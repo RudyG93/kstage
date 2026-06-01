@@ -183,3 +183,14 @@ export async function getLikedMvs(userId: string, limit = 30): Promise<MvEvent[]
   if (error) throw error
   return (data ?? []).map((r) => (r as unknown as { event: MvEvent }).event)
 }
+
+export type ActivityRow = Database['public']['Functions']['recent_activity']['Returns'][number]
+
+/** Flux d'activité récente (commentaires / notes / likes / inscriptions) trié
+ * desc — agrégé côté Postgres via le RPC `recent_activity`. Pour la sidebar home. */
+export async function getRecentActivity(limit = 12): Promise<ActivityRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('recent_activity', { p_limit: limit })
+  if (error) throw error
+  return data ?? []
+}
