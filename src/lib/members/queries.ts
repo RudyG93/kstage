@@ -85,3 +85,20 @@ export async function getMembersForGroup(groupId: string) {
 }
 
 export type MemberSummary = Awaited<ReturnType<typeof getMembersForGroup>>[number]
+
+/**
+ * Liste tous les membres canoniques cliquables (un par artiste) — pour le picker
+ * Bias du profil. `canonical_id is null` = identité actuelle ; `slug not null`
+ * pour pouvoir lier vers /artists/[slug].
+ */
+export async function getAllMembers() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, slug, stage_name, photo_url, groups!inner(name)')
+    .is('canonical_id', null)
+    .not('slug', 'is', null)
+    .order('stage_name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}

@@ -15,6 +15,42 @@ const AVATAR_EXT: Record<string, string> = {
   'image/webp': 'webp',
 }
 
+/** Définit (ou retire si null) le bias = membre favori du user. */
+export async function setBias(memberId: string | null): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ bias_member_id: memberId })
+    .eq('id', user.id)
+  if (error) return { error: 'Could not save your bias.' }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+/** Définit (ou retire si null) le groupe/artiste favori du user. */
+export async function setFavoriteGroup(
+  groupId: string | null,
+): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ favorite_group_id: groupId })
+    .eq('id', user.id)
+  if (error) return { error: 'Could not save your favorite.' }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
 /** Enregistre le username (la casse saisie est conservée ; unicité citext). */
 export async function updateProfile(
   _prev: ProfileState,
