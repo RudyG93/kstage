@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
 import { AuthMenu } from '@/components/auth/auth-menu'
 import { SuggestEventDialog } from '@/components/suggestions/suggest-event-dialog'
+import { Footer } from '@/components/footer'
 import { Analytics } from '@vercel/analytics/next'
 import { createClient } from '@/lib/supabase/server'
 
@@ -114,6 +115,7 @@ export default async function RootLayout({
             </div>
           </header>
           <main className="flex-1 pb-24 md:pb-6">{children}</main>
+          <Footer />
           <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>
         <Analytics />
