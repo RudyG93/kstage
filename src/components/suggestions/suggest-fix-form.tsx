@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { submitSuggestion, type SuggestionState } from '@/lib/suggestions/actions'
+import { MAX_DESCRIPTION } from '@/lib/suggestions/validation'
 import type { TargetableEvent } from '@/lib/suggestions/queries'
 
 const inputClass =
@@ -36,6 +37,7 @@ export function SuggestFixForm({ onSuccess }: { onSuccess?: () => void }) {
     events: [],
     error: null,
   })
+  const [descChars, setDescChars] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -112,11 +114,15 @@ export function SuggestFixForm({ onSuccess }: { onSuccess?: () => void }) {
           id="description"
           name="description"
           required
-          maxLength={500}
+          maxLength={MAX_DESCRIPTION}
           rows={4}
+          onChange={(e) => setDescChars(e.target.value.length)}
           placeholder="Wrong date, wrong title, broken link, missing info…"
           className="bg-background focus-visible:ring-ring/50 w-full rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-3"
         />
+        <p aria-live="polite" className="text-muted-foreground text-right text-xs tabular-nums">
+          {descChars}/{MAX_DESCRIPTION}
+        </p>
       </div>
 
       <div className="space-y-1.5">

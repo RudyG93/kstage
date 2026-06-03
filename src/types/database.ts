@@ -17,6 +17,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      artist_suggestions: {
+        Row: {
+          agency: string | null
+          color_hex: string | null
+          created_at: string
+          debut_date: string | null
+          fandom_name: string | null
+          id: string
+          image_url: string | null
+          kind: string
+          members: Json
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_url: string | null
+          status: Database["public"]["Enums"]["suggestion_status"]
+          user_id: string
+        }
+        Insert: {
+          agency?: string | null
+          color_hex?: string | null
+          created_at?: string
+          debut_date?: string | null
+          fandom_name?: string | null
+          id?: string
+          image_url?: string | null
+          kind: string
+          members?: Json
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          user_id: string
+        }
+        Update: {
+          agency?: string | null
+          color_hex?: string | null
+          created_at?: string
+          debut_date?: string | null
+          fandom_name?: string | null
+          id?: string
+          image_url?: string | null
+          kind?: string
+          members?: Json
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_edit_history: {
         Row: {
           comment_id: string

@@ -2,30 +2,25 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import {
-  approveSuggestion,
-  rejectSuggestion,
-  markSuggestionHandled,
-} from '@/lib/suggestions/actions'
-import { formatEventDate } from '@/lib/events/date'
-import type { PendingSuggestion } from '@/lib/suggestions/queries'
+import { approveArtistSuggestion, rejectArtistSuggestion } from '@/lib/suggestions/actions'
+import type { PendingArtistSuggestion } from '@/lib/suggestions/queries'
 
 type ModAction = (id: string) => Promise<{ error: string } | { ok: true }>
 
-export function ModerationList({ suggestions }: { suggestions: PendingSuggestion[] }) {
+export function ArtistModerationList({ suggestions }: { suggestions: PendingArtistSuggestion[] }) {
   if (suggestions.length === 0) {
-    return <p className="text-muted-foreground text-sm">No pending suggestions.</p>
+    return <p className="text-muted-foreground text-sm">No pending artist suggestions.</p>
   }
   return (
     <ul className="space-y-3">
       {suggestions.map((s) => (
-        <ModerationItem key={s.id} suggestion={s} />
+        <ArtistModerationItem key={s.id} suggestion={s} />
       ))}
     </ul>
   )
 }
 
-function ModerationItem({ suggestion }: { suggestion: PendingSuggestion }) {
+function ArtistModerationItem({ suggestion }: { suggestion: PendingArtistSuggestion }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -37,20 +32,31 @@ function ModerationItem({ suggestion }: { suggestion: PendingSuggestion }) {
     })
   }
 
-  const isFix = suggestion.kind === 'fix'
+  const members = (Array.isArray(suggestion.members) ? suggestion.members : []) as Array<{
+    name?: string
+    position?: string | null
+  }>
 
   return (
     <li className="space-y-2 rounded-lg border p-3">
       <div className="space-y-0.5">
         <p className="font-medium">
-          {isFix && <span className="text-muted-foreground mr-1.5 text-xs uppercase">[fix]</span>}
-          {suggestion.title}
+          {suggestion.name}{' '}
+          <span className="text-muted-foreground text-xs">· {suggestion.kind}</span>
         </p>
         <p className="text-muted-foreground text-xs">
-          {suggestion.groups?.name} · {suggestion.type} ·{' '}
-          {formatEventDate(suggestion.start_at, 'Asia/Seoul')} KST
+          {[suggestion.agency, suggestion.debut_date, suggestion.fandom_name]
+            .filter(Boolean)
+            .join(' · ') || '—'}
         </p>
-        {isFix && suggestion.description && <p className="text-sm">{suggestion.description}</p>}
+        {members.length > 0 && (
+          <p className="text-muted-foreground text-xs">
+            {members
+              .map((m) => (m.position ? `${m.name} (${m.position})` : m.name))
+              .filter(Boolean)
+              .join(', ')}
+          </p>
+        )}
         {suggestion.source_url && (
           <a
             href={suggestion.source_url}
@@ -68,22 +74,16 @@ function ModerationItem({ suggestion }: { suggestion: PendingSuggestion }) {
         </p>
       )}
       <div className="flex gap-2">
-        {isFix ? (
-          <Button size="sm" disabled={pending} onClick={() => run(markSuggestionHandled)}>
-            Mark handled
-          </Button>
-        ) : (
-          <Button size="sm" disabled={pending} onClick={() => run(approveSuggestion)}>
-            Approve
-          </Button>
-        )}
+        <Button size="sm" disabled={pending} onClick={() => run(approveArtistSuggestion)}>
+          Approve
+        </Button>
         <Button
           size="sm"
           variant="destructive"
           disabled={pending}
-          onClick={() => run(rejectSuggestion)}
+          onClick={() => run(rejectArtistSuggestion)}
         >
-          {isFix ? 'Dismiss' : 'Reject'}
+          Reject
         </Button>
       </div>
     </li>
