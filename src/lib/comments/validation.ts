@@ -5,6 +5,29 @@ export const BODY_MAX = 5000
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Blocklist anti-spam basique (mots/patterns). La config admin est V2 — pour
+// l'instant une constante. Orientée spam plutôt que profanité casual (évite les
+// faux positifs dans une communauté de fans).
+export const BLOCKED_PATTERNS: readonly RegExp[] = [
+  /\bviagra\b/i,
+  /\bcialis\b/i,
+  /\bcasino\b/i,
+  /\b(?:buy|cheap)\s+(?:followers|views|likes)\b/i,
+  /https?:\/\/\S+\.(?:ru|tk|top|xyz)\b/i,
+]
+
+export function containsBlockedContent(body: string): boolean {
+  return BLOCKED_PATTERNS.some((re) => re.test(body))
+}
+
+/** Normalise un body : CRLF→LF, limite les sauts de ligne consécutifs à 3, trim. */
+export function normalizeBody(raw: string): string {
+  return raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim()
+}
+
 export interface CommentInput {
   eventId: string
   parentId: string | null
@@ -29,9 +52,10 @@ export function parseCommentInput(raw: RawComment): { error: string } | { value:
     parentId = parentRaw
   }
 
-  const body = (raw.body ?? '').replace(/\r\n/g, '\n').trim()
+  const body = normalizeBody(raw.body ?? '')
   if (body.length < BODY_MIN) return { error: 'Comment cannot be empty.' }
   if (body.length > BODY_MAX) return { error: `Comment is too long (${BODY_MAX} chars max).` }
+  if (containsBlockedContent(body)) return { error: 'Your comment was blocked by our spam filter.' }
 
   return { value: { eventId, parentId, body } }
 }
@@ -48,9 +72,10 @@ export interface RawEdit {
 export function parseEditInput(raw: RawEdit): { error: string } | { value: EditInput } {
   const commentId = (raw.commentId ?? '').trim()
   if (!UUID_RE.test(commentId)) return { error: 'Invalid comment reference.' }
-  const body = (raw.body ?? '').replace(/\r\n/g, '\n').trim()
+  const body = normalizeBody(raw.body ?? '')
   if (body.length < BODY_MIN) return { error: 'Comment cannot be empty.' }
   if (body.length > BODY_MAX) return { error: `Comment is too long (${BODY_MAX} chars max).` }
+  if (containsBlockedContent(body)) return { error: 'Your comment was blocked by our spam filter.' }
   return { value: { commentId, body } }
 }
 

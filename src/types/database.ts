@@ -17,6 +17,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      comment_edit_history: {
+        Row: {
+          comment_id: string
+          edited_at: string
+          id: string
+          previous_body: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          edited_at?: string
+          id?: string
+          previous_body: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          edited_at?: string
+          id?: string
+          previous_body?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_edit_history_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_report: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_report_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_votes: {
         Row: {
           comment_id: string

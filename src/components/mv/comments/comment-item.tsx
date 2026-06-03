@@ -1,8 +1,19 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
-import { deleteComment, editComment, type CommentState } from '@/lib/comments/actions'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
+import Link from 'next/link'
+import { toast } from 'sonner'
+import {
+  deleteComment,
+  editComment,
+  fetchEditHistory,
+  reportComment,
+  type CommentState,
+} from '@/lib/comments/actions'
 import { BODY_MAX } from '@/lib/comments/validation'
+import type { CommentEdit } from '@/lib/comments/queries'
+import { Avatar } from '@/components/avatar'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { CommentCompose } from './comment-compose'
 import { VoteButtons } from './vote-buttons'
@@ -18,6 +29,7 @@ interface Props {
 }
 
 const MAX_INDENT = 6
+const REPLY_LIMIT = 5
 
 const relTime = (iso: string) => {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -34,11 +46,18 @@ const relTime = (iso: string) => {
 export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0 }: Props) {
   const [showReply, setShowReply] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [showAllReplies, setShowAllReplies] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const isOwn = viewerId === node.user_id
   const isDeleted = Boolean(node.deleted_at)
   const isEdited =
     !isDeleted && new Date(node.updated_at).getTime() - new Date(node.created_at).getTime() > 5_000
-  const author = node.author?.username ?? 'unknown'
+  const username = node.author?.username ?? null
+  const author = username ?? 'unknown'
+
+  const childCount = node.children.length
+  const visibleChildren = showAllReplies ? node.children : node.children.slice(0, REPLY_LIMIT)
 
   const indent = Math.min(depth, MAX_INDENT)
   return (
@@ -47,14 +66,43 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
       aria-label={`Comment by ${author}`}
     >
       <header className="text-muted-foreground flex items-center gap-2 text-xs">
-        <span className="text-foreground font-medium">{author}</span>
+        {username ? (
+          <Link
+            href={`/u/${username}`}
+            className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
+          >
+            <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
+            {author}
+          </Link>
+        ) : (
+          <span className="text-foreground flex items-center gap-1.5 font-medium">
+            <Avatar username={author} avatarUrl={null} size={20} />
+            {author}
+          </span>
+        )}
         <span aria-hidden>·</span>
         <time dateTime={node.created_at}>{relTime(node.created_at)}</time>
         {isEdited && (
           <>
             <span aria-hidden>·</span>
-            <span className="italic">edited</span>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(true)}
+              className="italic hover:underline"
+            >
+              edited
+            </button>
           </>
+        )}
+        {childCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            aria-expanded={!collapsed}
+            className="hover:text-foreground ml-auto font-mono tabular-nums"
+          >
+            {collapsed ? `[+] ${childCount}` : '[−]'}
+          </button>
         )}
       </header>
 
@@ -84,7 +132,7 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               {showReply ? 'Cancel' : 'Reply'}
             </button>
           )}
-          {isOwn && (
+          {isOwn ? (
             <>
               <button
                 type="button"
@@ -95,6 +143,8 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               </button>
               <DeleteButton commentId={node.id} slug={slug} />
             </>
+          ) : (
+            isAuthed && <ReportButton commentId={node.id} />
           )}
         </div>
       )}
@@ -112,9 +162,9 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
         </div>
       )}
 
-      {node.children.length > 0 && (
+      {childCount > 0 && !collapsed && (
         <div className="mt-2 space-y-3 pt-1">
-          {node.children.map((child) => (
+          {visibleChildren.map((child) => (
             <CommentItem
               key={child.id}
               node={child}
@@ -125,9 +175,104 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               depth={depth + 1}
             />
           ))}
+          {!showAllReplies && childCount > REPLY_LIMIT && (
+            <button
+              type="button"
+              onClick={() => setShowAllReplies(true)}
+              className="text-primary text-xs hover:underline"
+            >
+              Show {childCount - REPLY_LIMIT} more repl
+              {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+            </button>
+          )}
         </div>
       )}
+
+      {historyOpen && (
+        <HistoryModal
+          commentId={node.id}
+          currentBody={node.body}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </article>
+  )
+}
+
+function ReportButton({ commentId }: { commentId: string }) {
+  const [pending, startTransition] = useTransition()
+  function onReport() {
+    const reason = window.prompt('Why are you reporting this comment? (optional)')
+    if (reason === null) return // annulé
+    startTransition(async () => {
+      const res = await reportComment(commentId, reason)
+      if ('error' in res) toast.error(res.error)
+      else toast.success('Thanks — this comment has been reported.')
+    })
+  }
+  return (
+    <button
+      type="button"
+      onClick={onReport}
+      disabled={pending}
+      className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+    >
+      Report
+    </button>
+  )
+}
+
+function HistoryModal({
+  commentId,
+  currentBody,
+  onClose,
+}: {
+  commentId: string
+  currentBody: string
+  onClose: () => void
+}) {
+  const [history, setHistory] = useState<CommentEdit[] | null>(null)
+
+  useEffect(() => {
+    let active = true
+    fetchEditHistory(commentId).then((h) => {
+      if (active) setHistory(h)
+    })
+    return () => {
+      active = false
+    }
+  }, [commentId])
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogTitle>Edit history</DialogTitle>
+        <div className="mt-3 max-h-80 space-y-3 overflow-y-auto">
+          <div className="border-border/60 rounded-md border p-2">
+            <p className="text-muted-foreground mb-1 text-[11px] tracking-wide uppercase">
+              Current
+            </p>
+            <p className="text-sm whitespace-pre-wrap">{currentBody}</p>
+          </div>
+          {history === null ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : history.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No previous versions.</p>
+          ) : (
+            history.map((h, i) => (
+              <div key={i} className="border-border/60 rounded-md border p-2">
+                <p className="text-muted-foreground mb-1 text-[11px]">
+                  {new Date(h.edited_at).toLocaleString('en-US')}
+                </p>
+                <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+                  {h.previous_body}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

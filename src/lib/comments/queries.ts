@@ -1,6 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import type { FlatComment } from './tree'
 
+export interface CommentEdit {
+  previous_body: string
+  edited_at: string
+}
+
+/** Versions précédentes d'un commentaire (pour "View history"), récentes d'abord. */
+export async function getCommentEditHistory(commentId: string): Promise<CommentEdit[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('comment_edit_history')
+    .select('previous_body, edited_at')
+    .eq('comment_id', commentId)
+    .order('edited_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
 /** Nombre de commentaires (non supprimés) postés par un user — stat de profil. */
 export async function countUserComments(userId: string): Promise<number> {
   const supabase = await createClient()
