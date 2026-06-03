@@ -3,7 +3,11 @@
 //  2. supprime l'année trailing entre parenthèses ("(2026)"),
 //  3. normalise "Part.5" → "Part 5" (les uploads YouTube collent souvent un point).
 // Le nom du groupe est déjà affiché à gauche/au-dessus → inutile de le répéter.
-export function displayEventTitle(title: string, groupName?: string | null): string {
+export function displayEventTitle(
+  title: string,
+  groupName?: string | null,
+  episodeNumber?: number | null,
+): string {
   let t = title
   if (groupName) {
     const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -13,7 +17,10 @@ export function displayEventTitle(title: string, groupName?: string | null): str
   }
   t = t.replace(/\s*\(\d{4}\)\s*$/, '')
   t = t.replace(/\b(\w+)\.(\d+)\b/g, '$1 $2')
-  return t.trim()
+  t = t.trim()
+  // Music shows : suffixe le numéro d'épisode (ex. "Inkigayo #328").
+  if (episodeNumber != null) t = `${t} #${episodeNumber}`
+  return t
 }
 
 // Suffixes "MV"-style strippés en fallback : ce qu'on enlève quand le titre

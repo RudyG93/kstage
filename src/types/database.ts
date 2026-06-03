@@ -200,6 +200,7 @@ export type Database = {
           created_at: string
           description: string | null
           end_at: string | null
+          episode_number: number | null
           group_id: string
           id: string
           image_url: string | null
@@ -218,6 +219,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_at?: string | null
+          episode_number?: number | null
           group_id: string
           id?: string
           image_url?: string | null
@@ -236,6 +238,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_at?: string | null
+          episode_number?: number | null
           group_id?: string
           id?: string
           image_url?: string | null

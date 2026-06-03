@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 type EventType = Database['public']['Enums']['event_type']
 
 const EVENT_SELECT =
-  'id, slug, title, type, start_at, status, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, slug, title, type, start_at, status, episode_number, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 // Predicate appliqué partout sauf getGroupMvs (cf. matrice §8 SCRAPING.md) :
 // les MVs `main` + les non-MV (mv_kind=NULL) sont visibles. Les versions

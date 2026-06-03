@@ -108,6 +108,7 @@ export async function GET(req: Request) {
         source_url: SOURCE_URL,
         type: 'music_show',
         title: showLabel,
+        episode_number: lineup.episodeNumber,
         start_at: lineup.startAtIso,
         status: lineup.isHighlight ? 'tentative' : 'confirmed',
       })
