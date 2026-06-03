@@ -17,6 +17,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      artist_suggestions: {
+        Row: {
+          agency: string | null
+          color_hex: string | null
+          created_at: string
+          debut_date: string | null
+          fandom_name: string | null
+          id: string
+          image_url: string | null
+          kind: string
+          members: Json
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_url: string | null
+          status: Database["public"]["Enums"]["suggestion_status"]
+          user_id: string
+        }
+        Insert: {
+          agency?: string | null
+          color_hex?: string | null
+          created_at?: string
+          debut_date?: string | null
+          fandom_name?: string | null
+          id?: string
+          image_url?: string | null
+          kind: string
+          members?: Json
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          user_id: string
+        }
+        Update: {
+          agency?: string | null
+          color_hex?: string | null
+          created_at?: string
+          debut_date?: string | null
+          fandom_name?: string | null
+          id?: string
+          image_url?: string | null
+          kind?: string
+          members?: Json
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      comment_edit_history: {
+        Row: {
+          comment_id: string
+          edited_at: string
+          id: string
+          previous_body: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          edited_at?: string
+          id?: string
+          previous_body: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          edited_at?: string
+          id?: string
+          previous_body?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_edit_history_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_report: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_report_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_votes: {
         Row: {
           comment_id: string
@@ -200,6 +327,7 @@ export type Database = {
           created_at: string
           description: string | null
           end_at: string | null
+          episode_number: number | null
           group_id: string
           id: string
           image_url: string | null
@@ -218,6 +346,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_at?: string | null
+          episode_number?: number | null
           group_id: string
           id?: string
           image_url?: string | null
@@ -236,6 +365,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_at?: string | null
+          episode_number?: number | null
           group_id?: string
           id?: string
           image_url?: string | null

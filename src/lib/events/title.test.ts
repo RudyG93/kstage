@@ -16,6 +16,13 @@ describe('displayEventTitle', () => {
     expect(displayEventTitle('aespa 2nd Album – LEMONADE (2026)', 'aespa')).toBe('LEMONADE')
   })
 
+  it("suffixe le numéro d'épisode (music show)", () => {
+    expect(displayEventTitle('Inkigayo', 'aespa', 328)).toBe('Inkigayo #328')
+    // pas de suffixe quand episodeNumber est null/undefined
+    expect(displayEventTitle('Inkigayo', 'aespa', null)).toBe('Inkigayo')
+    expect(displayEventTitle('Inkigayo', 'aespa')).toBe('Inkigayo')
+  })
+
   it('strip simple : "aespa - Whiplash MV" → "Whiplash MV"', () => {
     expect(displayEventTitle('aespa - Whiplash MV', 'aespa')).toBe('Whiplash MV')
   })

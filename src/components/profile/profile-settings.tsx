@@ -23,12 +23,20 @@ export function ProfileSettings({
         <h2 className="text-sm font-medium">Settings</h2>
         <div className="flex items-center gap-2">
           {admin && (
-            <Link
-              href="/admin/suggestions"
-              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-            >
-              Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-            </Link>
+            <>
+              <Link
+                href="/admin/suggestions"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+              </Link>
+              <Link
+                href="/admin/reports"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                Reports
+              </Link>
+            </>
           )}
           <Link href="/account" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <Settings className="size-4" />

@@ -7,7 +7,7 @@ type EventType = Database['public']['Enums']['event_type']
 // automatiquement depuis les dates de naissance/début) ; `live`/`other` aussi.
 export const SUGGESTABLE_TYPES: EventType[] = ['mv', 'release', 'music_show', 'concert']
 export const MAX_TITLE = 120
-export const MAX_DESCRIPTION = 500
+export const MAX_DESCRIPTION = 2000
 export const DAILY_SUGGESTION_CAP = 10
 
 export type SuggestionKind = 'new' | 'fix'

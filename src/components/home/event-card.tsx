@@ -24,7 +24,7 @@ export function HomeEventCard({
   const group = event.groups
   const kst = kstFormat(event.start_at)
   const typeColor = EVENT_TYPE_COLORS[event.type]
-  const displayTitle = displayEventTitle(event.title, group?.name)
+  const displayTitle = displayEventTitle(event.title, group?.name, event.episode_number)
 
   // Image de fond plein cover (banner_url admin prioritaire, sinon Deezer
   // recadré visage Cloudinary). Le texte 3 lignes est posé dessus, lisible

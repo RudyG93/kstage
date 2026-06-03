@@ -5,10 +5,40 @@ import {
   parseEditInput,
   parseVoteInput,
   parseCommentId,
+  normalizeBody,
+  containsBlockedContent,
 } from './validation'
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000'
 const UUID2 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+
+describe('normalizeBody', () => {
+  it('limite les sauts de ligne consécutifs à 3', () => {
+    expect(normalizeBody('a\n\n\n\n\n\nb')).toBe('a\n\n\nb')
+    expect(normalizeBody('a\n\nb')).toBe('a\n\nb')
+  })
+  it('convertit CRLF en LF et trim', () => {
+    expect(normalizeBody('  a\r\nb  ')).toBe('a\nb')
+  })
+})
+
+describe('containsBlockedContent', () => {
+  it('détecte le spam de la blocklist', () => {
+    expect(containsBlockedContent('cheap viagra here')).toBe(true)
+    expect(containsBlockedContent('buy followers now')).toBe(true)
+    expect(containsBlockedContent('check http://scam.ru/x')).toBe(true)
+  })
+  it('laisse passer un commentaire normal', () => {
+    expect(containsBlockedContent('Great comeback, love this MV!')).toBe(false)
+  })
+})
+
+describe('parseCommentInput — blocklist', () => {
+  it('rejette un body spam', () => {
+    const r = parseCommentInput({ eventId: UUID, body: 'cheap viagra' })
+    expect(r).toHaveProperty('error')
+  })
+})
 
 describe('parseCommentInput', () => {
   it('accepte eventId UUID + body trim', () => {

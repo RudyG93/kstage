@@ -6,14 +6,15 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { SuggestionForm } from './suggestion-form'
 import { SuggestFixForm } from './suggest-fix-form'
+import { SuggestArtistForm } from './suggest-artist-form'
 
-type Tab = 'new' | 'fix'
+type Tab = 'artist' | 'new' | 'fix'
 
 export function SuggestEventDialog({
   groups,
   defaultOpen = false,
   triggerClassName,
-  triggerLabel = 'Suggest',
+  triggerLabel = 'Contribute',
 }: {
   groups: { id: string; name: string }[]
   defaultOpen?: boolean
@@ -47,15 +48,18 @@ export function SuggestEventDialog({
           value={[tab]}
           onValueChange={(values) => {
             const next = values[0] as Tab | undefined
-            if (next === 'new' || next === 'fix') setTab(next)
+            if (next === 'artist' || next === 'new' || next === 'fix') setTab(next)
           }}
           className="mt-2 mb-4"
         >
-          <ToggleGroupItem value="new">Suggest new</ToggleGroupItem>
-          <ToggleGroupItem value="fix">Suggest fix</ToggleGroupItem>
+          <ToggleGroupItem value="artist">Artist</ToggleGroupItem>
+          <ToggleGroupItem value="new">Event</ToggleGroupItem>
+          <ToggleGroupItem value="fix">Fix</ToggleGroupItem>
         </ToggleGroup>
 
-        {tab === 'new' ? (
+        {tab === 'artist' ? (
+          <SuggestArtistForm onSuccess={close} />
+        ) : tab === 'new' ? (
           <SuggestionForm groups={groups} onSuccess={close} />
         ) : (
           <SuggestFixForm onSuccess={close} />
