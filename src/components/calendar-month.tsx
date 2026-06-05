@@ -6,10 +6,17 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
+import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { HomeEventCard } from '@/components/home/event-card'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+// Ordre canonique d'affichage des pastilles (une par type d'event présent ce
+// jour-là), aligné sur la palette partagée EVENT_TYPE_COLORS.
+type DotType = keyof typeof EVENT_TYPE_COLORS
+const TYPE_ORDER = Object.keys(EVENT_TYPE_COLORS) as DotType[]
+const MAX_DOTS = 5
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -98,9 +105,11 @@ export function CalendarMonth({
           if (day === null) return <div key={`empty-${i}`} />
           const key = `${monthPrefix}-${pad(day)}`
           const dayEvents = byDay.get(key) ?? []
-          const colors = Array.from(
-            new Set(dayEvents.map((e) => e.groups?.color_hex).filter(Boolean) as string[]),
-          ).slice(0, 3)
+          // Une pastille par TYPE d'event présent (pas par groupe), couleur issue
+          // de la palette partagée. Cap à 5 types, surplus indiqué via `+N`.
+          const dayTypes = TYPE_ORDER.filter((t) => dayEvents.some((e) => e.type === t))
+          const shownTypes = dayTypes.slice(0, MAX_DOTS)
+          const overflow = dayTypes.length - shownTypes.length
           const isSelected = selectedKey === key
           const isToday = todayKey === key
           return (
@@ -117,15 +126,25 @@ export function CalendarMonth({
               )}
             >
               <span>{day}</span>
-              {colors.length > 0 && (
-                <span className="flex gap-0.5" aria-hidden>
-                  {colors.map((c, j) => (
+              {dayTypes.length > 0 && (
+                <span className="flex items-center gap-0.5" aria-hidden>
+                  {shownTypes.map((t) => (
                     <span
-                      key={j}
+                      key={t}
                       className="size-1.5 rounded-full"
-                      style={{ backgroundColor: c }}
+                      style={{ backgroundColor: EVENT_TYPE_COLORS[t] }}
                     />
                   ))}
+                  {overflow > 0 && (
+                    <span
+                      className={cn(
+                        'text-[9px] leading-none font-medium',
+                        isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                      )}
+                    >
+                      +{overflow}
+                    </span>
+                  )}
                 </span>
               )}
             </button>
