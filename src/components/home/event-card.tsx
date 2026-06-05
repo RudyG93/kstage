@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
-import { eventHref } from '@/lib/events/href'
+import { eventHref, isExternalHref } from '@/lib/events/href'
 import { faceCrop } from '@/lib/images/cloudinary'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
@@ -32,9 +32,13 @@ export function HomeEventCard({
   const bannerSrc =
     group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 1600, 400) : null)
 
+  const href = eventHref(event)
+  const external = isExternalHref(href)
+
   return (
     <Link
-      href={eventHref(event)}
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className={`group relative block overflow-hidden rounded-xl ${compact ? 'h-20' : 'h-28'}`}
     >
       {bannerSrc ? (

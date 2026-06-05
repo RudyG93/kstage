@@ -3,16 +3,19 @@ import Link from 'next/link'
 import { Countdown } from './countdown'
 import { TypeBadge } from './type-badge'
 import { displayEventTitle } from '@/lib/events/title'
-import { eventHref } from '@/lib/events/href'
+import { eventHref, isExternalHref } from '@/lib/events/href'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
   if (!event) return null
   const group = event.groups
   const title = displayEventTitle(event.title, group?.name)
+  const href = eventHref(event)
+  const external = isExternalHref(href)
   return (
     <Link
-      href={eventHref(event)}
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className="bg-card animate-in fade-in slide-in-from-bottom-2 ring-foreground/10 hover:ring-foreground/20 focus-visible:ring-primary/40 relative block overflow-hidden rounded-2xl p-6 ring-1 transition-shadow duration-500 focus-visible:outline-none"
     >
       <div

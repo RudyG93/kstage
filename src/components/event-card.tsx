@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
-import { eventHref } from '@/lib/events/href'
+import { eventHref, isExternalHref } from '@/lib/events/href'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
@@ -16,9 +16,13 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
   const dateLabel = kstFormat(event.start_at, { month: 'short', day: '2-digit' }).toUpperCase()
   const timeLabel = kstFormat(event.start_at, { hour: 'numeric', minute: '2-digit' })
 
+  const href = eventHref(event)
+  const external = isExternalHref(href)
+
   return (
     <Link
-      href={eventHref(event)}
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className="group/event bg-card hover:border-primary/40 focus-visible:ring-primary/40 relative flex items-stretch gap-3.5 overflow-hidden rounded-xl border pr-4 pl-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
     >
       {/* barre couleur du groupe + teinte permanente + halo renforcé au survol (touche de B) */}
