@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { sendWelcomeEmail } from '@/lib/email/resend'
 import { validateSignup, validatePassword } from './validation'
 import type { Database } from '@/types/database'
 
@@ -79,7 +80,9 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username } },
+    // `username` alimente le trigger handle_new_user (→ profiles.username) ;
+    // `display_name` rend le pseudo visible dans le dashboard Supabase Auth.
+    options: { data: { username, display_name: username } },
   })
   // Message générique : pas de fuite « email déjà utilisé » (anti-énumération).
   if (error) return { error: 'Could not create the account. Try a different email or username.' }
@@ -102,6 +105,21 @@ export async function verifySignupOtp(_prev: AuthState, formData: FormData): Pro
   // flux par lien token_hash). Cf. doc Supabase Email Templates.
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
   if (error) return { error: 'Invalid or expired code.' }
+
+  // Mail de bienvenue (§1.5) — best-effort : un échec d'envoi ne doit jamais
+  // empêcher la finalisation de l'inscription. verifyOtp a ouvert la session,
+  // donc getUser() retourne le compte fraîchement confirmé.
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user?.email) {
+      const username = (user.user_metadata?.username as string | undefined) ?? null
+      await sendWelcomeEmail(user.email, username)
+    }
+  } catch (e) {
+    console.error('[welcome-email]', e)
+  }
 
   redirect('/')
 }

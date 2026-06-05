@@ -1,0 +1,79 @@
+<!--
+  KStage — Template OTP (§1.7)
+  À coller dans le dashboard Supabase : Authentication → Email Templates → "Confirm signup".
+  Variables Supabase disponibles : {{ .Token }} (code), {{ .Email }}, {{ .SiteURL }}.
+  On utilise {{ .Token }} (code à saisir), PAS {{ .ConfirmationURL }} (flux par lien),
+  car KStage vérifie par code OTP saisi sur /signup/verify.
+
+  Rappels de config dashboard :
+  - Authentication → Email → "Email OTP Length" doit valoir 6 (= OTP_LENGTH côté code).
+  - Sinon, le nombre de cases de saisie ne correspondra pas au code envoyé.
+-->
+<!doctype html>
+<html lang="en">
+  <body
+    style="margin:0;background:#0e0e13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e7e7ea;"
+  >
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0e0e13;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="max-width:480px;background:#16161d;border-radius:16px;overflow:hidden;border:1px solid #26262f;"
+          >
+            <tr>
+              <td style="padding:28px 28px 4px;">
+                <div
+                  style="font-size:22px;font-weight:800;background:linear-gradient(90deg,#8b5cff,#ff2d87);-webkit-background-clip:text;background-clip:text;color:#ff2d87;"
+                >
+                  KStage
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 28px 4px;">
+                <h1 style="margin:0;font-size:20px;color:#fff;">Confirm your email</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px 28px 0;font-size:14px;line-height:1.6;color:#c9c9d1;">
+                <p style="margin:0 0 16px;">Enter this code to finish creating your KStage account:</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:4px 28px 8px;">
+                <div
+                  style="font-family:'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:10px;color:#fff;background:#0e0e13;border:1px solid #2c2c37;border-radius:12px;padding:18px 12px;text-align:center;"
+                >
+                  {{ .Token }}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 28px 24px;font-size:13px;line-height:1.6;color:#9a9aa4;">
+                <p style="margin:0 0 8px;">This code is valid for 15 minutes.</p>
+                <p style="margin:0 0 8px;">
+                  Closed the page? Enter it at
+                  <a href="https://kstage.app/signup/verify" style="color:#b79bff;">kstage.app/signup/verify</a>.
+                </p>
+                <p style="margin:0;">If you didn't sign up for KStage, you can safely ignore this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+
+<!--
+  Fallback texte brut (pour les clients sans HTML) — Supabase n'a qu'un seul
+  champ HTML ; ce bloc reste en commentaire à titre de référence :
+
+  Your KStage verification code is: {{ .Token }}
+  It is valid for 15 minutes. Enter it at https://kstage.app/signup/verify
+  If you didn't sign up for KStage, ignore this email.
+-->
