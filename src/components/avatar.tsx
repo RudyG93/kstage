@@ -23,7 +23,11 @@ export function Avatar({
         alt=""
         width={size}
         height={size}
-        className="shrink-0 rounded-full object-cover"
+        // `max-w-none` est requis : Tailwind Preflight applique `max-width: 100%`
+        // à toute <img>. Quand l'avatar est un flex-item (header) dont la largeur
+        // dépend de son contenu, ce `max-width: 100%` se résout contre une largeur
+        // parente de 0 et écrase la largeur fixe → avatar invisible (largeur 0).
+        className="max-w-none shrink-0 rounded-full object-cover"
         style={{ width: size, height: size }}
       />
     )
