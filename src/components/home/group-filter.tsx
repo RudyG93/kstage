@@ -5,17 +5,58 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const STORAGE_KEY = 'kstage.filter.groups'
+
 // Filtre multi-groupes pour le calendrier : bouton → panneau avec recherche +
-// checkboxes, état dans `?group=<csv de slugs>`. Fermeture au clic extérieur.
-export function GroupFilter({ groups }: { groups: { slug: string; name: string }[] }) {
+// checkboxes + actions (My groups / Reset). État dans `?group=<csv de slugs>`.
+// Persistence hybride (§3.3) : l'URL fait foi, mais le dernier choix est mémorisé
+// en localStorage et restauré au chargement quand aucun param n'est présent.
+export function GroupFilter({
+  groups,
+  followedSlugs = [],
+}: {
+  groups: { slug: string; name: string }[]
+  followedSlugs?: string[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const selected = new Set((searchParams.get('group') ?? '').split(',').filter(Boolean))
+  const param = searchParams.get('group')
+  const selected = new Set((param ?? '').split(',').filter(Boolean))
 
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const reconciled = useRef(false)
+
+  function writeUrl(csv: string, mode: 'push' | 'replace') {
+    const params = new URLSearchParams(searchParams.toString())
+    if (csv) params.set('group', csv)
+    else params.delete('group')
+    window.localStorage.setItem(STORAGE_KEY, csv)
+    const qs = params.toString()
+    const url = qs ? `${pathname}?${qs}` : pathname
+    if (mode === 'replace') router.replace(url)
+    else router.push(url)
+  }
+
+  // Réconciliation au montage (une fois) : précédence param URL > dernier choix
+  // mémorisé > groupes suivis (§3.2). `''` mémorisé = "All groups" explicite.
+  useEffect(() => {
+    if (reconciled.current) return
+    reconciled.current = true
+    if (param !== null) {
+      window.localStorage.setItem(STORAGE_KEY, param)
+      return
+    }
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (stored !== null) {
+      if (stored !== '') writeUrl(stored, 'replace')
+      return
+    }
+    if (followedSlugs.length > 0) writeUrl(followedSlugs.join(','), 'replace')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -35,11 +76,7 @@ export function GroupFilter({ groups }: { groups: { slug: string; name: string }
     const next = new Set(selected)
     if (next.has(slug)) next.delete(slug)
     else next.add(slug)
-    const params = new URLSearchParams(searchParams.toString())
-    if (next.size > 0) params.set('group', [...next].join(','))
-    else params.delete('group')
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
+    writeUrl([...next].join(','), 'push')
   }
 
   return (
@@ -101,6 +138,24 @@ export function GroupFilter({ groups }: { groups: { slug: string; name: string }
               })
             )}
           </ul>
+          <div className="border-border flex gap-2 border-t p-2">
+            <button
+              type="button"
+              onClick={() => writeUrl('', 'push')}
+              className="hover:bg-muted/50 flex-1 cursor-pointer rounded px-2 py-1.5 text-sm font-medium"
+            >
+              Reset
+            </button>
+            {followedSlugs.length > 0 && (
+              <button
+                type="button"
+                onClick={() => writeUrl(followedSlugs.join(','), 'push')}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 cursor-pointer rounded px-2 py-1.5 text-sm font-medium"
+              >
+                My groups
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

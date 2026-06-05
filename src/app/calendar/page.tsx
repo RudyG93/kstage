@@ -4,6 +4,7 @@ import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupFilter } from '@/components/home/group-filter'
 import { getEventsForMonth } from '@/lib/events/queries'
 import { getGroups } from '@/lib/groups/queries'
+import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey } from '@/lib/events/date'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
@@ -42,10 +43,12 @@ export default async function CalendarPage({
     tier = profile?.tier ?? 'free'
   }
 
-  const [groups, events] = await Promise.all([
+  const [groups, followedIds, events] = await Promise.all([
     getGroups(),
+    getFollowedGroupIds(),
     getEventsForMonth({ year, month, groupSlugs, types: parseTypesParam(sp.type) }),
   ])
+  const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
@@ -54,7 +57,10 @@ export default async function CalendarPage({
           <SidebarLeft
             tier={tier}
             groupFilter={
-              <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
+              <GroupFilter
+                groups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
+                followedSlugs={followedSlugs}
+              />
             }
           />
         </aside>

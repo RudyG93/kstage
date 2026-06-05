@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 type EventType = Database['public']['Enums']['event_type']
 
 const EVENT_SELECT =
-  'id, slug, title, type, start_at, status, episode_number, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, slug, title, type, start_at, status, episode_number, source_url, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 // Predicate appliqué partout sauf getGroupMvs (cf. matrice §8 SCRAPING.md) :
 // les MVs `main` + les non-MV (mv_kind=NULL) sont visibles. Les versions
@@ -184,13 +184,48 @@ export async function getLikedMvs(userId: string, limit = 30): Promise<MvEvent[]
   return (data ?? []).map((r) => (r as unknown as { event: MvEvent }).event)
 }
 
-export type ActivityRow = Database['public']['Functions']['recent_activity']['Returns'][number]
-
-/** Flux d'activité récente (commentaires / notes / likes / inscriptions) trié
- * desc — agrégé côté Postgres via le RPC `recent_activity`. Pour la sidebar home. */
-export async function getRecentActivity(limit = 12): Promise<ActivityRow[]> {
+/**
+ * Entités les plus récemment commentées (format "forum-like", §7.2), triées par
+ * date du dernier commentaire, avec le nombre de commentaires. Agrégation JS
+ * bornée (fenêtre des 300 derniers commentaires) — suffisant pour une sidebar et
+ * évite un RPC dédié. Les commentaires vivent sur les pages MV → liens internes.
+ */
+export async function getRecentlyCommentedEvents(limit = 12) {
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc('recent_activity', { p_limit: limit })
+  const { data: recent, error } = await supabase
+    .from('comments')
+    .select('event_id, created_at')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(300)
   if (error) throw error
-  return data ?? []
+
+  // Ordre desc déjà appliqué → la 1re occurrence d'un event = son dernier commentaire.
+  const lastByEvent = new Map<string, string>()
+  for (const c of recent ?? []) {
+    if (!lastByEvent.has(c.event_id)) lastByEvent.set(c.event_id, c.created_at)
+  }
+  const ids = [...lastByEvent.keys()].slice(0, limit)
+  if (ids.length === 0) return []
+
+  const [eventsRes, countsRes] = await Promise.all([
+    supabase
+      .from('events')
+      .select('id, slug, title, type, image_url, source_url, groups!inner(slug, name)')
+      .in('id', ids),
+    supabase.from('comments').select('event_id').is('deleted_at', null).in('event_id', ids),
+  ])
+  const countByEvent = new Map<string, number>()
+  for (const r of countsRes.data ?? []) {
+    countByEvent.set(r.event_id, (countByEvent.get(r.event_id) ?? 0) + 1)
+  }
+  const eventById = new Map((eventsRes.data ?? []).map((e) => [e.id, e]))
+
+  return ids.flatMap((id) => {
+    const e = eventById.get(id)
+    if (!e) return []
+    return [{ ...e, commentCount: countByEvent.get(id) ?? 0, lastCommentAt: lastByEvent.get(id)! }]
+  })
 }
+
+export type CommentedEvent = Awaited<ReturnType<typeof getRecentlyCommentedEvents>>[number]

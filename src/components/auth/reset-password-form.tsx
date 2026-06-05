@@ -3,13 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { OtpInput } from './otp-input'
+import { PasswordInput } from './password-input'
 import { resetPassword, resendRecoveryOtp, type AuthState } from '@/lib/auth/actions'
-import { PASSWORD_MIN } from '@/lib/auth/validation'
-
-const inputClass =
-  'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-const codeClass =
-  'h-11 w-full rounded-lg border bg-background px-3 text-center font-mono text-lg tracking-[0.4em] outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+import { PASSWORD_MIN, OTP_LENGTH } from '@/lib/auth/validation'
 
 const RESEND_COOLDOWN = 60
 
@@ -42,33 +39,20 @@ export function ResetPasswordForm({ email }: { email: string }) {
       <input type="hidden" name="email" value={email} />
 
       <div className="space-y-1.5">
-        <label htmlFor="token" className="text-sm font-medium">
-          Verification code
-        </label>
-        <input
-          id="token"
-          name="token"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="\d{6,10}"
-          maxLength={10}
-          required
-          className={codeClass}
-        />
+        <span className="block text-center text-sm font-medium">Verification code</span>
+        <OtpInput length={OTP_LENGTH} name="token" disabled={pending} invalid={!!state?.error} />
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="password" className="text-sm font-medium">
           New password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={PASSWORD_MIN}
-          className={inputClass}
         />
         <p className="text-muted-foreground text-xs">
           At least {PASSWORD_MIN} characters, one uppercase letter and one digit.
@@ -79,19 +63,17 @@ export function ResetPasswordForm({ email }: { email: string }) {
         <label htmlFor="confirm" className="text-sm font-medium">
           Confirm new password
         </label>
-        <input
+        <PasswordInput
           id="confirm"
           name="confirm"
-          type="password"
           autoComplete="new-password"
           required
           minLength={PASSWORD_MIN}
-          className={inputClass}
         />
       </div>
 
       {state?.error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-destructive text-center text-sm">
           {state.error}
         </p>
       )}

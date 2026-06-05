@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PasswordInput } from '@/components/auth/password-input'
 import { USERNAME_MIN, USERNAME_MAX } from '@/lib/profiles/validation'
 import { PASSWORD_MIN } from '@/lib/auth/validation'
 import type { AuthState } from '@/lib/auth/actions'
@@ -55,14 +56,12 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
         <label htmlFor="password" className="text-sm font-medium">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete={isLogin ? 'current-password' : 'new-password'}
           required
           minLength={isLogin ? undefined : PASSWORD_MIN}
-          className={inputClass}
         />
         {isLogin ? (
           <div className="text-right">
@@ -85,14 +84,12 @@ export function AuthForm({ mode, action }: { mode: 'login' | 'signup'; action: A
           <label htmlFor="confirm" className="text-sm font-medium">
             Confirm password
           </label>
-          <input
+          <PasswordInput
             id="confirm"
             name="confirm"
-            type="password"
             autoComplete="new-password"
             required
             minLength={PASSWORD_MIN}
-            className={inputClass}
           />
         </div>
       )}

@@ -4,6 +4,11 @@ import { normalizeUsername } from '@/lib/profiles/validation'
 
 export const PASSWORD_MIN = 12
 
+// Nombre de cases de l'OTP (§1.2). DOIT correspondre au réglage Supabase
+// « Authentication → Email → Email OTP Length ». Si ce réglage change, ajuster
+// ici (les deux doivent rester alignés, sinon la vérification échoue).
+export const OTP_LENGTH = 6
+
 /** Login : format email minimal + password non vide. */
 export function validateCredentials(email: string, password: string): string | null {
   if (!email.includes('@')) return 'Enter a valid email address.'

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
 import { FollowButton } from '@/components/follow-button'
@@ -34,7 +35,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     members,
   ] = await Promise.all([
     supabase.auth.getUser(),
-    getUpcomingEvents({ groupSlug: slug, limit: 10 }),
+    getUpcomingEvents({ groupSlug: slug, limit: 20 }),
     getGroupMvs(slug, 48),
     getFollowedGroupIds(),
     getMembersForGroup(group.id),
@@ -90,7 +91,15 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
         {/* Events */}
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Upcoming events</h2>
-          <EventList events={events} emptyMessage="No upcoming events." />
+          <EventList events={events} emptyMessage="No upcoming events." scrollAfter={5} />
+          {events.length >= 20 && (
+            <Link
+              href={`/calendar?group=${slug}`}
+              className="text-muted-foreground hover:text-foreground inline-block text-xs underline underline-offset-4"
+            >
+              See all on calendar
+            </Link>
+          )}
         </section>
 
         {/* MVs */}

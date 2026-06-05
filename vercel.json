@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/send-digest",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-images",
+      "schedule": "0 4 * * 1"
     }
   ]
 }

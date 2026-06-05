@@ -1,0 +1,56 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
+import { spotifyToken, spotifyArtistImage } from '@/lib/spotify'
+
+// Rafraîchit groups.image_url depuis Spotify (§10) — images mises à jour à chaque
+// ère. Vercel Cron déclenche en GET + en-tête Authorization: Bearer ${CRON_SECRET}.
+// `?limit=N` permet de traiter un sous-ensemble (batch / test).
+
+export const maxDuration = 300
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+export async function GET(req: Request) {
+  const auth = req.headers.get('authorization')
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const token = await spotifyToken()
+  if (!token) {
+    return NextResponse.json({ error: 'Spotify credentials missing or invalid' }, { status: 500 })
+  }
+
+  const supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  const limit = Number(new URL(req.url).searchParams.get('limit') ?? '0')
+  let query = supabase.from('groups').select('id, name').order('name')
+  if (limit > 0) query = query.limit(limit)
+  const { data: groups, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  let updated = 0
+  let missed = 0
+  for (const g of groups ?? []) {
+    const image = await spotifyArtistImage(g.name, token)
+    if (image) {
+      // On n'écrase que si Spotify renvoie une image : les groupes sans match
+      // gardent leur image actuelle (Deezer/admin), jamais de null.
+      const { error: upErr } = await supabase
+        .from('groups')
+        .update({ image_url: image })
+        .eq('id', g.id)
+      if (upErr) console.error(`refresh-images update ${g.id} failed: ${upErr.message}`)
+      else updated++
+    } else {
+      missed++
+    }
+    await sleep(200)
+  }
+
+  return NextResponse.json({ ok: true, total: groups?.length ?? 0, updated, missed })
+}
