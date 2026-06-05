@@ -110,7 +110,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       followedIds,
     ] = await Promise.all([
       supabase.auth.getUser(),
-      getUpcomingEvents({ groupSlug: group.slug, limit: 10 }),
+      getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
       getGroupMvs(group.slug, 48),
       getFollowedGroupIds(),
     ])
@@ -162,7 +162,15 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
           <section className="space-y-3">
             <h2 className="text-sm font-medium">Upcoming events</h2>
-            <EventList events={events} emptyMessage="No upcoming events." />
+            <EventList events={events} emptyMessage="No upcoming events." scrollAfter={5} />
+            {events.length >= 20 && (
+              <Link
+                href={`/calendar?group=${group.slug}`}
+                className="text-muted-foreground hover:text-foreground inline-block text-xs underline underline-offset-4"
+              >
+                See all on calendar
+              </Link>
+            )}
           </section>
 
           {mvs.length > 0 && (

@@ -45,6 +45,19 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
           strokeWidth={1.5}
           aria-hidden
         />
+        {group?.image_url && (
+          <span className="absolute bottom-1.5 left-1.5 size-7 overflow-hidden rounded-full shadow ring-2 ring-white/80">
+            <Image
+              src={group.image_url}
+              alt=""
+              fill
+              unoptimized
+              sizes="28px"
+              className="object-cover"
+              aria-hidden
+            />
+          </span>
+        )}
       </div>
       <div className="mt-1.5 px-0.5">
         <p className="line-clamp-2 text-sm leading-snug font-medium">

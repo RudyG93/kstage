@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GroupCard } from '@/components/group-card'
+import { GroupsGrid } from '@/components/groups-grid'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupSort } from '@/components/home/group-sort'
@@ -99,21 +99,15 @@ export default async function GroupsPage({
             <GroupSort value={activeSort} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {sorted.map((item) => (
-              <GroupCard
-                key={item.slug}
-                group={item}
-                isFollowing={followedIds.has(item.id)}
-                isAuthed={!!user}
-                href={
-                  'memberSlug' in item && item.memberSlug
-                    ? `/artists/${item.memberSlug}`
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+          <GroupsGrid
+            items={sorted.map((item) => ({
+              group: item,
+              isFollowing: followedIds.has(item.id),
+              isAuthed: !!user,
+              href:
+                'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
+            }))}
+          />
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">
