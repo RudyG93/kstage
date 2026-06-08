@@ -8,6 +8,13 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Cookie de session `Secure` en prod (durcit Safari/iOS, évite l'éviction
+      // ITP). Gate prod : en dev local (http://localhost) `Secure` casserait le
+      // login, donc on ne l'active que sur Vercel.
+      cookieOptions: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll()
