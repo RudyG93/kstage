@@ -9,6 +9,13 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Cf. server.ts : cookie de session `Secure` en prod uniquement. Doit
+      // rester aligné avec le client serveur pour ne pas réécrire le cookie
+      // avec des attributs divergents à chaque passage du middleware.
+      cookieOptions: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll()
