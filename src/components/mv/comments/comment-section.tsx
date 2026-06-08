@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import { CommentCompose } from './comment-compose'
 import { CommentItem } from './comment-item'
 import { SortToggle } from './sort-toggle'
@@ -40,7 +41,10 @@ export function CommentSection({ eventId, slug, isAuthed, viewerId, roots, sort 
       )}
 
       {roots.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No comments yet. Be the first to share.</p>
+        <EmptyState
+          title="No comments yet"
+          description="Be the first to share what you think about this release."
+        />
       ) : (
         <div className="space-y-4">
           {roots.map((node) => (

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { splitUpcomingByBuckets, capLaterEvents, type UpcomingBuckets } from '@/lib/events/grouping'
 import { groupEventsByDay, kstDayKey } from '@/lib/events/date'
 import { HomeEventCard } from './event-card'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const BUCKET_CAP = 10
@@ -90,9 +91,11 @@ function FeedSection({
 export function Feed({ events, timeZone }: { events: UpcomingEvent[]; timeZone: string }) {
   if (events.length === 0) {
     return (
-      <div className="border-border/70 text-muted-foreground rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-        No more upcoming events from your groups.
-      </div>
+      <EmptyState
+        title="Your feed is quiet right now"
+        description="Follow more groups to see their comebacks, releases and shows here as they're announced."
+        action={{ label: 'Browse groups', href: '/groups' }}
+      />
     )
   }
 
