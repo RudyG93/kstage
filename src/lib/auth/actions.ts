@@ -121,7 +121,8 @@ export async function verifySignupOtp(_prev: AuthState, formData: FormData): Pro
     console.error('[welcome-email]', e)
   }
 
-  redirect('/')
+  // Onboarding « follow d'abord » à la 1ʳᵉ connexion (anti-vide).
+  redirect('/onboarding')
 }
 
 export async function resendSignupOtp(email: string): Promise<{ error: string } | { ok: true }> {
