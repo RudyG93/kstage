@@ -1,13 +1,14 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { MemberSummary } from '@/lib/members/queries'
 
 /**
- * Carte membre cliquable vers `/artists/[slug]`. Photo si dispo, sinon placeholder
- * gradient dérivé de `color_hex` du groupe parent + initiale du stage_name.
+ * Carte membre NON cliquable : photo si dispo, sinon placeholder gradient dérivé
+ * de `color_hex` du groupe parent + initiale du stage_name.
  *
- * Member without slug → rendu désactivé (avant que le backfill ait tourné en prod).
+ * Volontairement non navigable : la page membre `/artists/[slug]` est quasi-vide
+ * et redondante avec cette grille → on ne crée plus de cul-de-sac. La route reste
+ * (redirect solo + artistes solo riches), juste plus d'entrée depuis la grille.
  */
 export function MemberCard({
   member,
@@ -20,8 +21,8 @@ export function MemberCard({
   const color = groupColorHex ?? '#888'
   const isDimmed = member.status !== 'active'
 
-  const content = (
-    <>
+  return (
+    <div className={cn('block', isDimmed && 'opacity-70')}>
       <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-xl">
         {member.photo_url ? (
           <Image
@@ -30,7 +31,7 @@ export function MemberCard({
             fill
             unoptimized
             sizes="(min-width: 640px) 25vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover"
           />
         ) : (
           <div
@@ -52,22 +53,6 @@ export function MemberCard({
           </p>
         )}
       </div>
-    </>
-  )
-
-  if (!member.slug) {
-    return <div className={cn('block', isDimmed && 'opacity-70')}>{content}</div>
-  }
-
-  return (
-    <Link
-      href={`/artists/${member.slug}`}
-      className={cn(
-        'group focus-visible:ring-primary/40 block rounded-xl focus-visible:ring-2 focus-visible:outline-none',
-        isDimmed && 'opacity-70',
-      )}
-    >
-      {content}
-    </Link>
+    </div>
   )
 }
