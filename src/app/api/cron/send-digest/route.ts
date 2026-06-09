@@ -8,6 +8,7 @@ import {
   type DigestFollow,
   type DigestSubscription,
 } from '@/lib/notifications/digest'
+import { sendPush } from '@/lib/notifications/send'
 
 const WINDOW_MS = 48 * 60 * 60 * 1000
 
@@ -72,22 +73,9 @@ export async function GET(req: Request) {
   let sent = 0
   let removed = 0
   for (const { subscription, payload } of messages) {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: subscription.endpoint,
-          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-        },
-        JSON.stringify(payload),
-      )
-      sent += 1
-    } catch (sendErr) {
-      const statusCode = (sendErr as { statusCode?: number }).statusCode
-      if (statusCode === 404 || statusCode === 410) {
-        await supabase.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint)
-        removed += 1
-      }
-    }
+    const res = await sendPush(supabase, subscription, payload)
+    if (res === 'sent') sent += 1
+    else if (res === 'removed') removed += 1
   }
 
   return NextResponse.json({ ok: true, candidates: messages.length, sent, removed })

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
+import { CountdownBadge } from './countdown'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
@@ -25,6 +26,11 @@ export function HomeEventCard({
   const kst = kstFormat(event.start_at)
   const typeColor = EVENT_TYPE_COLORS[event.type]
   const displayTitle = displayEventTitle(event.title, group?.name, event.episode_number)
+
+  // Countdown FOMO (§5) sur les comebacks (mv/release). Le CountdownBadge gère
+  // lui-même la fenêtre temporelle (< 14 j, futur) et ne rend rien sinon, pour
+  // garder ce server component pur (pas de Date.now dans le render).
+  const isComeback = event.type === 'mv' || event.type === 'release'
 
   // Image de fond plein cover (banner_url admin prioritaire, sinon Deezer
   // recadré visage Cloudinary). Le texte 3 lignes est posé dessus, lisible
@@ -79,11 +85,12 @@ export function HomeEventCard({
           <p className="truncate text-xs text-white/80">{displayTitle}</p>
         </div>
 
-        <div className="shrink-0 text-right">
+        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
           <p className="font-mono text-sm font-medium text-white tabular-nums">
             <LocalTime iso={event.start_at} />
           </p>
           <p className="font-mono text-[11px] text-white/70 tabular-nums">{kst} KST</p>
+          {isComeback && <CountdownBadge targetIso={event.start_at} />}
         </div>
       </div>
     </Link>
