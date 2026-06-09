@@ -11,6 +11,7 @@ describe('isOfficialMvTitle', () => {
     "aespa 'Armageddon' MV",
     "RIIZE 라이즈 'Boom Boom Bass' MV",
     "LE SSERAFIM (르세라핌) 'CRAZY' OFFICIAL MV",
+    "i-dle (아이들) 'Mono (Feat. skaiwater)' Official Music Video",
   ]
   const notOfficial: [string, string][] = [
     ["aespa 'Whiplash' MV Teaser", 'blacklist:teaser'],
@@ -27,6 +28,9 @@ describe('isOfficialMvTitle', () => {
     ["BABYMONSTER 'SHEESH' @ Inkigayo", 'blacklist:music show'],
     ["aespa 'Some Song' (Visualizer)", 'no-mv-marker'],
     ['Team MVP awards recap', 'no-mv-marker'],
+    // Cas prod réel : vrai MV BABYMONSTER titré « OUT NOW ». Le mode strict le
+    // sacrifie volontairement (le clip principal sans « OUT NOW » est gardé).
+    ["'SUGAR HONEY ICE TEA' M/V OUT NOW", 'blacklist:out now'],
   ]
 
   it.each(official)('officiel : %s', (title) => {
