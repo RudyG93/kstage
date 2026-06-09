@@ -39,13 +39,16 @@ export default async function MvsPage() {
   ])
 
   // 1 ligne par groupe suivi (ordre = MV le plus récent), 10 MV max chacun.
-  const byGroup = new Map<string, { name: string; slug: string; mvs: MvEvent[] }>()
+  const byGroup = new Map<
+    string,
+    { name: string; slug: string; image: string | null; color: string | null; mvs: MvEvent[] }
+  >()
   for (const mv of followedMvs) {
     const g = mv.groups
     if (!g?.slug) continue
     let row = byGroup.get(g.slug)
     if (!row) {
-      row = { name: g.name, slug: g.slug, mvs: [] }
+      row = { name: g.name, slug: g.slug, image: g.image_url, color: g.color_hex, mvs: [] }
       byGroup.set(g.slug, row)
     }
     if (row.mvs.length < PER_GROUP) row.mvs.push(mv)
@@ -77,6 +80,8 @@ export default async function MvsPage() {
                   href={`/groups/${row.slug}`}
                   mvs={row.mvs}
                   ratings={ratings}
+                  image={row.image}
+                  color={row.color}
                 />
               ))}
             </div>

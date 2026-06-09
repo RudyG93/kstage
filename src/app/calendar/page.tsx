@@ -3,6 +3,7 @@ import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupFilter } from '@/components/home/group-filter'
 import { getEventsForMonth } from '@/lib/events/queries'
+import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey } from '@/lib/events/date'
@@ -28,6 +29,11 @@ export default async function CalendarPage({
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
   const groupSlugs = sp.group ? sp.group.split(',').filter(Boolean) : undefined
+  const types = parseTypesParam(sp.type)
+  // Les anniversaires sont générés à la volée (pas en table events) → on les
+  // fusionne ici pour qu'ils apparaissent au calendrier, sauf si un filtre de
+  // type actif les exclut.
+  const wantAnniversaries = types.length === 0 || types.includes('anniversary')
 
   const supabase = await createClient()
   const {
@@ -43,11 +49,15 @@ export default async function CalendarPage({
     tier = profile?.tier ?? 'free'
   }
 
-  const [groups, followedIds, events] = await Promise.all([
+  const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
     getGroups(),
     getFollowedGroupIds(),
-    getEventsForMonth({ year, month, groupSlugs, types: parseTypesParam(sp.type) }),
+    getEventsForMonth({ year, month, groupSlugs, types }),
+    wantAnniversaries ? getAnniversariesForMonth({ year, month, groupSlugs }) : Promise.resolve([]),
   ])
+  const events = [...dbEvents, ...anniversaries].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
+  )
   const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
 
   return (

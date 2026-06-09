@@ -23,6 +23,7 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
   return (
     <Link
       href={`/mv/${mv.slug}`}
+      draggable={false}
       className="group focus-visible:ring-primary/40 block rounded-xl focus-visible:ring-2 focus-visible:outline-none"
     >
       <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-xl">

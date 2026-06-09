@@ -41,6 +41,17 @@ function nextOccurrence(
   return { y, month: md.month, day: md.day, diff }
 }
 
+const yearOf = (s: string) => {
+  const m = /^(\d{4})/.exec(s)
+  return m ? Number(m[1]) : null
+}
+
+// soliste (stage_name == nom du groupe) → titre court ; membre → on garde le stage_name.
+function annivTitle(stageName: string, groupName: string, age: number | null): string {
+  if (stageName === groupName) return age && age > 0 ? `${age} ans` : 'Birthday'
+  return age && age > 0 ? `${stageName} — ${age} ans` : `${stageName} — birthday`
+}
+
 /** Fonction pure (testable) : génère les anniversaires à venir dans la fenêtre. */
 export function generateAnniversaries(
   groups: AnnivGroup[],
@@ -76,11 +87,6 @@ export function generateAnniversaries(
     } as UpcomingEvent)
   }
 
-  const yearOf = (s: string) => {
-    const m = /^(\d{4})/.exec(s)
-    return m ? Number(m[1]) : null
-  }
-
   // Note : les "Debut anniversary" ne sont volontairement plus générés (peu
   // d'intérêt côté commu k-pop). On garde `groups.debut_date` en DB pour des
   // stats futures, mais on ne pollue plus le flux d'events avec ça.
@@ -92,17 +98,7 @@ export function generateAnniversaries(
     const occ = nextOccurrence(md, today)
     const birthYear = yearOf(m.birthday)
     const age = birthYear ? occ.y - birthYear : null
-    // soliste : stage_name == nom du groupe → titre court ;
-    // membre : on garde le stage_name (utile, ≠ du nom du groupe affiché à gauche).
-    const isSoloist = m.stage_name === g.name
-    const title = isSoloist
-      ? age && age > 0
-        ? `${age} ans`
-        : 'Birthday'
-      : age && age > 0
-        ? `${m.stage_name} — ${age} ans`
-        : `${m.stage_name} — birthday`
-    push(g, occ, `anniv-bday-${m.group_id}-${m.stage_name}`, title)
+    push(g, occ, `anniv-bday-${m.group_id}-${m.stage_name}`, annivTitle(m.stage_name, g.name, age))
   }
   return out.sort((a, b) => a.start_at.localeCompare(b.start_at))
 }
@@ -125,4 +121,83 @@ export async function getUpcomingAnniversaries(
     todayKey: kstDayKey(new Date().toISOString()),
     days,
   })
+}
+
+/** Nombre d'anniversaires à venir (fenêtre `days`) par group_id — pour le compteur
+ * « N upcoming » du bloc My groups (les anniversaires y étaient oubliés). */
+export async function getUpcomingAnniversaryCountsByGroup(
+  groupIds: string[],
+  days = 90,
+): Promise<Map<string, number>> {
+  if (groupIds.length === 0) return new Map()
+  const supabase = await createClient()
+  const { data: members } = await supabase
+    .from('members')
+    .select('group_id, birthday')
+    .in('group_id', groupIds)
+  const [ty, tm, td] = kstDayKey(new Date().toISOString()).split('-').map(Number)
+  const today = { y: ty, m: tm, d: td }
+  const counts = new Map<string, number>()
+  for (const m of members ?? []) {
+    if (!m.birthday) continue
+    const md = parseMonthDay(m.birthday)
+    if (!md) continue
+    const occ = nextOccurrence(md, today)
+    if (occ.diff < 0 || occ.diff > days) continue
+    counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1)
+  }
+  return counts
+}
+
+/** Anniversaires (birthdays) tombant dans un mois donné — pour le calendrier.
+ * `groupSlugs` filtre comme le `?group=` du calendrier ; vide = tous les groupes. */
+export async function getAnniversariesForMonth({
+  year,
+  month,
+  groupSlugs,
+}: {
+  year: number
+  month: number
+  groupSlugs?: string[]
+}): Promise<UpcomingEvent[]> {
+  const supabase = await createClient()
+  let gq = supabase
+    .from('groups')
+    .select('id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date')
+  if (groupSlugs && groupSlugs.length > 0) gq = gq.in('slug', groupSlugs)
+  const { data: groups } = await gq
+  const gids = (groups ?? []).map((g) => g.id)
+  if (gids.length === 0) return []
+
+  const { data: members } = await supabase
+    .from('members')
+    .select('group_id, stage_name, birthday')
+    .in('group_id', gids)
+
+  const groupById = new Map((groups ?? []).map((g) => [g.id, g]))
+  const out: UpcomingEvent[] = []
+  for (const m of members ?? []) {
+    const g = groupById.get(m.group_id)
+    if (!g || !m.birthday) continue
+    const md = parseMonthDay(m.birthday)
+    if (!md || md.month !== month) continue
+    const birthYear = yearOf(m.birthday)
+    const age = birthYear ? year - birthYear : null
+    out.push({
+      id: `anniv-bday-${m.group_id}-${m.stage_name}-${year}`,
+      title: annivTitle(m.stage_name, g.name, age),
+      type: 'anniversary',
+      start_at: kstToUtcISO(year, month - 1, md.day, 0, 0),
+      status: 'confirmed',
+      groups: {
+        slug: g.slug,
+        name: g.name,
+        color_hex: g.color_hex,
+        image_url: g.image_url,
+        image_landscape: g.image_landscape,
+        banner_url: g.banner_url,
+      },
+    } as UpcomingEvent)
+  }
+  return out
 }

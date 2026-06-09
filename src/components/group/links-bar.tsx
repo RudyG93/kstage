@@ -72,7 +72,10 @@ function Row({ entries, links }: { entries: typeof ENTRIES; links: Record<string
           aria-label={label}
           title={label}
           style={{ '--brand': brand } as CSSProperties}
-          className="text-muted-foreground hover:bg-muted ring-foreground/10 flex size-9 items-center justify-center rounded-full ring-1 transition-[color,transform] hover:scale-110 hover:text-[var(--brand)]"
+          // Couleur de marque en thème CLAIR ; sur fond sombre on garde le
+          // muted-foreground (visible) — sinon les marques noires (X/TikTok/Tidal)
+          // disparaîtraient. Hover = couleur de marque dans les deux thèmes.
+          className="dark:text-muted-foreground hover:bg-muted ring-foreground/10 flex size-9 items-center justify-center rounded-full text-[var(--brand)] ring-1 transition-[color,transform] hover:scale-110 hover:text-[var(--brand)]"
         >
           <Icon size={18} color="currentColor" />
         </a>
