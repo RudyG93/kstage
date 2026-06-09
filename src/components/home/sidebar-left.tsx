@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
+import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import type { Database } from '@/types/database'
 import { TypeFilterVertical } from './type-filter-vertical'
 
@@ -23,8 +24,13 @@ export async function SidebarLeft({
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
   const followed = groups.filter((g) => followedIds.has(g.id))
-  const counts = await getUpcomingEventCountsByGroup([...followedIds])
-  const totalUpcoming = [...counts.values()].reduce((a, b) => a + b, 0)
+  const [counts, annivCounts] = await Promise.all([
+    getUpcomingEventCountsByGroup([...followedIds]),
+    getUpcomingAnniversaryCountsByGroup([...followedIds]),
+  ])
+  // Anniversaires inclus dans le « N upcoming » (ils y étaient oubliés).
+  const countFor = (id: string) => (counts.get(id) ?? 0) + (annivCounts.get(id) ?? 0)
+  const totalUpcoming = followed.reduce((a, g) => a + countFor(g.id), 0)
 
   const visibleFollowed = tier === 'premium' ? followed : followed.slice(0, FREE_VISIBLE_FOLLOWS)
   const hiddenCount = followed.length - visibleFollowed.length
@@ -70,7 +76,7 @@ export async function SidebarLeft({
                   >
                     <span className="flex-1 truncate text-sm font-medium">{group.name}</span>
                     <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                      · {counts.get(group.id) ?? 0}
+                      · {countFor(group.id)}
                     </span>
                   </Link>
                 </li>
