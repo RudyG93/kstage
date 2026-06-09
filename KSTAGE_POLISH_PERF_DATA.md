@@ -6,6 +6,15 @@
 
 ---
 
+## État d'avancement (2026-06-09) — branche `feat/polish-perf-data`
+
+- **§1 Notation slider [0,10]/0.5** : ✅ FAIT (migration `0028` à appliquer au merge).
+- **§2.1 Audit perf** : ✅ FAIT → `docs/PERFORMANCE_AUDIT.md`. Verdict : filtres rapides (63ms) ; cibler **cold-start + landing + feedback de chargement** (PAS les filtres).
+- **§4.1 isOfficialMV** : ✅ module + 23 tests (`src/lib/scrapers/is-official-mv.ts`) — **reste à câbler** dans le scraper YouTube.
+- **§3.1 drag / §6 icônes couleur / §7 anniversaires (calendrier+compteur) / §3.2 bandeaux MVs** : ✅ FAITS & mergés (lot Quick-Polish, PR #77).
+- **§8 Concerts** : ❌ **ABANDONNÉ** (Bandsintown = couverture k-pop faible ; Songkick = payant ; seule voie propre = clé Ticketmaster gratuite, non retenue). Concerts gardés via **suggestions manuelles + détection YouTube** existantes.
+- **RESTE À FAIRE** : câbler §4.1, §4.2 multi-chaînes (via table `sources`, besoin des channel IDs), §4.3 scope ≥100k (`spotify_followers` + fetch), §5 images membres (kpopping via proxy Jina, fallback initiales seulement en cas extrême), §9 archi multi-source + `/admin/scraping`, §2 fixes (caching + loading states + landing).
+
 ## Décisions techniques actées (à ne PAS rediscuter)
 
 - **Notation** : intervalle `[0.0, 10.0]` par pas de `0.5` (21 valeurs possibles). **UI : slider custom**, pas étoiles (incompatibles avec la valeur 0).
