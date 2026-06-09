@@ -17,6 +17,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/notify-comebacks",
+      "schedule": "0 9,15 * * *"
+    },
+    {
       "path": "/api/cron/refresh-images",
       "schedule": "0 4 * * 1"
     }

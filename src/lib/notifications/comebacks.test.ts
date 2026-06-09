@@ -1,0 +1,121 @@
+import { describe, it, expect } from 'vitest'
+import {
+  buildComebackNotifications,
+  type ComebackEvent,
+  type ComebackSubscription,
+} from './comebacks'
+
+// now = 2026-06-09T03:00:00Z → KST 2026-06-09T12:00 → jour KST "2026-06-09".
+const NOW = new Date('2026-06-09T03:00:00Z')
+
+const sub = (userId: string): ComebackSubscription => ({
+  userId,
+  endpoint: `ep-${userId}`,
+  p256dh: 'p',
+  auth: 'a',
+})
+
+const ev = (over: Partial<ComebackEvent> = {}): ComebackEvent => ({
+  id: 'e1',
+  groupId: 'g1',
+  groupName: 'aespa',
+  title: 'Whiplash',
+  startAt: '2026-06-09T05:00:00Z', // KST 14:00 même jour → day_of par défaut
+  createdAt: '2026-06-01T00:00:00Z',
+  url: '/mv/aespa-whiplash',
+  ...over,
+})
+
+const follow = (userId: string, groupId: string) => ({ userId, groupId })
+
+describe('buildComebackNotifications', () => {
+  it('day_of : event dont le jour KST = aujourd’hui', () => {
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev()],
+      new Set(),
+      NOW,
+    )
+    expect(m.record.kind).toBe('day_of')
+    expect(m.payload).toEqual({
+      title: '🔥 Today: aespa — Whiplash',
+      body: 'Out today — go check it out',
+      url: '/mv/aespa-whiplash',
+    })
+  })
+
+  it('day_before : event dont le jour KST = demain', () => {
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ startAt: '2026-06-10T05:00:00Z' })], // KST 2026-06-10
+      new Set(),
+      NOW,
+    )
+    expect(m.record.kind).toBe('day_before')
+    expect(m.payload.title).toBe('⏳ Tomorrow: aespa — Whiplash')
+  })
+
+  it('announced : event futur lointain créé < 24 h', () => {
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ startAt: '2026-06-15T05:00:00Z', createdAt: '2026-06-09T02:00:00Z' })],
+      new Set(),
+      NOW,
+    )
+    expect(m.record.kind).toBe('announced')
+    expect(m.payload.title).toBe('🎉 aespa — Whiplash')
+  })
+
+  it('précédence : créé récemment ET start demain → day_before (pas announced)', () => {
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ startAt: '2026-06-10T05:00:00Z', createdAt: '2026-06-09T02:00:00Z' })],
+      new Set(),
+      NOW,
+    )
+    expect(m.record.kind).toBe('day_before')
+  })
+
+  it('aucun trigger : event lointain et ancien', () => {
+    const messages = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ startAt: '2026-06-15T05:00:00Z', createdAt: '2026-06-01T00:00:00Z' })],
+      new Set(),
+      NOW,
+    )
+    expect(messages).toEqual([])
+  })
+
+  it('idempotence : un trigger déjà envoyé est ignoré', () => {
+    const already = new Set(['u1:e1:day_of'])
+    const messages = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev()],
+      already,
+      NOW,
+    )
+    expect(messages).toEqual([])
+  })
+
+  it('ciblage : seuls les abonnés qui suivent le groupe sont notifiés', () => {
+    const messages = buildComebackNotifications(
+      [sub('u1'), sub('u2')],
+      [follow('u1', 'g1'), follow('u2', 'g2')],
+      [ev({ groupId: 'g1' })],
+      new Set(),
+      NOW,
+    )
+    expect(messages.map((m) => m.subscription.userId)).toEqual(['u1'])
+  })
+
+  it('abonné sans follow : aucun message', () => {
+    const messages = buildComebackNotifications([sub('u1')], [], [ev()], new Set(), NOW)
+    expect(messages).toEqual([])
+  })
+})
