@@ -1,6 +1,33 @@
+import { unstable_cache } from 'next/cache'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database'
 
 const GROUP_FIELDS = 'id, slug, name, fandom_name, debut_date, color_hex, image_url'
+
+/**
+ * Liste publique des groupes, mise en cache (§2 perf). Data identique pour tous
+ * et qui change rarement → on évite de retaper Supabase à chaque requête (la
+ * landing rend ~150 groupes). Client anon SANS cookies : `unstable_cache`
+ * interdit la lecture de cookies. Revalidation horaire ; tag `groups` pour une
+ * invalidation ciblée si un jour un ajout de groupe doit être visible immédiatement.
+ */
+export const getGroupsCached = unstable_cache(
+  async () => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('groups')
+      .select(GROUP_FIELDS)
+      .order('name', { ascending: true })
+    if (error) throw error
+    return data ?? []
+  },
+  ['groups-all'],
+  { revalidate: 3600, tags: ['groups'] },
+)
 
 /**
  * Liste tous les groupes (solos + multi-membres). Utilisé par les surfaces qui
