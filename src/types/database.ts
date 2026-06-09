@@ -221,6 +221,30 @@ export type Database = {
           },
         ]
       }
+      event_notifications: {
+        Row: {
+          event_id: string
+          id: string
+          kind: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          kind: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          kind?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_ratings: {
         Row: {
           created_at: string
