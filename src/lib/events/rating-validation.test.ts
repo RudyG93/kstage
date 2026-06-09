@@ -4,15 +4,24 @@ import { parseRatingInput } from './rating-validation'
 const VALID_UUID = '11111111-2222-3333-4444-555555555555'
 
 describe('parseRatingInput', () => {
-  it('accepte un eventId UUID + score entier 1-10', () => {
+  it('accepte un score entier 0-10', () => {
     expect(parseRatingInput({ eventId: VALID_UUID, score: '7' })).toEqual({
       value: { eventId: VALID_UUID, score: 7 },
     })
   })
 
-  it('accepte les bornes 1 et 10', () => {
-    expect(parseRatingInput({ eventId: VALID_UUID, score: '1' })).toEqual({
-      value: { eventId: VALID_UUID, score: 1 },
+  it('accepte les demi-points (0.5)', () => {
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '7.5' })).toEqual({
+      value: { eventId: VALID_UUID, score: 7.5 },
+    })
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '0.5' })).toEqual({
+      value: { eventId: VALID_UUID, score: 0.5 },
+    })
+  })
+
+  it('accepte les bornes 0 et 10', () => {
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '0' })).toEqual({
+      value: { eventId: VALID_UUID, score: 0 },
     })
     expect(parseRatingInput({ eventId: VALID_UUID, score: '10' })).toEqual({
       value: { eventId: VALID_UUID, score: 10 },
@@ -26,23 +35,26 @@ describe('parseRatingInput', () => {
   })
 
   it('rejette un score hors range', () => {
-    expect(parseRatingInput({ eventId: VALID_UUID, score: '0' })).toMatchObject({
-      error: expect.stringContaining('between'),
-    })
     expect(parseRatingInput({ eventId: VALID_UUID, score: '11' })).toMatchObject({
       error: expect.stringContaining('between'),
     })
   })
 
-  it('rejette un score non-entier (décimal, négatif, vide)', () => {
-    expect(parseRatingInput({ eventId: VALID_UUID, score: '7.5' })).toEqual({
-      error: 'Score must be a whole number.',
+  it('rejette un pas non multiple de 0.5', () => {
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '7.3' })).toMatchObject({
+      error: expect.stringContaining('0.5'),
     })
-    expect(parseRatingInput({ eventId: VALID_UUID, score: '-3' })).toEqual({
-      error: 'Score must be a whole number.',
+  })
+
+  it('rejette un format invalide (négatif, vide, deux décimales)', () => {
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '-3' })).toMatchObject({
+      error: 'Invalid score.',
     })
-    expect(parseRatingInput({ eventId: VALID_UUID, score: '' })).toEqual({
-      error: 'Score must be a whole number.',
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '' })).toMatchObject({
+      error: 'Invalid score.',
+    })
+    expect(parseRatingInput({ eventId: VALID_UUID, score: '7.55' })).toMatchObject({
+      error: 'Invalid score.',
     })
   })
 

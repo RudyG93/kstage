@@ -4,6 +4,7 @@ import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { matchesGroup } from './group-match'
 import { decodeHtmlEntities } from './html-entities'
+import { isOfficialMvTitle } from './is-official-mv'
 import { detectMvVersion, type MemberRef } from './mv-version'
 
 type EventType = Database['public']['Enums']['event_type']
@@ -179,6 +180,19 @@ export async function scrapeGroup(
     if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
       skipped++
       continue
+    }
+
+    // §4.1 — gate strict « MV officiel uniquement ». detectEventType classe
+    // largement en 'mv' (tout titre avec un marqueur MV) ; ce filtre exige en
+    // plus l'absence de tout terme dérivé (teaser, performance, out now, etc.)
+    // pour ne garder que le clip principal. Les rejets sont loggués pour audit.
+    if (eventType === 'mv') {
+      const check = isOfficialMvTitle(title)
+      if (!check.official) {
+        console.warn(`[yt] skip non-official MV (${check.reason}): ${title}`)
+        skipped++
+        continue
+      }
     }
 
     // Filtre nom de groupe : sur une chaîne d'agence (SMTOWN, YG, HYBE…),

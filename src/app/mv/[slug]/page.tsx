@@ -10,7 +10,7 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displayEventTitle } from '@/lib/events/title'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
-import { StarRating } from '@/components/mv/star-rating'
+import { RatingSlider } from '@/components/mv/rating-slider'
 import { LikeButton } from '@/components/mv/like-button'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 
@@ -145,7 +145,7 @@ export default async function MvPage({
           <h2 id="rating-heading" className="text-sm font-medium">
             Your rating
           </h2>
-          <StarRating
+          <RatingSlider
             eventId={event.id}
             slug={event.slug as string}
             initialScore={rating.userScore}

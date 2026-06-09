@@ -3,7 +3,7 @@ import { SidebarLeft } from '@/components/home/sidebar-left'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { Feed } from '@/components/home/feed'
 import { SidebarRight } from '@/components/home/sidebar-right'
-import { getGroups } from '@/lib/groups/queries'
+import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEvents } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
@@ -16,9 +16,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
     data: { user },
   } = await supabase.auth.getUser()
 
-  const groups = await getGroups()
-
   if (!user) {
+    // Liste de groupes seulement nécessaire ici (visiteur) → fetch caché, pas
+    // pour les connectés qui ne l'utilisent pas.
+    const groups = await getGroupsCached()
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <Landing groups={groups} />
