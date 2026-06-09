@@ -5,3 +5,4 @@ public
 package-lock.json
 src/types/database.ts
 src/components/ui/
+docs/email-templates/
