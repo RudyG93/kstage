@@ -419,6 +419,7 @@ export type Database = {
           links: Json
           name: string
           slug: string
+          spotify_followers: number | null
         }
         Insert: {
           agency?: string | null
@@ -434,6 +435,7 @@ export type Database = {
           links?: Json
           name: string
           slug: string
+          spotify_followers?: number | null
         }
         Update: {
           agency?: string | null
@@ -449,6 +451,7 @@ export type Database = {
           links?: Json
           name?: string
           slug?: string
+          spotify_followers?: number | null
         }
         Relationships: []
       }

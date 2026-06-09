@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { spotifyToken, spotifyArtistImage } from '@/lib/spotify'
+import { spotifyToken, spotifyArtist } from '@/lib/spotify'
 
-// Rafraîchit groups.image_url depuis Spotify (§10) — images mises à jour à chaque
-// ère. Vercel Cron déclenche en GET + en-tête Authorization: Bearer ${CRON_SECRET}.
-// `?limit=N` permet de traiter un sous-ensemble (batch / test).
+// Rafraîchit groups.image_url + groups.spotify_followers depuis Spotify (§10 + §4.3) —
+// un seul search renvoie les deux. Vercel Cron déclenche en GET + en-tête
+// Authorization: Bearer ${CRON_SECRET}. `?limit=N` traite un sous-ensemble (batch / test).
 
 export const maxDuration = 300
 
@@ -36,14 +36,15 @@ export async function GET(req: Request) {
   let updated = 0
   let missed = 0
   for (const g of groups ?? []) {
-    const image = await spotifyArtistImage(g.name, token)
-    if (image) {
-      // On n'écrase que si Spotify renvoie une image : les groupes sans match
-      // gardent leur image actuelle (Deezer/admin), jamais de null.
-      const { error: upErr } = await supabase
-        .from('groups')
-        .update({ image_url: image })
-        .eq('id', g.id)
+    const { image, followers } = await spotifyArtist(g.name, token)
+    // On n'écrase que les champs que Spotify renvoie : un groupe sans match garde
+    // son image actuelle (Deezer/admin) et ses followers, jamais de null.
+    const patch: { image_url?: string; spotify_followers?: number } = {}
+    if (image) patch.image_url = image
+    if (followers != null) patch.spotify_followers = followers
+
+    if (Object.keys(patch).length > 0) {
+      const { error: upErr } = await supabase.from('groups').update(patch).eq('id', g.id)
       if (upErr) console.error(`refresh-images update ${g.id} failed: ${upErr.message}`)
       else updated++
     } else {
