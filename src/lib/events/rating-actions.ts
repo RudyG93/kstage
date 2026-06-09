@@ -48,3 +48,28 @@ export async function rateEvent(_prev: RatingState, formData: FormData): Promise
 
   return { ok: true, score }
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Supprime la note de l'user pour un MV (§1.1, bouton « supprimer ma note »). */
+export async function deleteRating(
+  eventId: string,
+  slug: string,
+): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  if (!UUID_RE.test(eventId)) return { error: 'Invalid event reference.' }
+
+  const { error } = await supabase
+    .from('event_ratings')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('user_id', user.id)
+  if (error) return { error: 'Could not remove your rating.' }
+
+  if (/^[a-z0-9-]+$/.test(slug)) revalidatePath(`/mv/${slug}`)
+  return { ok: true }
+}
