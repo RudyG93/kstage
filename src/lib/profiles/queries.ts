@@ -14,6 +14,31 @@ export async function getProfile(userId: string): Promise<PublicProfile | null> 
   return data
 }
 
+export type ProfileStats = { followed: number; rated: number; liked: number; comments: number }
+
+/**
+ * Stats agrégées d'un profil (groupes suivis / MV notés / MV likés / commentaires)
+ * via le RPC `profile_stats` (SECURITY DEFINER, migration 0027). Tolérant : si la
+ * migration n'est pas encore appliquée, renvoie null → stats masquées, pas d'erreur.
+ * Cast localisé sur `.rpc` pour éviter une régénération complète de `database.ts`.
+ */
+export async function getProfileStats(userId: string): Promise<ProfileStats | null> {
+  const supabase = await createClient()
+  try {
+    const { data, error } = await supabase.rpc(
+      'profile_stats' as never,
+      {
+        p_user_id: userId,
+      } as never,
+    )
+    if (error) return null
+    const rows = data as unknown as ProfileStats[] | null
+    return rows?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Profil public résolu par username (citext) — pour la page /u/[username].
  * Embed bias (membre) + favorite (groupe) résolus pour l'affichage. */
 export async function getProfileByUsername(username: string) {

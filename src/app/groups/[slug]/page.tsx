@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
+import { EmptyState } from '@/components/ui/empty-state'
 import { FollowButton } from '@/components/follow-button'
 import { ArtistHero } from '@/components/group/artist-hero'
 import { CollapsibleMvs } from '@/components/group/collapsible-mvs'
@@ -91,7 +92,17 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
         {/* Events */}
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Upcoming events</h2>
-          <EventList events={events} emptyMessage="No upcoming events." scrollAfter={5} />
+          <EventList
+            events={events}
+            scrollAfter={5}
+            empty={
+              <EmptyState
+                title="No upcoming events"
+                description="Nothing scheduled yet. Browse this group's MVs below, or check the calendar."
+                action={{ label: 'Open calendar', href: `/calendar?group=${slug}` }}
+              />
+            }
+          />
           {events.length >= 20 && (
             <Link
               href={`/calendar?group=${slug}`}

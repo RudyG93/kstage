@@ -5,12 +5,12 @@ import { MvsGrid } from '@/components/group/mvs-grid'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSettings } from '@/components/profile/profile-settings'
 import { ProfilePicker, type PickerItem } from '@/components/profile/profile-picker'
+import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
-import { getProfileByUsername } from '@/lib/profiles/queries'
+import { getProfileByUsername, getProfileStats } from '@/lib/profiles/queries'
 import { setBias, setFavoriteGroup } from '@/lib/profiles/actions'
 import { getAllMembers } from '@/lib/members/queries'
 import { getGroups } from '@/lib/groups/queries'
-import { countUserComments } from '@/lib/comments/queries'
 import { getLikedMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { isAdmin } from '@/lib/auth/admin'
@@ -38,8 +38,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   } = await supabase.auth.getUser()
   const isOwner = user?.id === profile.id
 
-  const [commentCount, likedMvs] = await Promise.all([
-    countUserComments(profile.id),
+  const [stats, likedMvs] = await Promise.all([
+    getProfileStats(profile.id),
     getLikedMvs(profile.id, 30),
   ])
   const ratings = await getRatingsForEvents(likedMvs.map((m) => m.id))
@@ -95,11 +95,31 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <p className="text-muted-foreground mt-1 text-sm">
               Member since {memberSince(profile.created_at)}
             </p>
-            <p className="text-muted-foreground text-sm">
-              {commentCount} comment{commentCount === 1 ? '' : 's'}
-            </p>
           </div>
         </header>
+
+        {stats && (
+          <dl className="grid grid-cols-4 gap-2">
+            {(
+              [
+                ['Following', stats.followed],
+                ['Rated', stats.rated],
+                ['Liked', stats.liked],
+                ['Comments', stats.comments],
+              ] as const
+            ).map(([label, value]) => (
+              <div
+                key={label}
+                className="bg-card ring-foreground/10 rounded-xl p-3 text-center ring-1"
+              >
+                <dd className="text-lg font-bold tabular-nums">{value}</dd>
+                <dt className="text-muted-foreground text-[11px] tracking-wide uppercase">
+                  {label}
+                </dt>
+              </div>
+            ))}
+          </dl>
+        )}
 
         {(isOwner || bias || favorite) && (
           <div className="flex gap-3">
@@ -111,16 +131,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 onSelect={setBias}
               />
             ) : bias ? (
-              <Link
-                href={`/artists/${bias.slug}`}
-                className="bg-card ring-foreground/10 hover:bg-muted/40 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-3 ring-1 transition-colors"
-              >
+              // Non cliquable : la page membre /artists/[slug] est quasi-vide (pruning).
+              <div className="bg-card ring-foreground/10 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-3 ring-1">
                 <Avatar username={bias.stage_name} avatarUrl={bias.photo_url} size={36} />
                 <div className="min-w-0">
                   <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Bias</p>
                   <p className="truncate text-sm font-medium">{bias.stage_name}</p>
                 </div>
-              </Link>
+              </div>
             ) : null}
             {isOwner ? (
               <ProfilePicker
@@ -149,7 +167,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Liked MVs</h2>
           {likedMvs.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No liked MVs yet.</p>
+            <EmptyState
+              title="No liked MVs yet"
+              description={
+                isOwner
+                  ? 'Tap the heart on a music video to keep it here.'
+                  : "This user hasn't liked any MV yet."
+              }
+              action={isOwner ? { label: 'Explore MVs', href: '/mvs' } : undefined}
+            />
           ) : (
             <MvsGrid mvs={likedMvs} ratings={ratings} />
           )}
