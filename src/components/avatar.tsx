@@ -23,6 +23,12 @@ export function Avatar({
         alt=""
         width={size}
         height={size}
+        // `unoptimized` (§5) : les photos membres viennent de hosts externes
+        // hétérogènes (up.kpop.re, ygfamily.com, …) non whitelistés dans
+        // next.config → l'optimiseur Next renvoie 400 et l'avatar casse (bug
+        // bias). À taille avatar (≤112px) le gain d'optimisation est nul.
+        // Même choix que MemberCard.
+        unoptimized
         // `max-w-none` est requis : Tailwind Preflight applique `max-width: 100%`
         // à toute <img>. Quand l'avatar est un flex-item (header) dont la largeur
         // dépend de son contenu, ce `max-width: 100%` se résout contre une largeur
