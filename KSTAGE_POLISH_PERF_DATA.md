@@ -16,8 +16,9 @@
 - **§2 perf** : ✅ `getGroupsCached` (unstable_cache, client anon, revalidate 1h) sur la landing + query évitée pour les connectés. `loading.tsx` global déjà présent (feedback nav OK). Cold-start = caractéristique Vercel ; refonte landing → audit UX.
 - **§3.1 drag / §6 icônes couleur / §7 anniversaires (calendrier+compteur) / §3.2 bandeaux MVs** : ✅ FAITS & mergés (lot Quick-Polish, PR #77).
 - **§8 Concerts** : ❌ **ABANDONNÉ** (Bandsintown = couverture k-pop faible ; Songkick = payant ; seule voie propre = clé Ticketmaster gratuite, non retenue). Concerts gardés via **suggestions manuelles + détection YouTube** existantes.
+- **§5 images membres (bug bias)** : ✅ **cause réelle trouvée & corrigée** — ce n'était PAS un manque de data (356/833 membres ont une photo `up.kpop.re`/`ygfamily.com`) mais un **bug config `next/image`** : `Avatar` optimisé → l'optimiseur impose `remotePatterns`, ces hosts non whitelistés → **HTTP 400** (vérifié sur prod). Fix : `unoptimized` sur `Avatar` (comme `MemberCard`). Le fallback initiales couvre déjà les 477 sans photo. **Le gros pipeline scraping kpopping/fandom/namu devient OPTIONNEL** (nice-to-have : remplacer les 477 initiales par de vraies photos).
 - **§9 archi multi-source + `/admin/scraping`** : ⏸️ **REPORTÉ** (scope creep MVP — à reprendre quand un besoin concret apparaît).
-- **RESTE À FAIRE** : §5 images membres (kpopping via proxy Jina, fallback initiales en dernier recours) — gros pipeline, décision Storage vs URL externe à trancher ; élargissement scope §4.3 (seed chaînes non-MVP).
+- **RESTE À FAIRE (optionnel)** : pipeline scraping pour peupler les 477 membres sans photo (décision Storage vs URL à trancher) ; élargissement scope §4.3 (seed chaînes YouTube des groupes non-MVP).
 
 ## Décisions techniques actées (à ne PAS rediscuter)
 
