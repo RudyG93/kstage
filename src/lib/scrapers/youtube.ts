@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { matchesGroup } from './group-match'
 import { decodeHtmlEntities } from './html-entities'
@@ -38,6 +37,21 @@ interface ScrapeResult {
 //   리액션 = "reaction"   현장 = "on-site/scene"   예고 = "preview"
 const DERIVATIVE_RE =
   /\bbehind\b|\bteaser\b|\btrailer\b|\bmaking[- ]of\b|\brecording\b|\brehearsal\b|\bpractice\b|\bpreview\b|\breaction\b|highlight medley|highlight clip|schedule poster|\brecipe\b|cheering guide|performance video|dance practice|documentary|r\(ae\)cord|\breplay\b|compilation|\bepisode\b|\bep\.\s*\d+|\bvlog\b|비하인드|메이킹|티저|리액션|현장|예고/i
+
+// P0.2 (audit 2026-06-12) : un même MV est souvent posté par la chaîne du
+// groupe ET celle du label (ex. ILLIT vs HYBE LABELS — titres identiques au
+// préfixe « # » près), avec des videoId/source_url différents : la contrainte
+// unique DB ne suffit pas. Dédup par titre normalisé à ±14 jours. L'égalité
+// est STRICTE (pas d'inclusion) : « 'Better Things' MV » et « 'Better Things'
+// MV (æ-aespa Ver.) » sont deux events légitimes (mv_kind les distingue).
+const DUP_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
+
+export function normalizeMvTitle(title: string): string {
+  return title
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+}
 
 export function detectEventType(title: string, description: string): EventType {
   const text = `${title} ${description}`
@@ -130,6 +144,19 @@ export async function scrapeGroup(
     .eq('group_id', source.group_id)
   const members: MemberRef[] = membersData ?? []
 
+  // MVs déjà en DB pour ce groupe, toutes chaînes confondues — base de la
+  // dédup cross-chaînes (§3.9). Rechargé à chaque source : les inserts de la
+  // chaîne précédente du même groupe sont visibles pour la suivante.
+  const { data: existingMvs } = await supabase
+    .from('events')
+    .select('title, start_at')
+    .eq('group_id', source.group_id)
+    .eq('type', 'mv')
+  const knownMvs = (existingMvs ?? []).map((e) => ({
+    norm: normalizeMvTitle(e.title),
+    startAt: new Date(e.start_at).getTime(),
+  }))
+
   // Pass A : 50 derniers uploads (toutes catégories) — capte les nouveaux events
   // au fil de l'eau (music_show, anniversary, concert, vraiment-récent-MV, etc.).
   const itemsA = await fetchSearch({
@@ -174,10 +201,14 @@ export async function scrapeGroup(
     const title = decodeHtmlEntities(item.snippet.title)
     const description = decodeHtmlEntities(item.snippet.description)
 
-    // On n'ingère que les types couverts au MVP (cf. labels.ts) : beaucoup
-    // d'uploads (vlogs, variety…) tombent en 'other' et polluent le calendrier.
+    // P0.1 (audit 2026-06-12) : YouTube n'ingère QUE les MV officiels. Un upload
+    // ne porte que sa date de publication — jamais la date d'un event réel. Les
+    // types 'release'/'concert' déduits d'uploads étaient du bruit promo (Official
+    // Audio, cheering guides, teasers ; concerts datés à l'upload). Désormais :
+    // release = kpopofficial (annonces datées), concert = suggestions manuelles,
+    // music_show = source dédiée.
     const eventType = detectEventType(title, description)
-    if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
+    if (eventType !== 'mv') {
       skipped++
       continue
     }
@@ -186,13 +217,11 @@ export async function scrapeGroup(
     // largement en 'mv' (tout titre avec un marqueur MV) ; ce filtre exige en
     // plus l'absence de tout terme dérivé (teaser, performance, out now, etc.)
     // pour ne garder que le clip principal. Les rejets sont loggués pour audit.
-    if (eventType === 'mv') {
-      const check = isOfficialMvTitle(title)
-      if (!check.official) {
-        console.warn(`[yt] skip non-official MV (${check.reason}): ${title}`)
-        skipped++
-        continue
-      }
+    const check = isOfficialMvTitle(title)
+    if (!check.official) {
+      console.warn(`[yt] skip non-official MV (${check.reason}): ${title}`)
+      skipped++
+      continue
     }
 
     // Filtre nom de groupe : sur une chaîne d'agence (SMTOWN, YG, HYBE…),
@@ -217,6 +246,20 @@ export async function scrapeGroup(
       continue
     }
 
+    // Dédup cross-chaînes (cf. SCRAPING.md §3.9) : même titre normalisé à
+    // ±14 jours pour ce groupe → déjà ingéré depuis une autre chaîne, skip.
+    // Premier arrivé gagne (l'ordre des sources décide de la chaîne gardée).
+    const publishedMs = new Date(item.snippet.publishedAt).getTime()
+    const norm = normalizeMvTitle(title)
+    const isDuplicate = knownMvs.some(
+      (m) => m.norm === norm && Math.abs(m.startAt - publishedMs) <= DUP_WINDOW_MS,
+    )
+    if (isDuplicate) {
+      console.warn(`[yt] skip cross-channel duplicate: ${title}`)
+      skipped++
+      continue
+    }
+
     // Slug pour la route article (`/mv/[slug]`). Skip si on n'a pas pu récupérer
     // le slug du groupe (cas dégénéré ; l'event est inséré sans slug et sera
     // rattrapé par le backfill).
@@ -233,15 +276,11 @@ export async function scrapeGroup(
       })
     }
 
-    // mv_kind + member_id : seulement pour les MVs. Pour les autres types,
-    // valeur null (default DB) — préserve l'invariant CHECK de la migration.
-    let mvKind: 'main' | 'performance' | 'member' | 'other_version' | null = null
-    let memberId: string | null = null
-    if (eventType === 'mv') {
-      const v = detectMvVersion(title, members)
-      mvKind = v.kind
-      memberId = v.memberId
-    }
+    // mv_kind + member_id : classification de version (main / performance /
+    // member / other_version) — tout ce qui passe le gate est un MV.
+    const version = detectMvVersion(title, members)
+    const mvKind = version.kind
+    const memberId = version.memberId
 
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
@@ -263,6 +302,10 @@ export async function scrapeGroup(
       skipped++
     } else {
       inserted++
+      // Visible pour les items suivants du même run (ex. la même vidéo postée
+      // deux fois par la chaîne, ou remontée par les deux passes sous des
+      // videoId distincts).
+      knownMvs.push({ norm, startAt: publishedMs })
     }
   }
 

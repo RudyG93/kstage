@@ -12,13 +12,13 @@
 
 > Constat (audit §2) : 8 events futurs dans toute l'app, 82 % des groupes sans aucun event, 100 % du futur dépend de kpopofficial. C'est LE chantier — un calendrier vide ne retient personne, quelle que soit l'UX.
 
-1. **Nettoyer la classification YouTube.**
-   - Ne plus jamais déduire `release`/`concert` d'un upload YouTube (un upload = date de publication, pas date d'événement) → `other` ou skip.
-   - Purger/reclasser les ~92 « release » promo (Official Audio, cheering guides, teasers, vlogs) et les 16 « concert » fantômes existants.
-   - `notify-comebacks` pousse sur `['mv','release']` → re-vérifier le ciblage après nettoyage (risque de push erronées).
-   - kpopofficial : poser `mv_kind:'main'` explicite à l'insert (6 events `mv` avec `mv_kind NULL` en prod contournent les filtres).
-   - Backfiller les 6 events `mv` sans slug (injoignables via `/mv/[slug]`).
-2. **Dédupliquer cross-chaînes.** La clé unique inclut `source_url` : dédup par **videoId YouTube** à l'ingestion (indépendamment de la chaîne) + purge des ~7 paires existantes (visibles dans « Recent comebacks » sur toutes les pages).
+1. ✅ **Nettoyer la classification YouTube** — fait 2026-06-12 (`feat/data-cleanup-classification`, cf. `SCRAPING.md §3.8`).
+   - Scraper YouTube : gate **mv-only** (un upload = date de publication, jamais date d'event ; release/concert ne sont plus jamais déduits d'uploads).
+   - Prod purgée : 135 lignes supprimées (92 release promo + 16 concerts fantômes + 27 other legacy ; zéro rating/comment/like dessus ; backup local pris avant suppression).
+   - kpopofficial insère désormais `type='release'` (annonce datée sans vidéo — taxonomie MV=clip/Release=audio du 2026-05-27) ; les 6 `mv` sans `mv_kind`/slug re-typées → « mv sans mv_kind » et « mv sans slug » tombent à 0.
+   - `notify-comebacks` (`['mv','release']`) ne peut plus pousser de bruit : release = kpopofficial uniquement.
+   - État post-nettoyage vérifié en prod : youtube_api = 108 mv · kpopofficial = 27 release · music_shows = 50 ; total 320 → 185 ; les 8 events futurs intacts.
+2. ✅ **Dédupliquer cross-chaînes** — fait 2026-06-12 (cf. `SCRAPING.md §3.9`). Correction d'analyse en route : les doublons sont des **uploads distincts** (videoId différents, ex. reposts `#ILLIT` de HYBE LABELS) — la dédup par videoId n'aurait rien attrapé ; implémenté en dédup **sémantique** (`normalizeMvTitle`, égalité stricte ±14 jours, tests sur paires prod réelles). Prod purgée : 5 lignes (4 reposts + 1 legacy « OUT NOW »), 0 paire restante vérifiée en DB et sur `/mvs`. Note : « Better Things (æ-aespa Ver.) » signalé par l'audit n'était PAS un doublon (version officielle distincte, conservée).
 3. **Rendre le scraping observable.** Les 3 routes cron renvoient 200 même en échec total ; `scrape_log` existe mais 0 écriture ; `last_scraped_at` est mis à jour même sans récolte. → Contrat d'échec (500 si 0 source OK), écrire dans `scrape_log` (statut, counts, erreurs, rejets), conditionner `last_scraped_at` au succès. Sans ça, la mort de kpopofficial (notre seule source de futur) serait invisible indéfiniment.
 4. **Réécrire le scraper YouTube sur `playlistItems.list`** (1 unit/chaîne vs 200 units/source actuellement avec 2× `search.list`). Prérequis bloquant de l'élargissement : à 173 groupes l'archi actuelle coûterait 3,5× le quota gratuit. Ajouter quota tracking + gestion `quotaExceeded`. Au passage : capter les **premieres programmées** (`liveBroadcastContent=upcoming` + `scheduledStartTime`) — aujourd'hui le scraper ne produit quasiment que du passé, les premieres sont le seul futur que YouTube peut donner.
 5. **Élargir la couverture aux ~30-50 groupes les plus suivis.**

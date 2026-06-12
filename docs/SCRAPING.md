@@ -32,7 +32,7 @@ Le scraper (`src/lib/scrapers/youtube.ts:scrapeGroup`) fait **deux appels** à `
 
 ### Pass A — `order=date&maxResults=50`
 
-Récupère les **50 uploads les plus récents** de la chaîne, tous types confondus. Utile pour capter au fil de l'eau les nouveaux events (lives, anniversaries, music shows, vraiment-récents MVs).
+Récupère les **50 uploads les plus récents** de la chaîne, tous types confondus. Utile pour capter au fil de l'eau les MVs qui viennent de sortir (la Pass B par pertinence peut mettre quelques jours à les remonter). Depuis P0.1 (§3.8), seuls les `mv` sont ingérés — le reste est skippé.
 
 ### Pass B — `q="${groupName} Music Video"&maxResults=50`
 
@@ -147,6 +147,49 @@ where type='anniversary' and source_url like 'https://www.youtube.com/%';
 **Cause** : `matchesGroup` normalise avant comparaison (`normalize(text).includes(normalize(groupName))`). `normalize("i-dle") = "idle"`. `normalize("(여자)아이들 (G)I-DLE 'Klaxon' MV") = "여자아이들gidle..."` → contient `"idle"` à partir de la position 1 dans `"gidle"` → **match**.
 
 **Note** : `normalize` est Unicode-aware (`[^\p{L}\p{N}]+/gu`) pour garder hangul/kana, contrairement à la version ASCII-only de `kpopofficial.ts`. Les deux ne sont pas interchangeables.
+
+### 3.8 — `release`/`concert` déduits d'uploads YouTube (résolu 2026-06-12, P0.1)
+
+**Symptôme** : 92 events `release` et 16 `concert` source youtube_api en prod, dont « LEMONADE Recipe » (short makeup), « 'WDA' Cheering Guide », « 'Drift' (Official Audio) », et des promos de concert datées à la **date d'upload** (« Next Stop is…SINGAPORE 2026.06.13 » stocké au 31/05). 4 « releases » le même jour pour un fan d'aespa ; `notify-comebacks` (qui cible `['mv','release']`) pouvait pousser des notifs sur ce bruit.
+
+**Cause** : `detectEventType` classait en `release`/`concert` sur mots-clés (`album`, `single`, `tour`…), or **un upload YouTube ne porte que sa date de publication — jamais la date d'un event réel**. Toute déduction de release/concert depuis un upload est structurellement fausse.
+
+**Fix** : `scrapeGroup` n'ingère plus QUE `type='mv'` (gate `eventType !== 'mv' → skip`, puis gate strict `isOfficialMvTitle`). Répartition des types par source actée : `release` = kpopofficial (annonces datées), `concert` = suggestions manuelles, `music_show` = source dédiée. Au passage, `kpopofficial.ts` insère désormais `type='release'` (une annonce de comeback est une sortie datée sans vidéo — taxonomie MV=clip / Release=audio du 2026-05-27) au lieu du `'mv'` hérité du rename `comeback→mv`.
+
+**Backfill prod** (exécuté 2026-06-12, backup local avant suppression) :
+
+```sql
+-- 135 supprimés (92 release + 16 concert + 27 other legacy, tous youtube_api,
+-- zéro rating/comment/like dessus ; event_notifications en ON DELETE CASCADE)
+delete from events e using sources s
+where s.id = e.source_id and s.type = 'youtube_api'
+  and e.type in ('release','concert','other');
+-- 6 re-typés (les kpopofficial 'mv' sans mv_kind ni slug → 'release')
+update events e set type = 'release' from sources s
+where s.id = e.source_id and s.type = 'kpopofficial' and e.type = 'mv';
+```
+
+**Méthode de découverte récurrente** : `SELECT s.type, e.type, count(*) FROM events e JOIN sources s ON s.id=e.source_id GROUP BY 1,2;` — toute ligne youtube_api avec un type ≠ `mv`, ou kpopofficial ≠ `release`, signale une régression.
+
+### 3.9 — Doublons cross-chaînes : même MV posté par la chaîne du groupe ET du label (résolu 2026-06-12, P0.2)
+
+**Symptôme** : « ICONIC BY MISTAKE », « Tick-Tack », « Cherish (My Love) », « jellyous » présents **2×** sur `/mvs` et dans « Recent comebacks » (le module le plus visible de l'app), avec des slugs `…-official-mv` et `…-official-mv-2`.
+
+**Cause** : HYBE LABELS reposte les MV ILLIT comme **uploads distincts** (videoId et `source_url` différents), titre identique au préfixe « # » près (`#ILLIT (#아일릿) ‘Tick-Tack’…`). La contrainte unique `(group_id, type, start_at, source_url)` ne protège que du re-scrape de **la même URL** — pas du même contenu via deux chaînes. NB : la dédup par videoId ne servirait à rien (les videoId diffèrent) ; il faut une dédup **sémantique**.
+
+**Fix** : `normalizeMvTitle()` (NFKC + lowercase + strip de tout non-alphanumérique Unicode — le « # » tombe, le hangul reste) + check anti-doublon dans `scrapeGroup` : même titre normalisé à **±14 jours** pour le même groupe → skip (`[yt] skip cross-channel duplicate`). Égalité **stricte**, pas d'inclusion : `'Better Things' MV` (2023-08-18) et `'Better Things' MV (æ-aespa Ver.)` (2023-10-06) sont deux events légitimes. Premier arrivé gagne (l'ordre des sources décide de la chaîne conservée). Tests sur les paires prod réelles dans `youtube.test.ts`.
+
+**Backfill prod** (exécuté 2026-06-12) : 5 lignes supprimées — les 3 reposts `#ILLIT`, le `ICONIC …-official-mv-2`, et le legacy `‘SUGAR HONEY ICE TEA’ M/V OUT NOW` (antérieur au câblage du gate §4.1, qui blackliste « OUT NOW » depuis). Garde : zéro rating/comment/like sur les lignes supprimées. Vérifié après coup : 0 paire restante en DB, 0 slug doublon sur `/mvs` en prod.
+
+**Méthode de découverte récurrente** :
+
+```sql
+with mv as (select id, group_id, title, start_at::date as day from events where type='mv')
+select a.title, b.title from mv a join mv b
+  on a.group_id=b.group_id and a.id<b.id and abs(a.day-b.day)<=14
+  and regexp_replace(lower(a.title),'[^a-z0-9가-힣]','','g')
+    = regexp_replace(lower(b.title),'[^a-z0-9가-힣]','','g');
+```
 
 ---
 
@@ -312,8 +355,8 @@ Listés ici pour ne pas oublier au prochain run :
 
 - [ ] **Observabilité** (BACKLOG P0.3) : contrat d'échec 500, écrire dans `scrape_log` (0 ligne aujourd'hui), `last_scraped_at` conditionné au succès.
 - [ ] **Dédup cross-chaînes par videoId** (BACKLOG P0.2) : la clé unique inclut `source_url` → même MV sur 2 chaînes = 2 lignes (~7 paires en prod).
-- [ ] **Cleanup classification** (BACKLOG P0.1) : ~92 `release` promo (Official Audio, cheering guides, teasers) + 16 `concert` fantômes datés à l'upload ; ne plus déduire `release`/`concert` d'un upload YouTube.
-- [ ] **kpopofficial insère `type='mv'` sans `mv_kind`** (6 en prod) → poser `mv_kind:'main'` explicite ou documenter l'exception au §8.
+- [x] **Cleanup classification** (BACKLOG P0.1) : ✅ fait 2026-06-12 (cf. §3.8) — gate mv-only dans le scraper YouTube, 135 lignes de bruit purgées en prod.
+- [x] **kpopofficial `type='mv'` sans `mv_kind`** : ✅ résolu 2026-06-12 — kpopofficial insère désormais `type='release'` (cf. §3.8) ; les 6 lignes existantes re-typées (ce qui résout aussi les 6 « mv sans slug »).
 - [ ] **Réécriture quota** (BACKLOG P0.4) : `playlistItems.list` (1 unit/chaîne) au lieu de 2× `search.list` (200 units/source) — prérequis de tout élargissement (à 173 groupes l'archi actuelle = 3,5× le quota free). + quota tracking / retry / backoff + premieres programmées (`liveBroadcastContent=upcoming`).
 - [ ] Script `scripts/discover-yt-channels.ts` (§4) pour onboarding artistes (BACKLOG P0.5).
 - [ ] Pagination Pass B via `pageToken` pour les artistes seniors (BTS, EXO) qui ont >50 MVs historiques — probablement absorbé par la réécriture `playlistItems.list`.
