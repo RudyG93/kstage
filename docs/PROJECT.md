@@ -205,7 +205,17 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ---
 
-## 9. État actuel (2026-05-29)
+## 9. État actuel
+
+### État au 2026-06-12
+
+**Phase** : MVP complet + V2 communautaire amorcée + première vague rétention livrée (push datés comeback announced/J-1/jour-J, countdowns, onboarding follow-first, empty states, profil-vitrine, slider de notation [0,10]/0.5). Repo nettoyé (branches purgées, `main` seul). **Audit complet du projet réalisé le 2026-06-12** → `docs/AUDIT_PROJET_2026-06-12.md` (constats vérifiés en prod, contre-vérification adversariale).
+
+**Chiffres prod au 2026-06-12** : 320 events dont **8 à venir** au-delà du jour J (tous kpopofficial) ; 142/173 groupes (82 %) sans aucun event ; 2 comptes, 1 note, 7 commentaires. La donnée, pas le code, est le chantier.
+
+**Direction actée (Rudy, 2026-06-12)** : pas de date de soft launch ; objectif = **V1 assez bonne pour retenir dès le premier utilisateur**. Roadmap réordonnée data-d'abord dans `docs/BACKLOG.md` (P0 data → P1 quick wins → P2 habitude → features communautaires gelées jusqu'à audience réelle).
+
+### Historique — état au 2026-05-29
 
 **Phase** : **MVP complet + post-MVP V2 amorcée** (Phase 4 community + member pages + music shows). L'app est en prod : https://kstage.vercel.app/. Historique de la session 2026-05-29 résumé dans [[session-log-2026-05-29-pr-d-to-ms]] (10 PRs livrés).
 
