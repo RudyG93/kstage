@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
 import { buildEventSlug, generateUniqueSlug } from '@/lib/events/slug'
 import { matchesGroup } from './group-match'
 import { decodeHtmlEntities } from './html-entities'
@@ -174,10 +173,14 @@ export async function scrapeGroup(
     const title = decodeHtmlEntities(item.snippet.title)
     const description = decodeHtmlEntities(item.snippet.description)
 
-    // On n'ingère que les types couverts au MVP (cf. labels.ts) : beaucoup
-    // d'uploads (vlogs, variety…) tombent en 'other' et polluent le calendrier.
+    // P0.1 (audit 2026-06-12) : YouTube n'ingère QUE les MV officiels. Un upload
+    // ne porte que sa date de publication — jamais la date d'un event réel. Les
+    // types 'release'/'concert' déduits d'uploads étaient du bruit promo (Official
+    // Audio, cheering guides, teasers ; concerts datés à l'upload). Désormais :
+    // release = kpopofficial (annonces datées), concert = suggestions manuelles,
+    // music_show = source dédiée.
     const eventType = detectEventType(title, description)
-    if (!FILTERABLE_EVENT_TYPES.includes(eventType)) {
+    if (eventType !== 'mv') {
       skipped++
       continue
     }
@@ -186,13 +189,11 @@ export async function scrapeGroup(
     // largement en 'mv' (tout titre avec un marqueur MV) ; ce filtre exige en
     // plus l'absence de tout terme dérivé (teaser, performance, out now, etc.)
     // pour ne garder que le clip principal. Les rejets sont loggués pour audit.
-    if (eventType === 'mv') {
-      const check = isOfficialMvTitle(title)
-      if (!check.official) {
-        console.warn(`[yt] skip non-official MV (${check.reason}): ${title}`)
-        skipped++
-        continue
-      }
+    const check = isOfficialMvTitle(title)
+    if (!check.official) {
+      console.warn(`[yt] skip non-official MV (${check.reason}): ${title}`)
+      skipped++
+      continue
     }
 
     // Filtre nom de groupe : sur une chaîne d'agence (SMTOWN, YG, HYBE…),
@@ -233,15 +234,11 @@ export async function scrapeGroup(
       })
     }
 
-    // mv_kind + member_id : seulement pour les MVs. Pour les autres types,
-    // valeur null (default DB) — préserve l'invariant CHECK de la migration.
-    let mvKind: 'main' | 'performance' | 'member' | 'other_version' | null = null
-    let memberId: string | null = null
-    if (eventType === 'mv') {
-      const v = detectMvVersion(title, members)
-      mvKind = v.kind
-      memberId = v.memberId
-    }
+    // mv_kind + member_id : classification de version (main / performance /
+    // member / other_version) — tout ce qui passe le gate est un MV.
+    const version = detectMvVersion(title, members)
+    const mvKind = version.kind
+    const memberId = version.memberId
 
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,

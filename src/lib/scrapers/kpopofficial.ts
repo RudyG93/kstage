@@ -227,8 +227,11 @@ export async function scrapeComebacks(
         group_id: group.id,
         source_id: source.id,
         source_url: cb.sourceUrl,
-        // le calendrier "comeback" de kpopofficial = l'ancre comeback → mv
-        type: 'mv',
+        // Taxonomie (décision 2026-05-27, réaffirmée à l'audit 2026-06-12) :
+        // MV = clip vidéo (embed YouTube + page /mv), Release = sortie datée
+        // d'album/single. Une annonce kpopofficial est une sortie datée SANS
+        // vidéo → 'release'. Le clip arrivera via le scraper YouTube ('mv').
+        type: 'release',
         title: cb.title,
         start_at: cb.startAt,
         status: cb.status,
