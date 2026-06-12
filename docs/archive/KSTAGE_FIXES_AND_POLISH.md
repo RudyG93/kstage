@@ -1,5 +1,7 @@
 # KStage — Fixes & Polish (suite du plan de finalisation MVP)
 
+> ⚠️ **ARCHIVÉ le 2026-06-12 — document historique, lot exécuté.** Ne pas utiliser comme roadmap. Roadmap active : `docs/BACKLOG.md`.
+
 > Document **complémentaire** à `KSTAGE_MVP_FINALIZATION.md`.
 > Contient les retours après tests utilisateurs (UX, bugs, polish).
 > À traiter **après les phases en cours** ou en parallèle si le scope se chevauche.

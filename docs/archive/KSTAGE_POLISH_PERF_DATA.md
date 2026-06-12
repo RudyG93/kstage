@@ -1,5 +1,11 @@
 # KStage — Polish, Performance & Data Quality
 
+> ⚠️ **ARCHIVÉ le 2026-06-12 — document historique, lot largement exécuté.** Ne pas utiliser comme roadmap (roadmap active : `docs/BACKLOG.md`). Deux corrections importantes de l'audit 2026-06-12 sur ce document :
+>
+> 1. La « décision actée » `Group.youtube_channel_ids[]` (§ Décisions) est **caduque** — le §4.2 ci-dessous l'avait déjà invalidée (l'archi `sources` couvre le multi-chaînes, aucune migration nécessaire). Contradiction interne non résolue à l'époque.
+> 2. Le calcul de quota YouTube du §4.3 (« ~3-5 unités/fetch → 1 000-3 000 units/jour ») est **faux d'un facteur ~20-40** : le scraper réel fait 2× `search.list` à 100 units/call (200 units/source). Le vrai prérequis de l'élargissement est la réécriture sur `playlistItems.list` (cf. `BACKLOG.md` P0.4).
+> 3. La spec §8 Concerts est conservée pour référence mais la feature est **abandonnée** (cf. ligne « État d'avancement »).
+
 > Document **complémentaire** à `KSTAGE_MVP_FINALIZATION.md` et `KSTAGE_FIXES_AND_POLISH.md`.
 > Concerne : refonte du système de notation, optimisations de performance, qualité du scraping, architecture multi-source.
 > Respecter les règles du `CLAUDE.md` (réfléchir avant, simplicité, chirurgical, orienté objectif).
