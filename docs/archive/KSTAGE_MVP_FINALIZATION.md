@@ -1,5 +1,7 @@
 # KStage — Plan de finalisation MVP
 
+> ⚠️ **ARCHIVÉ le 2026-06-12 — document historique, plan exécuté.** Le MVP est livré ; ne pas utiliser comme roadmap. Roadmap active : `docs/BACKLOG.md`. État courant : `docs/PROJECT.md §9`.
+
 > Document à utiliser comme spécification exécutable pour Claude Code.
 > À exécuter **par phases successives**, chaque phase auto-contenue et testable.
 > Ce document complète le `CLAUDE.md` (règles de comportement + contexte projet).

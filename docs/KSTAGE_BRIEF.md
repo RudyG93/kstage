@@ -3,7 +3,7 @@
 > Document **autoportant** destiné à une lecture à froid (ex. une autre session/agent qui découvre le projet).
 > Il résume : ce qu'est KStage, ce qu'on a construit, ce qu'on a appris, les erreurs commises, ce qu'on cherche à faire, et nos inspirations.
 > Pour le détail vivant : `docs/PROJECT.md` (produit/technique), `docs/SCRAPING.md` (scrapers), `docs/AUDIT_UX_2026-06.md` (north-star rétention), `CLAUDE.md` (règles de travail).
-> Daté du 2026-06-11. App en prod : https://kstage.vercel.app/
+> Daté du 2026-06-11, **mis à jour le 2026-06-12** après l'audit complet du projet (`docs/AUDIT_PROJET_2026-06-12.md` — constats vérifiés en prod) et la décision de direction qui en découle (cf. §4). App en prod : https://kstage.vercel.app/
 
 ---
 
@@ -19,7 +19,9 @@ Fans k-pop occidentaux, **principalement mobile**, marché niche mais passionné
 
 ### Différenciateur unique (l'angle gagnant)
 
-**La notation /10 + commentaires par comeback/MV** — un « Letterboxd du k-pop ». Personne ne sert ce territoire nativement : la critique k-pop n'existe que sur des blogs solo (The Bias List, KPOPREVIEWED) ou sur RateYourMusic (non lié à un calendrier). KStage est le seul à pouvoir faire **« noter + discuter chaque sortie, ancré à un calendrier perso »**, parce que le contenu (les events) pré-existe grâce au scraping → **pas d'effet ghost-town** à amorcer.
+**La notation /10 + commentaires par comeback/MV** — un « Letterboxd du k-pop ». Personne ne sert ce territoire nativement : la critique k-pop n'existe que sur des blogs solo (The Bias List, KPOPREVIEWED) ou sur RateYourMusic (non lié à un calendrier). KStage est le seul à pouvoir faire **« noter + discuter chaque sortie, ancré à un calendrier perso »**.
+
+> ⚠️ Nuance (audit 2026-06-12) : le contenu-**objet** (les events) pré-existe grâce au scraping — aucune page n'est morte — mais le contenu **communautaire** (notes/commentaires) reste à amorcer (1 note sur 108 pages MV en prod). L'UI masque déjà correctement le vide (pas de « 0/10 » affiché, CTA « Be the first »). Conséquence de positionnement : le pitch jour-1 est le **calendrier + push** ; les ratings sont un **pari de rétention activable post-audience**, pas le différenciateur mis en avant tant qu'il n'y a pas de masse critique.
 
 ---
 
@@ -49,14 +51,14 @@ L'audit UX de 2026-06 a tranché : le produit est **techniquement au-dessus du m
 
 ### Pages live
 
-`/` (home : déconnecté = landing ; connecté = layout 3 colonnes), `/calendar` (feed-style cards), `/mvs`, `/mv/[slug]` (embed YouTube + note /10 + commentaires Reddit-style), `/groups` (+ tab Solo), `/groups/[slug]` (Members + Former), `/artists/[slug]` (avec parcours canonical), `/my`, `/admin/suggestions`.
+`/` (home : déconnecté = landing ; connecté = layout 3 colonnes), `/calendar` (feed-style cards), `/mvs`, `/mv/[slug]` (embed YouTube + note /10 + commentaires Reddit-style), `/groups` (+ tab Solo), `/groups/[slug]` (Members + Former), `/artists/[slug]` (avec parcours canonical), `/admin/suggestions`, `/admin/reports`. (`/my` n'existe pas — vérifié 404 en prod le 2026-06-12.)
 
 ### Données & scraping (opérationnels en prod)
 
 - **Supabase `kstage`** (eu-west-3, free tier) : ~15 tables + RLS sur 100 % des tables users, seed étendu **173 groupes, 833 members, 42 solos**.
 - **Sources auto actives** : YouTube Data API (premieres + MV, avec gate strict « MV officiels uniquement »), kpopofficial.com (comebacks), 6 music shows (carrd primary + fallbacks officiels par broadcaster : KBS Music Bank, MnetPlus M Countdown, imbc Music Core, SBS Inkigayo, SBS The Show, imbc Show Champion).
-- **Spotify API** : images de groupes + `spotify_followers` (peuplé par cron `refresh-images`).
-- **Idempotence** : contrainte `unique` sur `events` (pas de doublon au re-scrape).
+- **Spotify API** : images de groupes (100 % couvertes) + colonne `spotify_followers` — ⚠️ **0/173 peuplée au 2026-06-12** (code mergé le 09/06, le cron hebdo du lundi n'est pas encore passé ; premier peuplement attendu le 2026-06-15, ou trigger manuel).
+- **Idempotence** : contrainte `unique (group_id, type, start_at, source_url)` — protège du re-scrape de la même URL, **pas des doublons cross-chaînes** (même MV sur chaîne groupe + chaîne label = 2 lignes ; ~7 paires en prod, chantier P0 du backlog).
 
 ### Features livrées
 
@@ -83,16 +85,16 @@ Une feature = une branche `feat/...` = un PR vers `main` (relecture forcée mêm
 
 ---
 
-## 4. Ce qu'on cherche à faire maintenant (backlog priorisé)
+## 4. Ce qu'on cherche à faire maintenant (direction 2026-06-12)
 
-Issu de l'audit UX, séquencé **activation → habitude → viralité** :
+**Décision (Rudy, 2026-06-12, post-audit)** : pas de date de soft launch visée pour l'instant. Objectif = une **V1 assez bonne pour être fonctionnelle et retenir dès le premier utilisateur**. La roadmap active et détaillée vit dans **`docs/BACKLOG.md`** (réécrit le même jour). En résumé :
 
-1. **Anti-vide & app-feel** (quick wins, attaque le churn J0) : onboarding follow-first ✅, bottom-nav mobile ✅, empty states actionnables ✅, like découplé de la note, profil-vitrine ✅.
-2. **Hooks de retour** : push datés par comeback ✅, **digest hebdo « ta semaine k-pop »** (à faire), countdowns ✅.
-3. **Profondeur produit** : refonte home connectée (centrer le visuel, réduire le vide), refonte landing (le « mur de noms » actuel est peu vendeur), feed d'activité communautaire, « j'attends ce comeback » (RSVP + compteur de hype = preuve sociale).
-4. **Coup d'acquisition** : **KStage Wrapped** (rétro annuelle perso + carte partageable, façon Spotify Wrapped) en décembre.
+1. **P0 — Data** : tenir la promesse du calendrier. Nettoyage de la classification YouTube (bruit promo, concerts fantômes), dédup cross-chaînes, observabilité des crons (échecs aujourd'hui silencieux), réécriture quota (`playlistItems.list`), élargissement de la couverture aux ~30-50 groupes les plus suivis, alignement promesse/pipeline (entry points des groupes vides). _Constat moteur : 8 events futurs dans toute l'app, 82 % des groupes à zéro event (audit §2)._
+2. **P1 — Quick wins vérifiés** : bouton Sign up cassé, SEO des 173 pages groupes, garde admin manquante sur `getOpenReports`, toggles Supabase, hygiène.
+3. **P2 — Habitude (utile à n=1)** : digest hebdo, refonte landing/home.
+4. **Gelé (gaté sur audience réelle)** : feed d'activité, RSVP/hype, **Wrapped**, forum. _Règle : une feature dont la valeur dépend du nombre d'utilisateurs attend une audience ; une feature utile à n=1 est éligible._
 
-**Le vrai goulot non-technique** : le **soft launch** (Reddit r/kpop, Twitter) **n'a jamais été fait**. L'app est prête, l'audience n'existe pas encore. La rétention ne se mesure pas sans acquisition.
+**Le soft launch** (Reddit r/kpop, Twitter) n'a jamais été fait — c'est volontaire désormais : il redeviendra le sujet quand la V1 tiendra sa promesse data. À garder en tête : la **rétention ne se mesure pas sans utilisateurs** ; d'ici là, la scorecard rétention de l'audit UX reste une heuristique, pas une métrique.
 
 ---
 
@@ -132,7 +134,9 @@ Issu de l'audit UX, séquencé **activation → habitude → viralité** :
 - **Sources de données mortes prises pour acquises.** dbkpop abandonné (404 depuis ~juillet 2025), Wikidata périmé, kpopping en anti-bot 403. **Leçon : vérifier qu'une source est vivante/à jour soi-même avant de la proposer.**
 - **Scope creep récurrent.** §8 concerts (pas de source propre gratuite → abandonné), §9 archi multi-source + `/admin/scraping` (reporté). **Leçon : rester strict sur le besoin concret, pousser back sur la sur-modélisation DB et les abstractions spéculatives.**
 - **PR qui se superposent.** Quand une PR de suivi est un sur-ensemble d'une autre, fermer l'obsolète plutôt que merger les deux.
-- **Empilement de branches.** ~100 branches `feat/*` traînent encore (locales + remote) — dette d'hygiène git à nettoyer un jour.
+- **Empilement de branches.** ~~100 branches `feat/*` traînaient~~ — purgées le 2026-06-12 (repo réduit à `main`).
+- **Features communautaires lourdes livrées avant toute audience** (commentaires Reddit-style complets, 833 pages membres) pour 2 comptes en prod — sunk cost assumé, mais la leçon est actée dans la règle de gel du backlog : _une feature dont la valeur dépend du nombre d'utilisateurs attend une audience réelle._
+- **Claims prod non vérifiés dans les docs.** Le brief lui-même affirmait `spotify_followers` peuplé (0/173 réel), « pas de doublons » (7 paires en prod) et listait `/my` (404) — en contradiction avec sa propre leçon « vérifier en prod avant de claim ». Règle : tout claim d'état prod dans un doc est **daté et sourcé** (requête SQL ou capture).
 
 ### Méthode de travail validée (cf. `CLAUDE.md`)
 
@@ -142,12 +146,10 @@ Réfléchir avant de coder (énoncer les hypothèses, contredire quand l'user se
 
 ## 8. Pistes ouvertes pour qui reprend le projet
 
-- **Digest hebdo « ta semaine k-pop »** (push + option e-mail) — le hook d'habitude n°1 encore non livré.
-- **Refonte home + landing** : le centre de la home connectée est sparse, la landing est un mur de noms sans imagerie ni preuve sociale.
-- **Feed d'activité communautaire** + like découplé de la note → activer le différenciateur ratings (aujourd'hui froid : 0 note/0 commentaire visibles sur la plupart des MV).
-- **KStage Wrapped** (saisonnier décembre) → acquisition virale.
-- **Élargir le scraping au-delà des 4 groupes MVP** (cible : ≥100k followers Spotify) — nécessite de seeder les chaînes YouTube des groupes non-MVP (gros travail data).
-- **Soft launch** — produit, pas code, mais c'est le déblocage critique.
-- **Hygiène git** : purger les ~100 branches obsolètes.
+> ⚠️ Section remplacée le 2026-06-12 : la roadmap active est **`docs/BACKLOG.md`** (P0 data → P1 quick wins → P2 habitude → gelé). Ce qui reste vrai ici :
+
+- **Élargir le scraping au-delà des 4 groupes MVP** — ⚠️ le plan initial sous-estimait le coût quota d'un facteur ~20-40 : le scraper actuel fait 2× `search.list` (200 units/source), pas du `playlistItems.list` (1 unit). **Prérequis** : réécrire sur `playlistItems.list` + quota tracking (BACKLOG P0.4) avant tout backfill. Le critère « ≥100k followers Spotify » dépend d'une colonne encore vide (0/173) — utiliser une liste manuelle des tops en attendant.
+- **Digest hebdo « ta semaine k-pop »** — le hook d'habitude n°1 non livré (P2 ; n'a de valeur qu'après P0, sinon le digest est vide).
+- **Soft launch** — volontairement sans date (décision 2026-06-12) ; redevient le sujet quand la V1 tient sa promesse data.
 
 > Groupes MVP de référence (pipeline testée dessus) : **aespa** (SM), **ILLIT** (HYBE/Belift), **BABYMONSTER** (YG), **i-dle** (Cube) — mix volontaire de générations et d'agences.

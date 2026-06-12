@@ -8,14 +8,14 @@ Document vivant. Mis à jour à chaque pièce nouvelle découverte ou résolue. 
 
 Table `sources` (cf. `supabase/migrations/0001_init.sql` + `0003_scraping.sql`) :
 
-| Colonne           | Description                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| `id`              | uuid PK                                                                               |
-| `name`            | label humain (ex. "aespa SMTOWN", "BABYMONSTER YouTube")                              |
-| `url`             | URL canonique de la chaîne YT (`https://www.youtube.com/@handle` ou `/channel/UC...`) |
-| `type`            | `youtube_api` \| `kpopofficial` \| `community`                                        |
-| `group_id`        | FK vers `groups.id` (null pour sources groupe-agnostiques comme kpopofficial)         |
-| `last_scraped_at` | timestamptz du dernier run réussi                                                     |
+| Colonne           | Description                                                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | uuid PK                                                                                                                                                                                                                                           |
+| `name`            | label humain (ex. "aespa SMTOWN", "BABYMONSTER YouTube")                                                                                                                                                                                          |
+| `url`             | URL canonique de la chaîne YT (`https://www.youtube.com/@handle` ou `/channel/UC...`)                                                                                                                                                             |
+| `type`            | `youtube_api` \| `kpopofficial` \| `music_shows` \| `community`                                                                                                                                                                                   |
+| `group_id`        | FK vers `groups.id` (null pour sources groupe-agnostiques comme kpopofficial)                                                                                                                                                                     |
+| `last_scraped_at` | timestamptz du dernier run **qui n'a pas throw** — ⚠️ mis à jour même si 0 page fetchée/0 entrée parsée (audit 2026-06-12) ; ne pas s'y fier pour diagnostiquer une source morte tant que le chantier observabilité (BACKLOG P0.3) n'est pas fait |
 
 **Convention** : pour les sources YT, on a **deux catégories** par groupe :
 
@@ -290,7 +290,8 @@ WHERE title LIKE '%&#%' OR title LIKE '%&amp;%'
 
 ## 6. Triggers et cron
 
-- **Cron Vercel** : `/api/cron/scrape-youtube` (cf. `vercel.json`) — protégé par `Authorization: Bearer $CRON_SECRET`.
+- **Crons Vercel** (cf. `vercel.json`, tous protégés par `Authorization: Bearer $CRON_SECRET`, tous 1×/jour max — limite Hobby **par cron**) : `/api/cron/scrape-youtube` (03:00 UTC), `/api/cron/scrape-comebacks` (kpopofficial, 03:30), `/api/cron/scrape-music-shows` (13:00), plus 3 crons non-scraping (`send-digest` 08:00, `notify-comebacks` 09:00, `refresh-images` lundi 04:00).
+- ⚠️ **Échecs silencieux** (audit 2026-06-12) : les 3 routes de scraping renvoient HTTP 200 `{ok:true}` même en échec total, et `scrape_log` n'est jamais alimentée. Vercel ne signale un cron qu'en non-2xx → un scraper mort est invisible. Chantier BACKLOG P0.3.
 - **Trigger manuel** :
 
   ```bash
@@ -307,10 +308,15 @@ WHERE title LIKE '%&#%' OR title LIKE '%&amp;%'
 
 Listés ici pour ne pas oublier au prochain run :
 
-- [ ] Script `scripts/discover-yt-channels.ts` (§4) pour onboarding artistes.
-- [ ] Cleanup data : reclasser les ~16 lignes "Behind/Teaser/Performance Video" actuellement en `'release'` qui devraient être `'other'` (post-fix §3.2).
-- [ ] Pagination Pass B via `pageToken` pour les artistes seniors (BTS, EXO) qui ont >50 MVs historiques.
-- [ ] Quota tracking / retry / backoff sur erreurs API.
+> Les items data/observabilité sont désormais tracés dans `docs/BACKLOG.md` P0 (source de vérité). Rappel des sujets, état audit 2026-06-12 :
+
+- [ ] **Observabilité** (BACKLOG P0.3) : contrat d'échec 500, écrire dans `scrape_log` (0 ligne aujourd'hui), `last_scraped_at` conditionné au succès.
+- [ ] **Dédup cross-chaînes par videoId** (BACKLOG P0.2) : la clé unique inclut `source_url` → même MV sur 2 chaînes = 2 lignes (~7 paires en prod).
+- [ ] **Cleanup classification** (BACKLOG P0.1) : ~92 `release` promo (Official Audio, cheering guides, teasers) + 16 `concert` fantômes datés à l'upload ; ne plus déduire `release`/`concert` d'un upload YouTube.
+- [ ] **kpopofficial insère `type='mv'` sans `mv_kind`** (6 en prod) → poser `mv_kind:'main'` explicite ou documenter l'exception au §8.
+- [ ] **Réécriture quota** (BACKLOG P0.4) : `playlistItems.list` (1 unit/chaîne) au lieu de 2× `search.list` (200 units/source) — prérequis de tout élargissement (à 173 groupes l'archi actuelle = 3,5× le quota free). + quota tracking / retry / backoff + premieres programmées (`liveBroadcastContent=upcoming`).
+- [ ] Script `scripts/discover-yt-channels.ts` (§4) pour onboarding artistes (BACKLOG P0.5).
+- [ ] Pagination Pass B via `pageToken` pour les artistes seniors (BTS, EXO) qui ont >50 MVs historiques — probablement absorbé par la réécriture `playlistItems.list`.
 - [ ] Décider si on garde les chaînes d'agence après N runs prouvant qu'elles n'ajoutent rien (probable pour HYBE LABELS, YG si la Pass B sur chaîne officielle suffit).
 
 ---
