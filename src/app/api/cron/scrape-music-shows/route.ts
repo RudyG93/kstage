@@ -5,6 +5,7 @@ import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
 import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
 import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
+import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 
@@ -67,6 +68,7 @@ export async function GET(req: Request) {
     name: g.name,
   }))
 
+  const startedAt = new Date().toISOString()
   const aggregateResult = await aggregateLineups()
 
   let created = 0
@@ -122,13 +124,21 @@ export async function GET(req: Request) {
     }
   }
 
-  await supabase
-    .from('sources')
-    .update({ last_scraped_at: new Date().toISOString() })
-    .eq('id', source.id)
+  // P0.3 observabilité (SCRAPING.md §6) : statut explicite + ligne scrape_log,
+  // 500 si primary ET les 6 fallbacks n'ont rien donné (avant : 200 {ok:true}
+  // avec lineups_fetched:0, et last_scraped_at rafraîchi quand même).
+  const status =
+    aggregateResult.lineups.length === 0 ? 'error' : aggregateResult.primaryOk ? 'ok' : 'partial'
 
-  return NextResponse.json({
-    ok: true,
+  // last_scraped_at = dernier run ayant réellement récolté des lineups.
+  if (status !== 'error') {
+    await supabase
+      .from('sources')
+      .update({ last_scraped_at: new Date().toISOString() })
+      .eq('id', source.id)
+  }
+
+  const summary = {
     primary_ok: aggregateResult.primaryOk,
     fallbacks_used: aggregateResult.fallbacksUsed,
     errors: aggregateResult.errors,
@@ -138,5 +148,25 @@ export async function GET(req: Request) {
     unmatched_count: unmatched.length,
     unmatched_sample: unmatched.slice(0, 20),
     by_show: byShow,
+  }
+
+  await logScrapeRun(supabase, {
+    source: 'music_shows',
+    status,
+    startedAt,
+    errorMsg:
+      status === 'error'
+        ? `0 lineups (primary + fallbacks KO): ${aggregateResult.errors
+            .map((e) => `${e.source}: ${e.error}`)
+            .join(' ; ')}`
+        : status === 'partial'
+          ? `primary KO, fallbacks used: ${[...new Set(aggregateResult.fallbacksUsed.map((f) => f.source))].join(', ')}`
+          : null,
+    details: summary,
   })
+
+  if (status === 'error') {
+    return NextResponse.json({ ok: false, ...summary }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true, status, ...summary })
 }

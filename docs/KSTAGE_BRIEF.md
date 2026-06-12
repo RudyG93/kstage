@@ -57,7 +57,7 @@ L'audit UX de 2026-06 a tranché : le produit est **techniquement au-dessus du m
 
 - **Supabase `kstage`** (eu-west-3, free tier) : ~15 tables + RLS sur 100 % des tables users, seed étendu **173 groupes, 833 members, 42 solos**.
 - **Sources auto actives** : YouTube Data API (premieres + MV, avec gate strict « MV officiels uniquement »), kpopofficial.com (comebacks), 6 music shows (carrd primary + fallbacks officiels par broadcaster : KBS Music Bank, MnetPlus M Countdown, imbc Music Core, SBS Inkigayo, SBS The Show, imbc Show Champion).
-- **Spotify API** : images de groupes (100 % couvertes) + colonne `spotify_followers` — ⚠️ **0/173 peuplée au 2026-06-12** (code mergé le 09/06, le cron hebdo du lundi n'est pas encore passé ; premier peuplement attendu le 2026-06-15, ou trigger manuel).
+- **Spotify API** : images de groupes (100 % couvertes, re-vérifié 2026-06-12 : 173/173 mises à jour). ⚠️ La colonne `spotify_followers` est **inalimentable en l'état** (vérifié 2026-06-12) : Spotify ne renvoie plus `followers`/`popularity` aux apps client-credentials en mode développement (champ vide sur search et Get Artist, batch en 403). Restera NULL sauf extended quota Spotify — le ciblage « top groupes » se fait par liste manuelle ou subscribers YouTube (cf. `BACKLOG.md` P0.4/P0.5).
 - **Idempotence** : contrainte `unique (group_id, type, start_at, source_url)` — protège du re-scrape de la même URL, **pas des doublons cross-chaînes** (même MV sur chaîne groupe + chaîne label = 2 lignes ; ~7 paires en prod, chantier P0 du backlog).
 
 ### Features livrées
