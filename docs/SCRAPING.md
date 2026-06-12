@@ -26,26 +26,21 @@ Table `sources` (cf. `supabase/migrations/0001_init.sql` + `0003_scraping.sql`) 
 
 ---
 
-## 2. Stratégie de scraping (2-pass)
+## 2. Stratégie de scraping (pipeline playlistItems — P0.4, 2026-06-13)
 
-Le scraper (`src/lib/scrapers/youtube.ts:scrapeGroup`) fait **deux appels** à `youtube/v3/search.list` par source, dont les résultats sont concaténés et dédupliqués par `videoId` :
+Le scraper (`src/lib/scrapers/youtube.ts:scrapeGroup`) enchaîne :
 
-### Pass A — `order=date&maxResults=50`
-
-Récupère les **50 uploads les plus récents** de la chaîne, tous types confondus. Utile pour capter au fil de l'eau les MVs qui viennent de sortir (la Pass B par pertinence peut mettre quelques jours à les remonter). Depuis P0.1 (§3.8), seuls les `mv` sont ingérés — le reste est skippé.
-
-### Pass B — `q="${groupName} Music Video"&maxResults=50`
-
-Récupère les **50 résultats les plus pertinents** pour la requête "${groupName} Music Video" **sur tout l'historique** de la chaîne. Résout le piège §3.4 (fenêtre order=date trop étroite sur chaînes à fort débit). Skip si `groupName` est null.
-
-### Pourquoi 2 passes plutôt qu'1 plus large ?
-
-- Pass A reste indispensable pour les types non-MV (music_show, anniversary…) qui n'ont pas de mot-clé fiable.
-- Pass B reste indispensable pour les MVs anciens car `order=date` ne descend pas au-delà des 50 derniers uploads (pagination via `pageToken` mais coût quota croissant).
+1. **`channels.list`** (1 unit) — résout l'URL (`/channel/UC…` ou `@handle`) et renvoie en un appel : l'id de chaîne, la playlist **uploads**, et le `subscriberCount` (persisté dans `sources.channel_id` + `sources.subscriber_count`, migration 0032 — critère de popularité pour la sélection top-30, `spotify_followers` étant inalimentable).
+2. **`playlistItems.list`** sur la playlist uploads (1 unit / page de 50, récents d'abord), borné par `maxPages` — défaut **2** (100 uploads récents : un nouveau MV est toujours en tête de playlist pour le cron quotidien). Le **backfill d'onboarding** d'une nouvelle source passe `maxPages` élevé pour remonter tout l'historique.
+3. **Gates titre, gratuits** : `detectEventType === 'mv'` → gate strict `isOfficialMvTitle` (§4.1) → `matchesGroup` sur le **titre seul** (§3.10).
+4. **`videos.list`** batché sur les seuls candidats survivants (1 unit / 50 ids) — apporte `liveBroadcastContent` + `liveStreamingDetails.scheduledStartTime` : une **premiere programmée devient un event daté dans le futur** (`pickStartAt`), le seul futur que YouTube puisse fournir.
+5. Idempotence **batchée** (un seul `IN` sur les source_url candidats), dédup cross-chaînes (§3.9), slug, `mv_kind`, insert.
 
 ### Quota
 
-`search.list` coûte **100 units / call**, indépendamment de `maxResults` (1-50) ou de la présence d'un `q=`. Donc 2 passes = 200 units/source/run. 8 sources actives = 1600 units/run. Free tier YouTube Data API = 10 000 units/jour → marge ×6 pour 1 run/jour, ×3 pour 2 runs/jour.
+**~3-4 units / source / run** (vérifié en réel le 2026-06-13 : 8 sources = 27-28 units) contre **200 avant** (2× `search.list` à 100 units/call). Free tier = 10 000 units/jour → des centaines de sources possibles en quotidien. Le 403 `quotaExceeded` est géré : `QuotaExceededError` → la route arrête les sources restantes proprement et `scrape_log` porte la raison.
+
+> Historique : l'ancienne stratégie « 2-pass `search.list` » (Pass A `order=date` + Pass B `q="<groupe> Music Video"`) est remplacée. La Pass B existait pour contourner la fenêtre étroite d'`order=date` (§3.4) ; la pagination de la playlist uploads couvre l'historique au backfill pour 1 unit/50 vidéos.
 
 ---
 
@@ -89,6 +84,8 @@ Récupère les **50 résultats les plus pertinents** pour la requête "${groupNa
 **Cause** : sur les chaînes officielles K-pop à fort débit d'uploads (i-log vlogs, i-talk episodes, performance videos, behind), les **50 uploads les plus récents** = ~1-2 mois. Les MVs (sortis tous les ~6 mois) sortent largement de cette fenêtre.
 
 **Fix** : la 2-pass §2. Pass B utilise `q="${groupName} Music Video"` qui cible les MVs sur tout l'historique de la chaîne, indépendamment de la date.
+
+> ⚠️ Fix remplacé en P0.4 (2026-06-13) : plus de Pass B — la pagination `playlistItems.list` de la playlist uploads couvre l'historique au backfill (`maxPages` élevé, 1 unit/50 vidéos). Le cron quotidien (`maxPages=2`) capte les nouveaux MVs en tête de playlist.
 
 ### 3.6 — Markers derivative en hangul + Reaction + Highlight Clip (résolu 2026-05-28 fin de journée)
 
@@ -147,6 +144,16 @@ where type='anniversary' and source_url like 'https://www.youtube.com/%';
 **Cause** : `matchesGroup` normalise avant comparaison (`normalize(text).includes(normalize(groupName))`). `normalize("i-dle") = "idle"`. `normalize("(여자)아이들 (G)I-DLE 'Klaxon' MV") = "여자아이들gidle..."` → contient `"idle"` à partir de la position 1 dans `"gidle"` → **match**.
 
 **Note** : `normalize` est Unicode-aware (`[^\p{L}\p{N}]+/gu`) pour garder hangul/kana, contrairement à la version ASCII-only de `kpopofficial.ts`. Les deux ne sont pas interchangeables.
+
+### 3.10 — Faux positif d'attribution via la description (résolu 2026-06-13, P0.4)
+
+**Symptôme** : « [그녀의 버킷리스트 OST] 이창섭(LEE CHANGSUB) – '너를 그리워하는 밤' MV » (un OST de Lee Changsub, BTOB) inséré comme MV **i-dle**, daté 2021, via la chaîne umbrella United CUBE.
+
+**Cause** : le filtre groupe passait `${title} ${description}` à `matchesGroup`. Or les descriptions des chaînes d'agence se terminent par un boilerplate de hashtags listant **tous** leurs artistes (`#미연 #빅톤 #VICTON #여자아이들 #GIDLE #비투비 #BTOB`) → `normalize("#GIDLE")` contient `"idle"` → match (c'est le mécanisme du §3.5, légitime sur les titres, qui se retourne contre nous sur les descriptions).
+
+**Fix** : `matchesGroup` sur le **titre seul**. Convention k-pop : le titre d'un MV officiel porte toujours l'artiste. Trade-off assumé : un MV dont le titre ne mentionne ni le groupe ni un alias serait raté sur une chaîne d'agence — cas rare, et la chaîne officielle du groupe le porte de toute façon.
+
+**Méthode de découverte récurrente** : tout insert dont le titre ne contient pas le nom du groupe mérite un œil — `select g.name, e.title from events e join groups g on g.id=e.group_id where e.type='mv' order by e.created_at desc limit 20;` après chaque élargissement de sources.
 
 ### 3.8 — `release`/`concert` déduits d'uploads YouTube (résolu 2026-06-12, P0.1)
 
@@ -358,9 +365,9 @@ Listés ici pour ne pas oublier au prochain run :
 - [ ] **Dédup cross-chaînes par videoId** (BACKLOG P0.2) : la clé unique inclut `source_url` → même MV sur 2 chaînes = 2 lignes (~7 paires en prod).
 - [x] **Cleanup classification** (BACKLOG P0.1) : ✅ fait 2026-06-12 (cf. §3.8) — gate mv-only dans le scraper YouTube, 135 lignes de bruit purgées en prod.
 - [x] **kpopofficial `type='mv'` sans `mv_kind`** : ✅ résolu 2026-06-12 — kpopofficial insère désormais `type='release'` (cf. §3.8) ; les 6 lignes existantes re-typées (ce qui résout aussi les 6 « mv sans slug »).
-- [ ] **Réécriture quota** (BACKLOG P0.4) : `playlistItems.list` (1 unit/chaîne) au lieu de 2× `search.list` (200 units/source) — prérequis de tout élargissement (à 173 groupes l'archi actuelle = 3,5× le quota free). + quota tracking / retry / backoff + premieres programmées (`liveBroadcastContent=upcoming`).
+- [x] **Réécriture quota** (BACKLOG P0.4) : ✅ fait 2026-06-13 (cf. §2) — pipeline `playlistItems.list`, ~3-4 units/source (vérifié : 8 sources = 27 units vs 1 600 avant), premieres programmées via `videos.list` (`pickStartAt`), `QuotaExceededError` géré, `subscriber_count` persisté (migration 0032), idempotence batchée.
 - [ ] Script `scripts/discover-yt-channels.ts` (§4) pour onboarding artistes (BACKLOG P0.5).
-- [ ] Pagination Pass B via `pageToken` pour les artistes seniors (BTS, EXO) qui ont >50 MVs historiques — probablement absorbé par la réécriture `playlistItems.list`.
+- [x] Pagination historique : ✅ absorbée par P0.4 — `maxPages` élevé au backfill couvre les artistes seniors (1 unit/50 vidéos).
 - [ ] Décider si on garde les chaînes d'agence après N runs prouvant qu'elles n'ajoutent rien (probable pour HYBE LABELS, YG si la Pass B sur chaîne officielle suffit).
 
 ---

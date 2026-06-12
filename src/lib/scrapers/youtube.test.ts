@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectEventType, normalizeMvTitle } from './youtube'
+import { detectEventType, normalizeMvTitle, pickStartAt } from './youtube'
 
 describe('detectEventType', () => {
   it('détecte mv', () => {
@@ -171,5 +171,40 @@ describe('normalizeMvTitle', () => {
     expect(normalizeMvTitle("ILLIT  'TICK-TACK'   official mv")).toBe(
       normalizeMvTitle('illit ‘Tick-Tack’ Official MV'),
     )
+  })
+})
+
+// P0.4 : une premiere programmée est un event FUTUR daté à scheduledStartTime ;
+// une vidéo publiée garde sa date de publication.
+describe('pickStartAt', () => {
+  const published = '2026-06-01T08:00:00Z'
+  const scheduled = '2026-06-20T09:00:00Z'
+
+  it('premiere programmée (upcoming) → scheduledStartTime', () => {
+    expect(
+      pickStartAt({ liveBroadcastContent: 'upcoming', scheduledStartTime: scheduled }, published),
+    ).toBe(scheduled)
+  })
+
+  it('premiere en cours (live) → scheduledStartTime', () => {
+    expect(
+      pickStartAt({ liveBroadcastContent: 'live', scheduledStartTime: scheduled }, published),
+    ).toBe(scheduled)
+  })
+
+  it('vidéo publiée (none) → publishedAt, même si scheduledStartTime traîne', () => {
+    expect(
+      pickStartAt({ liveBroadcastContent: 'none', scheduledStartTime: scheduled }, published),
+    ).toBe(published)
+  })
+
+  it('upcoming sans scheduledStartTime → fallback publishedAt', () => {
+    expect(
+      pickStartAt({ liveBroadcastContent: 'upcoming', scheduledStartTime: null }, published),
+    ).toBe(published)
+  })
+
+  it('détails absents (videos.list incomplet) → publishedAt', () => {
+    expect(pickStartAt(undefined, published)).toBe(published)
   })
 })

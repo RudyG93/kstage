@@ -713,29 +713,35 @@ export type Database = {
       }
       sources: {
         Row: {
+          channel_id: string | null
           created_at: string
           group_id: string | null
           id: string
           last_scraped_at: string | null
           name: string
+          subscriber_count: number | null
           type: string
           url: string
         }
         Insert: {
+          channel_id?: string | null
           created_at?: string
           group_id?: string | null
           id?: string
           last_scraped_at?: string | null
           name: string
+          subscriber_count?: number | null
           type: string
           url: string
         }
         Update: {
+          channel_id?: string | null
           created_at?: string
           group_id?: string | null
           id?: string
           last_scraped_at?: string | null
           name?: string
+          subscriber_count?: number | null
           type?: string
           url?: string
         }
