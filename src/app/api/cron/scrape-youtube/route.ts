@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { scrapeGroup } from '@/lib/scrapers/youtube'
+import { scrapeGroup, QuotaExceededError } from '@/lib/scrapers/youtube'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
@@ -28,8 +28,14 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const startedAt = new Date().toISOString()
-  const results: Record<string, { inserted: number; skipped: number } | { error: string }> = {}
+  const results: Record<
+    string,
+    { inserted: number; skipped: number; premieres: number; units: number } | { error: string }
+  > = {}
 
+  // P0.4 : le quota YouTube est global au projet — au premier 403 quotaExceeded,
+  // inutile d'essayer les sources suivantes, on s'arrête proprement.
+  let quotaExhausted = false
   for (const source of sources ?? []) {
     try {
       results[source.id] = await scrapeGroup(
@@ -39,6 +45,10 @@ export async function GET(req: Request) {
       )
     } catch (err) {
       results[source.id] = { error: String(err) }
+      if (err instanceof QuotaExceededError) {
+        quotaExhausted = true
+        break
+      }
     }
   }
 
@@ -47,6 +57,10 @@ export async function GET(req: Request) {
   // Vercel Crons (qui ne signale que les non-2xx) et pour scrape_log (0 ligne).
   const sourceIds = Object.keys(results)
   const failed = sourceIds.filter((id) => 'error' in results[id])
+  const totalUnits = Object.values(results).reduce(
+    (sum, r) => sum + ('units' in r ? r.units : 0),
+    0,
+  )
   const status =
     sourceIds.length === 0 || failed.length === sourceIds.length
       ? 'error'
@@ -62,8 +76,10 @@ export async function GET(req: Request) {
         ? null
         : sourceIds.length === 0
           ? 'no youtube_api sources seeded'
-          : `${failed.length}/${sourceIds.length} sources failed`,
-    details: { results },
+          : quotaExhausted
+            ? `quota exceeded after ${sourceIds.length}/${(sources ?? []).length} sources`
+            : `${failed.length}/${sourceIds.length} sources failed`,
+    details: { results, totalUnits, quotaExhausted },
   })
   if (status === 'error') {
     return NextResponse.json({ ok: false, results }, { status: 500 })
