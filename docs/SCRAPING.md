@@ -171,6 +171,26 @@ where s.id = e.source_id and s.type = 'kpopofficial' and e.type = 'mv';
 
 **Méthode de découverte récurrente** : `SELECT s.type, e.type, count(*) FROM events e JOIN sources s ON s.id=e.source_id GROUP BY 1,2;` — toute ligne youtube_api avec un type ≠ `mv`, ou kpopofficial ≠ `release`, signale une régression.
 
+### 3.9 — Doublons cross-chaînes : même MV posté par la chaîne du groupe ET du label (résolu 2026-06-12, P0.2)
+
+**Symptôme** : « ICONIC BY MISTAKE », « Tick-Tack », « Cherish (My Love) », « jellyous » présents **2×** sur `/mvs` et dans « Recent comebacks » (le module le plus visible de l'app), avec des slugs `…-official-mv` et `…-official-mv-2`.
+
+**Cause** : HYBE LABELS reposte les MV ILLIT comme **uploads distincts** (videoId et `source_url` différents), titre identique au préfixe « # » près (`#ILLIT (#아일릿) ‘Tick-Tack’…`). La contrainte unique `(group_id, type, start_at, source_url)` ne protège que du re-scrape de **la même URL** — pas du même contenu via deux chaînes. NB : la dédup par videoId ne servirait à rien (les videoId diffèrent) ; il faut une dédup **sémantique**.
+
+**Fix** : `normalizeMvTitle()` (NFKC + lowercase + strip de tout non-alphanumérique Unicode — le « # » tombe, le hangul reste) + check anti-doublon dans `scrapeGroup` : même titre normalisé à **±14 jours** pour le même groupe → skip (`[yt] skip cross-channel duplicate`). Égalité **stricte**, pas d'inclusion : `'Better Things' MV` (2023-08-18) et `'Better Things' MV (æ-aespa Ver.)` (2023-10-06) sont deux events légitimes. Premier arrivé gagne (l'ordre des sources décide de la chaîne conservée). Tests sur les paires prod réelles dans `youtube.test.ts`.
+
+**Backfill prod** (exécuté 2026-06-12) : 5 lignes supprimées — les 3 reposts `#ILLIT`, le `ICONIC …-official-mv-2`, et le legacy `‘SUGAR HONEY ICE TEA’ M/V OUT NOW` (antérieur au câblage du gate §4.1, qui blackliste « OUT NOW » depuis). Garde : zéro rating/comment/like sur les lignes supprimées. Vérifié après coup : 0 paire restante en DB, 0 slug doublon sur `/mvs` en prod.
+
+**Méthode de découverte récurrente** :
+
+```sql
+with mv as (select id, group_id, title, start_at::date as day from events where type='mv')
+select a.title, b.title from mv a join mv b
+  on a.group_id=b.group_id and a.id<b.id and abs(a.day-b.day)<=14
+  and regexp_replace(lower(a.title),'[^a-z0-9가-힣]','','g')
+    = regexp_replace(lower(b.title),'[^a-z0-9가-힣]','','g');
+```
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectEventType } from './youtube'
+import { detectEventType, normalizeMvTitle } from './youtube'
 
 describe('detectEventType', () => {
   it('détecte mv', () => {
@@ -135,5 +135,41 @@ describe('detectEventType', () => {
         expect(detectEventType("BABYMONSTER - 'CHOOM' M/V HIGHLIGHT CLIP", '')).toBe('other')
       })
     })
+  })
+})
+
+// Dédup cross-chaînes (SCRAPING.md §3.9) — titres réels relevés en prod le
+// 2026-06-12 : la chaîne HYBE LABELS reposte les MV ILLIT avec un préfixe «#».
+describe('normalizeMvTitle', () => {
+  it('variante «#» de HYBE LABELS = même titre normalisé (paires prod réelles)', () => {
+    expect(normalizeMvTitle('#ILLIT (#아일릿) ‘Tick-Tack’ Official MV')).toBe(
+      normalizeMvTitle('ILLIT (아일릿) ‘Tick-Tack’ Official MV'),
+    )
+    expect(normalizeMvTitle("#ILLIT (#아일릿) 'jellyous’ Official MV")).toBe(
+      normalizeMvTitle("ILLIT (아일릿) 'jellyous’ Official MV"),
+    )
+    expect(normalizeMvTitle('#ILLIT (#아일릿) ‘Cherish (My Love)’ Official MV')).toBe(
+      normalizeMvTitle('ILLIT (아일릿) ‘Cherish (My Love)’ Official MV'),
+    )
+  })
+
+  it('égalité stricte : une version officielle distincte ne matche PAS', () => {
+    // « æ-aespa Ver. » (2023-10-06) est un event légitime distinct du MV
+    // principal (2023-08-18) — détecté en prod, à ne jamais dédupliquer.
+    expect(normalizeMvTitle("aespa 에스파 'Better Things' MV")).not.toBe(
+      normalizeMvTitle("aespa 에스파 'Better Things' MV (æ-aespa Ver.)"),
+    )
+  })
+
+  it('« OUT NOW » ne se normalise pas vers le titre du MV (géré par le gate strict)', () => {
+    expect(normalizeMvTitle('‘SUGAR HONEY ICE TEA’ M/V OUT NOW')).not.toBe(
+      normalizeMvTitle("BABYMONSTER - 'SUGAR HONEY ICE TEA' M/V"),
+    )
+  })
+
+  it('insensible à la casse, ponctuation, espaces et quotes typographiques', () => {
+    expect(normalizeMvTitle("ILLIT  'TICK-TACK'   official mv")).toBe(
+      normalizeMvTitle('illit ‘Tick-Tack’ Official MV'),
+    )
   })
 })

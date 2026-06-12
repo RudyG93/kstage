@@ -38,6 +38,21 @@ interface ScrapeResult {
 const DERIVATIVE_RE =
   /\bbehind\b|\bteaser\b|\btrailer\b|\bmaking[- ]of\b|\brecording\b|\brehearsal\b|\bpractice\b|\bpreview\b|\breaction\b|highlight medley|highlight clip|schedule poster|\brecipe\b|cheering guide|performance video|dance practice|documentary|r\(ae\)cord|\breplay\b|compilation|\bepisode\b|\bep\.\s*\d+|\bvlog\b|비하인드|메이킹|티저|리액션|현장|예고/i
 
+// P0.2 (audit 2026-06-12) : un même MV est souvent posté par la chaîne du
+// groupe ET celle du label (ex. ILLIT vs HYBE LABELS — titres identiques au
+// préfixe « # » près), avec des videoId/source_url différents : la contrainte
+// unique DB ne suffit pas. Dédup par titre normalisé à ±14 jours. L'égalité
+// est STRICTE (pas d'inclusion) : « 'Better Things' MV » et « 'Better Things'
+// MV (æ-aespa Ver.) » sont deux events légitimes (mv_kind les distingue).
+const DUP_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
+
+export function normalizeMvTitle(title: string): string {
+  return title
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+}
+
 export function detectEventType(title: string, description: string): EventType {
   const text = `${title} ${description}`
   // Early-reject derivatives : ils peuvent contenir "MV", "Album", etc. sans
@@ -129,6 +144,19 @@ export async function scrapeGroup(
     .eq('group_id', source.group_id)
   const members: MemberRef[] = membersData ?? []
 
+  // MVs déjà en DB pour ce groupe, toutes chaînes confondues — base de la
+  // dédup cross-chaînes (§3.9). Rechargé à chaque source : les inserts de la
+  // chaîne précédente du même groupe sont visibles pour la suivante.
+  const { data: existingMvs } = await supabase
+    .from('events')
+    .select('title, start_at')
+    .eq('group_id', source.group_id)
+    .eq('type', 'mv')
+  const knownMvs = (existingMvs ?? []).map((e) => ({
+    norm: normalizeMvTitle(e.title),
+    startAt: new Date(e.start_at).getTime(),
+  }))
+
   // Pass A : 50 derniers uploads (toutes catégories) — capte les nouveaux events
   // au fil de l'eau (music_show, anniversary, concert, vraiment-récent-MV, etc.).
   const itemsA = await fetchSearch({
@@ -218,6 +246,20 @@ export async function scrapeGroup(
       continue
     }
 
+    // Dédup cross-chaînes (cf. SCRAPING.md §3.9) : même titre normalisé à
+    // ±14 jours pour ce groupe → déjà ingéré depuis une autre chaîne, skip.
+    // Premier arrivé gagne (l'ordre des sources décide de la chaîne gardée).
+    const publishedMs = new Date(item.snippet.publishedAt).getTime()
+    const norm = normalizeMvTitle(title)
+    const isDuplicate = knownMvs.some(
+      (m) => m.norm === norm && Math.abs(m.startAt - publishedMs) <= DUP_WINDOW_MS,
+    )
+    if (isDuplicate) {
+      console.warn(`[yt] skip cross-channel duplicate: ${title}`)
+      skipped++
+      continue
+    }
+
     // Slug pour la route article (`/mv/[slug]`). Skip si on n'a pas pu récupérer
     // le slug du groupe (cas dégénéré ; l'event est inséré sans slug et sera
     // rattrapé par le backfill).
@@ -260,6 +302,10 @@ export async function scrapeGroup(
       skipped++
     } else {
       inserted++
+      // Visible pour les items suivants du même run (ex. la même vidéo postée
+      // deux fois par la chaîne, ou remontée par les deux passes sous des
+      // videoId distincts).
+      knownMvs.push({ norm, startAt: publishedMs })
     }
   }
 
