@@ -8,14 +8,14 @@ Document vivant. Mis à jour à chaque pièce nouvelle découverte ou résolue. 
 
 Table `sources` (cf. `supabase/migrations/0001_init.sql` + `0003_scraping.sql`) :
 
-| Colonne           | Description                                                                                                                                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`              | uuid PK                                                                                                                                                                                                                                           |
-| `name`            | label humain (ex. "aespa SMTOWN", "BABYMONSTER YouTube")                                                                                                                                                                                          |
-| `url`             | URL canonique de la chaîne YT (`https://www.youtube.com/@handle` ou `/channel/UC...`)                                                                                                                                                             |
-| `type`            | `youtube_api` \| `kpopofficial` \| `music_shows` \| `community`                                                                                                                                                                                   |
-| `group_id`        | FK vers `groups.id` (null pour sources groupe-agnostiques comme kpopofficial)                                                                                                                                                                     |
-| `last_scraped_at` | timestamptz du dernier run **qui n'a pas throw** — ⚠️ mis à jour même si 0 page fetchée/0 entrée parsée (audit 2026-06-12) ; ne pas s'y fier pour diagnostiquer une source morte tant que le chantier observabilité (BACKLOG P0.3) n'est pas fait |
+| Colonne           | Description                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | uuid PK                                                                                                                                                                                                                         |
+| `name`            | label humain (ex. "aespa SMTOWN", "BABYMONSTER YouTube")                                                                                                                                                                        |
+| `url`             | URL canonique de la chaîne YT (`https://www.youtube.com/@handle` ou `/channel/UC...`)                                                                                                                                           |
+| `type`            | `youtube_api` \| `kpopofficial` \| `music_shows` \| `community`                                                                                                                                                                 |
+| `group_id`        | FK vers `groups.id` (null pour sources groupe-agnostiques comme kpopofficial)                                                                                                                                                   |
+| `last_scraped_at` | timestamptz du dernier run **ayant réellement récolté** (≥1 page/lineup fetchée — gaté depuis P0.3, 2026-06-12). Un run en échec total ne le rafraîchit plus : c'est le signal fiable pour détecter une source morte (query §5) |
 
 **Convention** : pour les sources YT, on a **deux catégories** par groupe :
 
@@ -334,7 +334,8 @@ WHERE title LIKE '%&#%' OR title LIKE '%&amp;%'
 ## 6. Triggers et cron
 
 - **Crons Vercel** (cf. `vercel.json`, tous protégés par `Authorization: Bearer $CRON_SECRET`, tous 1×/jour max — limite Hobby **par cron**) : `/api/cron/scrape-youtube` (03:00 UTC), `/api/cron/scrape-comebacks` (kpopofficial, 03:30), `/api/cron/scrape-music-shows` (13:00), plus 3 crons non-scraping (`send-digest` 08:00, `notify-comebacks` 09:00, `refresh-images` lundi 04:00).
-- ⚠️ **Échecs silencieux** (audit 2026-06-12) : les 3 routes de scraping renvoient HTTP 200 `{ok:true}` même en échec total, et `scrape_log` n'est jamais alimentée. Vercel ne signale un cron qu'en non-2xx → un scraper mort est invisible. Chantier BACKLOG P0.3.
+- **Observabilité (P0.3, 2026-06-12)** : chaque run de scraping écrit une ligne dans `scrape_log` (`source`, `status` ok/partial/error, `error_msg`, `details` jsonb avec les counts) via `src/lib/scrapers/scrape-log.ts`. Contrat d'échec : **HTTP 500 quand le run est inexploitable** (0 source/page/lineup OK) pour que le dashboard Vercel Crons le signale ; `partial` (200) = sources en échec partiel, fallbacks utilisés, ou « pages 200 mais 0 entrée parsée » (signature d'un changement de markup). `last_scraped_at` n'est rafraîchi qu'en cas de récolte réelle.
+- **Diagnostic rapide** : `select source, status, error_msg, started_at from scrape_log order by started_at desc limit 10;`
 - **Trigger manuel** :
 
   ```bash
@@ -353,7 +354,7 @@ Listés ici pour ne pas oublier au prochain run :
 
 > Les items data/observabilité sont désormais tracés dans `docs/BACKLOG.md` P0 (source de vérité). Rappel des sujets, état audit 2026-06-12 :
 
-- [ ] **Observabilité** (BACKLOG P0.3) : contrat d'échec 500, écrire dans `scrape_log` (0 ligne aujourd'hui), `last_scraped_at` conditionné au succès.
+- [x] **Observabilité** (BACKLOG P0.3) : ✅ fait 2026-06-12 (cf. §6) — statuts ok/partial/error + `scrape_log` alimentée (colonne `details` jsonb, migration 0031) + 500 sur run inexploitable + `last_scraped_at` gaté sur récolte réelle.
 - [ ] **Dédup cross-chaînes par videoId** (BACKLOG P0.2) : la clé unique inclut `source_url` → même MV sur 2 chaînes = 2 lignes (~7 paires en prod).
 - [x] **Cleanup classification** (BACKLOG P0.1) : ✅ fait 2026-06-12 (cf. §3.8) — gate mv-only dans le scraper YouTube, 135 lignes de bruit purgées en prod.
 - [x] **kpopofficial `type='mv'` sans `mv_kind`** : ✅ résolu 2026-06-12 — kpopofficial insère désormais `type='release'` (cf. §3.8) ; les 6 lignes existantes re-typées (ce qui résout aussi les 6 « mv sans slug »).

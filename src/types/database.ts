@@ -683,6 +683,7 @@ export type Database = {
       }
       scrape_log: {
         Row: {
+          details: Json | null
           ended_at: string | null
           error_msg: string | null
           id: string
@@ -691,6 +692,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          details?: Json | null
           ended_at?: string | null
           error_msg?: string | null
           id?: string
@@ -699,6 +701,7 @@ export type Database = {
           status: string
         }
         Update: {
+          details?: Json | null
           ended_at?: string | null
           error_msg?: string | null
           id?: string

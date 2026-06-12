@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { scrapeGroup } from '@/lib/scrapers/youtube'
+import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 export async function GET(req: Request) {
@@ -26,6 +27,7 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const startedAt = new Date().toISOString()
   const results: Record<string, { inserted: number; skipped: number } | { error: string }> = {}
 
   for (const source of sources ?? []) {
@@ -40,5 +42,31 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, results })
+  // P0.3 observabilité (SCRAPING.md §6) : avant, la route renvoyait 200
+  // {ok:true} même avec les 8 sources en échec — invisible pour le dashboard
+  // Vercel Crons (qui ne signale que les non-2xx) et pour scrape_log (0 ligne).
+  const sourceIds = Object.keys(results)
+  const failed = sourceIds.filter((id) => 'error' in results[id])
+  const status =
+    sourceIds.length === 0 || failed.length === sourceIds.length
+      ? 'error'
+      : failed.length > 0
+        ? 'partial'
+        : 'ok'
+  await logScrapeRun(supabase, {
+    source: 'youtube',
+    status,
+    startedAt,
+    errorMsg:
+      status === 'ok'
+        ? null
+        : sourceIds.length === 0
+          ? 'no youtube_api sources seeded'
+          : `${failed.length}/${sourceIds.length} sources failed`,
+    details: { results },
+  })
+  if (status === 'error') {
+    return NextResponse.json({ ok: false, results }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true, status, results })
 }

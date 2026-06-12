@@ -25,6 +25,12 @@ interface ScrapeResult {
   matched: number
   inserted: number
   skipped: number
+  // P0.3 observabilité : un `continue` silencieux sur !res.ok masquait la mort
+  // de la source (404, changement de domaine). On remonte tout à la route.
+  pagesTried: number
+  pagesFetched: number
+  parsed: number
+  fetchErrors: string[]
 }
 
 const MONTHS: Record<string, number> = {
@@ -199,15 +205,28 @@ export async function scrapeComebacks(
   let matched = 0
   let inserted = 0
   let skipped = 0
+  let pagesTried = 0
+  let pagesFetched = 0
+  let parsed = 0
+  const fetchErrors: string[] = []
 
   for (const page of monthPages(now)) {
+    pagesTried++
     const res = await fetch(page.url, {
       headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
     })
-    if (!res.ok) continue
+    if (!res.ok) {
+      // Le mois suivant peut légitimement ne pas exister encore (404) ; la
+      // route fait le tri : 0 page OK sur le run = error (HTTP 500).
+      fetchErrors.push(`${page.url} → HTTP ${res.status}`)
+      continue
+    }
+    pagesFetched++
 
     const html = await res.text()
-    for (const cb of parseComebacks(html, page.year)) {
+    const entries = parseComebacks(html, page.year)
+    parsed += entries.length
+    for (const cb of entries) {
       const group = matchGroup(cb.artist, groups)
       if (!group) continue
       matched++
@@ -247,10 +266,15 @@ export async function scrapeComebacks(
     }
   }
 
-  await supabase
-    .from('sources')
-    .update({ last_scraped_at: new Date().toISOString() })
-    .eq('id', source.id)
+  // SCRAPING.md §1 : last_scraped_at = dernier run AYANT RÉCOLTÉ quelque chose
+  // (au moins une page fetchée). Un run à 0 page OK ne doit pas rafraîchir le
+  // signal de fraîcheur — c'est lui qui permet de détecter une source morte.
+  if (pagesFetched > 0) {
+    await supabase
+      .from('sources')
+      .update({ last_scraped_at: new Date().toISOString() })
+      .eq('id', source.id)
+  }
 
-  return { matched, inserted, skipped }
+  return { matched, inserted, skipped, pagesTried, pagesFetched, parsed, fetchErrors }
 }

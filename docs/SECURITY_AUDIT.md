@@ -13,7 +13,7 @@
 6. **Vulnerable Components** — 🟡 `npm audit` ponctuel. Lockfile committé. Pas de CI bloquante sur vulnérabilités (à ajouter).
 7. **Identification & Auth Failures** — ✅ OTP e-mail (signup/reset) expirant 15 min, géré par Supabase. Sessions JWT signées, refresh via middleware. Rate-limit Supabase.
 8. **Software & Data Integrity** — ✅ Lockfile committé. Données scrapées validées/normalisées avant insertion (idempotence via clés uniques).
-9. **Logging & Monitoring** — 🔴 ⚠️ Corrigé 2026-06-12 : la table `scrape_log` existe mais **aucun code n'y écrit** (0 ligne en prod) — le monitoring scrapers annoncé ici n'existait pas. Pire : les 3 routes cron de scraping renvoient HTTP 200 même en échec total et `last_scraped_at` est mis à jour sans récolte → un scraper mort est invisible. À câbler (BACKLOG P0.3). Vercel Analytics (cookieless) OK. Pas de Sentry.
+9. **Logging & Monitoring** — ✅ Câblé le 2026-06-12 (P0.3) : chaque run de scraping écrit dans `scrape_log` (statut ok/partial/error + counts en jsonb), les routes renvoient 500 quand le run est inexploitable (visible dans le dashboard Vercel Crons), et `last_scraped_at` n'est rafraîchi qu'en cas de récolte réelle (cf. `SCRAPING.md §6`). Vercel Analytics (cookieless) OK. Pas de Sentry (acceptable à ce stade).
 10. **SSRF** — 🟡 Les champs URL des suggestions (source/image) sont validés (`http(s)://`) mais pas encore fetchés côté serveur → pas de surface SSRF active. À durcir (whitelist d'hôtes) si on fetche ces URLs un jour.
 
 ## Supabase — état
