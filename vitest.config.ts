@@ -5,7 +5,10 @@ import path from 'node:path'
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    // Défaut `node` (rapide) ; les rares tests DOM annotent `@vitest-environment
+    // jsdom` en tête de fichier (cf. auth-menu.test.tsx). Évite de payer le coût
+    // jsdom sur ~33 fichiers de logique pure.
+    environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
     exclude: ['**/node_modules/**', '**/tests/e2e/**'],

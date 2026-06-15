@@ -168,25 +168,6 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
   return data ?? []
 }
 
-/**
- * Tous les MVs liés à un membre spécifique (member_id = X) — pour la future
- * page /artists/[slug] de PR-C. Inclut les MVs `main` du groupe ? Non — ici
- * on retourne uniquement les versions centrées sur ce membre. PR-C décidera
- * si on combine avec les MVs du groupe.
- */
-export async function getMemberMvs(memberId: string, limit = 48) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('events')
-    .select(MV_SELECT)
-    .eq('type', 'mv')
-    .eq('member_id', memberId)
-    .order('start_at', { ascending: false })
-    .limit(limit)
-  if (error) throw error
-  return data ?? []
-}
-
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]

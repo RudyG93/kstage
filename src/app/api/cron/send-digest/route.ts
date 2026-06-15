@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron/auth'
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 import type { Database } from '@/types/database'
@@ -15,8 +16,7 @@ const WINDOW_MS = 48 * 60 * 60 * 1000
 // Vercel Cron déclenche en GET et ajoute automatiquement l'en-tête
 // `Authorization: Bearer ${CRON_SECRET}` quand la var d'env existe.
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
