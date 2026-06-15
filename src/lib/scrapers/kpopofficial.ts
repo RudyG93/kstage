@@ -99,6 +99,55 @@ export function matchGroup(artist: string, groups: readonly GroupRef[]): GroupRe
   return null
 }
 
+// Suffixes d'édition que kpopofficial accole au nom : « aespa (JP) »,
+// « ATEEZ (JP) », « MiiWAN (Virtual) »… L'édition reste un comeback du groupe.
+const EDITION_SUFFIX_RE = /\s*\((JP|Japan|CN|China|US|EN|Virtual)\)\s*$/i
+
+/**
+ * Matching élargi (P0.5, 2026-06-13) — le diagnostic du calendrier réel
+ * montrait 35 artistes non matchés dont 3 patterns récupérables :
+ *
+ * 1. Suffixe d'édition : « aespa (JP) » → aespa.
+ * 2. Collab « LE SSERAFIM x ILLIT x KATSEYE » → un event PAR groupe en DB
+ *    (d'où le retour pluriel ; les composants inconnus sont ignorés).
+ * 3. Solo de membre « HAN (Stray Kids) » → rattaché au groupe parent : le
+ *    title kpopofficial (« HAN (Stray Kids) Digital Single – … ») reste
+ *    explicite sur la page du groupe. Si le parent n'est pas en DB
+ *    (« JAY B (GOT7) »), l'entrée est ignorée comme avant.
+ */
+export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupRef[] {
+  const direct = matchGroup(artist, groups)
+  if (direct) return [direct]
+
+  const stripped = artist.replace(EDITION_SUFFIX_RE, '')
+  if (stripped !== artist) {
+    const m = matchGroup(stripped, groups)
+    if (m) return [m]
+  }
+
+  // Collab : « A x B », « A X B », « A × B ». On exige ≥2 composants pour ne
+  // pas casser les noms contenant un « x » interne déjà gérés par normalize.
+  const parts = artist.split(/\s+[x×]\s+/i)
+  if (parts.length >= 2) {
+    const matched = parts
+      .map((p) => matchGroup(p.replace(EDITION_SUFFIX_RE, ''), groups))
+      .filter((g): g is GroupRef => g !== null)
+    if (matched.length > 0) {
+      // Dédup par id (une collab peut lister deux fois le même artiste).
+      return [...new Map(matched.map((g) => [g.id, g])).values()]
+    }
+  }
+
+  // Solo de membre : « NAME (GROUP) » → match du groupe entre parenthèses.
+  const paren = artist.match(/^.+?\(([^)]+)\)\s*$/)?.[1]
+  if (paren) {
+    const parent = matchGroup(paren, groups)
+    if (parent) return [parent]
+  }
+
+  return []
+}
+
 // Le span artiste : ni mois, ni nombre (jour/vues), ni date KST, ni ligne "type – nom" / "Title – ...".
 function pickArtist(metas: readonly string[]): string | null {
   for (const m of metas) {
@@ -227,41 +276,45 @@ export async function scrapeComebacks(
     const entries = parseComebacks(html, page.year)
     parsed += entries.length
     for (const cb of entries) {
-      const group = matchGroup(cb.artist, groups)
-      if (!group) continue
-      matched++
+      for (const group of matchGroups(cb.artist, groups)) {
+        matched++
 
-      const { data: existing } = await supabase
-        .from('events')
-        .select('id')
-        .eq('source_url', cb.sourceUrl)
-        .maybeSingle()
+        // Idempotence par (source_url, group_id) : une collab (« LE SSERAFIM
+        // x ILLIT x KATSEYE ») insère un event PAR groupe matché, tous avec
+        // la même source_url.
+        const { data: existing } = await supabase
+          .from('events')
+          .select('id')
+          .eq('source_url', cb.sourceUrl)
+          .eq('group_id', group.id)
+          .maybeSingle()
 
-      if (existing) {
-        skipped++
-        continue
-      }
+        if (existing) {
+          skipped++
+          continue
+        }
 
-      const { error } = await supabase.from('events').insert({
-        group_id: group.id,
-        source_id: source.id,
-        source_url: cb.sourceUrl,
-        // Taxonomie (décision 2026-05-27, réaffirmée à l'audit 2026-06-12) :
-        // MV = clip vidéo (embed YouTube + page /mv), Release = sortie datée
-        // d'album/single. Une annonce kpopofficial est une sortie datée SANS
-        // vidéo → 'release'. Le clip arrivera via le scraper YouTube ('mv').
-        type: 'release',
-        title: cb.title,
-        start_at: cb.startAt,
-        status: cb.status,
-        image_url: cb.imageUrl,
-      })
+        const { error } = await supabase.from('events').insert({
+          group_id: group.id,
+          source_id: source.id,
+          source_url: cb.sourceUrl,
+          // Taxonomie (décision 2026-05-27, réaffirmée à l'audit 2026-06-12) :
+          // MV = clip vidéo (embed YouTube + page /mv), Release = sortie datée
+          // d'album/single. Une annonce kpopofficial est une sortie datée SANS
+          // vidéo → 'release'. Le clip arrivera via le scraper YouTube ('mv').
+          type: 'release',
+          title: cb.title,
+          start_at: cb.startAt,
+          status: cb.status,
+          image_url: cb.imageUrl,
+        })
 
-      if (error) {
-        console.error(`Insert failed for ${cb.sourceUrl}:`, error.message)
-        skipped++
-      } else {
-        inserted++
+        if (error) {
+          console.error(`Insert failed for ${cb.sourceUrl}:`, error.message)
+          skipped++
+        } else {
+          inserted++
+        }
       }
     }
   }

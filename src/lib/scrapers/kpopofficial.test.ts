@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseComebacks, matchGroup, type GroupRef } from './kpopofficial'
+import { parseComebacks, matchGroup, matchGroups, type GroupRef } from './kpopofficial'
 
 const GROUPS: GroupRef[] = [
   { id: 'g-aespa', slug: 'aespa', name: 'aespa' },
@@ -91,5 +91,47 @@ describe('matchGroup', () => {
   it('retourne null pour un groupe non suivi', () => {
     expect(matchGroup('Krystal', GROUPS)).toBeNull()
     expect(matchGroup('NewJeans', GROUPS)).toBeNull()
+  })
+})
+
+// Matching élargi P0.5 — cas RÉELS relevés sur le calendrier kpopofficial
+// juin/juillet 2026 (diagnostic 2026-06-13) : 35 artistes non matchés dont
+// 3 patterns récupérables pour des groupes déjà en DB.
+describe('matchGroups', () => {
+  const EXTENDED: GroupRef[] = [
+    ...GROUPS,
+    { id: 'g-skz', slug: 'straykids', name: 'Stray Kids' },
+    { id: 'g-lsf', slug: 'lesserafim', name: 'Le Sserafim' },
+    { id: 'g-ateez', slug: 'ateez', name: 'ATEEZ' },
+    { id: 'g-dc', slug: 'dreamcatcher', name: 'Dreamcatcher' },
+  ]
+
+  it('match direct inchangé (passe par matchGroup)', () => {
+    expect(matchGroups('aespa', EXTENDED).map((g) => g.slug)).toEqual(['aespa'])
+    expect(matchGroups('(G)I-DLE', EXTENDED).map((g) => g.slug)).toEqual(['idle'])
+  })
+
+  it("suffixe d'édition : « aespa (JP) » / « ATEEZ (JP) » → le groupe", () => {
+    expect(matchGroups('aespa (JP)', EXTENDED).map((g) => g.slug)).toEqual(['aespa'])
+    expect(matchGroups('ATEEZ (JP)', EXTENDED).map((g) => g.slug)).toEqual(['ateez'])
+  })
+
+  it('collab « LE SSERAFIM x ILLIT x KATSEYE » → un event par groupe en DB', () => {
+    expect(matchGroups('LE SSERAFIM x ILLIT x KATSEYE', EXTENDED).map((g) => g.slug)).toEqual([
+      'lesserafim',
+      'illit',
+    ])
+  })
+
+  it('solo de membre « HAN (Stray Kids) » → rattaché au groupe parent', () => {
+    expect(matchGroups('HAN (Stray Kids)', EXTENDED).map((g) => g.slug)).toEqual(['straykids'])
+    expect(matchGroups('UAU (Dreamcatcher)', EXTENDED).map((g) => g.slug)).toEqual(['dreamcatcher'])
+  })
+
+  it('parent inconnu ou bruit → aucun match (comportement inchangé)', () => {
+    expect(matchGroups('JAY B (GOT7)', EXTENDED)).toEqual([])
+    expect(matchGroups('MiiWAN (Virtual)', EXTENDED)).toEqual([])
+    expect(matchGroups('XODIAC', EXTENDED)).toEqual([])
+    expect(matchGroups('June 12–13, 2026', EXTENDED)).toEqual([])
   })
 })

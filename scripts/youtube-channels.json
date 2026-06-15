@@ -1,0 +1,271 @@
+[
+  {
+    "slug": "bts",
+    "channels": [
+      { "name": "BTS · BANGTANTV", "url": "https://www.youtube.com/@BTS" },
+      { "name": "BTS · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "blackpink",
+    "channels": [
+      { "name": "Blackpink · BLACKPINK", "url": "https://www.youtube.com/@BLACKPINK" },
+      { "name": "Blackpink · YG ENTERTAINMENT", "url": "https://www.youtube.com/@YGEntertainment" }
+    ]
+  },
+  {
+    "slug": "twice",
+    "channels": [
+      { "name": "TWICE · TWICE", "url": "https://www.youtube.com/@TWICE" },
+      { "name": "TWICE · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+    ]
+  },
+  {
+    "slug": "straykids",
+    "channels": [
+      { "name": "Stray Kids · Stray Kids", "url": "https://www.youtube.com/@straykids" },
+      {
+        "name": "Stray Kids · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
+    ]
+  },
+  {
+    "slug": "seventeen",
+    "channels": [
+      { "name": "Seventeen · SEVENTEEN", "url": "https://www.youtube.com/@pledis17" },
+      { "name": "Seventeen · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "newjeans",
+    "channels": [
+      { "name": "NewJeans · NewJeans", "url": "https://www.youtube.com/@NewJeans_official" },
+      { "name": "NewJeans · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "lesserafim",
+    "channels": [
+      {
+        "name": "Le Sserafim · LE SSERAFIM",
+        "url": "https://www.youtube.com/@LESSERAFIM_official"
+      },
+      { "name": "Le Sserafim · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "enhypen",
+    "channels": [
+      { "name": "ENHYPEN · ENHYPEN", "url": "https://www.youtube.com/@ENHYPENOFFICIAL" },
+      { "name": "ENHYPEN · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "txt",
+    "channels": [
+      { "name": "TXT · TOMORROW X TOGETHER", "url": "https://www.youtube.com/@TXT_bighit" },
+      { "name": "TXT · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "itzy",
+    "channels": [
+      { "name": "ITZY · ITZY", "url": "https://www.youtube.com/channel/UCDhM2k2Cua-JdobAh5moMFg" },
+      { "name": "ITZY · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+    ]
+  },
+  {
+    "slug": "ive",
+    "channels": [
+      { "name": "IVE · IVE", "url": "https://www.youtube.com/@IVEstarship" },
+      { "name": "IVE · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+    ]
+  },
+  {
+    "slug": "nmixx",
+    "channels": [
+      { "name": "NMIXX · NMIXX", "url": "https://www.youtube.com/@NMIXXOfficial" },
+      { "name": "NMIXX · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+    ]
+  },
+  {
+    "slug": "ateez",
+    "channels": [
+      { "name": "ATEEZ · ATEEZ", "url": "https://www.youtube.com/@ateezofficial" },
+      { "name": "ATEEZ · KQ ENTERTAINMENT", "url": "https://www.youtube.com/@KQENT" }
+    ]
+  },
+  {
+    "slug": "nctwish",
+    "channels": [
+      { "name": "NCT WISH · NCT WISH", "url": "https://www.youtube.com/@NCTWISH" },
+      { "name": "NCT WISH · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "riize",
+    "channels": [
+      { "name": "RIIZE · RIIZE", "url": "https://www.youtube.com/@RIIZE_official" },
+      { "name": "RIIZE · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "theboyz",
+    "channels": [
+      { "name": "The Boyz · THE BOYZ", "url": "https://www.youtube.com/@THEBOYZofficial" },
+      { "name": "The Boyz · ONE HUNDRED", "url": "https://www.youtube.com/@100RED_official" }
+    ]
+  },
+  {
+    "slug": "tws",
+    "channels": [
+      { "name": "TWS · TWS", "url": "https://www.youtube.com/@TWS_PLEDIS" },
+      { "name": "TWS · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "team",
+    "channels": [
+      { "name": "&TEAM · &TEAM", "url": "https://www.youtube.com/@andTEAM_official" },
+      { "name": "&TEAM · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "zerobaseone",
+    "channels": [
+      { "name": "ZEROBASEONE · ZEROBASEONE", "url": "https://www.youtube.com/@ZB1_official" }
+    ]
+  },
+  {
+    "slug": "boynextdoor",
+    "channels": [
+      {
+        "name": "BOYNEXTDOOR · BOYNEXTDOOR",
+        "url": "https://www.youtube.com/@boynextdoor_official"
+      },
+      { "name": "BOYNEXTDOOR · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "monstax",
+    "channels": [
+      { "name": "MONSTA X · MONSTA X", "url": "https://www.youtube.com/@MONSTAX" },
+      { "name": "MONSTA X · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+    ]
+  },
+  {
+    "slug": "p1harmony",
+    "channels": [
+      { "name": "P1Harmony · P1Harmony", "url": "https://www.youtube.com/@P1Harmonyofficial" },
+      { "name": "P1Harmony · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+    ]
+  },
+  {
+    "slug": "kissoflife",
+    "channels": [
+      {
+        "name": "Kiss of Life · KISS OF LIFE",
+        "url": "https://www.youtube.com/@KISSOFLIFE_official"
+      }
+    ]
+  },
+  {
+    "slug": "stayc",
+    "channels": [{ "name": "STAYC · STAYC", "url": "https://www.youtube.com/@STAYC" }]
+  },
+  {
+    "slug": "redvelvet",
+    "channels": [
+      { "name": "Red Velvet · Red Velvet", "url": "https://www.youtube.com/@redvelvet" },
+      { "name": "Red Velvet · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "kep1er",
+    "channels": [{ "name": "Kep1er · Kep1er", "url": "https://www.youtube.com/@Kep1er_Offcl" }]
+  },
+  {
+    "slug": "xg",
+    "channels": [{ "name": "XG · XG", "url": "https://www.youtube.com/@xg_official" }]
+  },
+  {
+    "slug": "triples",
+    "channels": [{ "name": "tripleS · tripleS", "url": "https://www.youtube.com/@triplescosmos" }]
+  },
+  {
+    "slug": "fromis9",
+    "channels": [
+      { "name": "fromis_9 · fromis_9", "url": "https://www.youtube.com/@fromis9_official" },
+      { "name": "fromis_9 · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "mamamoo",
+    "channels": [
+      { "name": "Mamamoo · MAMAMOO", "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL" },
+      { "name": "Mamamoo · RBW", "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc" }
+    ]
+  },
+  {
+    "slug": "jennie",
+    "channels": [
+      {
+        "name": "Jennie · JennieRubyJaneVEVO",
+        "url": "https://www.youtube.com/@JennieRubyJaneVEVO"
+      }
+    ]
+  },
+  {
+    "slug": "lisa",
+    "channels": [{ "name": "Lisa · LLOUD", "url": "https://www.youtube.com/@wearelloud" }]
+  },
+  {
+    "slug": "rose",
+    "channels": [{ "name": "Rosé · ROSÉ", "url": "https://www.youtube.com/@roses_are_rosie" }]
+  },
+  {
+    "slug": "jisoo",
+    "channels": [
+      { "name": "Jisoo · JISOO", "url": "https://www.youtube.com/@sooyaaa__" },
+      { "name": "Jisoo · BLACKPINK", "url": "https://www.youtube.com/@BLACKPINK" }
+    ]
+  },
+  {
+    "slug": "jungkook",
+    "channels": [
+      { "name": "Jung Kook · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+    ]
+  },
+  {
+    "slug": "jimin",
+    "channels": [{ "name": "Jimin · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+  },
+  {
+    "slug": "jeonsomi",
+    "channels": [
+      { "name": "Jeon Somi · JEON SOMI", "url": "https://www.youtube.com/@JEONSOMI_OFFICIAL" },
+      { "name": "Jeon Somi · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+    ]
+  },
+  {
+    "slug": "taeyeon",
+    "channels": [
+      { "name": "Taeyeon · TAEYEON", "url": "https://www.youtube.com/@taeyeonofficial" },
+      { "name": "Taeyeon · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "hwasa",
+    "channels": [{ "name": "Hwasa · HWASA", "url": "https://www.youtube.com/@HWASA_maria" }]
+  },
+  {
+    "slug": "taemin",
+    "channels": [
+      {
+        "name": "Taemin · BPM Entertainment",
+        "url": "https://www.youtube.com/@BPMEntertainment-official"
+      }
+    ]
+  }
+]

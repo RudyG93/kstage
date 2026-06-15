@@ -42,6 +42,12 @@ Le scraper (`src/lib/scrapers/youtube.ts:scrapeGroup`) enchaîne :
 
 > Historique : l'ancienne stratégie « 2-pass `search.list` » (Pass A `order=date` + Pass B `q="<groupe> Music Video"`) est remplacée. La Pass B existait pour contourner la fenêtre étroite d'`order=date` (§3.4) ; la pagination de la playlist uploads couvre l'historique au backfill pour 1 unit/50 vidéos.
 
+### Limite connue : playlist uploads parfois incomplète (P0.5, 2026-06-15)
+
+La playlist auto-générée `uploads` (`UU…`) d'une chaîne **n'inclut pas toujours toutes ses vidéos publiques**. Cas vérifié au backfill P0.5 : la chaîne `@roses_are_rosie` (Rosé) compte 92 uploads, mais son clip phare « ROSÉ & Bruno Mars - APT. (Official Music Video) » — pourtant hébergé sur cette chaîne (même `channelId` confirmé par `videos.list`) — **est absent de la playlist uploads** (seul le live Grammy y figure). `playlistItems.list` ne peut donc pas le récupérer, quel que soit `maxPages`.
+
+Conséquence : les **chaînes perso de soliste** où le clip studio est exclu de la playlist uploads sont sous-couvertes (Rosé = 1 MV). Les **chaînes de label** (HYBE LABELS, SMTOWN, JYP…) exposent bien leurs MV dans leur playlist uploads — la majorité de la couverture passe par elles, donc l'impact reste circonscrit. C'est le prix de l'optimisation quota P0.4 (`playlistItems` à 1 unit/50 vs `search.list` à 100 units/call). Fallback éventuel (non implémenté) : `search.list?channelId=…&q="<artiste>"` pour ces cas, au coût de 100 units.
+
 ---
 
 ## 3. Pièges traversés et résolus
@@ -155,6 +161,18 @@ where type='anniversary' and source_url like 'https://www.youtube.com/%';
 
 **Méthode de découverte récurrente** : tout insert dont le titre ne contient pas le nom du groupe mérite un œil — `select g.name, e.title from events e join groups g on g.id=e.group_id where e.type='mv' order by e.created_at desc limit 20;` après chaque élargissement de sources.
 
+### 3.11 — Élargissement top-40 : 3 faux positifs trouvés au backfill (résolu 2026-06-15, P0.5)
+
+Le passage de 4 à 44 groupes (canary jennie/bts/&TEAM d'abord) a exposé 3 défauts invisibles sur les 4 groupes MVP :
+
+1. **Gate « Official Video » manquant** (`is-official-mv.ts`). Les solistes au format occidental titrent « JENNIE - like JENNIE (Official Video) » (sans « music »). `detectEventType` acceptait déjà `official video`, mais `isOfficialMvTitle` ne whitelistait que `official music video`/`music video`/`mv` → **Jennie = 0 MV** (les deux gates incohérents). Fix : ajout de `official video` à la whitelist. La BLACKLIST (évaluée avant) garde « Official **Lyric** Video »/« **Performance** Video » rejetés.
+
+2. **« MV Shoot Sketch » ingéré comme MV** (`is-official-mv.ts`). BANGTANTV (@BTS) poste surtout des making-of de tournage titrés « … 'song' MV Shoot Sketch - BTS (방탄소년단) » → 8 dérivés insérés en `mv_kind=main`. Fix : `shoot sketch` ajouté à la BLACKLIST. BANGTANTV tombe alors à 0 (les vrais MV BTS sont sur HYBE LABELS).
+
+3. **Crédit de featuring sur-matché** (`group-match.ts`). « LE SSERAFIM (르세라핌) 'SPAGHETTI (feat. j-hope **of BTS**)' OFFICIAL MV » attribué à **BTS** (le `of BTS` du crédit invité contient `bts`). Fix : `FEATURING_RE` retire les parenthèses `(feat…|ft…|with…|prod…)` avant le `matchesGroup`. On garde la sémantique « mention n'importe où » (un nom hangul entre parenthèses reste pris en compte) — pas de matching par préfixe, qui aurait cassé le cas « 'Magnetic' M/V — first single from ILLIT ».
+
+**Leçon** : tester un scraper sur les 4 mêmes groupes ne suffit pas — chaque nouvelle classe d'artiste (soliste occidental, chaîne behind-the-scenes, collab avec featuring) a son piège. Le **canary sur 3 groupes choisis pour leur risque** (soliste / chaîne sketch / nom court) avant le batch complet a payé. Contrôle d'intégrité post-batch : `select source_url, count(distinct group_id) from events where type='mv' group by 1 having count(distinct group_id) > 1;` doit rester vide (aucune sur-attribution).
+
 ### 3.8 — `release`/`concert` déduits d'uploads YouTube (résolu 2026-06-12, P0.1)
 
 **Symptôme** : 92 events `release` et 16 `concert` source youtube_api en prod, dont « LEMONADE Recipe » (short makeup), « 'WDA' Cheering Guide », « 'Drift' (Official Audio) », et des promos de concert datées à la **date d'upload** (« Next Stop is…SINGAPORE 2026.06.13 » stocké au 31/05). 4 « releases » le même jour pour un fan d'aespa ; `notify-comebacks` (qui cible `['mv','release']`) pouvait pousser des notifs sur ce bruit.
@@ -260,9 +278,11 @@ ORDER BY start_at DESC LIMIT 20;
 
 ---
 
-## 4. Découverte de chaînes pour nouveaux artistes (futur)
+## 4. Découverte de chaînes pour nouveaux artistes
 
-Quand on étendra le roster au-delà des 4 groupes MVP, **ne pas refaire l'erreur §3.3** : ne jamais ajouter une chaîne sans la vérifier.
+> **Fait (P0.5, 2026-06-15)** : couverture étendue des 4 groupes MVP à **44 groupes** (top ~40 actifs). Discovery menée par workflow multi-agents **oembed** (la méthode ci-dessous, scalée) : chaque MV récent réel est oembed-vérifié pour identifier la **vraie chaîne hôte** (officielle + umbrella label). Mapping vérifié persisté dans **`scripts/youtube-channels.json`** (commité — la sortie d'une discovery ne doit jamais rester volatile), seedé via **`scripts/seed-youtube-sources.ts`** (idempotent), backfillé via **`scripts/backfill-youtube.ts`**. Prérequis schéma : `UNIQUE(url, group_id)` (migration 0033) pour réutiliser une chaîne umbrella sur plusieurs groupes. Résultat : ~340 MV ingérés, 0 sur-attribution (aucun MV sous 2 groupes). Pièges trouvés et corrigés en route : gate « Official Video » (§3.11), « shoot sketch » (§3.11), crédit featuring sur-matché (§3.11).
+
+Quand on étendra le roster, **ne pas refaire l'erreur §3.3** : ne jamais ajouter une chaîne sans la vérifier.
 
 ### Méthode de vérification rapide (validée 2026-05-28)
 
@@ -366,7 +386,9 @@ Listés ici pour ne pas oublier au prochain run :
 - [x] **Cleanup classification** (BACKLOG P0.1) : ✅ fait 2026-06-12 (cf. §3.8) — gate mv-only dans le scraper YouTube, 135 lignes de bruit purgées en prod.
 - [x] **kpopofficial `type='mv'` sans `mv_kind`** : ✅ résolu 2026-06-12 — kpopofficial insère désormais `type='release'` (cf. §3.8) ; les 6 lignes existantes re-typées (ce qui résout aussi les 6 « mv sans slug »).
 - [x] **Réécriture quota** (BACKLOG P0.4) : ✅ fait 2026-06-13 (cf. §2) — pipeline `playlistItems.list`, ~3-4 units/source (vérifié : 8 sources = 27 units vs 1 600 avant), premieres programmées via `videos.list` (`pickStartAt`), `QuotaExceededError` géré, `subscriber_count` persisté (migration 0032), idempotence batchée.
-- [ ] Script `scripts/discover-yt-channels.ts` (§4) pour onboarding artistes (BACKLOG P0.5).
+- [x] **Élargissement couverture** (BACKLOG P0.5) : ✅ fait 2026-06-15 (cf. §4) — 4 → 44 groupes via discovery oembed (workflow), `scripts/youtube-channels.json` + `seed-youtube-sources.ts` + `backfill-youtube.ts`, migration 0033 (`UNIQUE(url, group_id)`), ~340 MV ingérés. 3 pièges corrigés (§3.11).
+- [ ] **Limite uploads-playlist incomplète** (§2) : clips phares de certaines chaînes perso (ex. Rosé/APT) absents de la playlist `uploads` → non récupérables par `playlistItems`. Fallback `search.list?channelId=…&q=…` (100 units) à implémenter si on veut combler ces cas.
+- [ ] **Jung Kook / Jimin** : MV uniquement sur HYBE LABELS, au-delà des 600 uploads récents → backfill profond ponctuel fait (maxPages=60) ; le cron quotidien (maxPages=2) ne capte que leurs futurs MV en tête de playlist.
 - [x] Pagination historique : ✅ absorbée par P0.4 — `maxPages` élevé au backfill couvre les artistes seniors (1 unit/50 vidéos).
 - [ ] Décider si on garde les chaînes d'agence après N runs prouvant qu'elles n'ajoutent rien (probable pour HYBE LABELS, YG si la Pass B sur chaîne officielle suffit).
 

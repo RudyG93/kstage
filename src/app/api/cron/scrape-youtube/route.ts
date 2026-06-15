@@ -4,6 +4,13 @@ import type { Database } from '@/types/database'
 import { scrapeGroup, QuotaExceededError } from '@/lib/scrapers/youtube'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
+// P0.5 : la couverture est passée de 8 à ~90 sources. En séquentiel (~1-2 s/
+// source) le run dépasserait le timeout fonction → les dernières sources ne
+// seraient jamais scrapées. On scrape par lots concurrents (CONCURRENCY) pour
+// tenir le wall-clock sans latence de rotation, et on relève maxDuration.
+export const maxDuration = 300
+const CONCURRENCY = 6
+
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization')
@@ -34,22 +41,25 @@ export async function GET(req: Request) {
   > = {}
 
   // P0.4 : le quota YouTube est global au projet — au premier 403 quotaExceeded,
-  // inutile d'essayer les sources suivantes, on s'arrête proprement.
+  // inutile de lancer d'autres sources, on arrête après le lot en cours.
   let quotaExhausted = false
-  for (const source of sources ?? []) {
-    try {
-      results[source.id] = await scrapeGroup(
-        source as { id: string; url: string; group_id: string },
-        apiKey,
-        supabase,
-      )
-    } catch (err) {
-      results[source.id] = { error: String(err) }
-      if (err instanceof QuotaExceededError) {
-        quotaExhausted = true
-        break
+  const sourceList = sources ?? []
+  for (let i = 0; i < sourceList.length && !quotaExhausted; i += CONCURRENCY) {
+    const batch = sourceList.slice(i, i + CONCURRENCY)
+    const settled = await Promise.allSettled(
+      batch.map((source) =>
+        scrapeGroup(source as { id: string; url: string; group_id: string }, apiKey, supabase),
+      ),
+    )
+    settled.forEach((res, j) => {
+      const source = batch[j]
+      if (res.status === 'fulfilled') {
+        results[source.id] = res.value
+      } else {
+        results[source.id] = { error: String(res.reason) }
+        if (res.reason instanceof QuotaExceededError) quotaExhausted = true
       }
-    }
+    })
   }
 
   // P0.3 observabilité (SCRAPING.md §6) : avant, la route renvoyait 200

@@ -47,6 +47,15 @@ describe('matchesGroup', () => {
     expect(matchesGroup("'Magnetic' M/V — first single from ILLIT", 'ILLIT')).toBe(true)
   })
 
+  it('ignore le crédit de featuring entre parenthèses (anti-misattribution)', () => {
+    // Le MV est de LE SSERAFIM, pas de BTS : « of BTS » est dans le crédit invité.
+    const title = "LE SSERAFIM (르세라핌) 'SPAGHETTI (feat. j-hope of BTS)' OFFICIAL MV"
+    expect(matchesGroup(title, 'BTS')).toBe(false)
+    expect(matchesGroup(title, 'Le Sserafim')).toBe(true)
+    // Une parenthèse non-featuring (nom hangul) reste prise en compte.
+    expect(matchesGroup('Karina (aespa) - solo stage', 'aespa')).toBe(true)
+  })
+
   it('groupName falsy → false (anti-faux-positif)', () => {
     expect(matchesGroup('aespa Whiplash MV', '')).toBe(false)
     expect(matchesGroup('aespa Whiplash MV', null)).toBe(false)
