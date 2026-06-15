@@ -33,7 +33,10 @@
    - **Landing + annuaire `/groups` laissés tels quels** volontairement : la landing est marketing (« N groupes trackés » = la couverture réelle), et l'annuaire est un browse-all qui n'est plus un piège puisque les pages groupe ont du contenu plancher.
    - Bonus i18n (P1) : libellés d'anniversaire passés en anglais (« turns 30 » au lieu de « 30 ans »), désormais visibles sur les pages groupe — `annivTitle` + 3 assertions de test.
 7. **Casser le SPOF kpopofficial** : investiguer une 2ᵉ source de comebacks **annoncés** (le futur, pas le passé). Candidats à vérifier vivants d'abord (règle `feedback_data_sources`) : Reddit r/kpop comeback megathreads, comptes Twitter agrégateurs, Wikipedia « List of K-pop releases ». kpopofficial reste primaire.
-8. **Music shows : visibilité au-delà de 24-48 h.** Vérifier le contenu brut du carrd : s'il publie la semaine, corriger le parser ; sinon documenter la limite dans `SCRAPING.md` (impact sur « ta semaine k-pop »).
+8. ✅ **Music shows : visibilité au-delà de 24-48 h** — investigué + documenté 2026-06-15 (`SCRAPING.md §9` « Limite de couverture temporelle »).
+   - Vérifié : le carrd ET les broadcasters ne publient les lineups que tardivement (veille en semaine, 2-3 j le week-end) ; aucune source ne liste plusieurs semaines. Entre cycles, le carrd montre la semaine passée avec lineups « ~ » placeholder (et Jina peut servir du cache périmé). **Pas un bug parser** : il capte déjà tout l'exposé. État prod 15/06 : 6 shows futurs (jusqu'à +4 j) = la semaine en cours.
+   - Décision : couverture = semaine courante, conforme à « ta semaine k-pop ». Limite documentée.
+   - **Piste (non faite, décision produit)** : slots récurrents synthétiques depuis le planning hebdo fixe (comme les anniversaires) pour afficher les 6 shows même sans lineup encore posté. Nécessite dédup vs events scrapés + le choix d'afficher un show « lineup à venir ». À trancher si « ta semaine » paraît trop vide en début de cycle.
 
 ## P1 — Quick wins (corrections vérifiées, effort faible)
 
