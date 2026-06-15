@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
@@ -91,12 +92,14 @@ export async function getSoloArtists() {
   })
 }
 
-export async function getGroupBySlug(slug: string) {
+// `cache()` (request-scoped) : la page groupe appelle getGroupBySlug à la fois
+// dans generateMetadata ET dans le composant → une seule requête par render.
+export const getGroupBySlug = cache(async (slug: string) => {
   const supabase = await createClient()
   const { data, error } = await supabase.from('groups').select('*').eq('slug', slug).maybeSingle()
   if (error) throw error
   return data
-}
+})
 
 export type GroupSummary = Awaited<ReturnType<typeof getNonSoloGroups>>[number]
 export type SoloArtistSummary = Awaited<ReturnType<typeof getSoloArtists>>[number]
