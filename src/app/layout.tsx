@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono, Bricolage_Grotesque } from 'next/font/google'
+import {
+  Geist,
+  Geist_Mono,
+  Bricolage_Grotesque,
+  Space_Grotesk,
+  Instrument_Serif,
+} from 'next/font/google'
 import Link from 'next/link'
 import { Toaster } from 'sonner'
 import './globals.css'
@@ -28,6 +34,22 @@ const bricolage = Bricolage_Grotesque({
   weight: ['600', '700', '800'],
 })
 
+// Thème (INTEGRATION.md §1) : Space Grotesk pour les chiffres (font-numeric),
+// Instrument Serif pour l'accent du wordmark (font-serif). Les tokens @theme de
+// globals.css pointent déjà vers ces variables.
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+})
+
+const instrument = Instrument_Serif({
+  variable: '--font-instrument',
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+})
+
 const SITE_URL = 'https://kstage.vercel.app'
 const SITE_DESCRIPTION = 'Your k-pop calendar — events, comebacks, and lives.'
 
@@ -53,7 +75,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0e0e13',
+  themeColor: '#0f1118',
   width: 'device-width',
   initialScale: 1,
 }
@@ -83,7 +105,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${spaceGrotesk.variable} ${instrument.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
@@ -95,12 +117,9 @@ export default async function RootLayout({
         >
           <header className="bg-background/95 sticky top-0 z-30 border-b">
             <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
-              <Link
-                href="/"
-                className="font-heading text-lg font-extrabold tracking-tight transition-opacity hover:opacity-80"
-              >
-                <span className="bg-gradient-to-r from-[#8b5cff] to-[#ff2d87] bg-clip-text text-transparent">
-                  KStage
+              <Link href="/" className="text-lg tracking-tight transition-opacity hover:opacity-80">
+                <span className="font-heading font-bold">
+                  K<span className="font-serif font-normal italic">stage</span>
                 </span>
               </Link>
               <div className="flex-1" />
