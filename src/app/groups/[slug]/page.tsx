@@ -9,6 +9,7 @@ import { LinksBar } from '@/components/group/links-bar'
 import { MembersGrid } from '@/components/member/members-grid'
 import { getGroupBySlug } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
+import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
@@ -30,17 +31,25 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     {
       data: { user },
     },
-    events,
+    dbEvents,
+    anniversaries,
     mvs,
     followedIds,
     members,
   ] = await Promise.all([
     supabase.auth.getUser(),
     getUpcomingEvents({ groupSlug: slug, limit: 20 }),
+    getUpcomingAnniversaries([group.id], 90),
     getGroupMvs(slug, 48),
     getFollowedGroupIds(),
     getMembersForGroup(group.id),
   ])
+  // Anniversaires des membres fusionnés au flux (comme home/calendrier) : une page
+  // groupe sans event programmé n'est plus un dead-end — les birthdays à venir
+  // servent de contenu plancher (P0.6).
+  const events = [...dbEvents, ...anniversaries].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
+  )
   const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
   const activeMembers = members.filter((m) => m.status === 'active')
   const inactiveMembers = members.filter((m) => m.status !== 'active')

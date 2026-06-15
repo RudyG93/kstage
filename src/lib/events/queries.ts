@@ -41,6 +41,26 @@ export async function getUpcomingEvents({
   return data ?? []
 }
 
+/**
+ * Nombre d'events (toutes dates et types confondus) par group_id — proxy « ce
+ * groupe a-t-il du contenu réel » (events à venir ou catalogue MV passé). Sert à
+ * piloter les surfaces de promotion (onboarding P0.6) vers les groupes au
+ * calendrier non vide, sans figer la sélection sur les seuls follows (≈ 0 sur un
+ * compte neuf). Les anniversaires (générés à la volée) ne comptent pas : ils sont
+ * du contenu plancher, pas un critère de mise en avant.
+ */
+export async function getGroupEventCounts(): Promise<Map<string, number>> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('events').select('group_id')
+  if (error) throw error
+  const counts = new Map<string, number>()
+  for (const e of data ?? []) {
+    if (!e.group_id) continue
+    counts.set(e.group_id, (counts.get(e.group_id) ?? 0) + 1)
+  }
+  return counts
+}
+
 export async function getEventsForMonth({
   year,
   month,

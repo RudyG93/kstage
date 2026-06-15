@@ -46,10 +46,12 @@ const yearOf = (s: string) => {
   return m ? Number(m[1]) : null
 }
 
-// soliste (stage_name == nom du groupe) → titre court ; membre → on garde le stage_name.
+// soliste (stage_name == nom du groupe) → titre court ; membre → on garde le
+// stage_name. Libellés en anglais (l'app est en EN ; « ans » détonnait — d'autant
+// plus visible depuis que les anniversaires apparaissent sur les pages groupe).
 function annivTitle(stageName: string, groupName: string, age: number | null): string {
-  if (stageName === groupName) return age && age > 0 ? `${age} ans` : 'Birthday'
-  return age && age > 0 ? `${stageName} — ${age} ans` : `${stageName} — birthday`
+  if (stageName === groupName) return age && age > 0 ? `Turns ${age}` : 'Birthday'
+  return age && age > 0 ? `${stageName} — turns ${age}` : `${stageName} — birthday`
 }
 
 /** Fonction pure (testable) : génère les anniversaires à venir dans la fenêtre. */
