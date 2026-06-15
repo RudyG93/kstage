@@ -12,14 +12,17 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   other: 'Other',
 }
 
+// Thème Daylight/Midnight (INTEGRATION.md §3) : un jeu unique lisible en clair
+// ET sombre. mv = release = teal (drops musicaux), concert = periwinkle (primary,
+// événement phare), music_show = ambre, live = rose, anniversary/other = neutre.
 export const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  mv: '#ff5ca8',
-  release: '#2dd4bf',
-  music_show: '#f5c542',
-  live: '#5bc0ff',
-  anniversary: '#cdb4ff',
-  concert: '#fb923c',
-  other: '#9aa0a6',
+  mv: '#20bfae',
+  release: '#20bfae',
+  music_show: '#d49830',
+  live: '#e85d8a',
+  anniversary: '#8b90a3',
+  concert: '#6d6bf2',
+  other: '#8b90a3',
 }
 
 // Types affichés dans les filtres. `live` et `other` restent dans l'enum

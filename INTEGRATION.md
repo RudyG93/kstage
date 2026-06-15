@@ -1,5 +1,7 @@
 # KStage — intégration du thème « Daylight / Midnight »
 
+> **État (2026-06-15)** : tokens `globals.css` + **§1 (fonts), §2 (wordmark serif + themeColor #0f1118), §3 (EVENT_TYPE_COLORS)** appliqués et vérifiés au rendu. **§4 (allègement visuel — cartes/labels/feed)** reste à faire (non bloquant, plus subjectif).
+
 Remplace le contenu de `src/app/globals.css` par `kstage-theme/globals.css`.
 Le système reste 100 % shadcn / Tailwind v4 : **aucun composant à réécrire**, les
 tokens (`--background`, `--card`, `--primary`…) sont juste re-mappés. Le toggle
