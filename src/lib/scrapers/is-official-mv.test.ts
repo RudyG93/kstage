@@ -12,10 +12,15 @@ describe('isOfficialMvTitle', () => {
     "RIIZE 라이즈 'Boom Boom Bass' MV",
     "LE SSERAFIM (르세라핌) 'CRAZY' OFFICIAL MV",
     "i-dle (아이들) 'Mono (Feat. skaiwater)' Official Music Video",
+    // Soliste format occidental : « Official Video » sans « music ».
+    'JENNIE - like JENNIE (Official Video)',
+    'LISA - ROCKSTAR (Official Music Video)',
   ]
   const notOfficial: [string, string][] = [
     ["aespa 'Whiplash' MV Teaser", 'blacklist:teaser'],
     ["ILLIT 'Magnetic' Lyric Video", 'blacklist:lyric'],
+    // La blacklist prime sur le nouveau marqueur « official video ».
+    ["ROSÉ - 'toxic' (Official Lyric Video)", 'blacklist:lyric'],
     ["BABYMONSTER 'SHEESH' DANCE PRACTICE", 'blacklist:dance practice'],
     ["aespa 'Supernova' Performance Video", 'blacklist:performance'],
     ["(G)I-DLE 'TOMBOY' Live Clip", 'blacklist:live'],
@@ -31,6 +36,8 @@ describe('isOfficialMvTitle', () => {
     // Cas prod réel : vrai MV BABYMONSTER titré « OUT NOW ». Le mode strict le
     // sacrifie volontairement (le clip principal sans « OUT NOW » est gardé).
     ["'SUGAR HONEY ICE TEA' M/V OUT NOW", 'blacklist:out now'],
+    // Making-of du tournage (BANGTANTV) — dérivé, pas le MV.
+    ["진 (Jin) 'Running Wild' MV Shoot Sketch - BTS (방탄소년단)", 'blacklist:shoot sketch'],
   ]
 
   it.each(official)('officiel : %s', (title) => {
