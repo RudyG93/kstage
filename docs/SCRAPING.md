@@ -13,7 +13,7 @@ Table `sources` (cf. `supabase/migrations/0001_init.sql` + `0003_scraping.sql`) 
 | `id`              | uuid PK                                                                                                                                                                                                                         |
 | `name`            | label humain (ex. "aespa SMTOWN", "BABYMONSTER YouTube")                                                                                                                                                                        |
 | `url`             | URL canonique de la chaîne YT (`https://www.youtube.com/@handle` ou `/channel/UC...`)                                                                                                                                           |
-| `type`            | `youtube_api` \| `kpopofficial` \| `music_shows` \| `community`                                                                                                                                                                 |
+| `type`            | `youtube_api` \| `kpopofficial` \| `wikipedia` \| `music_shows` \| `community` (colonne `text`, pas un enum PG)                                                                                                                 |
 | `group_id`        | FK vers `groups.id` (null pour sources groupe-agnostiques comme kpopofficial)                                                                                                                                                   |
 | `last_scraped_at` | timestamptz du dernier run **ayant réellement récolté** (≥1 page/lineup fetchée — gaté depuis P0.3, 2026-06-12). Un run en échec total ne le rafraîchit plus : c'est le signal fiable pour détecter une source morte (query §5) |
 
@@ -360,7 +360,7 @@ WHERE title LIKE '%&#%' OR title LIKE '%&amp;%'
 
 ## 6. Triggers et cron
 
-- **Crons Vercel** (cf. `vercel.json`, tous protégés par `Authorization: Bearer $CRON_SECRET`, tous 1×/jour max — limite Hobby **par cron**) : `/api/cron/scrape-youtube` (03:00 UTC), `/api/cron/scrape-comebacks` (kpopofficial, 03:30), `/api/cron/scrape-music-shows` (13:00), plus 3 crons non-scraping (`send-digest` 08:00, `notify-comebacks` 09:00, `refresh-images` lundi 04:00).
+- **Crons Vercel** (cf. `vercel.json`, tous protégés par `Authorization: Bearer $CRON_SECRET`, tous 1×/jour max — limite Hobby **par cron**) : `/api/cron/scrape-youtube` (03:00 UTC), `/api/cron/scrape-comebacks` (kpopofficial **+ Wikipedia**, 03:30 — cf. §10), `/api/cron/scrape-music-shows` (13:00), plus 3 crons non-scraping (`send-digest` 08:00, `notify-comebacks` 09:00, `refresh-images` lundi 04:00).
 - **Observabilité (P0.3, 2026-06-12)** : chaque run de scraping écrit une ligne dans `scrape_log` (`source`, `status` ok/partial/error, `error_msg`, `details` jsonb avec les counts) via `src/lib/scrapers/scrape-log.ts`. Contrat d'échec : **HTTP 500 quand le run est inexploitable** (0 source/page/lineup OK) pour que le dashboard Vercel Crons le signale ; `partial` (200) = sources en échec partiel, fallbacks utilisés, ou « pages 200 mais 0 entrée parsée » (signature d'un changement de markup). `last_scraped_at` n'est rafraîchi qu'en cas de récolte réelle.
 - **Diagnostic rapide** : `select source, status, error_msg, started_at from scrape_log order by started_at desc limit 10;`
 - **Trigger manuel** :
@@ -472,3 +472,33 @@ Cf. [[reference-jina-reader-universal-proxy]] memory.
 - `youtube.com/@SBSKPOP/posts` : marketing seulement
 - `youtube.com/@thekpop/posts` : posts "Ep.X LINE UP" sans détail
 - Twitter `@MnetMcountdown` etc. : verbatim accessible mais X API payant
+
+---
+
+## 10. Comebacks annoncés — 2 sources, SPOF cassé (P0.7, 2026-06-15)
+
+Le **futur** du calendrier (releases datées annoncées) reposait à 100 % sur `kpopofficial.com` — un seul site, un seul point de défaillance. On a ajouté une **2ᵉ source au failure mode différent** : la page Wikipedia EN « {year} in South Korean music ».
+
+### Architecture
+
+- Le cron `/api/cron/scrape-comebacks` lance **les deux** sources, échecs indépendants (une qui tombe n'empêche pas l'autre), chacune avec sa ligne `scrape_log`. 500 (= cron rouge dans Vercel) **uniquement si la primaire kpopofficial est inexploitable** ; un échec Wikipedia est tracé sans casser le run.
+- Cœur partagé `src/lib/scrapers/comeback-ingest.ts` : `matchGroups` (réutilisé) + `ingestComebacks` (insert idempotent `type='release'`). kpopofficial et Wikipedia produisent tous deux des `ParsedComeback[]` et passent par lui.
+- **Dédup cross-source** (`ingestComebacks` opt `crossSourceDedupeDays: 3`) : avant d'insérer, on skippe s'il existe déjà une `release` pour ce groupe à ±3 j provenant d'une **autre** `source_id`. → la 2ᵉ source ne **comble que les trous** (kpopofficial mort, ou horizon au-delà de sa fenêtre 2 mois), jamais ne duplique. Le filtre porte sur `source_id`, donc une même source garde ses entrées multiples.
+
+### Source Wikipedia (`src/lib/scrapers/wikipedia-releases.ts`)
+
+- **Wikitext brut** via `?action=raw` (pas de HTML rendu, pas d'anti-bot). Structure stable : sous-sections `====Mois====` → wikitable `Date | Album | Artist(s) | Ref`. Parser tolérant : carry du jour sur `rowspan`, alias `[[Cible|Alias]]`, `{{ill|Nom|…}}`, titres `''italic''`, section `===TBA===` (dates inconnues) ignorée, table « Awards » discriminée par son header.
+- **Futur seulement** : on n'insère que `start_at >= now` (le passé 2026 est couvert par le scraper YouTube). `source_url` synthétique unique `…2026_in_South_Korean_music#YYYY-MM-DD_<album-slug>` (clic → la page).
+- Tests : `wikipedia-releases.test.ts` contre une **fixture wikitext réelle** (`__fixtures__/wikipedia-2026-in-skm.txt`).
+- One-shot manuel : `scripts/scrape-wikipedia-once.ts`.
+- **Vérifié 2026-06-15** : parsed=186, future=13, matched=4, inserted=0 (les 4 matches déjà couverts par kpopofficial → dédup OK, 0 doublon). Le mécanisme est live ; la valeur se réalise quand kpopofficial rate/meurt.
+
+### Limites assumées
+
+- Couvre albums/EP, pas chaque single/MV. Ne prend que le **1ᵉʳ artiste** d'une ligne multi-artistes (corroboration, pas exhaustivité). Rollover d'année : le scraper cible automatiquement la page de l'année courante (`now.getUTCFullYear()`).
+
+### Candidats écartés (scout 2026-06-15)
+
+- **Reddit r/kpop** (wiki/JSON/threads) : 403 anti-bot partout, même via Jina → `dead`.
+- **kpopschedule.com/upcoming** : vivant + structuré mais **JS-only** (nécessite Jina/headless) et faible volume (6 entrées) → `viable` mais non retenu (dépendance lourde pour peu de gain ; à reconsidérer si besoin d'une 3ᵉ source).
+- **MusicBrainz** : surtout des releases _passées_, peu de futur annoncé fiable.
