@@ -441,6 +441,18 @@ Vercel cron `/api/cron/scrape-music-shows` daily 13:00 UTC = 22:00 KST. Catche l
 
 Idempotence via unique constraint `events (group_id, type, start_at, source_url)`. `source_url` = URL primary carrd même quand un fallback a fourni les données — la stabilité de la clé prime sur la traçabilité.
 
+### Limite de couverture temporelle — semaine courante seulement (vérifié 2026-06-15, P0.8)
+
+**Constat (BACKLOG P0.8)** : la couverture music-shows ne dépasse jamais la **semaine de diffusion en cours** (~ jusqu'à 7 j). Ce n'est **pas un bug parser** — c'est structurel aux sources :
+
+- Le carrd ET les broadcasters officiels ne publient les **lineups** que tardivement (la veille en semaine, 2-3 j avant le week-end). Aucune source ne liste plusieurs semaines à l'avance.
+- Entre deux cycles, le carrd affiche encore la semaine **passée** avec des lineups placeholder « ~ » (vérifié : sections datées 06/02→06/11 le 15/06, lineups vides). `r.jina.ai` peut en plus servir une version **cachée/périmée** — toujours croiser avec l'état prod, pas la fetch Jina seule.
+- État prod au 15/06 : **6 events music_show futurs**, dernier à +4 j (19/06) = le reste de la semaine. Conforme à l'attente.
+
+**Impact « ta semaine k-pop »** : la feature est satisfaite pour la semaine en cours, jamais au-delà. Le parser capte déjà tout ce que les sources exposent — rien à corriger côté parsing.
+
+**Piste d'amélioration (non implémentée, décision produit requise)** : générer des **slots récurrents synthétiques** à partir du planning hebdo fixe (table §9 : show → jour + heure KST), comme les anniversaires, pour que le calendrier affiche toujours les 6 shows de la semaine — enrichis du lineup quand une source le poste. Nécessite une dédup vs les events scrapés (même `start_at`/épisode) et tranche un choix produit (afficher un show sans lineup encore connu). Cf. BACKLOG.
+
 ### Méthodologie de re-vérification de sources
 
 Quand une source change ou tombe :
