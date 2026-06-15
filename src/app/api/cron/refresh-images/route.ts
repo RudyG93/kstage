@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron/auth'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { spotifyToken, spotifyArtist } from '@/lib/spotify'
@@ -12,8 +13,7 @@ export const maxDuration = 300
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

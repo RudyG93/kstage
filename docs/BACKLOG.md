@@ -53,18 +53,18 @@
 
 - ✅ **`getOpenReports` : `requireAdminUser()`** — fait 2026-06-15 (`moderation.ts`). Audit des 11 fichiers `'use server'` : seul getOpenReports était non-gardé ; banner-actions/suggestions/resolveReport/dismissReport ont leurs gardes `isAdmin`, les actions user passent par le client authentifié (RLS), auth/actions service-role = flux signup légitime.
 - **3 toggles/migrations Supabase** (advisors vérifiés 2026-06-15) :
-  - ⏳ `revoke execute on handle_new_user from public/anon/authenticated` → **dans migration 0034, en attente d'apply** (autorisation prod requise).
+  - ✅ `revoke execute on handle_new_user from public/anon/authenticated` → appliqué (migration 0034), vérifié non exécutable par anon/authenticated.
   - ⛔ **leaked-password protection** → dashboard Supabase Auth, **action manuelle de Rudy** (pas d'accès programmatique).
-  - ⛔ **buckets listing** (`avatars`/`banners` : SELECT large permet d'énumérer) → **non fait** : storage RLS sensible (casser l'affichage des avatars/bannières est très visible) ; à traiter sur un passage dédié avec vérif que l'URL publique ne dépend pas de la policy. Note : `group_follow_counts`/`profile_stats` (definer, exécutables anon) laissés tels quels — **intentionnels** (counts/stats publics, RLS contournée par design).
-- ⏳ **Migration perf RLS** : `(select auth.uid())` sur les **21 policies** flaggées (liste réelle via pg_policies, pas l'estimation « 22 ») + index `events.source_id` & `sources.group_id` → **dans migration 0034, en attente d'apply**. (Autres FK non indexées = petites tables → on évite le sur-index, cf. advisor unused_index.)
+  - ✅ **buckets listing** — fait 2026-06-16 (migration 0035, appliquée + vérifiée) : drop des policies SELECT larges `avatars`/`banners`. Sûr car buckets publics → affichage via `getPublicUrl` (indépendant de la policy SELECT), uploads inchangés, buckets vides, aucun `.list()`. Note : `group_follow_counts`/`profile_stats` (definer, exécutables anon) laissés tels quels — **intentionnels** (counts/stats publics, RLS contournée par design).
+- ✅ **Migration perf RLS** — appliquée & vérifiée 2026-06-16 (migration 0034) : `(select auth.uid())` sur les **21 policies** + `revoke handle_new_user` + index `events.source_id`/`sources.group_id`. Confirmé : advisors `auth_rls_initplan` tombés à 0, `handle_new_user` non exécutable par anon/authenticated. (Autres FK non indexées = petites tables → on évite le sur-index, cf. advisor unused_index.)
 - ✅ **Ledger de migrations réconcilié** (2026-06-12, avec P0.3) : versions 0026-0030 insérées dans `supabase_migrations.schema_migrations`, 0031 appliquée via `apply_migration` (flux normal restauré).
-- **Helper CRON_SECRET** centralisé : refuse si falsy + comparaison constante-temps (supprime le fallback `Bearer undefined` et la duplication ×6).
-- **Hygiène code** : supprimer le code mort vérifié (`getMemberMvs`, `grouped-event-list.tsx`, `ui/card.tsx`, `ui/toggle.tsx`, `revalidatePath` doublé), corriger le commentaire périmé de `youtube-embed.tsx`.
+- ✅ **Helper CRON_SECRET** centralisé — fait 2026-06-16 : `src/lib/cron/auth.ts` (`isAuthorizedCron`, refuse si falsy + compare constante-temps), branché sur les 6 crons (fin du fallback `Bearer undefined` + duplication).
+- ✅ **Hygiène code** (partiel) — fait 2026-06-16 : code mort **vérifié puis** supprimé (`getMemberMvs`, `grouped-event-list.tsx`, `ui/card.tsx`). ⚠️ `ui/toggle.tsx` **conservé** (le backlog se trompait : utilisé par `ui/toggle-group`). Restent (mineurs, non faits) : `revalidatePath` doublé + commentaire périmé `youtube-embed.tsx`.
 
 ### Perf (léger, avant trafic)
 
 - **React `cache()`** sur les queries partagées (`getGroups`, `getFollowedGroupIds`, `getEventBySlug`, viewer/profile) + `Promise.all` dans le root layout — ~5-8 round-trips Supabase économisés par page authentifiée. _(Démarré 2026-06-15 : `getGroupBySlug` wrappé `cache()` — dédup generateMetadata+page. Reste à étendre aux autres.)_
-- **Vitest : `environment: 'node'` par défaut** + annotation jsdom sur `auth-menu.test.tsx` → suite de ~48 s à quelques secondes.
+- ✅ **Vitest : `environment: 'node'` par défaut** — fait 2026-06-16 : + `// @vitest-environment jsdom` sur `auth-menu.test.tsx` (seul test DOM). Suite ~19-29 s → **~6 s** (env cumulé 340 s → 3,6 s), 360 tests verts.
 
 ## P2 — Habitude & surfaces (utile à n=1)
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron/auth'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
@@ -40,8 +41,7 @@ const SHOW_DISPLAY_NAME: Record<ShowId, string> = Object.fromEntries(
 ) as Record<ShowId, string>
 
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
