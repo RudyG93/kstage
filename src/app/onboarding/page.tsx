@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getNonSoloGroups } from '@/lib/groups/queries'
+import { getGroupEventCounts } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { OnboardingGrid } from '@/components/onboarding/onboarding-grid'
 
@@ -20,15 +21,29 @@ export default async function OnboardingPage() {
   const followed = await getFollowedGroupIds()
   if (followed.size > 0) redirect('/')
 
-  const [groups, { data: counts }] = await Promise.all([
+  const [groups, { data: counts }, eventCounts] = await Promise.all([
     getNonSoloGroups(),
     supabase.rpc('group_follow_counts'),
+    getGroupEventCounts(),
   ])
   const pop = new Map((counts ?? []).map((r) => [r.group_id, r.follows]))
-  const top = [...groups]
-    .sort((a, b) => (pop.get(b.id) ?? 0) - (pop.get(a.id) ?? 0) || a.name.localeCompare(b.name))
-    .slice(0, 30)
-    .map((g) => ({ id: g.id, name: g.name, image: g.image_url }))
+  // P0.6 : on met en avant en priorité les groupes au calendrier non vide (events
+  // ou catalogue MV) — sinon un nouveau compte suit des groupes qui n'afficheront
+  // rien. Tri : follows ↓ (utile dès qu'il y a des users), puis volume de contenu
+  // ↓ (départage sur un compte neuf où follows ≈ 0), puis nom. Les groupes sans
+  // contenu complètent jusqu'à 30 (l'onboarding ne doit jamais être clairsemé).
+  const rank = (g: { id: string; name: string }) => ({
+    pop: pop.get(g.id) ?? 0,
+    content: eventCounts.get(g.id) ?? 0,
+  })
+  const sorted = [...groups].sort((a, b) => {
+    const ra = rank(a)
+    const rb = rank(b)
+    const aHas = ra.content > 0 ? 1 : 0
+    const bHas = rb.content > 0 ? 1 : 0
+    return bHas - aHas || rb.pop - ra.pop || rb.content - ra.content || a.name.localeCompare(b.name)
+  })
+  const top = sorted.slice(0, 30).map((g) => ({ id: g.id, name: g.name, image: g.image_url }))
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
