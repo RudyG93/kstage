@@ -2,24 +2,15 @@ import * as cheerio from 'cheerio'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { kstToUtcISO } from '@/lib/events/date'
+import { ingestComebacks, type GroupRef, type ParsedComeback } from './comeback-ingest'
+
+// Matching + types vivent dans comeback-ingest (partagés avec la source
+// Wikipedia, P0.7) ; réexportés ici pour la compat des imports/tests existants.
+export { matchGroup, matchGroups } from './comeback-ingest'
+export type { GroupRef, ParsedComeback } from './comeback-ingest'
 
 type EventStatus = Database['public']['Enums']['event_status']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
-
-export interface GroupRef {
-  id: string
-  slug: string
-  name: string
-}
-
-export interface ParsedComeback {
-  artist: string
-  title: string
-  sourceUrl: string
-  startAt: string // UTC ISO
-  status: EventStatus
-  imageUrl: string | null
-}
 
 interface ScrapeResult {
   matched: number
@@ -74,79 +65,6 @@ const MONTH_SLUGS = [
   'november',
   'december',
 ]
-
-function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
-}
-
-// Variantes normalisées non couvertes par la normalisation simple.
-// "G-IDLE" / "GIDLE" / "(G)I-DLE" normalisent tous en "gidle" → on les mappe
-// vers le slug actuel `idle`. "I-DLE" normalise en "idle" et matche déjà
-// directement le slug, donc pas besoin d'entrée pour lui.
-const GROUP_ALIASES: Record<string, string> = {
-  gidle: 'idle',
-}
-
-/** Matche un nom d'artiste scrapé vers un de nos groupes suivis, sinon null. */
-export function matchGroup(artist: string, groups: readonly GroupRef[]): GroupRef | null {
-  const key = normalize(artist)
-  if (!key) return null
-  for (const g of groups) {
-    if (normalize(g.name) === key || normalize(g.slug) === key) return g
-  }
-  const aliasSlug = GROUP_ALIASES[key]
-  if (aliasSlug) return groups.find((g) => g.slug === aliasSlug) ?? null
-  return null
-}
-
-// Suffixes d'édition que kpopofficial accole au nom : « aespa (JP) »,
-// « ATEEZ (JP) », « MiiWAN (Virtual) »… L'édition reste un comeback du groupe.
-const EDITION_SUFFIX_RE = /\s*\((JP|Japan|CN|China|US|EN|Virtual)\)\s*$/i
-
-/**
- * Matching élargi (P0.5, 2026-06-13) — le diagnostic du calendrier réel
- * montrait 35 artistes non matchés dont 3 patterns récupérables :
- *
- * 1. Suffixe d'édition : « aespa (JP) » → aespa.
- * 2. Collab « LE SSERAFIM x ILLIT x KATSEYE » → un event PAR groupe en DB
- *    (d'où le retour pluriel ; les composants inconnus sont ignorés).
- * 3. Solo de membre « HAN (Stray Kids) » → rattaché au groupe parent : le
- *    title kpopofficial (« HAN (Stray Kids) Digital Single – … ») reste
- *    explicite sur la page du groupe. Si le parent n'est pas en DB
- *    (« JAY B (GOT7) »), l'entrée est ignorée comme avant.
- */
-export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupRef[] {
-  const direct = matchGroup(artist, groups)
-  if (direct) return [direct]
-
-  const stripped = artist.replace(EDITION_SUFFIX_RE, '')
-  if (stripped !== artist) {
-    const m = matchGroup(stripped, groups)
-    if (m) return [m]
-  }
-
-  // Collab : « A x B », « A X B », « A × B ». On exige ≥2 composants pour ne
-  // pas casser les noms contenant un « x » interne déjà gérés par normalize.
-  const parts = artist.split(/\s+[x×]\s+/i)
-  if (parts.length >= 2) {
-    const matched = parts
-      .map((p) => matchGroup(p.replace(EDITION_SUFFIX_RE, ''), groups))
-      .filter((g): g is GroupRef => g !== null)
-    if (matched.length > 0) {
-      // Dédup par id (une collab peut lister deux fois le même artiste).
-      return [...new Map(matched.map((g) => [g.id, g])).values()]
-    }
-  }
-
-  // Solo de membre : « NAME (GROUP) » → match du groupe entre parenthèses.
-  const paren = artist.match(/^.+?\(([^)]+)\)\s*$/)?.[1]
-  if (paren) {
-    const parent = matchGroup(paren, groups)
-    if (parent) return [parent]
-  }
-
-  return []
-}
 
 // Le span artiste : ni mois, ni nombre (jour/vues), ni date KST, ni ligne "type – nom" / "Title – ...".
 function pickArtist(metas: readonly string[]): string | null {
@@ -275,48 +193,12 @@ export async function scrapeComebacks(
     const html = await res.text()
     const entries = parseComebacks(html, page.year)
     parsed += entries.length
-    for (const cb of entries) {
-      for (const group of matchGroups(cb.artist, groups)) {
-        matched++
-
-        // Idempotence par (source_url, group_id) : une collab (« LE SSERAFIM
-        // x ILLIT x KATSEYE ») insère un event PAR groupe matché, tous avec
-        // la même source_url.
-        const { data: existing } = await supabase
-          .from('events')
-          .select('id')
-          .eq('source_url', cb.sourceUrl)
-          .eq('group_id', group.id)
-          .maybeSingle()
-
-        if (existing) {
-          skipped++
-          continue
-        }
-
-        const { error } = await supabase.from('events').insert({
-          group_id: group.id,
-          source_id: source.id,
-          source_url: cb.sourceUrl,
-          // Taxonomie (décision 2026-05-27, réaffirmée à l'audit 2026-06-12) :
-          // MV = clip vidéo (embed YouTube + page /mv), Release = sortie datée
-          // d'album/single. Une annonce kpopofficial est une sortie datée SANS
-          // vidéo → 'release'. Le clip arrivera via le scraper YouTube ('mv').
-          type: 'release',
-          title: cb.title,
-          start_at: cb.startAt,
-          status: cb.status,
-          image_url: cb.imageUrl,
-        })
-
-        if (error) {
-          console.error(`Insert failed for ${cb.sourceUrl}:`, error.message)
-          skipped++
-        } else {
-          inserted++
-        }
-      }
-    }
+    const r = await ingestComebacks(entries, source.id, groups, supabase, {
+      crossSourceDedupeDays: 3,
+    })
+    matched += r.matched
+    inserted += r.inserted
+    skipped += r.skipped
   }
 
   // SCRAPING.md §1 : last_scraped_at = dernier run AYANT RÉCOLTÉ quelque chose
