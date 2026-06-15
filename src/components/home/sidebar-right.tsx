@@ -10,6 +10,9 @@ import { displaySongTitle } from '@/lib/events/title'
 import { eventHref } from '@/lib/events/href'
 import { CommentsRealtime } from '@/components/home/comments-realtime'
 
+// En dessous, la section « Recent discussions » est masquée (anti-ville-fantôme).
+const DISCUSSIONS_MIN = 3
+
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
@@ -139,21 +142,22 @@ export async function SidebarRight() {
         )}
       </section>
 
-      {/* Recent discussions — forum-like, live (§7.2) */}
-      <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
-        <div className="mb-3">
-          <SectionLabel>Recent discussions</SectionLabel>
-        </div>
-        {discussions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No discussions yet.</p>
-        ) : (
+      {/* Recent discussions — forum-like, live (§7.2). Masqué sous un seuil :
+          1-2 threads isolés = effet ville fantôme. Feature sociale dont la valeur
+          dépend de l'audience (règle de gel) → affichée seulement avec assez de
+          matière. */}
+      {discussions.length >= DISCUSSIONS_MIN && (
+        <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
+          <div className="mb-3">
+            <SectionLabel>Recent discussions</SectionLabel>
+          </div>
           <ul className="space-y-1">
             {discussions.map((row) => (
               <DiscussionLine key={row.id} row={row} />
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   )
 }

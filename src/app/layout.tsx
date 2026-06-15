@@ -33,7 +33,7 @@ const SITE_DESCRIPTION = 'Your k-pop calendar — events, comebacks, and lives.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'KStage', template: '%s · KStage' },
+  title: { default: 'KStage — your k-pop calendar', template: '%s · KStage' },
   description: SITE_DESCRIPTION,
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'KStage', statusBarStyle: 'black-translucent' },

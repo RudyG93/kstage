@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { EventList } from '@/components/event-list'
@@ -15,6 +16,24 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const group = await getGroupBySlug(slug)
+  if (!group) return {}
+  const title = `${group.name} — comebacks & schedule`
+  const description = `Upcoming events, comebacks, MVs and member birthdays for ${group.name} on KStage.`
+  return {
+    title,
+    description,
+    alternates: { canonical: `/groups/${slug}` },
+    openGraph: { title: `${title} · KStage`, description, url: `/groups/${slug}` },
+  }
+}
 
 export default async function GroupPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
