@@ -28,7 +28,7 @@ export function AuthMenu({
         </Link>
         <Link
           href="/signup"
-          className="gradient-signature inline-flex h-7 items-center rounded-md px-3 text-sm font-medium text-white"
+          className="gradient-signature inline-flex h-7 items-center rounded-md px-3 text-sm font-medium whitespace-nowrap text-white"
         >
           Sign up
         </Link>

@@ -42,12 +42,12 @@
 
 ### UX / SEO
 
-- **Fix bouton « Sign up »** qui déborde de sa pastille sur desktop : `whitespace-nowrap` dans `src/components/auth/auth-menu.tsx` (bouton de conversion principal).
-- **SEO pages groupes** : `generateMetadata` sur `groups/[slug]` (« aespa — comebacks & schedule · KStage »), `metadataBase`/canonical, title de la landing aligné sur l'og:title (actuellement « KStage » nu).
+- ✅ **Fix bouton « Sign up »** (débordement pastille desktop) — fait 2026-06-15 : `whitespace-nowrap` dans `auth-menu.tsx`.
+- ✅ **SEO pages groupes** — fait 2026-06-15 : `generateMetadata` sur `groups/[slug]` (title « {groupe} — comebacks & schedule · KStage » + description + canonical + og), title landing aligné « KStage — your k-pop calendar ». `metadataBase` était déjà en place.
 - ✅ **Labels anniversaires en anglais** (« turns 30 » au lieu de « 30 ans ») — fait 2026-06-15 avec P0.6 (`src/lib/events/anniversaries.ts` + 3 assertions).
-- **Masquer « Recent discussions » sous un seuil** (1 seul thread affiché sur 3 pages = effet ville fantôme).
-- **Cards Music Show** : `target=_blank` + icône external-link (elles sortent vers le carrd sans prévenir).
-- **`/my`** : ajouter un redirect vers `/calendar` (vieux liens) — la page n'existe pas, le brief a été corrigé.
+- ✅ **Masquer « Recent discussions » sous un seuil** — fait 2026-06-15 : section cachée si `< 3` discussions (`sidebar-right.tsx`, `DISCUSSIONS_MIN`), aligné règle de gel des features sociales.
+- **Cards Music Show** : `target=_blank` + icône external-link (elles sortent vers le carrd sans prévenir). _(reste à faire — les events music_show passent par l'event-card générique ; à localiser le rendu du lien externe.)_
+- ~~**`/my`** : redirect vers `/calendar`~~ → **sans objet (2026-06-15)** : aucune référence à `/my` dans le code (vérifié), le brief avait déjà été corrigé.
 
 ### Sécurité / ops
 
