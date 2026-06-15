@@ -40,6 +40,10 @@ export interface OpenReport {
 
 /** Signalements ouverts pour la page admin (service role). */
 export async function getOpenReports(): Promise<OpenReport[]> {
+  // Server Action exposée + service role (bypass RLS) → garde admin obligatoire
+  // en 1ʳᵉ ligne, comme resolveReport/dismissReport (sinon lecture de la file de
+  // modération par n'importe qui).
+  await requireAdminUser()
   const admin = serviceClient()
   const { data, error } = await admin
     .from('comment_report')
