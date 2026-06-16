@@ -90,17 +90,17 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: profile } = user
-    ? await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle()
-    : { data: null }
-
-  // Liste minimale (id, name) servie au Dialog Suggest si le user est connecté.
-  // La liste complète d'events ciblables (Fix tab) est récupérée lazy via une
-  // Route Handler côté composant pour éviter de payer 200 events sur chaque
-  // page render.
-  const { data: dialogGroups } = user
-    ? await supabase.from('groups').select('id, name').order('name')
-    : { data: null }
+  // profile (header) et dialogGroups (Dialog Suggest) sont indépendants → en
+  // parallèle plutôt qu'en deux allers-retours séquentiels.
+  // dialogGroups = liste minimale (id, name) servie au Dialog Suggest si connecté ;
+  // la liste complète d'events ciblables (Fix tab) est récupérée lazy via une Route
+  // Handler côté composant pour éviter de payer 200 events sur chaque page render.
+  const [{ data: profile }, { data: dialogGroups }] = user
+    ? await Promise.all([
+        supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle(),
+        supabase.from('groups').select('id, name').order('name'),
+      ])
+    : [{ data: null }, { data: null }]
 
   return (
     <html
