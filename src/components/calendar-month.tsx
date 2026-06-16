@@ -89,7 +89,7 @@ export function CalendarMonth({
         <Link href={monthHref(prev.y, prev.m)} aria-label="Previous month" className={arrowClass}>
           <ChevronLeftIcon className="size-5" />
         </Link>
-        <h2 className="text-sm font-medium">{monthTitle}</h2>
+        <h1 className="text-sm font-medium">{monthTitle}</h1>
         <Link href={monthHref(next.y, next.m)} aria-label="Next month" className={arrowClass}>
           <ChevronRightIcon className="size-5" />
         </Link>

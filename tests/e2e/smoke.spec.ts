@@ -32,10 +32,33 @@ test.describe('Landing (logged out)', () => {
 })
 
 test.describe('Calendar', () => {
+  const MONTH_TITLE =
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/
+
   test('month grid renders + has next/prev navigation', async ({ page }) => {
     await page.goto('/calendar')
-    await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible()
+    // h1 = le mois courant (ex. « June 2026 »), pas un libellé « Calendar » figé
+    // (retiré lors d'un redesign ; le titre de mois est l'en-tête de page).
+    await expect(page.getByRole('heading', { level: 1, name: MONTH_TITLE })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Next month' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Previous month' })).toBeVisible()
+  })
+
+  // Teste le câblage réel de la navigation (Next/Prev re-rendent le mois), pas
+  // juste la présence des liens. Déterministe : on assert le changement de mois
+  // (URL + titre) et le retour — PAS qu'un event précis s'affiche (la data prod
+  // change → ce serait flaky ; c'est la nav qu'on vérifie ici).
+  test('next/previous month re-render the grid for the new month', async ({ page }) => {
+    await page.goto('/calendar')
+    const title = page.getByRole('heading', { level: 1 }).filter({ hasText: MONTH_TITLE }).first()
+    const initial = (await title.textContent())?.trim() ?? ''
+    expect(initial).not.toBe('')
+
+    await page.getByRole('link', { name: 'Next month' }).click()
+    await expect(page).toHaveURL(/[?&]month=\d{4}-\d{2}/)
+    await expect(title).not.toHaveText(initial) // le mois affiché a changé
+
+    await page.getByRole('link', { name: 'Previous month' }).click()
+    await expect(title).toHaveText(initial) // retour au mois de départ
   })
 })
