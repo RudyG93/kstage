@@ -2,20 +2,26 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
-import { CountdownBadge } from './countdown'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
-import { displayEventTitle } from '@/lib/events/title'
+import { displaySongTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
-import { faceCrop } from '@/lib/images/cloudinary'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
+// Heure KST en 24 h (« 18:00 ») — la référence k-pop, mise en avant ; l'heure
+// locale du visiteur est rendue en second (client) via <LocalTime>.
 const kstFormat = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Seoul',
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   }).format(new Date(iso))
 
+/**
+ * Carte d'event du feed/calendrier — design « Daylight/Midnight » (handoff) :
+ * carte claire, carré d'identité du groupe à gauche, titre + pastille de type,
+ * heure KST alignée à droite. Remplace l'ancienne bannière plein-cadre à scrim.
+ */
 export function HomeEventCard({
   event,
   compact = false,
@@ -24,20 +30,11 @@ export function HomeEventCard({
   compact?: boolean
 }) {
   const group = event.groups
-  const kst = kstFormat(event.start_at)
   const typeColor = EVENT_TYPE_COLORS[event.type]
-  const displayTitle = displayEventTitle(event.title, group?.name, event.episode_number)
-
-  // Countdown FOMO (§5) sur les comebacks (mv/release). Le CountdownBadge gère
-  // lui-même la fenêtre temporelle (< 14 j, futur) et ne rend rien sinon, pour
-  // garder ce server component pur (pas de Date.now dans le render).
-  const isComeback = event.type === 'mv' || event.type === 'release'
-
-  // Image de fond plein cover (banner_url admin prioritaire, sinon Deezer
-  // recadré visage Cloudinary). Le texte 3 lignes est posé dessus, lisible
-  // grâce au scrim sombre.
-  const bannerSrc =
-    group?.banner_url ?? (group?.image_url ? faceCrop(group.image_url, 1600, 400) : null)
+  const songTitle = displaySongTitle(event.title, group?.name)
+  // Carré d'identité : teinté à la couleur du groupe (comme les maquettes).
+  const squareColor = group?.color_hex ?? typeColor
+  const allDay = event.type === 'anniversary'
 
   const href = eventHref(event)
   const external = isExternalHref(href)
@@ -46,60 +43,61 @@ export function HomeEventCard({
     <Link
       href={href}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className={`group relative block overflow-hidden rounded-xl ${compact ? 'h-20' : 'h-28'}`}
+      className={`group bg-card border-border shadow-soft focus-visible:ring-primary/40 flex items-center gap-3.5 rounded-lg border transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:outline-none ${
+        compact ? 'px-3.5 py-2.5' : 'px-4 py-3'
+      }`}
     >
-      {bannerSrc ? (
+      {group?.image_url ? (
         <Image
-          src={bannerSrc}
+          src={group.image_url}
           alt=""
           aria-hidden
-          fill
-          unoptimized
-          sizes="(min-width: 1024px) 1000px, 320px"
-          className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+          width={40}
+          height={40}
+          className="size-9 shrink-0 rounded-md object-cover"
         />
       ) : (
-        <div className="gradient-signature absolute inset-0" aria-hidden />
-      )}
-
-      {/* scrim pour la lisibilité du texte par-dessus l'image */}
-      <div
-        className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20"
-        aria-hidden
-      />
-      {/* accent couleur du type d'event */}
-      <div
-        className="absolute top-0 left-0 h-full w-1"
-        style={{ backgroundColor: typeColor }}
-        aria-hidden
-      />
-      {/* Indicateur "lien externe" (music show, live → carrd/broadcaster). */}
-      {external && (
-        <span className="absolute top-2 right-2 text-white/70" title="Opens an external site">
-          <ExternalLink className="size-3.5" aria-hidden />
-          <span className="sr-only">opens an external site</span>
+        <span
+          className="flex size-9 shrink-0 items-center justify-center rounded-md text-xs font-bold"
+          style={{ backgroundColor: `${squareColor}24`, color: squareColor }}
+          aria-hidden
+        >
+          {group?.name?.[0] ?? '?'}
         </span>
       )}
 
-      <div className="relative flex h-full items-center justify-between gap-3 py-2 pr-4 pl-5">
-        <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-semibold">{songTitle}</span>
           <span
-            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase"
-            style={{ backgroundColor: typeColor }}
+            className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+            style={{ color: typeColor, backgroundColor: `${typeColor}24` }}
           >
             {EVENT_TYPE_LABELS[event.type]}
           </span>
-          <p className="truncate text-sm leading-tight font-semibold text-white">{group?.name}</p>
-          <p className="truncate text-xs text-white/80">{displayTitle}</p>
+          {external && (
+            <>
+              <ExternalLink className="text-faint size-3 shrink-0" aria-hidden />
+              <span className="sr-only">opens an external site</span>
+            </>
+          )}
         </div>
+        <p className="text-muted-foreground mt-0.5 truncate text-xs">{group?.name}</p>
+      </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
-          <p className="font-mono text-sm font-medium text-white tabular-nums">
-            <LocalTime iso={event.start_at} />
-          </p>
-          <p className="font-mono text-[11px] text-white/70 tabular-nums">{kst} KST</p>
-          {isComeback && <CountdownBadge targetIso={event.start_at} />}
-        </div>
+      <div className="shrink-0 text-right">
+        {allDay ? (
+          <div className="text-muted-foreground text-sm font-medium">All day</div>
+        ) : (
+          <>
+            <div className="tabular text-[15px] font-semibold tabular-nums">
+              {kstFormat(event.start_at)}
+            </div>
+            <div className="text-faint font-mono text-[10px]">
+              KST · <LocalTime iso={event.start_at} /> local
+            </div>
+          </>
+        )}
       </div>
     </Link>
   )
