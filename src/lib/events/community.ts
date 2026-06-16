@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 
 export interface RatingSummary {
@@ -85,7 +86,9 @@ export async function getLikeSummary(
  * Charge un event par son slug (route `/mv/[slug]`). Retourne null si absent.
  * Joint les infos groupe nécessaires pour la page article.
  */
-export async function getEventBySlug(slug: string) {
+// `cache()` request-scoped : la route /mv/[slug] appelle getEventBySlug dans
+// generateMetadata ET dans le composant page → une seule requête par render.
+export const getEventBySlug = cache(async (slug: string) => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('events')
@@ -95,4 +98,4 @@ export async function getEventBySlug(slug: string) {
     .eq('slug', slug)
     .maybeSingle()
   return data
-}
+})

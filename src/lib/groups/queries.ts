@@ -35,7 +35,9 @@ export const getGroupsCached = unstable_cache(
  * mélangent encore les deux (calendar filter, sidebar Home, home page). La page
  * `/groups` utilise désormais `getNonSoloGroups` / `getSoloArtists` (tabs).
  */
-export async function getGroups() {
+// `cache()` request-scoped : sidebar Home, calendar filter et home page l'appellent
+// dans le même render → une seule requête Supabase par requête HTTP.
+export const getGroups = cache(async () => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('groups')
@@ -43,7 +45,7 @@ export async function getGroups() {
     .order('name', { ascending: true })
   if (error) throw error
   return data ?? []
-}
+})
 
 /**
  * Liste les **vrais groupes** (multi-membres) — exclut les solistes représentés

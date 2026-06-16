@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
@@ -56,6 +57,12 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
           {event.status === 'tentative' && (
             <span className="text-muted-foreground font-mono text-[10px] tracking-wider uppercase">
               · tentative
+            </span>
+          )}
+          {external && (
+            <span className="text-faint inline-flex items-center" title="Opens an external site">
+              <ExternalLink className="size-3" aria-hidden />
+              <span className="sr-only">opens an external site</span>
             </span>
           )}
         </div>
