@@ -6,6 +6,8 @@
 > - **§4 allègement visuel** : cernes `ring-1 ring-foreground/10` → `border border-border shadow-soft` sur les cartes/panneaux/overlays (~18 occurrences) ; les états **sélectionnés** (`onboarding-grid`, filtre de type actif) gardent volontairement un `ring`. Labels de section mono `tracking-[0.18em]` → `text-faint text-xs font-semibold` (sidebars, feed, /mvs, badge landing) ; le **mono reste sur les données** (heures KST, compteurs, dates, counts).
 >
 > Vérifié au rendu en computed-styles (Daylight + Midnight) : tokens `--primary`/`--teal`/`--faint`/`--radius` résolus, bascule du toggle propre, 5 polices chargées.
+>
+> **Suite revue a11y (2026-06-16)** : contraste mesuré (WCAG, getImageData) sur les labels `text-faint`. Daylight était à 2,79:1 sur carte blanche (< 3:1) → token `--faint` Daylight assombri `oklch(0.689→0.635)` → **3,43:1**, aligné sur Midnight (3,4:1), tout en restant « discret ». Sliders croppers : `dark:accent-[#8785ff]` ajouté (le periwinkle Midnight au lieu du Daylight sur fond sombre). **Choix assumé** : en Daylight la séparation des cartes (`border-border` ~1,1:1 sur carte blanche + `shadow-soft`) est volontairement douce (intention « aéré » du handoff + mockups, pattern light-mode standard) — non modifié.
 
 Remplace le contenu de `src/app/globals.css` par `kstage-theme/globals.css`.
 Le système reste 100 % shadcn / Tailwind v4 : **aucun composant à réécrire**, les

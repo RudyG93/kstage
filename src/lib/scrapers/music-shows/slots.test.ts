@@ -28,6 +28,12 @@ describe('nextWeeklySlotIso', () => {
     expect(nextWeeklySlotIso('music-bank', now)).toBe('2026-06-26T08:00:00.000Z')
   })
 
+  it('renvoie le créneau pile à son instant de début (borne future inclusive)', () => {
+    // now == exactement music-bank vendredi 08:00 UTC (17:00 KST) → ce créneau-là.
+    const now = new Date('2026-06-19T08:00:00.000Z')
+    expect(nextWeeklySlotIso('music-bank', now)).toBe('2026-06-19T08:00:00.000Z')
+  })
+
   it('throw sur un show inconnu', () => {
     // @ts-expect-error test runtime guard
     expect(() => nextWeeklySlotIso('not-a-show', new Date('2026-06-15T00:00:00Z'))).toThrow()
