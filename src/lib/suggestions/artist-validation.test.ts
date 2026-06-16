@@ -78,6 +78,17 @@ describe('parseArtistSuggestionInput — color / debut / urls', () => {
     ).toBe(true)
     expect(value({ ...base, imageUrl: '' }).imageUrl).toBeNull()
   })
+
+  it('valide imageUrl et sourceUrl indépendamment (image ok + source invalide → error)', () => {
+    expect(
+      'error' in
+        parseArtistSuggestionInput({
+          ...base,
+          imageUrl: 'https://ok.test/a.jpg',
+          sourceUrl: 'ftp://bad',
+        }),
+    ).toBe(true)
+  })
 })
 
 describe('parseArtistSuggestionInput — members', () => {
@@ -109,5 +120,10 @@ describe('parseArtistSuggestionInput — members', () => {
     const v = value({ ...base, members: many })
     expect(v.members.length).toBe(MAX_MEMBERS)
     expect(v.members[0].name).toBe('M0')
+  })
+
+  it('tronque la position d’un membre à 80 caractères', () => {
+    const members = JSON.stringify([{ name: 'Minji', position: 'a'.repeat(100) }])
+    expect(value({ ...base, members }).members[0].position?.length).toBe(80)
   })
 })

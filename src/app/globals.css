@@ -92,7 +92,9 @@
   --teal: oklch(0.664 0.111 187); /* MV / release */
   --amber: oklch(0.655 0.134 70); /* music show */
   --rose: oklch(0.637 0.179 1); /* live */
-  --faint: oklch(0.689 0.012 286); /* texte tertiaire / anniversary */
+  --faint: oklch(
+    0.635 0.013 286
+  ); /* texte tertiaire / labels — assombri pour ≥3:1 WCAG sur carte blanche (était 0.689 ≈ 2.8:1) */
 
   --chart-1: oklch(0.561 0.218 277);
   --chart-2: oklch(0.664 0.111 187);
