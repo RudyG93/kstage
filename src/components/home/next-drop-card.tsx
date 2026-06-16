@@ -48,9 +48,7 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
           <h2 className="font-heading mt-2 text-2xl font-bold tracking-tight text-balance">
             {title}
           </h2>
-          <p className="text-muted-foreground mt-1 font-mono text-xs tracking-[0.1em] uppercase">
-            {group?.name}
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{group?.name}</p>
         </div>
         <div className="hidden shrink-0 sm:block">
           <Countdown targetIso={event.start_at} />

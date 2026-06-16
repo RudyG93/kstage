@@ -56,7 +56,16 @@ function FeedSection({
   return (
     <section>
       <div className="mb-4 flex items-center gap-4">
-        <span className="text-faint text-xs font-semibold">{label}</span>
+        <span className="text-foreground flex items-center gap-2 text-sm font-semibold">
+          {label === 'Today' && (
+            <span
+              className="bg-teal size-2 rounded-full"
+              style={{ boxShadow: '0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent)' }}
+              aria-hidden
+            />
+          )}
+          {label}
+        </span>
         <span className="bg-border h-px flex-1" />
       </div>
       <div className="space-y-5">
