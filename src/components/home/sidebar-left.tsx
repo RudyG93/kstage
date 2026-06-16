@@ -70,9 +70,20 @@ export async function SidebarLeft({
                     href={`/groups/${group.slug}`}
                     className="hover:bg-muted/40 -mx-2 flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors"
                   >
+                    <span
+                      className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[11px] font-bold"
+                      style={
+                        group.color_hex
+                          ? { backgroundColor: `${group.color_hex}24`, color: group.color_hex }
+                          : undefined
+                      }
+                      aria-hidden
+                    >
+                      {group.name[0]}
+                    </span>
                     <span className="flex-1 truncate text-sm font-medium">{group.name}</span>
-                    <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                      · {countFor(group.id)}
+                    <span className="text-faint font-mono text-xs tabular-nums">
+                      {countFor(group.id)}
                     </span>
                   </Link>
                 </li>

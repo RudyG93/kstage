@@ -16,6 +16,8 @@
 > **Fidélité maquettes — labels feed + hero (2026-06-16)** : arbitrage README vs maquettes — les labels de **sidebar** (Filters/My groups) sont bien en `text-faint` (= `t3` dans `KSidebarLeft.dc.html`), mais les labels de **bucket du feed** (Today/This week) sont en `text-foreground` semibold dans `KStage Home.dc.html`, avec un **point teal** (+ glow) sur « Today » → `feed.tsx` corrigé en ce sens (j'avais à tort tout passé en faint). Hero `next-drop-card` : l'eyebrow du groupe passe de mono-uppercase à `text-sm` simple (sous-titre épuré de la maquette). Composants home-only (auth) → vérifiés typecheck/lint/tests ; rendu non testable sans session.
 >
 > **Fidélité maquettes — filtres (2026-06-16)** : `type-filter-vertical.tsx` aligné sur `KSidebarLeft.dc.html` — état actif = chip lilas `bg-accent text-foreground` (au lieu de `bg-muted` + ring), pastilles de type en **petit carré** `rounded-[3px]` (au lieu de rond). Vérifié sur `/calendar?type=mv` : chip lilas + carré 8px.
+>
+> **Fidélité maquettes — sidebar « My groups » (2026-06-16)** : `sidebar-left.tsx` — chaque groupe suivi affiche un **carré-initiale 24px teinté `color_hex`** (comme `KSidebarLeft.dc.html`), le « · » devant le compteur est retiré, compteur en `text-faint` mono. Composant auth-gated → vérifié typecheck/lint/tests.
 
 Remplace le contenu de `src/app/globals.css` par `kstage-theme/globals.css`.
 Le système reste 100 % shadcn / Tailwind v4 : **aucun composant à réécrire**, les
