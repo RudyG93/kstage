@@ -78,7 +78,7 @@
 
 - ✅ **`slots.test.ts`** — fait 2026-06-16 : la logique créneaux hebdo KST (`nextWeeklySlotIso` rollover + tolérance 12 h ; `kstDateTimeToIso` KST→UTC + bornes invalides) est couverte (12 assertions, valeurs ISO calculées à la main confirmées au run).
 - **E2E en CI** : job smoke (sans credentials) + secrets GitHub pour le golden path auth (aujourd'hui : jamais exécuté automatiquement).
-- **Étendre le spec calendrier** : naviguer Next month + asserter qu'un event seedé s'affiche.
+- ✅ **Étendre le spec calendrier** — fait 2026-06-16 : test de navigation Next/Previous month (URL + titre de mois changent puis reviennent), **déterministe** — pas d'assertion sur un event seedé précis (la data prod change → flaky ; c'est le câblage de la nav qu'on teste). En route : l'ancien test cherchait un `<h1>Calendar</h1>` retiré lors d'un redesign (e2e jamais lancé en CI → jamais détecté) → la page calendrier reçoit un vrai `h1` (titre de mois `h2`→`h1`, gain a11y/SEO) et l'assertion est corrigée. Vérifié : 4/4 smoke verts (chromium, serveur chaud — les cold-compile Turbopack sur E:\ dépassent le timeout par test, pas un bug app).
 - **Fixture kpopofficial réelle** (capture datée via r.jina.ai) en plus du HTML synthétique — règle « real data over fixtures ».
 - ✅ **Tests `artist-validation.ts`** (input communautaire public) + `normalizeUsername` — fait 2026-06-16 : `parseArtistSuggestionInput` (nom, kind, hex, debut date, URLs http(s), parsing/cap membres, solo→[]) et `normalizeUsername` (casse préservée, trim, bornes 3-20, charset) couverts (16 assertions).
 
