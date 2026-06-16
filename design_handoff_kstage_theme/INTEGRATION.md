@@ -1,12 +1,5 @@
 # KStage — intégration du thème « Daylight / Midnight »
 
-> **État (2026-06-16)** : **intégration complète** (handoff `design_handoff_kstage_theme/`). En plus de §1 (fonts), §2 (wordmark serif + themeColor #0f1118), §3 (EVENT_TYPE_COLORS) déjà faits, ce passage applique :
->
-> - **Couleurs en dur → tokens** : plus aucun `#8b5cff` / `#ff2d87` / `#0e0e13` dans `src/` (landing hero + bouton, `next-drop-card` radial-gradient, `opengraph-image`, `icon.svg`, email `resend.ts`, sliders croppers). Le mot « comeback » et la signature passent par `.gradient-text` periwinkle→menthe.
-> - **§4 allègement visuel** : cernes `ring-1 ring-foreground/10` → `border border-border shadow-soft` sur les cartes/panneaux/overlays (~18 occurrences) ; les états **sélectionnés** (`onboarding-grid`, filtre de type actif) gardent volontairement un `ring`. Labels de section mono `tracking-[0.18em]` → `text-faint text-xs font-semibold` (sidebars, feed, /mvs, badge landing) ; le **mono reste sur les données** (heures KST, compteurs, dates, counts).
->
-> Vérifié au rendu en computed-styles (Daylight + Midnight) : tokens `--primary`/`--teal`/`--faint`/`--radius` résolus, bascule du toggle propre, 5 polices chargées.
-
 Remplace le contenu de `src/app/globals.css` par `kstage-theme/globals.css`.
 Le système reste 100 % shadcn / Tailwind v4 : **aucun composant à réécrire**, les
 tokens (`--background`, `--card`, `--primary`…) sont juste re-mappés. Le toggle

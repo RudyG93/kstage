@@ -16,13 +16,13 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
     <Link
       href={href}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className="bg-card animate-in fade-in slide-in-from-bottom-2 ring-foreground/10 hover:ring-foreground/20 focus-visible:ring-primary/40 relative block overflow-hidden rounded-2xl p-6 ring-1 transition-shadow duration-500 focus-visible:outline-none"
+      className="bg-card animate-in fade-in slide-in-from-bottom-2 border-border shadow-soft focus-visible:ring-primary/40 relative block overflow-hidden rounded-2xl border p-6 transition-shadow duration-500 hover:shadow-md focus-visible:ring-2 focus-visible:outline-none"
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-10"
         style={{
           background:
-            'radial-gradient(ellipse at 30% 50%, #8b5cff 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, #ff2d87 0%, transparent 50%)',
+            'radial-gradient(ellipse at 30% 50%, var(--primary) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, var(--teal) 0%, transparent 50%)',
         }}
         aria-hidden
       />

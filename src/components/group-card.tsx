@@ -23,7 +23,7 @@ export function GroupCard({
   const img = group.image_url ? faceCrop(group.image_url, 600, 600) : null
 
   return (
-    <div className="group ring-foreground/10 relative aspect-square overflow-hidden rounded-xl ring-1 transition hover:ring-2 hover:ring-white/20">
+    <div className="group border-border shadow-soft relative aspect-square overflow-hidden rounded-xl border transition hover:shadow-md">
       {img ? (
         <Image
           src={img}

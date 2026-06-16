@@ -110,7 +110,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             ).map(([label, value]) => (
               <div
                 key={label}
-                className="bg-card ring-foreground/10 rounded-xl p-3 text-center ring-1"
+                className="bg-card border-border shadow-soft rounded-xl border p-3 text-center"
               >
                 <dd className="text-lg font-bold tabular-nums">{value}</dd>
                 <dt className="text-muted-foreground text-[11px] tracking-wide uppercase">
@@ -132,7 +132,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               />
             ) : bias ? (
               // Non cliquable : la page membre /artists/[slug] est quasi-vide (pruning).
-              <div className="bg-card ring-foreground/10 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-3 ring-1">
+              <div className="bg-card border-border shadow-soft flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border p-3">
                 <Avatar username={bias.stage_name} avatarUrl={bias.photo_url} size={36} />
                 <div className="min-w-0">
                   <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Bias</p>
@@ -150,7 +150,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             ) : favorite ? (
               <Link
                 href={`/groups/${favorite.slug}`}
-                className="bg-card ring-foreground/10 hover:bg-muted/40 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-3 ring-1 transition-colors"
+                className="bg-card border-border shadow-soft hover:bg-muted/40 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border p-3 transition-colors"
               >
                 <Avatar username={favorite.name} avatarUrl={favorite.image_url} size={36} />
                 <div className="min-w-0">

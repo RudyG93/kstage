@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh;background:#e9e9ec;font-family:'Geist',system-ui,sans-serif;color:#1c1c24;padding:56px 32px 96px;">
+  <div style="max-width:1240px;margin:0 auto;">
+
+    <!-- ===== HEADER ===== -->
+    <header style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8a93;margin-bottom:18px;">
+        <span style="width:7px;height:7px;border-radius:99px;background:#5b5bf0;"></span>
+        KStage · Design refresh
+      </div>
+      <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:46px;line-height:1.04;letter-spacing:-0.03em;margin:0;max-width:760px;text-wrap:balance;">
+        On garde les blocs. On rafraîchit le <span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;letter-spacing:-0.01em;">thème</span>.
+      </h1>
+      <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#56565f;max-width:600px;">
+        Tes dispositions fonctionnent — feed central, sidebars, next&nbsp;drop. Ce qui date, c'est l'habillage&nbsp;: le dégradé violet→rose, le bruit des labels mono, la densité sombre. Voici la recherche, puis 3 directions appliquées à <strong style="color:#1c1c24;font-weight:600;">tes vrais composants</strong>.
+      </p>
+    </header>
+
+    <!-- ===== PART 1 — DIAGNOSTIC ===== -->
+    <section style="margin-top:56px;">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:22px;">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;color:#1c1c24;">01</span>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em;margin:0;">Le diagnostic</h2>
+        <span style="flex:1;height:1px;background:#d2d2d6;"></span>
+        <span style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;">ce qui date aujourd'hui</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:stretch;">
+
+        <!-- Current dark render -->
+        <div style="background:#0e0e13;border-radius:20px;padding:22px;background-image:radial-gradient(600px 360px at 88% -12%, rgba(139,92,255,.18), transparent 60%),radial-gradient(520px 300px at -8% 4%, rgba(255,45,135,.13), transparent 55%);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;background:linear-gradient(135deg,#8b5cff,#ff2d87);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">KStage</span>
+            <span style="font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#6b6b78;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px 9px;">actuel</span>
+          </div>
+          <!-- next drop -->
+          <div style="background:#1a1a20;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+            <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#8b5cff,#ff2d87);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0;">æ</div>
+            <div style="min-width:0;flex:1;">
+              <span style="display:inline-block;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#b69cff;background:rgba(139,92,255,.16);border-radius:5px;padding:2px 6px;">Comeback</span>
+              <p style="margin:6px 0 2px;color:#fff;font-weight:700;font-size:15px;font-family:'Bricolage Grotesque',sans-serif;">Whiplash</p>
+              <p style="margin:0;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#75757f;">aespa</p>
+            </div>
+            <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9b9ba6;text-align:right;">02:14:37</div>
+          </div>
+          <!-- feed rows -->
+          <div style="font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#5f5f6b;margin:14px 0 8px;">This week</div>
+          <div style="position:relative;height:60px;border-radius:12px;overflow:hidden;background:#202027;margin-bottom:8px;">
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,.2));"></div>
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#5ec8c8;"></div>
+            <div style="position:relative;padding:9px 12px;">
+              <span style="display:inline-block;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:#5ec8c8;border-radius:3px;padding:1px 5px;">MV</span>
+              <p style="margin:4px 0 0;color:#fff;font-weight:600;font-size:12px;">ILLIT · Magnetic</p>
+            </div>
+            <div style="position:absolute;right:11px;top:11px;font-family:'Geist Mono',monospace;font-size:10px;color:#cfcfd6;">18:00 KST</div>
+          </div>
+          <div style="position:relative;height:60px;border-radius:12px;overflow:hidden;background:#202027;">
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,.2));"></div>
+            <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:#e0a23b;"></div>
+            <div style="position:relative;padding:9px 12px;">
+              <span style="display:inline-block;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:#e0a23b;border-radius:3px;padding:1px 5px;">Music show</span>
+              <p style="margin:4px 0 0;color:#fff;font-weight:600;font-size:12px;">BABYMONSTER · Music Bank</p>
+            </div>
+            <div style="position:absolute;right:11px;top:11px;font-family:'Geist Mono',monospace;font-size:10px;color:#cfcfd6;">17:00 KST</div>
+          </div>
+        </div>
+
+        <!-- annotations -->
+        <div style="background:#fff;border-radius:20px;padding:28px;display:flex;flex-direction:column;justify-content:center;gap:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="display:flex;gap:13px;align-items:flex-start;">
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#c64b6e;font-weight:500;margin-top:2px;flex-shrink:0;">a.</span>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#3a3a42;"><strong style="color:#1c1c24;font-weight:600;">Le dégradé violet→rose</strong> est une signature SaaS de 2020-21, vue partout. Il tire l'app vers le générique plutôt que vers le k-pop.</p>
+          </div>
+          <div style="display:flex;gap:13px;align-items:flex-start;">
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#c64b6e;font-weight:500;margin-top:2px;flex-shrink:0;">b.</span>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#3a3a42;"><strong style="color:#1c1c24;font-weight:600;">Les labels mono majuscules partout</strong> (FILTERS, THIS WEEK, KST…) créent un bruit constant — effet « terminal » qui fatigue et alourdit.</p>
+          </div>
+          <div style="display:flex;gap:13px;align-items:flex-start;">
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#c64b6e;font-weight:500;margin-top:2px;flex-shrink:0;">c.</span>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#3a3a42;"><strong style="color:#1c1c24;font-weight:600;">Tout est carte cernée sur fond sombre.</strong> Les <em>rings</em> durs + le dark par défaut donnent une page dense, peu d'air, peu de respiration.</p>
+          </div>
+          <div style="display:flex;gap:13px;align-items:flex-start;">
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#3a9d6a;font-weight:500;margin-top:2px;flex-shrink:0;">✓</span>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#3a3a42;"><strong style="color:#1c1c24;font-weight:600;">Ce qui marche et qu'on garde&nbsp;:</strong> la structure 3 colonnes, le next&nbsp;drop en tête, les barres couleur par groupe, la hiérarchie du feed.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PART 2 — RECHERCHE ===== -->
+    <section style="margin-top:72px;">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:22px;">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;color:#1c1c24;">02</span>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em;margin:0;">La recherche</h2>
+        <span style="flex:1;height:1px;background:#d2d2d6;"></span>
+        <span style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;">vers quoi va 2026</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+        <!-- tile 1 -->
+        <div style="background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="height:78px;border-radius:12px;background:#f6f6f8;position:relative;overflow:hidden;margin-bottom:14px;">
+            <div style="position:absolute;inset:16px;display:flex;flex-direction:column;gap:7px;justify-content:center;">
+              <div style="height:7px;width:60%;background:#1c1c24;border-radius:4px;"></div>
+              <div style="height:5px;width:85%;background:#d8d8dd;border-radius:4px;"></div>
+              <div style="height:5px;width:42%;background:#d8d8dd;border-radius:4px;"></div>
+            </div>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:14px;font-weight:600;letter-spacing:-0.01em;">Minimalisme intentionnel</h3>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#6b6b74;">Chaque élément gagne sa place. Moins d'éléments, hiérarchie plus forte.</p>
+        </div>
+        <!-- tile 2 -->
+        <div style="background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="height:78px;border-radius:12px;background:#f6f6f8;position:relative;overflow:hidden;margin-bottom:14px;">
+            <div style="position:absolute;left:24px;top:14px;width:70px;height:50px;border-radius:10px;background:#fff;box-shadow:0 10px 24px -8px rgba(30,30,60,.28);"></div>
+            <div style="position:absolute;left:44px;top:26px;width:70px;height:50px;border-radius:10px;background:#fff;box-shadow:0 12px 26px -8px rgba(30,30,60,.22);"></div>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:14px;font-weight:600;letter-spacing:-0.01em;">Profondeur douce</h3>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#6b6b74;">Ombres légères, cartes flottantes. La profondeur remplace les bordures dures.</p>
+        </div>
+        <!-- tile 3 -->
+        <div style="background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="height:78px;border-radius:12px;background:linear-gradient(120deg,#a98cf2,#52cfd0);position:relative;overflow:hidden;margin-bottom:14px;">
+            <div style="position:absolute;left:18px;top:16px;right:18px;bottom:16px;border-radius:10px;background:rgba(255,255,255,.55);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.6);"></div>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:14px;font-weight:600;letter-spacing:-0.01em;">Surfaces translucides</h3>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#6b6b74;">Le « glass » revient — hiérarchie et contexte sans bordures lourdes.</p>
+        </div>
+        <!-- tile 4 -->
+        <div style="background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="height:78px;border-radius:12px;background:#f6f6f8;position:relative;overflow:hidden;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span style="width:30px;height:30px;border-radius:99px;background:#1c1c24;"></span>
+            <span style="width:30px;height:30px;border-radius:99px;background:#5b5bf0;"></span>
+            <span style="width:30px;height:30px;border-radius:99px;background:#eceafe;"></span>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:14px;font-weight:600;letter-spacing:-0.01em;">Un accent affirmé</h3>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#6b6b74;">Neutres frais + une seule couleur forte, plutôt qu'un dégradé cliché.</p>
+        </div>
+      </div>
+      <p style="margin:16px 2px 0;font-size:12px;color:#9a9aa2;line-height:1.5;">Synthèse de tendances UI 2025-26 (uxpilot, Muzli, Index.dev)&nbsp;: minimalisme « intentionnel », Soft&nbsp;UI / profondeur sans fouillis, retour mesuré du glass, écrans plus calmes et plus aérés.</p>
+    </section>
+
+    <!-- ===== PART 3 — DIRECTIONS ===== -->
+    <section style="margin-top:76px;">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:26px;">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;color:#1c1c24;">03</span>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em;margin:0;">Trois directions</h2>
+        <span style="flex:1;height:1px;background:#d2d2d6;"></span>
+        <span style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;">tes blocs, ré-habillés</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start;">
+
+        <!-- ============ DIRECTION A — DAYLIGHT ============ -->
+        <div style="background:#fff;border-radius:22px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="padding:6px 6px 16px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#5b5bf0;">A</span>
+              <h3 style="margin:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;">Daylight</h3>
+            </div>
+            <p style="margin:0 0 12px;font-size:12.5px;line-height:1.5;color:#6b6b74;">Clair par défaut, éditorial. Blanc cassé chaud, un accent periwinkle, accent serif italique. Beaucoup d'air.</p>
+            <div style="display:flex;gap:7px;">
+              <span style="width:22px;height:22px;border-radius:7px;background:#faf9f7;border:1px solid #eee;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#1c1c24;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#5b5bf0;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#eceafe;"></span>
+            </div>
+          </div>
+
+          <!-- mock -->
+          <div style="background:#faf9f7;border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.02em;color:#1c1c24;">K<span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;">stage</span></span>
+              <span style="width:26px;height:26px;border-radius:99px;background:#eceafe;border:1px solid #ddd9fb;"></span>
+            </div>
+            <!-- next drop -->
+            <div style="background:#fff;border-radius:16px;padding:15px;box-shadow:0 8px 26px -12px rgba(40,40,80,.16);margin-bottom:14px;">
+              <div style="display:flex;gap:12px;align-items:center;">
+                <div style="width:48px;height:48px;border-radius:13px;background:#eceafe;display:flex;align-items:center;justify-content:center;color:#5b5bf0;font-weight:700;font-size:19px;flex-shrink:0;font-family:'Bricolage Grotesque',sans-serif;">æ</div>
+                <div style="min-width:0;flex:1;">
+                  <span style="display:inline-block;font-size:10px;font-weight:600;color:#5b5bf0;background:#eceafe;border-radius:6px;padding:2px 8px;">Comeback</span>
+                  <p style="margin:6px 0 1px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;color:#1c1c24;">Whiplash</p>
+                  <p style="margin:0;font-size:12px;color:#8a8a93;">aespa</p>
+                </div>
+              </div>
+              <div style="margin-top:13px;padding-top:13px;border-top:1px solid #f0eeec;display:flex;gap:14px;">
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#1c1c24;line-height:1;">02</div><div style="font-size:9px;color:#a6a6ad;margin-top:3px;">jours</div></div>
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#1c1c24;line-height:1;">14</div><div style="font-size:9px;color:#a6a6ad;margin-top:3px;">h</div></div>
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#1c1c24;line-height:1;">37</div><div style="font-size:9px;color:#a6a6ad;margin-top:3px;">min</div></div>
+                <div style="flex:1;"></div>
+                <button style="align-self:center;border:none;background:#5b5bf0;color:#fff;font-family:'Geist',sans-serif;font-weight:600;font-size:12px;border-radius:10px;padding:8px 14px;cursor:pointer;">Suivre</button>
+              </div>
+            </div>
+            <!-- section label -->
+            <div style="font-size:11px;font-weight:600;color:#9a9aa2;margin:0 0 9px;">Cette semaine</div>
+            <!-- event row -->
+            <div style="background:#fff;border-radius:13px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:8px;box-shadow:0 3px 12px -8px rgba(40,40,80,.12);">
+              <span style="width:9px;height:9px;border-radius:99px;background:#1fb0a6;flex-shrink:0;"></span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#1c1c24;">ILLIT · Magnetic</p><p style="margin:1px 0 0;font-size:11px;color:#9a9aa2;">MV release</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#1c1c24;">18:00</div><div style="font-size:10px;color:#a6a6ad;">KST</div></div>
+            </div>
+            <div style="background:#fff;border-radius:13px;padding:11px 13px;display:flex;align-items:center;gap:11px;box-shadow:0 3px 12px -8px rgba(40,40,80,.12);">
+              <span style="width:9px;height:9px;border-radius:99px;background:#e0a23b;flex-shrink:0;"></span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#1c1c24;">BABYMONSTER · Music Bank</p><p style="margin:1px 0 0;font-size:11px;color:#9a9aa2;">Music show</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#1c1c24;">17:00</div><div style="font-size:10px;color:#a6a6ad;">KST</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ DIRECTION B — AURORA ============ -->
+        <div style="background:#fff;border-radius:22px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="padding:6px 6px 16px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#7b5cf0;">B</span>
+              <h3 style="margin:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;">Aurora</h3>
+            </div>
+            <p style="margin:0 0 12px;font-size:12.5px;line-height:1.5;color:#6b6b74;">Identité fandom, modernisée. Lilas + aqua doux, pills arrondis, touches de glass. Frais et pop, mais maîtrisé.</p>
+            <div style="display:flex;gap:7px;">
+              <span style="width:22px;height:22px;border-radius:7px;background:#f7f6fb;border:1px solid #eee;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#211f2b;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#7b5cf0;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#2bc4c4;"></span>
+            </div>
+          </div>
+
+          <!-- mock -->
+          <div style="background:#f7f6fb;border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;letter-spacing:-0.02em;background:linear-gradient(115deg,#7b5cf0,#2bc4c4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">KStage</span>
+              <span style="width:26px;height:26px;border-radius:99px;background:linear-gradient(135deg,#efeafe,#e3f7f5);border:1px solid #e7e2f5;"></span>
+            </div>
+            <!-- next drop -->
+            <div style="border-radius:18px;padding:15px;margin-bottom:14px;position:relative;overflow:hidden;background:linear-gradient(135deg,#efeafe,#e3f7f5);">
+              <div style="position:relative;display:flex;gap:12px;align-items:center;">
+                <div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#7b5cf0,#2bc4c4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:19px;flex-shrink:0;font-family:'Bricolage Grotesque',sans-serif;">æ</div>
+                <div style="min-width:0;flex:1;">
+                  <span style="display:inline-block;font-size:10px;font-weight:600;color:#7b5cf0;background:rgba(255,255,255,.7);border-radius:99px;padding:2px 10px;">Comeback</span>
+                  <p style="margin:6px 0 1px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;color:#211f2b;">Whiplash</p>
+                  <p style="margin:0;font-size:12px;color:#6e6a7e;">aespa</p>
+                </div>
+              </div>
+              <div style="margin-top:13px;display:flex;gap:7px;align-items:center;">
+                <span style="background:rgba(255,255,255,.72);backdrop-filter:blur(4px);border-radius:99px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#211f2b;padding:5px 12px;">02j 14h 37m</span>
+                <div style="flex:1;"></div>
+                <button style="border:none;background:#211f2b;color:#fff;font-family:'Geist',sans-serif;font-weight:600;font-size:12px;border-radius:99px;padding:8px 16px;cursor:pointer;">Suivre</button>
+              </div>
+            </div>
+            <!-- section label -->
+            <div style="font-size:11px;font-weight:600;color:#9a96a8;margin:0 0 9px;">Cette semaine</div>
+            <div style="background:#fff;border-radius:15px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:8px;">
+              <span style="font-size:9px;font-weight:600;color:#16a39a;background:#e1f6f3;border-radius:99px;padding:3px 9px;flex-shrink:0;">MV</span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#211f2b;">ILLIT · Magnetic</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#211f2b;">18:00</div><div style="font-size:10px;color:#a8a4b4;">KST</div></div>
+            </div>
+            <div style="background:#fff;border-radius:15px;padding:11px 13px;display:flex;align-items:center;gap:11px;">
+              <span style="font-size:9px;font-weight:600;color:#c07d1c;background:#fbf0dc;border-radius:99px;padding:3px 9px;flex-shrink:0;">Show</span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#211f2b;">BABYMONSTER · Music Bank</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#211f2b;">17:00</div><div style="font-size:10px;color:#a8a4b4;">KST</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ DIRECTION C — MIDNIGHT ============ -->
+        <div style="background:#fff;border-radius:22px;padding:18px;box-shadow:0 1px 0 #e2e2e6;">
+          <div style="padding:6px 6px 16px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#2bb89a;">C</span>
+              <h3 style="margin:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;">Midnight</h3>
+            </div>
+            <p style="margin:0 0 12px;font-size:12.5px;line-height:1.5;color:#6b6b74;">Le dark, en mieux. Bleu encre profond (fini le violet-noir), un seul accent menthe électrique, profondeur douce. Data-forward, aéré.</p>
+            <div style="display:flex;gap:7px;">
+              <span style="width:22px;height:22px;border-radius:7px;background:#0f1118;border:1px solid #eee;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#1b1e2a;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#eef0f5;"></span>
+              <span style="width:22px;height:22px;border-radius:7px;background:#3fe0b8;"></span>
+            </div>
+          </div>
+
+          <!-- mock -->
+          <div style="background:#0f1118;border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.02em;color:#eef0f5;">KStage</span>
+              <span style="width:26px;height:26px;border-radius:99px;background:#1b1e2a;border:1px solid rgba(255,255,255,.08);"></span>
+            </div>
+            <!-- next drop -->
+            <div style="background:#1b1e2a;border-radius:16px;padding:15px;margin-bottom:14px;box-shadow:0 14px 34px -16px rgba(0,0,0,.7);">
+              <div style="display:flex;gap:12px;align-items:center;">
+                <div style="width:48px;height:48px;border-radius:13px;background:#222636;display:flex;align-items:center;justify-content:center;color:#3fe0b8;font-weight:700;font-size:19px;flex-shrink:0;font-family:'Bricolage Grotesque',sans-serif;">æ</div>
+                <div style="min-width:0;flex:1;">
+                  <span style="display:inline-block;font-size:10px;font-weight:600;color:#3fe0b8;background:rgba(63,224,184,.12);border-radius:6px;padding:2px 8px;">Comeback</span>
+                  <p style="margin:6px 0 1px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;color:#eef0f5;">Whiplash</p>
+                  <p style="margin:0;font-size:12px;color:#8b90a3;">aespa</p>
+                </div>
+              </div>
+              <div style="margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:14px;align-items:center;">
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#3fe0b8;line-height:1;">02</div><div style="font-size:9px;color:#6b7088;margin-top:3px;">jours</div></div>
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#eef0f5;line-height:1;">14</div><div style="font-size:9px;color:#6b7088;margin-top:3px;">h</div></div>
+                <div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;color:#eef0f5;line-height:1;">37</div><div style="font-size:9px;color:#6b7088;margin-top:3px;">min</div></div>
+                <div style="flex:1;"></div>
+                <button style="align-self:center;border:none;background:#3fe0b8;color:#0f1118;font-family:'Geist',sans-serif;font-weight:600;font-size:12px;border-radius:10px;padding:8px 14px;cursor:pointer;">Suivre</button>
+              </div>
+            </div>
+            <!-- section label -->
+            <div style="font-size:11px;font-weight:600;color:#6b7088;margin:0 0 9px;">Cette semaine</div>
+            <div style="background:#1b1e2a;border-radius:13px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:8px;">
+              <span style="width:9px;height:9px;border-radius:99px;background:#3fe0b8;flex-shrink:0;"></span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#eef0f5;">ILLIT · Magnetic</p><p style="margin:1px 0 0;font-size:11px;color:#7e8397;">MV release</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#eef0f5;">18:00</div><div style="font-size:10px;color:#6b7088;">KST</div></div>
+            </div>
+            <div style="background:#1b1e2a;border-radius:13px;padding:11px 13px;display:flex;align-items:center;gap:11px;">
+              <span style="width:9px;height:9px;border-radius:99px;background:#e0a23b;flex-shrink:0;"></span>
+              <div style="min-width:0;flex:1;"><p style="margin:0;font-weight:600;font-size:13px;color:#eef0f5;">BABYMONSTER · Music Bank</p><p style="margin:1px 0 0;font-size:11px;color:#7e8397;">Music show</p></div>
+              <div style="text-align:right;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;color:#eef0f5;">17:00</div><div style="font-size:10px;color:#6b7088;">KST</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- levers note -->
+      <div style="margin-top:28px;background:#fff;border-radius:18px;padding:22px 24px;box-shadow:0 1px 0 #e2e2e6;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+        <div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;margin-bottom:8px;">Leviers communs</div>
+          <p style="margin:0;font-size:13px;line-height:1.55;color:#4a4a52;">Aux 3 directions&nbsp;: ombres douces à la place des <em>rings</em>, rayons plus généreux, et <strong style="font-weight:600;color:#1c1c24;">les labels mono réservés aux vraies données</strong> (heures, compteurs) — plus aux titres de section.</p>
+        </div>
+        <div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;margin-bottom:8px;">Typo</div>
+          <p style="margin:0;font-size:13px;line-height:1.55;color:#4a4a52;">Bricolage reste en titres. <strong style="font-weight:600;color:#1c1c24;">Space&nbsp;Grotesk</strong> pour les chiffres (compteurs, heures), et un <strong style="font-weight:600;color:#1c1c24;">serif italique</strong> en accent éditorial sur Daylight.</p>
+        </div>
+        <div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9aa2;margin-bottom:8px;">Prochaine étape</div>
+          <p style="margin:0;font-size:13px;line-height:1.55;color:#4a4a52;">Dis-moi la direction qui te parle (ou un mix). J'applique le thème complet sur la home connectée — sidebars, feed, calendrier — en gardant tes blocs.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

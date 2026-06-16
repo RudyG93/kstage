@@ -26,7 +26,7 @@ export function Landing({ groups }: { groups: GroupSummary[] }) {
       {/* Hero */}
       <section className="flex flex-col items-center text-center">
         <span
-          className="text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 border-border/60 bg-card/50 mb-6 rounded-full border px-3 py-1 font-mono text-[11px] tracking-[0.18em] uppercase duration-700"
+          className="text-faint animate-in fade-in-0 slide-in-from-bottom-2 border-border/60 bg-card/50 mb-6 rounded-full border px-3 py-1 text-xs font-semibold duration-700"
           style={{ animationFillMode: 'both' }}
         >
           K-pop event calendar
@@ -36,11 +36,7 @@ export function Landing({ groups }: { groups: GroupSummary[] }) {
           className="animate-in fade-in-0 slide-in-from-bottom-3 text-4xl leading-[1.05] font-extrabold tracking-tight duration-700 sm:text-5xl"
           style={{ animationDelay: '90ms', animationFillMode: 'both' }}
         >
-          Never miss a{' '}
-          <span className="bg-gradient-to-r from-[#8b5cff] to-[#ff2d87] bg-clip-text text-transparent">
-            comeback
-          </span>{' '}
-          again.
+          Never miss a <span className="gradient-text">comeback</span> again.
         </h1>
 
         <p
@@ -57,7 +53,7 @@ export function Landing({ groups }: { groups: GroupSummary[] }) {
         >
           <Link
             href="/signup"
-            className="focus-visible:ring-ring/50 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8b5cff] to-[#ff2d87] px-6 text-base font-semibold text-white shadow-lg shadow-[#8b5cff]/25 transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3 sm:w-auto"
+            className="focus-visible:ring-ring/50 bg-primary text-primary-foreground shadow-primary/25 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold shadow-lg transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3 sm:w-auto"
           >
             Get started
             <ArrowRight className="size-4" aria-hidden />

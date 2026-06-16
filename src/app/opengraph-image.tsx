@@ -14,9 +14,9 @@ export default function OpengraphImage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0e0e13',
+        backgroundColor: '#0f1118',
         backgroundImage:
-          'linear-gradient(135deg, rgba(139,92,255,0.22), rgba(255,45,135,0.14) 55%, rgba(14,14,19,0) 80%)',
+          'linear-gradient(135deg, rgba(91,91,240,0.22), rgba(63,224,184,0.14) 55%, rgba(15,17,24,0) 80%)',
         fontFamily: 'sans-serif',
       }}
     >
@@ -26,7 +26,7 @@ export default function OpengraphImage() {
           fontSize: 140,
           fontWeight: 800,
           letterSpacing: '-0.04em',
-          backgroundImage: 'linear-gradient(90deg, #8b5cff, #ff2d87)',
+          backgroundImage: 'linear-gradient(90deg, #5b5bf0, #3fe0b8)',
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
           color: 'transparent',
@@ -38,7 +38,7 @@ export default function OpengraphImage() {
         Never miss a comeback again.
       </div>
       <div style={{ display: 'flex', gap: 18, marginTop: 56 }}>
-        {['#ff5ca8', '#f5c542', '#ff4d6d', '#cdb4ff'].map((c) => (
+        {['#3fe0b8', '#e6ad4c', '#ef6a9b', '#8785ff'].map((c) => (
           <div key={c} style={{ width: 22, height: 22, borderRadius: 9999, backgroundColor: c }} />
         ))}
       </div>

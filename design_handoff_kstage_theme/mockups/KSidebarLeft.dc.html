@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:18px;">
+  <sc-if value="{{ showFilters }}" hint-placeholder-val="{{ true }}">
+    <section style="background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:16px;padding:15px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+      <div style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);margin-bottom:11px;">Filters</div>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink,#1c1c24);background:var(--primarySoft,#eceafe);padding:8px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--ink,#1c1c24);"></span>All events</span>
+        <span style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2,#6b6b74);padding:8px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--primary,#5b5bf0);"></span>Comebacks</span>
+        <span style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2,#6b6b74);padding:8px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--teal,#1fb0a6);"></span>MV / release</span>
+        <span style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2,#6b6b74);padding:8px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber,#cf851f);"></span>Music shows</span>
+        <span style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2,#6b6b74);padding:8px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--rose,#e0568a);"></span>Lives</span>
+      </div>
+    </section>
+  </sc-if>
+
+  <section style="background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:16px;padding:15px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
+      <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);">My groups</span>
+      <span style="font-size:11.5px;color:var(--t3,#9a9aa2);">manage</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1px;">
+      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 8px;border-radius:9px;"><span style="width:24px;height:24px;border-radius:7px;background:var(--primarySoft,#eceafe);color:var(--primary,#5b5bf0);display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12px;">æ</span><span style="flex:1;font-size:13.5px;font-weight:500;">aespa</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--t3,#9a9aa2);">4</span></div>
+      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 8px;border-radius:9px;"><span style="width:24px;height:24px;border-radius:7px;background:color-mix(in srgb, var(--teal,#1fb0a6) 16%, transparent);color:var(--teal,#1fb0a6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">IL</span><span style="flex:1;font-size:13.5px;font-weight:500;">ILLIT</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--t3,#9a9aa2);">2</span></div>
+      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 8px;border-radius:9px;"><span style="width:24px;height:24px;border-radius:7px;background:color-mix(in srgb, var(--rose,#e0568a) 16%, transparent);color:var(--rose,#e0568a);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">BM</span><span style="flex:1;font-size:13.5px;font-weight:500;">BABYMONSTER</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--t3,#9a9aa2);">3</span></div>
+      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 8px;border-radius:9px;"><span style="width:24px;height:24px;border-radius:7px;background:color-mix(in srgb, var(--amber,#cf851f) 18%, transparent);color:var(--amber,#cf851f);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">i</span><span style="flex:1;font-size:13.5px;font-weight:500;">i-dle</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--t3,#9a9aa2);">1</span></div>
+    </div>
+    <div style="margin-top:10px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--t3,#9a9aa2);padding:0 8px;">4 groups · 10 upcoming</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:236,&quot;height&quot;:420},&quot;showFilters&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}"></script>
+</body>
+</html>

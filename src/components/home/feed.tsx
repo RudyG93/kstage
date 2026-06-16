@@ -56,9 +56,7 @@ function FeedSection({
   return (
     <section>
       <div className="mb-4 flex items-center gap-4">
-        <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-          {label}
-        </span>
+        <span className="text-faint text-xs font-semibold">{label}</span>
         <span className="bg-border h-px flex-1" />
       </div>
       <div className="space-y-5">
