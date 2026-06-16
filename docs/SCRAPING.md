@@ -216,6 +216,16 @@ select a.title, b.title from mv a join mv b
     = regexp_replace(lower(b.title),'[^a-z0-9가-힣]','','g');
 ```
 
+### 3.12 — kpopofficial : l'artiste migre du `gspb_meta_value` vers `.gspb-dynamic-title-element` (résolu 2026-06-16)
+
+**Symptôme** : couverture comebacks **dégradée** (pas une panne totale). `scrape_log` montrait `matched ~10/run` ; le carrousel « upcoming » de la page mensuelle et les éditions JP n'arrivaient jamais en base. Invisible sans inspection : la grille classique passait encore et le cron restait vert.
+
+**Cause** : kpopofficial (Greenshift/WordPress) a déplacé le nom d'artiste du span `gspb_meta_value` vers l'élément de titre dynamique `.gspb-dynamic-title-element`. Sur ces items, `pickArtist(metas)` ne trouvait plus l'artiste — ou renvoyait une valeur parasite (« 2nd Digital Single », date « … JST ») → `matchGroups` → aucun match → comeback **silencieusement skippé**. Sur la page de juin 2026 : 51 items uniques, dont seulement 6 propres en meta, 10 garblés, 35 carrousel entièrement ratés.
+
+**Fix** : lire l'artiste depuis `.gspb-dynamic-title-element` en priorité, `pickArtist(metas)` en fallback (items legacy / fixtures synthétiques). **Strictement non régressif** (les items propres en meta sont non-conflictuels → résultat identique) et **sans risque de donnée corrompue** : `ingestComebacks` ne crée un event que si `matchGroups` matche l'artiste. Régression verrouillée par une **capture réelle datée** `__fixtures__/kpopofficial-june-2026.html` (testée dans `kpopofficial.test.ts`).
+
+**Méthode de découverte** : c'est en construisant cette fixture réelle (règle « real data over fixtures ») que le parser a révélé 0 sur le carrousel ; croisé avec `scrape_log` (la prod parsait encore la grille) → diagnostic « dégradation, pas panne ». **Vérification post-déploiement** : `matched` doit remonter au prochain run du cron `scrape-comebacks`.
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)
