@@ -54,7 +54,7 @@
 - ✅ **`getOpenReports` : `requireAdminUser()`** — fait 2026-06-15 (`moderation.ts`). Audit des 11 fichiers `'use server'` : seul getOpenReports était non-gardé ; banner-actions/suggestions/resolveReport/dismissReport ont leurs gardes `isAdmin`, les actions user passent par le client authentifié (RLS), auth/actions service-role = flux signup légitime.
 - **3 toggles/migrations Supabase** (advisors vérifiés 2026-06-15) :
   - ✅ `revoke execute on handle_new_user from public/anon/authenticated` → appliqué (migration 0034), vérifié non exécutable par anon/authenticated.
-  - ⛔ **leaked-password protection** → dashboard Supabase Auth, **action manuelle de Rudy** (pas d'accès programmatique).
+  - ✅ **leaked-password protection** → activée par Rudy (dashboard Supabase Auth), confirmée 2026-06-16 : l'advisor sécurité ne la liste plus. Advisors re-runés : restent seulement `citext in public` + `group_follow_counts`/`profile_stats` SECURITY DEFINER — ces 3 sont **intentionnels/acceptés** (citext porte la colonne `username`, déplacer l'extension casserait la colonne ; counts/stats publics par design).
   - ✅ **buckets listing** — fait 2026-06-16 (migration 0035, appliquée + vérifiée) : drop des policies SELECT larges `avatars`/`banners`. Sûr car buckets publics → affichage via `getPublicUrl` (indépendant de la policy SELECT), uploads inchangés, buckets vides, aucun `.list()`. Note : `group_follow_counts`/`profile_stats` (definer, exécutables anon) laissés tels quels — **intentionnels** (counts/stats publics, RLS contournée par design).
 - ✅ **Migration perf RLS** — appliquée & vérifiée 2026-06-16 (migration 0034) : `(select auth.uid())` sur les **21 policies** + `revoke handle_new_user` + index `events.source_id`/`sources.group_id`. Confirmé : advisors `auth_rls_initplan` tombés à 0, `handle_new_user` non exécutable par anon/authenticated. (Autres FK non indexées = petites tables → on évite le sur-index, cf. advisor unused_index.)
 - ✅ **Ledger de migrations réconcilié** (2026-06-12, avec P0.3) : versions 0026-0030 insérées dans `supabase_migrations.schema_migrations`, 0031 appliquée via `apply_migration` (flux normal restauré).
@@ -63,7 +63,7 @@
 
 ### Perf (léger, avant trafic)
 
-- ✅ **React `cache()`** sur les queries partagées — étendu 2026-06-16 : `getGroups`, `getFollowedGroupIds` (sidebar + page dans le même render) et `getEventBySlug` (`generateMetadata` + composant de `/mv/[slug]`, 2 requêtes → 1) wrappées `cache()`, en plus de `getGroupBySlug` (2026-06-15). Reste possible (mineur, non bloquant) : viewer/profile + `Promise.all` dans le root layout.
+- ✅ **React `cache()`** sur les queries partagées — étendu 2026-06-16 : `getGroups`, `getFollowedGroupIds` (sidebar + page dans le même render) et `getEventBySlug` (`generateMetadata` + composant de `/mv/[slug]`, 2 requêtes → 1) wrappées `cache()`, en plus de `getGroupBySlug` (2026-06-15). **Root layout** (2026-06-16) : `profile` + `dialogGroups` passés en `Promise.all` (2 allers-retours séquentiels → concurrents). Reste possible (non bloquant) : helper `getViewer()` caché pour dédup `auth.getUser()` cross-composants — refactor plus large, repoussé.
 - ✅ **Vitest : `environment: 'node'` par défaut** — fait 2026-06-16 : + `// @vitest-environment jsdom` sur `auth-menu.test.tsx` (seul test DOM). Suite ~19-29 s → **~6 s** (env cumulé 340 s → 3,6 s), 360 tests verts.
 
 ## P2 — Habitude & surfaces (utile à n=1)
