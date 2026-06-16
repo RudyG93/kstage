@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
 import { CountdownBadge } from './countdown'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
@@ -72,6 +73,13 @@ export function HomeEventCard({
         style={{ backgroundColor: typeColor }}
         aria-hidden
       />
+      {/* Indicateur "lien externe" (music show, live → carrd/broadcaster). */}
+      {external && (
+        <span className="absolute top-2 right-2 text-white/70" title="Opens an external site">
+          <ExternalLink className="size-3.5" aria-hidden />
+          <span className="sr-only">opens an external site</span>
+        </span>
+      )}
 
       <div className="relative flex h-full items-center justify-between gap-3 py-2 pr-4 pl-5">
         <div className="min-w-0 flex-1 space-y-1">

@@ -46,7 +46,7 @@
 - ✅ **SEO pages groupes** — fait 2026-06-15 : `generateMetadata` sur `groups/[slug]` (title « {groupe} — comebacks & schedule · KStage » + description + canonical + og), title landing aligné « KStage — your k-pop calendar ». `metadataBase` était déjà en place.
 - ✅ **Labels anniversaires en anglais** (« turns 30 » au lieu de « 30 ans ») — fait 2026-06-15 avec P0.6 (`src/lib/events/anniversaries.ts` + 3 assertions).
 - ✅ **Masquer « Recent discussions » sous un seuil** — fait 2026-06-15 : section cachée si `< 3` discussions (`sidebar-right.tsx`, `DISCUSSIONS_MIN`), aligné règle de gel des features sociales.
-- **Cards Music Show** : `target=_blank` + icône external-link (elles sortent vers le carrd sans prévenir). _(reste à faire — les events music_show passent par l'event-card générique ; à localiser le rendu du lien externe.)_
+- ✅ **Cards Music Show** : `target=_blank` (déjà présent) + **icône external-link** — fait 2026-06-16. Tout event à `source_url` externe (music_show, live, release kpopofficial…) affiche une pastille `ExternalLink` + label sr-only « opens an external site », sur l'`event-card` générique **et** `home/event-card`. Vérifié au rendu sur `/calendar` : 1 carte externe → 1 icône, 12 cartes internes → 0.
 - ~~**`/my`** : redirect vers `/calendar`~~ → **sans objet (2026-06-15)** : aucune référence à `/my` dans le code (vérifié), le brief avait déjà été corrigé.
 
 ### Sécurité / ops
@@ -63,7 +63,7 @@
 
 ### Perf (léger, avant trafic)
 
-- **React `cache()`** sur les queries partagées (`getGroups`, `getFollowedGroupIds`, `getEventBySlug`, viewer/profile) + `Promise.all` dans le root layout — ~5-8 round-trips Supabase économisés par page authentifiée. _(Démarré 2026-06-15 : `getGroupBySlug` wrappé `cache()` — dédup generateMetadata+page. Reste à étendre aux autres.)_
+- ✅ **React `cache()`** sur les queries partagées — étendu 2026-06-16 : `getGroups`, `getFollowedGroupIds` (sidebar + page dans le même render) et `getEventBySlug` (`generateMetadata` + composant de `/mv/[slug]`, 2 requêtes → 1) wrappées `cache()`, en plus de `getGroupBySlug` (2026-06-15). Reste possible (mineur, non bloquant) : viewer/profile + `Promise.all` dans le root layout.
 - ✅ **Vitest : `environment: 'node'` par défaut** — fait 2026-06-16 : + `// @vitest-environment jsdom` sur `auth-menu.test.tsx` (seul test DOM). Suite ~19-29 s → **~6 s** (env cumulé 340 s → 3,6 s), 360 tests verts.
 
 ## P2 — Habitude & surfaces (utile à n=1)
@@ -76,11 +76,11 @@
 
 ## Tests (accompagne P0/P1)
 
-- **`slots.test.ts`** : la logique créneaux hebdo KST (rollover, tolérance 12 h, KST→UTC) utilisée par 6 sources n'a aucun test — la classe de bug la plus silencieuse du scraping.
+- ✅ **`slots.test.ts`** — fait 2026-06-16 : la logique créneaux hebdo KST (`nextWeeklySlotIso` rollover + tolérance 12 h ; `kstDateTimeToIso` KST→UTC + bornes invalides) est couverte (12 assertions, valeurs ISO calculées à la main confirmées au run).
 - **E2E en CI** : job smoke (sans credentials) + secrets GitHub pour le golden path auth (aujourd'hui : jamais exécuté automatiquement).
 - **Étendre le spec calendrier** : naviguer Next month + asserter qu'un event seedé s'affiche.
 - **Fixture kpopofficial réelle** (capture datée via r.jina.ai) en plus du HTML synthétique — règle « real data over fixtures ».
-- **Tests `artist-validation.ts`** (input communautaire public, 112 lignes non testées) + `normalizeUsername`.
+- ✅ **Tests `artist-validation.ts`** (input communautaire public) + `normalizeUsername` — fait 2026-06-16 : `parseArtistSuggestionInput` (nom, kind, hex, debut date, URLs http(s), parsing/cap membres, solo→[]) et `normalizeUsername` (casse préservée, trim, bornes 3-20, charset) couverts (16 assertions).
 
 ## Risques à documenter (une demi-page, une fois)
 
