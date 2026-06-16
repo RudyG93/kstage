@@ -70,9 +70,7 @@ export default async function MvsPage() {
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
           {rows.length > 0 && (
             <div className="space-y-6">
-              <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-                From your groups
-              </span>
+              <span className="text-faint text-xs font-semibold">From your groups</span>
               {rows.map((row) => (
                 <MvScrollRow
                   key={row.slug}
@@ -88,9 +86,7 @@ export default async function MvsPage() {
           )}
 
           <section className="space-y-3">
-            <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-              Latest MVs
-            </span>
+            <span className="text-faint text-xs font-semibold">Latest MVs</span>
             {latest.length === 0 ? (
               <p className="text-muted-foreground text-sm">No music videos tracked yet.</p>
             ) : (

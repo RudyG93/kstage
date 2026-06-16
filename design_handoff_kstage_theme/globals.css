@@ -1,0 +1,214 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------ *
+ * KStage — thème « Daylight / Midnight »
+ * Daylight  = clair par défaut (:root)
+ * Midnight  = sombre (.dark)
+ * Accent partagé : periwinkle (primary) + menthe (teal).
+ * ------------------------------------------------------------------ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-bricolage);
+  /* nouveau : chiffres (countdowns, heures) + accent éditorial */
+  --font-numeric: var(--font-space-grotesk);
+  --font-serif: var(--font-instrument);
+  /* nouveau : couleurs sémantiques d'event, utilisables en bg-teal / text-rose… */
+  --color-teal: var(--teal);
+  --color-amber: var(--amber);
+  --color-rose: var(--rose);
+  --color-faint: var(--faint);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ===================== DAYLIGHT (clair) ===================== */
+:root {
+  --background: oklch(0.982 0.003 85); /* blanc cassé chaud */
+  --foreground: oklch(0.23 0.015 285); /* encre */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.015 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.015 285);
+
+  --primary: oklch(0.561 0.218 277); /* periwinkle #5b5bf0 */
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.955 0.008 301);
+  --secondary-foreground: oklch(0.23 0.015 285);
+  --muted: oklch(0.955 0.008 301);
+  --muted-foreground: oklch(0.531 0.014 286);
+
+  --accent: oklch(0.945 0.027 290); /* lilas doux (chips actifs) */
+  --accent-foreground: oklch(0.561 0.218 277); /* texte periwinkle sur lilas */
+
+  --destructive: oklch(0.58 0.23 25);
+  --border: oklch(0.947 0.003 68); /* hairline */
+  --input: oklch(0.947 0.003 68);
+  --ring: oklch(0.561 0.218 277);
+
+  /* couleurs sémantiques d'event */
+  --teal: oklch(0.664 0.111 187); /* MV / release */
+  --amber: oklch(0.655 0.134 70); /* music show */
+  --rose: oklch(0.637 0.179 1); /* live */
+  --faint: oklch(0.689 0.012 286); /* texte tertiaire / anniversary */
+
+  --chart-1: oklch(0.561 0.218 277);
+  --chart-2: oklch(0.664 0.111 187);
+  --chart-3: oklch(0.655 0.134 70);
+  --chart-4: oklch(0.637 0.179 1);
+  --chart-5: oklch(0.7 0.16 150);
+
+  --radius: 1rem; /* plus généreux (était 0.9rem) */
+
+  --sidebar: oklch(0.982 0.003 85);
+  --sidebar-foreground: oklch(0.23 0.015 285);
+  --sidebar-primary: oklch(0.561 0.218 277);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.945 0.027 290);
+  --sidebar-accent-foreground: oklch(0.561 0.218 277);
+  --sidebar-border: oklch(0.947 0.003 68);
+  --sidebar-ring: oklch(0.561 0.218 277);
+}
+
+/* ===================== MIDNIGHT (sombre) ===================== */
+.dark {
+  --background: oklch(0.179 0.015 272); /* bleu encre profond */
+  --foreground: oklch(0.955 0.007 269);
+  --card: oklch(0.238 0.024 274);
+  --card-foreground: oklch(0.955 0.007 269);
+  --popover: oklch(0.238 0.024 274);
+  --popover-foreground: oklch(0.955 0.007 269);
+
+  --primary: oklch(0.675 0.176 281); /* periwinkle lumineux #8785ff */
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.288 0.03 274);
+  --secondary-foreground: oklch(0.955 0.007 269);
+  --muted: oklch(0.288 0.03 274);
+  --muted-foreground: oklch(0.656 0.029 274);
+
+  --accent: oklch(0.32 0.055 281); /* lilas sombre (chips actifs) */
+  --accent-foreground: oklch(0.78 0.13 282);
+
+  --destructive: oklch(0.7 0.19 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.675 0.176 281);
+
+  --teal: oklch(0.815 0.143 172); /* menthe électrique #3fe0b8 */
+  --amber: oklch(0.783 0.131 78);
+  --rose: oklch(0.699 0.17 359);
+  --faint: oklch(0.55 0.038 276);
+
+  --chart-1: oklch(0.675 0.176 281);
+  --chart-2: oklch(0.815 0.143 172);
+  --chart-3: oklch(0.783 0.131 78);
+  --chart-4: oklch(0.699 0.17 359);
+  --chart-5: oklch(0.78 0.15 150);
+
+  --sidebar: oklch(0.238 0.024 274);
+  --sidebar-foreground: oklch(0.955 0.007 269);
+  --sidebar-primary: oklch(0.675 0.176 281);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.32 0.055 281);
+  --sidebar-accent-foreground: oklch(0.78 0.13 282);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.675 0.176 281);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.025em;
+  }
+  /* chiffres : countdowns, heures, compteurs */
+  .tabular,
+  [data-numeric] {
+    font-family: var(--font-numeric);
+    font-feature-settings: 'tnum' 1;
+  }
+  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe. */
+  .dark body {
+    background-image:
+      radial-gradient(900px 520px at 88% -12%, oklch(0.675 0.176 281 / 0.16), transparent 60%),
+      radial-gradient(760px 440px at -8% 2%, oklch(0.815 0.143 172 / 0.1), transparent 55%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+}
+
+@layer utilities {
+  /* Signature de marque modernisée (periwinkle → menthe).
+     Pour le wordmark, préférer désormais l'accent serif italique :
+     <span class="font-heading">K<span class="font-serif italic">stage</span></span> */
+  .gradient-text {
+    background: linear-gradient(120deg, var(--primary) 0%, var(--teal) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-signature {
+    background: linear-gradient(120deg, var(--primary) 0%, var(--teal) 100%);
+  }
+  /* ombre douce standard (remplace les ring durs) */
+  .shadow-soft {
+    box-shadow: 0 3px 12px -9px oklch(0.2 0.02 285 / 0.4);
+  }
+  .dark .shadow-soft {
+    box-shadow: 0 8px 22px -14px oklch(0 0 0 / 0.6);
+  }
+}

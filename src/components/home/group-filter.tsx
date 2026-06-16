@@ -96,7 +96,7 @@ export function GroupFilter({
       </button>
 
       {open && (
-        <div className="bg-card ring-foreground/10 absolute z-20 mt-1 w-full overflow-hidden rounded-lg shadow-lg ring-1">
+        <div className="bg-card border-border absolute z-20 mt-1 w-full overflow-hidden rounded-lg border shadow-lg">
           <div className="border-border border-b p-2">
             <input
               type="text"

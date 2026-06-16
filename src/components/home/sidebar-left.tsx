@@ -38,22 +38,18 @@ export async function SidebarLeft({
   return (
     <div className="space-y-6 lg:sticky lg:top-20">
       {showFilters && (
-        <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
+        <section className="bg-card border-border shadow-soft rounded-xl border p-4">
           <div className="mb-3">
-            <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-              Filters
-            </span>
+            <span className="text-faint text-xs font-semibold">Filters</span>
           </div>
           <TypeFilterVertical />
           {groupFilter && <div className="mt-3">{groupFilter}</div>}
         </section>
       )}
 
-      <section className="bg-card ring-foreground/10 rounded-xl p-4 ring-1">
+      <section className="bg-card border-border shadow-soft rounded-xl border p-4">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-muted-foreground font-mono text-[11px] tracking-[0.18em] uppercase">
-            My groups
-          </span>
+          <span className="text-faint text-xs font-semibold">My groups</span>
           <Link href="/groups" className="text-muted-foreground hover:text-foreground text-xs">
             manage
           </Link>

@@ -34,7 +34,7 @@ function GroupItem({ g }: { g: BannerGroup }) {
   }
 
   return (
-    <div className="bg-card ring-foreground/10 space-y-2 rounded-xl p-3 ring-1">
+    <div className="bg-card border-border shadow-soft space-y-2 rounded-xl border p-3">
       <div
         className="bg-muted relative w-full overflow-hidden rounded-lg"
         style={{ aspectRatio: '8 / 1' }}

@@ -64,7 +64,7 @@ export function AccountForm({
   }
 
   return (
-    <div className="bg-card ring-foreground/10 space-y-6 rounded-2xl p-6 ring-1">
+    <div className="bg-card border-border shadow-soft space-y-6 rounded-2xl border p-6">
       <div className="flex items-center gap-4">
         <Avatar
           email={email}

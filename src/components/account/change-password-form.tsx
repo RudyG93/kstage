@@ -27,7 +27,7 @@ export function ChangePasswordForm() {
   const ok = state !== null && 'ok' in state
 
   return (
-    <div className="bg-card ring-foreground/10 space-y-6 rounded-2xl p-6 ring-1">
+    <div className="bg-card border-border shadow-soft space-y-6 rounded-2xl border p-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Password</h2>
         <p className="text-muted-foreground text-sm">

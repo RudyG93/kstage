@@ -75,7 +75,7 @@ function Row({ entries, links }: { entries: typeof ENTRIES; links: Record<string
           // Couleur de marque en thème CLAIR ; sur fond sombre on garde le
           // muted-foreground (visible) — sinon les marques noires (X/TikTok/Tidal)
           // disparaîtraient. Hover = couleur de marque dans les deux thèmes.
-          className="dark:text-muted-foreground hover:bg-muted ring-foreground/10 flex size-9 items-center justify-center rounded-full text-[var(--brand)] ring-1 transition-[color,transform] hover:scale-110 hover:text-[var(--brand)]"
+          className="dark:text-muted-foreground hover:bg-muted border-border flex size-9 items-center justify-center rounded-full border text-[var(--brand)] transition-[color,transform] hover:scale-110 hover:text-[var(--brand)]"
         >
           <Icon size={18} color="currentColor" />
         </a>

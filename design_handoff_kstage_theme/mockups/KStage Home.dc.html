@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+  </style>
+</helmet>
+
+<div style="{{ vars }};min-height:100vh;background:var(--page,#ecebef);font-family:'Geist',system-ui,sans-serif;color:var(--ink,#1c1c24);padding:30px 26px 64px;transition:background .45s ease;">
+  <div style="max-width:1200px;margin:0 auto;">
+
+    <!-- caption -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--t3,#9a9aa2);">
+        <span style="width:7px;height:7px;border-radius:99px;background:var(--primary,#5b5bf0);"></span>
+        Thème appliqué · {{ screenLabel }}
+      </div>
+      <div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--t3,#9a9aa2);">{{ themeLabel }}</div>
+    </div>
+
+    <!-- ===== APP WINDOW ===== -->
+    <div style="position:relative;border-radius:24px;overflow:hidden;background:var(--bg,#faf9f7);box-shadow:0 30px 80px -40px rgba(20,20,50,.5),0 0 0 1px var(--ring,rgba(0,0,0,.04));transition:background .45s ease;">
+
+      <div style="pointer-events:none;position:absolute;inset:0;opacity:var(--atmo,0);transition:opacity .45s ease;background-image:radial-gradient(820px 420px at 86% -10%, rgba(135,133,255,.18), transparent 60%),radial-gradient(620px 360px at -6% 4%, rgba(63,224,184,.10), transparent 58%);" aria-hidden></div>
+
+      <!-- header -->
+      <header style="position:relative;display:flex;align-items:center;gap:16px;height:60px;padding:0 22px;border-bottom:1px solid var(--line,#efedeb);background:var(--card,#fff);">
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;letter-spacing:-0.02em;color:var(--ink,#1c1c24);">K<span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;">stage</span></span>
+        <nav style="display:flex;align-items:center;gap:3px;margin-left:12px;">
+          <button onClick="{{ goHome }}" style="font-family:'Geist',sans-serif;font-size:13.5px;border:none;cursor:pointer;padding:7px 13px;border-radius:10px;{{ navHome }}">Upcoming</button>
+          <button onClick="{{ goCal }}" style="font-family:'Geist',sans-serif;font-size:13.5px;border:none;cursor:pointer;padding:7px 13px;border-radius:10px;{{ navCal }}">Calendar</button>
+          <button onClick="{{ goMv }}" style="font-family:'Geist',sans-serif;font-size:13.5px;border:none;cursor:pointer;padding:7px 13px;border-radius:10px;{{ navMv }}">MVs</button>
+          <button onClick="{{ goGroups }}" style="font-family:'Geist',sans-serif;font-size:13.5px;border:none;cursor:pointer;padding:7px 13px;border-radius:10px;{{ navGroups }}">Groups</button>
+        </nav>
+        <div style="flex:1;"></div>
+        <span style="font-size:13px;font-weight:600;color:var(--primary,#5b5bf0);background:var(--primarySoft,#eceafe);padding:8px 14px;border-radius:10px;">+ Suggest</span>
+        <button onClick="{{ toggle }}" aria-label="Toggle theme" style="position:relative;width:60px;height:30px;border-radius:99px;border:1px solid var(--line,#efedeb);background:var(--card2,#f1eff5);cursor:pointer;padding:0;flex-shrink:0;">
+          <span style="position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:99px;background:var(--primary,#5b5bf0);box-shadow:0 2px 8px -2px rgba(0,0,0,.4);transform:translateX(var(--knobX,0));transition:transform .35s cubic-bezier(.4,1.3,.5,1);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;">{{ themeIcon }}</span>
+        </button>
+        <span style="width:30px;height:30px;border-radius:99px;background:var(--card2,#f1eff5);border:1px solid var(--line,#efedeb);flex-shrink:0;"></span>
+      </header>
+
+      <div style="position:relative;padding:26px 24px 34px;">
+
+        <!-- ============ SCREEN : HOME ============ -->
+        <div style="display:{{ showHome }};">
+          <div style="display:grid;grid-template-columns:236px minmax(0,1fr) 296px;gap:24px;">
+            <dc-import name="KSidebarLeft" show-filters="{{ true }}" hint-size="236px,420px"></dc-import>
+
+            <div style="display:flex;flex-direction:column;gap:28px;min-width:0;">
+              <section style="position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:20px;padding:22px;box-shadow:var(--raise,0 8px 28px -14px rgba(40,40,80,.16));">
+                <div style="pointer-events:none;position:absolute;inset:0;opacity:var(--atmo,0);background:radial-gradient(420px 200px at 88% 30%, rgba(135,133,255,.16), transparent 65%);" aria-hidden></div>
+                <div style="position:relative;display:flex;align-items:center;gap:16px;">
+                  <div style="width:64px;height:64px;border-radius:16px;background:var(--primarySoft,#eceafe);color:var(--primary,#5b5bf0);display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:28px;flex-shrink:0;">æ</div>
+                  <div style="min-width:0;flex:1;">
+                    <span style="display:inline-block;font-size:11px;font-weight:600;color:var(--primary,#5b5bf0);background:var(--primarySoft,#eceafe);border-radius:7px;padding:3px 10px;">Comeback</span>
+                    <h2 style="margin:8px 0 3px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:27px;letter-spacing:-0.03em;color:var(--ink,#1c1c24);line-height:1.02;">Whiplash</h2>
+                    <p style="margin:0;font-size:13px;color:var(--t2,#6b6b74);">aespa · mini-album · 6:00 PM KST</p>
+                  </div>
+                </div>
+                <div style="position:relative;margin-top:16px;padding-top:16px;border-top:1px solid var(--line,#efedeb);display:flex;align-items:center;flex-wrap:wrap;gap:18px;">
+                  <div style="text-align:center;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;line-height:1;color:var(--primary,#5b5bf0);">02</div><div style="font-size:10px;color:var(--t3,#9a9aa2);margin-top:5px;letter-spacing:.04em;">jours</div></div>
+                  <div style="text-align:center;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;line-height:1;color:var(--ink,#1c1c24);">14</div><div style="font-size:10px;color:var(--t3,#9a9aa2);margin-top:5px;">heures</div></div>
+                  <div style="text-align:center;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;line-height:1;color:var(--ink,#1c1c24);">37</div><div style="font-size:10px;color:var(--t3,#9a9aa2);margin-top:5px;">min</div></div>
+                  <button style="margin-left:auto;border:none;background:var(--primary,#5b5bf0);color:#fff;font-family:'Geist',sans-serif;font-weight:600;font-size:13px;border-radius:11px;padding:10px 18px;cursor:pointer;">Suivre</button>
+                </div>
+              </section>
+
+              <section>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink,#1c1c24);"><span style="width:7px;height:7px;border-radius:99px;background:var(--teal,#1fb0a6);box-shadow:0 0 0 4px color-mix(in srgb, var(--teal,#1fb0a6) 18%, transparent);"></span>Today</span>
+                  <span style="flex:1;height:1px;background:var(--line,#efedeb);"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:14px;padding:13px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));cursor:pointer;" onClick="{{ goMv }}">
+                  <span style="width:34px;height:34px;border-radius:9px;background:color-mix(in srgb, var(--teal,#1fb0a6) 14%, transparent);color:var(--teal,#1fb0a6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">IL</span>
+                  <div style="min-width:0;flex:1;">
+                    <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14.5px;font-weight:600;color:var(--ink,#1c1c24);">ILLIT — Magnetic</span><span style="font-size:10px;font-weight:600;color:var(--teal,#1fb0a6);background:color-mix(in srgb, var(--teal,#1fb0a6) 14%, transparent);border-radius:6px;padding:2px 7px;">MV</span></div>
+                    <p style="margin:2px 0 0;font-size:12.5px;color:var(--t2,#6b6b74);">Official music video premiere</p>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--ink,#1c1c24);">18:00</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--t3,#9a9aa2);">KST · 11:00 local</div></div>
+                </div>
+              </section>
+
+              <section>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                  <span style="font-size:13px;font-weight:600;color:var(--ink,#1c1c24);">This week</span>
+                  <span style="flex:1;height:1px;background:var(--line,#efedeb);"></span>
+                </div>
+                <p style="margin:0 0 8px 2px;font-size:11px;font-weight:500;color:var(--t3,#9a9aa2);">Fri · Oct 18</p>
+                <div style="display:flex;align-items:center;gap:14px;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:14px;padding:13px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));margin-bottom:16px;">
+                  <span style="width:34px;height:34px;border-radius:9px;background:color-mix(in srgb, var(--rose,#e0568a) 16%, transparent);color:var(--rose,#e0568a);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;">BM</span>
+                  <div style="min-width:0;flex:1;">
+                    <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14.5px;font-weight:600;color:var(--ink,#1c1c24);">BABYMONSTER — Music Bank</span><span style="font-size:10px;font-weight:600;color:var(--amber,#cf851f);background:color-mix(in srgb, var(--amber,#cf851f) 16%, transparent);border-radius:6px;padding:2px 7px;">Music show</span></div>
+                    <p style="margin:2px 0 0;font-size:12.5px;color:var(--t2,#6b6b74);">KBS · weekly stage</p>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--ink,#1c1c24);">17:00</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--t3,#9a9aa2);">KST</div></div>
+                </div>
+                <p style="margin:0 0 8px 2px;font-size:11px;font-weight:500;color:var(--t3,#9a9aa2);">Sun · Oct 20</p>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                  <div style="display:flex;align-items:center;gap:14px;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:14px;padding:13px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+                    <span style="width:34px;height:34px;border-radius:9px;background:var(--primarySoft,#eceafe);color:var(--primary,#5b5bf0);display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13px;flex-shrink:0;">æ</span>
+                    <div style="min-width:0;flex:1;">
+                      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14.5px;font-weight:600;color:var(--ink,#1c1c24);">aespa — Inkigayo</span><span style="font-size:10px;font-weight:600;color:var(--amber,#cf851f);background:color-mix(in srgb, var(--amber,#cf851f) 16%, transparent);border-radius:6px;padding:2px 7px;">Music show</span></div>
+                      <p style="margin:2px 0 0;font-size:12.5px;color:var(--t2,#6b6b74);">SBS · comeback stage</p>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--ink,#1c1c24);">15:40</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--t3,#9a9aa2);">KST</div></div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:14px;padding:13px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+                    <span style="width:34px;height:34px;border-radius:9px;background:color-mix(in srgb, var(--amber,#cf851f) 18%, transparent);color:var(--amber,#cf851f);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">i</span>
+                    <div style="min-width:0;flex:1;">
+                      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14.5px;font-weight:600;color:var(--ink,#1c1c24);">i-dle — Minnie birthday</span><span style="font-size:10px;font-weight:600;color:var(--t2,#6b6b74);background:var(--card2,#f1eff5);border-radius:6px;padding:2px 7px;">Anniversary</span></div>
+                      <p style="margin:2px 0 0;font-size:12.5px;color:var(--t2,#6b6b74);">Member birthday</p>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--t2,#6b6b74);">All day</div></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <dc-import name="KSidebarRight" hint-size="296px,420px"></dc-import>
+          </div>
+        </div>
+
+        <!-- ============ SCREEN : CALENDAR ============ -->
+        <div style="display:{{ showCal }};">
+          <div style="display:grid;grid-template-columns:236px minmax(0,1fr) 296px;gap:24px;">
+            <dc-import name="KSidebarLeft" show-filters="{{ true }}" hint-size="236px,420px"></dc-import>
+
+            <div style="min-width:0;">
+              <section style="background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:20px;padding:20px;box-shadow:var(--raise,0 8px 28px -14px rgba(40,40,80,.16));">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                  <span style="width:34px;height:34px;border-radius:10px;background:var(--card2,#f1eff5);display:flex;align-items:center;justify-content:center;color:var(--t2,#6b6b74);font-size:16px;cursor:pointer;">‹</span>
+                  <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;color:var(--ink,#1c1c24);margin:0;">October 2025</h2>
+                  <span style="width:34px;height:34px;border-radius:10px;background:var(--card2,#f1eff5);display:flex;align-items:center;justify-content:center;color:var(--t2,#6b6b74);font-size:16px;cursor:pointer;">›</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center;margin-bottom:4px;">
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Mon</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Tue</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Wed</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Thu</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Fri</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Sat</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--t3,#9a9aa2);padding:4px 0;">Sun</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">
+                  <sc-for list="{{ calCells }}" as="cell" hint-placeholder-count="35">
+                    <sc-if value="{{ cell.empty }}" hint-placeholder-val="{{ false }}"><div></div></sc-if>
+                    <sc-if value="{{ cell.filled }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ cell.select }}" style="position:relative;aspect-ratio:1;border:none;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:'Space Grotesk',sans-serif;font-size:13px;background:{{ cell.bg }};color:{{ cell.fg }};box-shadow:{{ cell.ring }};">
+                        <span>{{ cell.day }}</span>
+                        <span style="display:flex;align-items:center;gap:2px;height:6px;">
+                          <sc-for list="{{ cell.dots }}" as="d" hint-placeholder-count="0">
+                            <span style="width:5px;height:5px;border-radius:99px;background:{{ d }};"></span>
+                          </sc-for>
+                        </span>
+                      </button>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </section>
+
+              <div style="margin-top:22px;">
+                <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.02em;color:var(--ink,#1c1c24);margin:0 0 14px;">{{ selectedTitle }}</h3>
+                <sc-if value="{{ selectedHasEvents }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:9px;">
+                    <sc-for list="{{ selectedEvents }}" as="ev" hint-placeholder-count="1">
+                      <div style="display:flex;align-items:center;gap:14px;background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:14px;padding:13px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+                        <span style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;background:{{ ev.initBg }};color:{{ ev.initColor }};">{{ ev.init }}</span>
+                        <div style="min-width:0;flex:1;">
+                          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14.5px;font-weight:600;color:var(--ink,#1c1c24);">{{ ev.title }}</span><span style="font-size:10px;font-weight:600;border-radius:6px;padding:2px 7px;color:{{ ev.badgeColor }};background:{{ ev.badgeBg }};">{{ ev.badge }}</span></div>
+                          <p style="margin:2px 0 0;font-size:12.5px;color:var(--t2,#6b6b74);">{{ ev.sub }}</p>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:{{ ev.timeColor }};">{{ ev.time }}</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--t3,#9a9aa2);">{{ ev.tz }}</div></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ noEvents }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1px dashed var(--line,#efedeb);border-radius:14px;padding:40px;text-align:center;font-size:13px;color:var(--t3,#9a9aa2);">No events this day.</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <dc-import name="KSidebarRight" hint-size="296px,420px"></dc-import>
+          </div>
+        </div>
+
+        <!-- ============ SCREEN : GROUPS ============ -->
+        <div style="display:{{ showGroups }};">
+          <div style="display:grid;grid-template-columns:236px minmax(0,1fr) 296px;gap:24px;">
+            <dc-import name="KSidebarLeft" show-filters="{{ false }}" hint-size="236px,420px"></dc-import>
+
+            <div style="min-width:0;display:flex;flex-direction:column;gap:18px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <div style="display:inline-flex;background:var(--card2,#f1eff5);border-radius:11px;padding:3px;gap:2px;">
+                  <span style="font-size:13px;font-weight:600;color:var(--ink,#1c1c24);background:var(--card,#fff);border-radius:8px;padding:6px 16px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">Groups</span>
+                  <span style="font-size:13px;font-weight:500;color:var(--t2,#6b6b74);padding:6px 16px;">Solo</span>
+                </div>
+                <span style="font-size:13px;font-weight:500;color:var(--t2,#6b6b74);background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:10px;padding:8px 14px;">A–Z ▾</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+                <sc-for list="{{ groupCards }}" as="g" hint-placeholder-count="6">
+                  <div style="position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));background:{{ g.fill }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,.05) 52%, transparent);" aria-hidden></div>
+                    <span style="position:absolute;left:13px;bottom:12px;color:#fff;font-weight:600;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,.6);">{{ g.name }}</span>
+                    <span style="position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:{{ g.heartColor }};">{{ g.heart }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <dc-import name="KSidebarRight" hint-size="296px,420px"></dc-import>
+          </div>
+        </div>
+
+        <!-- ============ SCREEN : MV DETAIL ============ -->
+        <div style="display:{{ showMv }};">
+          <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px;">
+            <div>
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;">
+                <span style="width:22px;height:22px;border-radius:99px;background:color-mix(in srgb, var(--teal,#1fb0a6) 16%, transparent);color:var(--teal,#1fb0a6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;">IL</span>
+                <span style="font-size:13.5px;font-weight:500;color:var(--t2,#6b6b74);">ILLIT</span>
+                <span style="color:var(--t3,#9a9aa2);">·</span>
+                <span style="font-size:10px;font-weight:600;color:var(--teal,#1fb0a6);background:color-mix(in srgb, var(--teal,#1fb0a6) 14%, transparent);border-radius:6px;padding:2px 8px;">MV</span>
+              </div>
+              <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:32px;letter-spacing:-0.03em;color:var(--ink,#1c1c24);margin:0 0 7px;line-height:1.04;">Magnetic</h1>
+              <p style="margin:0;font-family:'Geist Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:var(--t3,#9a9aa2);">SUN, MAR 24, 2024 · 6:00 PM KST</p>
+            </div>
+
+            <div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(135deg, color-mix(in srgb, var(--teal,#1fb0a6) 18%, transparent) 0 10px, color-mix(in srgb, var(--teal,#1fb0a6) 7%, transparent) 10px 20px);display:flex;align-items:center;justify-content:center;box-shadow:var(--raise,0 8px 28px -14px rgba(40,40,80,.16));">
+              <span style="width:64px;height:64px;border-radius:99px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;padding-left:4px;">▶</span>
+              <span style="position:absolute;bottom:12px;left:14px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;background:rgba(0,0,0,.45);border-radius:6px;padding:4px 8px;">youtube · ILLIT — Magnetic M/V</span>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button style="display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line,#efedeb);background:var(--card,#fff);color:var(--ink,#1c1c24);border-radius:11px;padding:9px 16px;font-family:'Geist',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));"><span style="color:var(--rose,#e0568a);font-size:15px;">♥</span> Like <span style="color:var(--t3,#9a9aa2);font-weight:500;">· 1.2k</span></button>
+            </div>
+
+            <section style="background:var(--card,#fff);border:1px solid var(--line,#efedeb);border-radius:16px;padding:18px 20px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:13.5px;font-weight:600;color:var(--ink,#1c1c24);">Your rating</span>
+                <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--t3,#9a9aa2);">8.5 avg · 142 ratings</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;color:var(--primary,#5b5bf0);min-width:46px;">8.5</span>
+                <div style="position:relative;flex:1;height:8px;border-radius:99px;background:var(--card2,#f1eff5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:85%;border-radius:99px;background:var(--primary,#5b5bf0);"></div>
+                  <div style="position:absolute;left:85%;top:50%;width:18px;height:18px;border-radius:99px;background:var(--card,#fff);border:3px solid var(--primary,#5b5bf0);transform:translate(-50%,-50%);box-shadow:0 2px 6px -1px rgba(0,0,0,.3);"></div>
+                </div>
+                <span style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--t3,#9a9aa2);">/10</span>
+              </div>
+            </section>
+
+            <section>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.02em;color:var(--ink,#1c1c24);margin:0;">Comments <span style="color:var(--t3,#9a9aa2);font-weight:500;">3</span></h2>
+                <div style="display:inline-flex;background:var(--card2,#f1eff5);border-radius:9px;padding:3px;gap:2px;font-size:12px;">
+                  <span style="font-weight:600;color:var(--ink,#1c1c24);background:var(--card,#fff);border-radius:7px;padding:4px 11px;box-shadow:var(--soft,0 3px 12px -9px rgba(40,40,80,.13));">Top</span>
+                  <span style="font-weight:500;color:var(--t2,#6b6b74);padding:4px 11px;">New</span>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line,#efedeb);">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+                  <span style="color:var(--primary,#5b5bf0);font-size:13px;cursor:pointer;">▲</span>
+                  <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;color:var(--ink,#1c1c24);">128</span>
+                  <span style="color:var(--t3,#9a9aa2);font-size:13px;cursor:pointer;">▼</span>
+                </div>
+                <div style="min-width:0;flex:1;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:13px;font-weight:600;color:var(--ink,#1c1c24);">minnie_stan</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--t3,#9a9aa2);">2h</span></div>
+                  <p style="margin:0 0 7px;font-size:13.5px;line-height:1.55;color:var(--ink,#1c1c24);">The chorus is so clean, easily a top comeback this year. The visual concept matches the sound perfectly.</p>
+                  <span style="font-size:12px;font-weight:500;color:var(--t2,#6b6b74);cursor:pointer;">↩ Reply</span>
+
+                  <div style="display:flex;gap:12px;margin-top:14px;padding-left:6px;border-left:2px solid var(--line,#efedeb);">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;padding-left:8px;">
+                      <span style="color:var(--t3,#9a9aa2);font-size:13px;cursor:pointer;">▲</span>
+                      <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;color:var(--ink,#1c1c24);">41</span>
+                      <span style="color:var(--t3,#9a9aa2);font-size:13px;cursor:pointer;">▼</span>
+                    </div>
+                    <div style="min-width:0;flex:1;">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:13px;font-weight:600;color:var(--ink,#1c1c24);">newkpop99</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--t3,#9a9aa2);">1h</span></div>
+                      <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--ink,#1c1c24);">Agreed — the bridge especially. Been on repeat all day.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line,#efedeb);">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+                  <span style="color:var(--t3,#9a9aa2);font-size:13px;cursor:pointer;">▲</span>
+                  <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;color:var(--ink,#1c1c24);">73</span>
+                  <span style="color:var(--t3,#9a9aa2);font-size:13px;cursor:pointer;">▼</span>
+                </div>
+                <div style="min-width:0;flex:1;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:13px;font-weight:600;color:var(--ink,#1c1c24);">seoul_sunset</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--t3,#9a9aa2);">5h</span></div>
+                  <p style="margin:0 0 7px;font-size:13.5px;line-height:1.55;color:var(--ink,#1c1c24);">Production value is unreal for a rookie group. Rating this a solid 9.</p>
+                  <span style="font-size:12px;font-weight:500;color:var(--t2,#6b6b74);cursor:pointer;">↩ Reply</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p style="margin:18px 4px 0;font-size:12.5px;color:var(--t3,#9a9aa2);line-height:1.5;max-width:820px;">Navigue entre <strong style="color:var(--ink,#1c1c24);font-weight:600;">Upcoming · Calendar · MVs · Groups</strong> dans le header, et bascule <strong style="color:var(--ink,#1c1c24);font-weight:600;">☀ Daylight / ☾ Midnight</strong> — le thème s'applique partout. Le calendrier est cliquable (sélectionne un jour). Structures et dispositions inchangées par rapport à ton app.</p>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { theme: 'light', screen: 'home', calDay: '2025-10-22' };
+
+  renderVals() {
+    const light = "--page:#ecebef;--bg:#faf9f7;--card:#ffffff;--card2:#f1eff5;--raise:0 10px 30px -16px rgba(40,40,80,.18);--soft:0 3px 12px -9px rgba(40,40,80,.13);--ink:#1c1c24;--t2:#6b6b74;--t3:#9a9aa2;--line:#efedeb;--primary:#5b5bf0;--primarySoft:#eceafe;--teal:#1aa99f;--amber:#c4801c;--rose:#dd5285;--atmo:0;--ring:rgba(20,20,50,.05);--knobX:0";
+    const dark = "--page:#070810;--bg:#0f1118;--card:#1b1e2a;--card2:#262a3a;--raise:0 18px 40px -20px rgba(0,0,0,.8);--soft:0 8px 22px -14px rgba(0,0,0,.6);--ink:#eef0f5;--t2:#8b90a3;--t3:#6b7088;--line:rgba(255,255,255,.09);--primary:#8785ff;--primarySoft:rgba(135,133,255,.16);--teal:#3fe0b8;--amber:#e6ad4c;--rose:#ef6a9b;--atmo:1;--ring:rgba(255,255,255,.07);--knobX:30px";
+    const isDark = this.state.theme === 'dark';
+    const sc = this.state.screen;
+    const navOn = 'font-weight:600;color:var(--ink);background:var(--primarySoft);';
+    const navOff = 'font-weight:500;color:var(--t2);background:transparent;';
+
+    // ---- calendar data ----
+    const dots = {
+      '2025-10-10': ['var(--rose)'],
+      '2025-10-13': ['var(--teal)'],
+      '2025-10-16': ['var(--teal)'],
+      '2025-10-18': ['var(--amber)'],
+      '2025-10-20': ['var(--amber)', 'var(--t3)'],
+      '2025-10-22': ['var(--primary)'],
+      '2025-10-24': ['var(--amber)'],
+      '2025-10-27': ['var(--primary)', 'var(--amber)'],
+    };
+    const today = '2025-10-16';
+    const fw = 2;
+    const cells = [];
+    for (let i = 0; i < fw; i++) cells.push({ empty: true, filled: false });
+    for (let d = 1; d <= 31; d++) {
+      const key = `2025-10-${String(d).padStart(2, '0')}`;
+      const sel = key === this.state.calDay;
+      cells.push({
+        empty: false,
+        filled: true,
+        day: d,
+        dots: dots[key] || [],
+        bg: sel ? 'var(--primary)' : 'transparent',
+        fg: sel ? '#ffffff' : 'var(--ink)',
+        ring: key === today && !sel ? 'inset 0 0 0 1px var(--primary)' : 'none',
+        select: () => this.setState({ calDay: key }),
+      });
+    }
+
+    const teal = { initBg: 'color-mix(in srgb, var(--teal) 14%, transparent)', initColor: 'var(--teal)' };
+    const ev = {
+      magnetic: { init: 'IL', initBg: teal.initBg, initColor: teal.initColor, title: 'ILLIT — Magnetic', badge: 'MV', badgeBg: teal.initBg, badgeColor: 'var(--teal)', sub: 'Official music video premiere', time: '18:00', tz: 'KST', timeColor: 'var(--ink)' },
+      bank: { init: 'BM', initBg: 'color-mix(in srgb, var(--rose) 16%, transparent)', initColor: 'var(--rose)', title: 'BABYMONSTER — Music Bank', badge: 'Music show', badgeBg: 'color-mix(in srgb, var(--amber) 16%, transparent)', badgeColor: 'var(--amber)', sub: 'KBS · weekly stage', time: '17:00', tz: 'KST', timeColor: 'var(--ink)' },
+      inki: { init: 'æ', initBg: 'var(--primarySoft)', initColor: 'var(--primary)', title: 'aespa — Inkigayo', badge: 'Music show', badgeBg: 'color-mix(in srgb, var(--amber) 16%, transparent)', badgeColor: 'var(--amber)', sub: 'SBS · comeback stage', time: '15:40', tz: 'KST', timeColor: 'var(--ink)' },
+      bday: { init: 'i', initBg: 'color-mix(in srgb, var(--amber) 18%, transparent)', initColor: 'var(--amber)', title: 'i-dle — Minnie birthday', badge: 'Anniversary', badgeBg: 'var(--card2)', badgeColor: 'var(--t2)', sub: 'Member birthday', time: 'All day', tz: '', timeColor: 'var(--t2)' },
+      whip: { init: 'æ', initBg: 'var(--primarySoft)', initColor: 'var(--primary)', title: 'aespa — Whiplash', badge: 'Comeback', badgeBg: 'var(--primarySoft)', badgeColor: 'var(--primary)', sub: 'aespa · mini-album', time: '18:00', tz: 'KST', timeColor: 'var(--ink)' },
+    };
+    const evMap = {
+      '2025-10-16': [ev.magnetic],
+      '2025-10-18': [ev.bank],
+      '2025-10-20': [ev.inki, ev.bday],
+      '2025-10-22': [ev.whip],
+      '2025-10-10': [{ ...ev.magnetic, init: 'BM', initBg: 'color-mix(in srgb, var(--rose) 16%, transparent)', initColor: 'var(--rose)', title: 'BABYMONSTER — Weverse Live', badge: 'Live', badgeBg: 'color-mix(in srgb, var(--rose) 16%, transparent)', badgeColor: 'var(--rose)', sub: 'Official live stream', time: '20:00' }],
+      '2025-10-13': [{ ...ev.magnetic, init: 'æ', initBg: 'var(--primarySoft)', initColor: 'var(--primary)', title: 'aespa — Single teaser', badge: 'Release', badgeBg: teal.initBg, badgeColor: 'var(--teal)', sub: 'Pre-release track', time: '00:00' }],
+      '2025-10-24': [{ ...ev.bank, init: 'IL', initBg: teal.initBg, initColor: 'var(--teal)', title: 'ILLIT — M Countdown', sub: 'Mnet · weekly stage', time: '18:00' }],
+      '2025-10-27': [ev.whip, { ...ev.bank, init: 'æ', initBg: 'var(--primarySoft)', initColor: 'var(--primary)', title: 'aespa — Music Core', sub: 'MBC · comeback stage', time: '15:15' }],
+    };
+    const selEvents = evMap[this.state.calDay] || [];
+    const dObj = new Date(`${this.state.calDay}T00:00:00Z`);
+    const selTitle = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(dObj);
+
+    const groupCards = [
+      { name: 'aespa', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--primary) 34%, transparent) 0 9px, color-mix(in srgb, var(--primary) 14%, transparent) 9px 18px)', heart: '\u2665', heartColor: 'var(--rose)' },
+      { name: 'ILLIT', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--teal) 36%, transparent) 0 9px, color-mix(in srgb, var(--teal) 15%, transparent) 9px 18px)', heart: '\u2665', heartColor: 'var(--rose)' },
+      { name: 'BABYMONSTER', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--rose) 32%, transparent) 0 9px, color-mix(in srgb, var(--rose) 13%, transparent) 9px 18px)', heart: '\u2665', heartColor: 'var(--rose)' },
+      { name: 'i-dle', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--amber) 34%, transparent) 0 9px, color-mix(in srgb, var(--amber) 14%, transparent) 9px 18px)', heart: '\u2665', heartColor: 'var(--rose)' },
+      { name: 'NewJeans', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--primary) 30%, transparent) 0 9px, color-mix(in srgb, var(--teal) 16%, transparent) 9px 18px)', heart: '\u2661', heartColor: 'var(--t3)' },
+      { name: 'LE SSERAFIM', fill: 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--teal) 30%, transparent) 0 9px, color-mix(in srgb, var(--amber) 15%, transparent) 9px 18px)', heart: '\u2661', heartColor: 'var(--t3)' },
+    ];
+
+    const labels = { home: 'Upcoming', cal: 'Calendar', mv: 'MV detail', groups: 'Groups' };
+
+    return {
+      vars: isDark ? dark : light,
+      themeLabel: isDark ? 'Midnight · dark' : 'Daylight · light',
+      themeIcon: isDark ? '\u263E' : '\u2600',
+      screenLabel: labels[sc] || 'Upcoming',
+      toggle: () => this.setState((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      goHome: () => this.setState({ screen: 'home' }),
+      goCal: () => this.setState({ screen: 'cal' }),
+      goMv: () => this.setState({ screen: 'mv' }),
+      goGroups: () => this.setState({ screen: 'groups' }),
+      navHome: sc === 'home' ? navOn : navOff,
+      navCal: sc === 'cal' ? navOn : navOff,
+      navMv: sc === 'mv' ? navOn : navOff,
+      navGroups: sc === 'groups' ? navOn : navOff,
+      showHome: sc === 'home' ? 'block' : 'none',
+      showCal: sc === 'cal' ? 'block' : 'none',
+      showGroups: sc === 'groups' ? 'block' : 'none',
+      showMv: sc === 'mv' ? 'block' : 'none',
+      calCells: cells,
+      selectedEvents: selEvents,
+      selectedHasEvents: selEvents.length > 0,
+      noEvents: selEvents.length === 0,
+      selectedTitle: selTitle,
+      groupCards,
+    };
+  }
+}
+</script>
+</body>
+</html>
