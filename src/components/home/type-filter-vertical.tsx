@@ -36,14 +36,14 @@ export function TypeFilterVertical() {
             onClick={() => toggle(t)}
             aria-pressed={isActive}
             className={cn(
-              'flex h-10 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors duration-200',
+              'flex h-10 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm transition-colors duration-200',
               isActive
-                ? 'bg-muted text-foreground ring-foreground/15 ring-1'
-                : 'text-muted-foreground hover:bg-muted/40',
+                ? 'bg-accent text-foreground font-semibold'
+                : 'text-muted-foreground hover:bg-muted/40 font-medium',
             )}
           >
             <span
-              className="size-2 shrink-0 rounded-full"
+              className="size-2 shrink-0 rounded-[3px]"
               style={{ backgroundColor: EVENT_TYPE_COLORS[t] }}
               aria-hidden
             />

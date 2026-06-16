@@ -14,6 +14,8 @@
 > **Fidélité maquettes — calendrier (2026-06-16)** : `calendar-month.tsx` aligné sur `KStage Home.dc.html` (écran Calendar) — la grille du mois passe dans une **carte** (`bg-card` + bordure + `shadow-soft` + `rounded-2xl`), titre du mois en Bricolage (`font-heading`), en-têtes de jours en `text-faint`, **chiffres des cases en Space Grotesk** (`tabular`), « today » en `ring-primary` inset, flèches de nav avec fond `bg-muted/60`. Le détail du jour reste sous la carte. Vérifié sur `/calendar`, Daylight + Midnight.
 >
 > **Fidélité maquettes — labels feed + hero (2026-06-16)** : arbitrage README vs maquettes — les labels de **sidebar** (Filters/My groups) sont bien en `text-faint` (= `t3` dans `KSidebarLeft.dc.html`), mais les labels de **bucket du feed** (Today/This week) sont en `text-foreground` semibold dans `KStage Home.dc.html`, avec un **point teal** (+ glow) sur « Today » → `feed.tsx` corrigé en ce sens (j'avais à tort tout passé en faint). Hero `next-drop-card` : l'eyebrow du groupe passe de mono-uppercase à `text-sm` simple (sous-titre épuré de la maquette). Composants home-only (auth) → vérifiés typecheck/lint/tests ; rendu non testable sans session.
+>
+> **Fidélité maquettes — filtres (2026-06-16)** : `type-filter-vertical.tsx` aligné sur `KSidebarLeft.dc.html` — état actif = chip lilas `bg-accent text-foreground` (au lieu de `bg-muted` + ring), pastilles de type en **petit carré** `rounded-[3px]` (au lieu de rond). Vérifié sur `/calendar?type=mv` : chip lilas + carré 8px.
 
 Remplace le contenu de `src/app/globals.css` par `kstage-theme/globals.css`.
 Le système reste 100 % shadcn / Tailwind v4 : **aucun composant à réécrire**, les
