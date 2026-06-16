@@ -133,7 +133,17 @@ export function parseComebacks(html: string, fallbackYear: number): ParsedComeba
       .toArray()
       .map((s) => $(s).text().trim())
 
-    const artist = pickArtist(metas)
+    // L'artiste fiable est le titre dynamique Greenshift (`.gspb-dynamic-title-element`).
+    // Sur le DOM réel 2026-06, beaucoup d'items (carrousel + éditions JP) n'ont
+    // PLUS d'artiste en `gspb_meta_value` : `pickArtist` y renvoyait soit rien,
+    // soit une valeur parasite (type d'album, date « JST ») qui ne matchait aucun
+    // groupe → comebacks silencieusement manqués, couverture dégradée (pas une
+    // panne totale : la grille classique passait encore). On lit donc le titre
+    // dynamique en priorité, fallback meta pour les items legacy / fixtures
+    // synthétiques. Strictement non régressif et sans risque de donnée corrompue :
+    // ingestComebacks ne crée un event que si matchGroups matche l'artiste.
+    const artist =
+      $(li).find('.gspb-dynamic-title-element').first().text().trim() || pickArtist(metas)
     const dateMeta = pickDateMeta(metas)
     if (!artist || !dateMeta) continue
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { parseComebacks, matchGroup, matchGroups, type GroupRef } from './kpopofficial'
 
 const GROUPS: GroupRef[] = [
@@ -133,5 +134,41 @@ describe('matchGroups', () => {
     expect(matchGroups('MiiWAN (Virtual)', EXTENDED)).toEqual([])
     expect(matchGroups('XODIAC', EXTENDED)).toEqual([])
     expect(matchGroups('June 12–13, 2026', EXTENDED)).toEqual([])
+  })
+})
+
+// Canari de dérive du DOM Greenshift : capture RÉELLE datée (2026-06-16) de
+// kpopofficial.com. Elle a révélé que l'artiste avait migré du `gspb_meta_value`
+// vers `.gspb-dynamic-title-element` : sur ces items (tout le carrousel ici),
+// l'ancien parsing meta renvoyait 0 → couverture dégradée en prod (la grille
+// classique passait encore, ~10 matches/run, d'où une panne non totale mais une
+// perte silencieuse des items carrousel + éditions JP). Le fixture synthétique
+// ci-dessus ne couvre désormais plus que le chemin de fallback legacy.
+describe('parseComebacks — fixture réelle (canari DOM Greenshift)', () => {
+  const html = readFileSync(
+    new URL('./__fixtures__/kpopofficial-june-2026.html', import.meta.url),
+    'utf8',
+  )
+  const parsed = parseComebacks(html, 2026)
+
+  it('extrait les 12 comebacks réels (artiste depuis le titre dynamique)', () => {
+    expect(parsed).toHaveLength(12)
+    for (const p of parsed) {
+      expect(p.artist.length).toBeGreaterThan(0)
+      expect(p.sourceUrl).toMatch(/^https:\/\/kpopofficial\.com\/album\//)
+      expect(p.startAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+    }
+  })
+
+  it('parse un item confirmé (STAYC — 2:LOVE, 6 PM KST = 09:00 UTC)', () => {
+    const stayc = parsed.find((p) => p.artist === 'STAYC')!
+    expect(stayc.sourceUrl).toBe('https://kpopofficial.com/album/stayc-2-love/')
+    expect(stayc.startAt).toBe('2026-06-16T09:00:00.000Z')
+    expect(stayc.status).toBe('confirmed')
+  })
+
+  it('gère minuit KST (12 AM KST = jour précédent 15:00 UTC) — OMEGA X', () => {
+    const omega = parsed.find((p) => p.artist.startsWith('OMEGA'))!
+    expect(omega.startAt).toBe('2026-06-18T15:00:00.000Z')
   })
 })
