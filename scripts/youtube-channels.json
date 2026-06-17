@@ -530,5 +530,138 @@
     "channels": [
       { "name": "izna · izna", "url": "https://www.youtube.com/channel/UCfbYNlxgLuKJXQZEhkMmaCQ" }
     ]
+  },
+  {
+    "slug": "baekhyun",
+    "channels": [{ "name": "BAEKHYUN · Baekhyun", "url": "https://www.youtube.com/@baekhyun" }]
+  },
+  {
+    "slug": "dean",
+    "channels": [{ "name": "DEAN · DEANTRBL", "url": "https://www.youtube.com/@deantrbl" }]
+  },
+  {
+    "slug": "ericnam",
+    "channels": [{ "name": "Eric Nam · Eric Nam", "url": "https://www.youtube.com/@ericnam" }]
+  },
+  {
+    "slug": "gaho",
+    "channels": [{ "name": "Gaho · Gaho", "url": "https://www.youtube.com/@gaho_official" }]
+  },
+  {
+    "slug": "marktuan",
+    "channels": [{ "name": "Mark Tuan · Mark Tuan", "url": "https://www.youtube.com/@marktuan" }]
+  },
+  {
+    "slug": "solar",
+    "channels": [{ "name": "Solar · solarsido", "url": "https://www.youtube.com/@solarsido" }]
+  },
+  {
+    "slug": "paulkim",
+    "channels": [
+      { "name": "Paul Kim · PaulKimMusic", "url": "https://www.youtube.com/@paulkimmusic" }
+    ]
+  },
+  {
+    "slug": "ph1",
+    "channels": [{ "name": "pH-1 · pH-1", "url": "https://www.youtube.com/@ph1official" }]
+  },
+  {
+    "slug": "ailee",
+    "channels": [
+      { "name": "AILEE · AILEEOFFICIAL", "url": "https://www.youtube.com/@aileeofficial" }
+    ]
+  },
+  {
+    "slug": "hyolyn",
+    "channels": [{ "name": "Hyolyn · HYOLYN", "url": "https://www.youtube.com/@hyolyn" }]
+  },
+  {
+    "slug": "punch",
+    "channels": [
+      { "name": "punch · Punch_official", "url": "https://www.youtube.com/@punch_official" }
+    ]
+  },
+  {
+    "slug": "2pm",
+    "channels": [{ "name": "2PM · 2PM", "url": "https://www.youtube.com/@2PM" }]
+  },
+  {
+    "slug": "ab6ix",
+    "channels": [{ "name": "AB6IX · AB6IX", "url": "https://www.youtube.com/@AB6IX" }]
+  },
+  {
+    "slug": "artms",
+    "channels": [
+      { "name": "ARTMS · Official ARTMS", "url": "https://www.youtube.com/@official_ARTMS" }
+    ]
+  },
+  {
+    "slug": "astro",
+    "channels": [{ "name": "ASTRO · ASTRO", "url": "https://www.youtube.com/@offclASTRO" }]
+  },
+  {
+    "slug": "bigbang",
+    "channels": [{ "name": "BIGBANG · BIGBANG", "url": "https://www.youtube.com/@BIGBANG" }]
+  },
+  {
+    "slug": "girlsgeneration",
+    "channels": [
+      {
+        "name": "Girls' Generation · GIRLS' GENERATION",
+        "url": "https://www.youtube.com/@GirlsGeneration"
+      }
+    ]
+  },
+  {
+    "slug": "loona",
+    "channels": [
+      { "name": "LOONA · loonatheworld", "url": "https://www.youtube.com/@loonatheworld" }
+    ]
+  },
+  {
+    "slug": "loossemble",
+    "channels": [
+      { "name": "Loossemble · Loossemble", "url": "https://www.youtube.com/@Loossemble_official" }
+    ]
+  },
+  {
+    "slug": "nflying",
+    "channels": [
+      { "name": "N.Flying · N.Flying", "url": "https://www.youtube.com/@NFlyingofficial" }
+    ]
+  },
+  {
+    "slug": "onf",
+    "channels": [{ "name": "ONF · ONF OFFICIAL", "url": "https://www.youtube.com/@ONF_official" }]
+  },
+  {
+    "slug": "tvxq",
+    "channels": [{ "name": "TVXQ! · TVXQ!", "url": "https://www.youtube.com/@TVXQ" }]
+  },
+  {
+    "slug": "verivery",
+    "channels": [{ "name": "VERIVERY · VERIVERY", "url": "https://www.youtube.com/@VERIVERY" }]
+  },
+  {
+    "slug": "victon",
+    "channels": [
+      { "name": "VICTON · Victon_Official", "url": "https://www.youtube.com/@VICTON_official" }
+    ]
+  },
+  {
+    "slug": "winner",
+    "channels": [{ "name": "WINNER · WINNER", "url": "https://www.youtube.com/@winner" }]
+  },
+  {
+    "slug": "ikon",
+    "channels": [{ "name": "iKON · iKONofficial", "url": "https://www.youtube.com/@iKONofficial" }]
+  },
+  {
+    "slug": "jhope",
+    "channels": [{ "name": "j-hope · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+  },
+  {
+    "slug": "kai",
+    "channels": [{ "name": "KAI · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
   }
 ]
