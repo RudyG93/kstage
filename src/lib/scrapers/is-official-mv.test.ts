@@ -30,6 +30,8 @@ describe('isOfficialMvTitle', () => {
     ['(G)I-DLE - M/V Bloopers : [I feel]', 'blacklist:bloopers'],
     ["(G)I-DLE - 'Uh-Oh' M/V 응원법", 'blacklist:fanchant'],
     ["aespa 'Whiplash' Special Clip", 'blacklist:special clip'],
+    ["SHINee 'Atmos' MV Commentary", 'blacklist:commentary'],
+    ['강다니엘(KANGDANIEL) - PARANOIA M/V 코멘터리', 'blacklist:commentary'],
     ["RIIZE 'Get A Guitar' Dance Cover", 'blacklist:dance cover'],
     ["aespa 'Drama' Stage @ Music Core", 'blacklist:stage'],
     ["BABYMONSTER 'SHEESH' @ Inkigayo", 'blacklist:music show'],
