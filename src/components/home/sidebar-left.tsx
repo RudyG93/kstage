@@ -27,18 +27,26 @@ export async function SidebarLeft({
 }) {
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
-  const followed = groups.filter((g) => followedIds.has(g.id))
   // « +X more » pointe vers le profil (où vit la liste des groupes suivis).
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const profile = user ? await getProfile(user.id) : null
-  const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
-  const [counts, annivCounts] = await Promise.all([
+  const [profile, { data: countRows }, counts, annivCounts] = await Promise.all([
+    user ? getProfile(user.id) : Promise.resolve(null),
+    supabase.rpc('group_follow_counts'),
     getUpcomingEventCountsByGroup([...followedIds]),
     getUpcomingAnniversaryCountsByGroup([...followedIds]),
   ])
+  const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
+  // Tri des groupes suivis : popularité (nb de follows) décroissante, puis alpha.
+  const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
+  const followed = groups
+    .filter((g) => followedIds.has(g.id))
+    .sort(
+      (a, b) =>
+        (followCount.get(b.id) ?? 0) - (followCount.get(a.id) ?? 0) || a.name.localeCompare(b.name),
+    )
   // Anniversaires inclus dans le « N upcoming » (ils y étaient oubliés).
   const countFor = (id: string) => (counts.get(id) ?? 0) + (annivCounts.get(id) ?? 0)
   const totalUpcoming = followed.reduce((a, g) => a + countFor(g.id), 0)
