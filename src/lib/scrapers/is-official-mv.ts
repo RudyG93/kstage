@@ -23,6 +23,8 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['audio', /\baudio\b/i],
   ['performance', /\bperformance\b/i],
   ['behind', /\bbehind\b/i],
+  ['bloopers', /\bbloopers\b/i],
+  ['fanchant', /fan ?chant|cheer guide|응원법/i],
   ['making', /\bmaking\b/i],
   // « MV Shoot Sketch » = making-of du tournage du clip (BANGTANTV en poste
   // beaucoup) — un dérivé, pas le MV. Découvert au backfill P0.5.

@@ -46,6 +46,20 @@ describe('detectMvVersion', () => {
     })
   })
 
+  it('solo de membre en tête de titre (chaîne du groupe) → member', () => {
+    expect(detectMvVersion("KARINA (카리나) - 'Up' Official MV", AESPA, 'aespa')).toEqual({
+      kind: 'member',
+      memberId: 'karina-id',
+    })
+  })
+
+  it('MV de groupe reste main même avec groupName fourni', () => {
+    expect(detectMvVersion("aespa 'Whiplash' Official MV", AESPA, 'aespa')).toEqual({
+      kind: 'main',
+      memberId: null,
+    })
+  })
+
   it('performance — Performance Ver.', () => {
     expect(detectMvVersion("aespa 'Armageddon' MV (Performance Ver.)", AESPA)).toEqual({
       kind: 'performance',
