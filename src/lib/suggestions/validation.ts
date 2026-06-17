@@ -3,9 +3,9 @@ import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
 
-// Types suggérables par la communauté. `anniversary` est exclu (généré
-// automatiquement depuis les dates de naissance/début) ; `live`/`other` aussi.
-export const SUGGESTABLE_TYPES: EventType[] = ['mv', 'release', 'music_show', 'concert']
+// Types suggérables par la communauté. `concert` retiré (feature abandonnée) ;
+// `anniversary` exclu (généré depuis les dates de naissance/début) ; `live`/`other` aussi.
+export const SUGGESTABLE_TYPES: EventType[] = ['mv', 'release', 'music_show']
 export const MAX_TITLE = 120
 export const MAX_DESCRIPTION = 2000
 export const DAILY_SUGGESTION_CAP = 10

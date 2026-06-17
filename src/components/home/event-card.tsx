@@ -81,13 +81,15 @@ export function HomeEventCard({
           <div className="text-muted-foreground text-sm font-medium">All day</div>
         ) : (
           <>
-            {/* Heure KST 24 h mise en avant ; l'heure locale du visiteur suit. */}
+            {/* Heure LOCALE du visiteur mise en avant ; KST en référence dessous. */}
             <div className="tabular text-[15px] font-semibold tabular-nums">
-              {kstTime24h(event.start_at)}
+              <LocalTime
+                iso={event.start_at}
+                withZone={false}
+                fallback={kstTime24h(event.start_at)}
+              />
             </div>
-            <div className="text-faint font-mono text-[10px]">
-              KST · <LocalTime iso={event.start_at} /> local
-            </div>
+            <div className="text-faint font-mono text-[10px]">{kstTime24h(event.start_at)} KST</div>
           </>
         )}
       </div>
