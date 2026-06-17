@@ -36,6 +36,11 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['special clip', /\bspecial clip\b/i],
   // « MV Commentary » / « M/V 코멘터리 » : l'artiste commente le clip — pas le MV.
   ['commentary', /\bcommentary\b|코멘터리/i],
+  // « @MV Film » / « M/V Film » : déclinaison (focus film du tournage), pas le MV.
+  ['mv film', /\bm\/?v film\b/i],
+  // Focus-cam membre : « [#TAEYONG Focus] … » — entre crochets, jamais le MV
+  // (n'attrape pas une chanson titrée « Focus » hors crochets).
+  ['focus cam', /\[[^\]]*\bfocus\b[^\]]*\]/i],
   ['reaction', /\breaction\b/i],
   ['live', /\blive\b/i],
   ['concert', /\bconcert\b/i],

@@ -396,5 +396,23 @@
     "channels": [
       { "name": "Oneus · RBW", "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc" }
     ]
+  },
+  {
+    "slug": "qwer",
+    "channels": [{ "name": "QWER · QWER", "url": "https://www.youtube.com/@qwer_band_official" }]
+  },
+  {
+    "slug": "nctdream",
+    "channels": [
+      { "name": "NCT DREAM · NCT DREAM", "url": "https://www.youtube.com/@NCTDREAM" },
+      { "name": "NCT DREAM · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "nct127",
+    "channels": [
+      { "name": "NCT 127 · NCT 127", "url": "https://www.youtube.com/@NCT127" },
+      { "name": "NCT 127 · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
   }
 ]
