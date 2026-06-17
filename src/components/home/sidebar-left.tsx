@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { faceCrop } from '@/lib/images/cloudinary'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
@@ -70,17 +72,28 @@ export async function SidebarLeft({
                     href={`/groups/${group.slug}`}
                     className="hover:bg-muted/40 -mx-2 flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors"
                   >
-                    <span
-                      className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[11px] font-bold"
-                      style={
-                        group.color_hex
-                          ? { backgroundColor: `${group.color_hex}24`, color: group.color_hex }
-                          : undefined
-                      }
-                      aria-hidden
-                    >
-                      {group.name[0]}
-                    </span>
+                    {group.image_url ? (
+                      <Image
+                        src={faceCrop(group.image_url, 48, 48)}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="size-6 shrink-0 rounded-[7px] object-cover"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[11px] font-bold"
+                        style={
+                          group.color_hex
+                            ? { backgroundColor: `${group.color_hex}24`, color: group.color_hex }
+                            : undefined
+                        }
+                        aria-hidden
+                      >
+                        {group.name[0]}
+                      </span>
+                    )}
                     <span className="flex-1 truncate text-sm font-medium">{group.name}</span>
                     <span className="text-faint font-mono text-xs tabular-nums">
                       {countFor(group.id)}

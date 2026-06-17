@@ -81,11 +81,12 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
         </span>
         {!isAnniversary && (
           <>
-            <span className="text-muted-foreground mt-0.5 font-mono text-[11px] tabular-nums">
-              {timeLabel} KST
+            {/* Heure locale en avant, KST en référence dessous. */}
+            <span className="text-foreground mt-0.5 font-mono text-[12px] font-medium tabular-nums">
+              <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} />
             </span>
-            <span className="text-muted-foreground/70 font-mono text-[10px]">
-              <LocalTime iso={event.start_at} />
+            <span className="text-muted-foreground/70 font-mono text-[10px] tabular-nums">
+              {timeLabel} KST
             </span>
           </>
         )}

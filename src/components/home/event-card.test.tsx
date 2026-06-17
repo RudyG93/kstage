@@ -44,9 +44,11 @@ describe('HomeEventCard', () => {
     expect(screen.getByText('All day')).toBeInTheDocument()
   })
 
-  it('shows the 24h KST time and stays internal for an MV with a slug', () => {
+  it('shows the KST time as a reference and stays internal for an MV with a slug', () => {
     render(<HomeEventCard event={makeEvent({ type: 'mv', slug: 'aespa-whiplash-mv' })} />)
-    expect(screen.getByText('18:00')).toBeInTheDocument()
+    // L'heure locale est mise en avant (dépend du fuseau du runner) ; KST reste
+    // affiché comme référence — c'est lui qu'on assert de façon déterministe.
+    expect(screen.getByText('18:00 KST')).toBeInTheDocument()
     expect(screen.getByRole('link')).not.toHaveAttribute('target')
   })
 })

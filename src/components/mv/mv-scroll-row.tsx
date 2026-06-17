@@ -32,12 +32,12 @@ export function MvScrollRow({
     if (e.pointerType !== 'mouse') return // tactile = scroll natif
     const el = ref.current
     if (!el) return
-    // Sans ça, le clic-maintenu sur une card (image/lien) déclenche le DRAG NATIF
-    // du navigateur (image fantôme) qui préempte le geste → le scroll se bloque
-    // après ~1 pixel. preventDefault ici + onDragStart sur le conteneur le tuent.
-    e.preventDefault()
+    // PAS de e.preventDefault() (supprimerait le `click`) et PAS de
+    // setPointerCapture : la capture redirige le `click` vers le conteneur au lieu
+    // du <Link> → un simple clic n'ouvrait plus le MV. Le drag-scroll se fait via
+    // pointermove (la ligne est large, le curseur reste dessus) ; le ghost-drag
+    // natif est tué par `onDragStart` + `draggable={false}` sur les cards.
     drag.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false }
-    el.setPointerCapture(e.pointerId)
   }
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     const el = ref.current
@@ -46,9 +46,8 @@ export function MvScrollRow({
     if (Math.abs(dx) > 4) drag.current.moved = true
     el.scrollLeft = drag.current.startScroll - dx
   }
-  function onPointerUp(e: PointerEvent<HTMLDivElement>) {
+  function onPointerUp() {
     drag.current.active = false
-    ref.current?.releasePointerCapture?.(e.pointerId)
   }
   function onClickCapture(e: MouseEvent<HTMLDivElement>) {
     // Empêche la navigation de la card si on vient de drag.

@@ -28,7 +28,6 @@ interface Props {
   depth?: number
 }
 
-const MAX_INDENT = 6
 const REPLY_LIMIT = 5
 
 const relTime = (iso: string) => {
@@ -59,12 +58,35 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
   const childCount = node.children.length
   const visibleChildren = showAllReplies ? node.children : node.children.slice(0, REPLY_LIMIT)
 
-  const indent = Math.min(depth, MAX_INDENT)
+  // Repli style Reddit : replié → ligne compacte cliquable pour ré-ouvrir.
+  if (collapsed) {
+    return (
+      <article aria-label={`Comment by ${author}`}>
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-expanded={false}
+          className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-xs"
+        >
+          <span className="font-mono">[+]</span>
+          <span className="text-foreground font-medium">{author}</span>
+          <span aria-hidden>·</span>
+          <span className="tabular-nums">{node.score} pts</span>
+          {childCount > 0 && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="tabular-nums">
+                {childCount} repl{childCount === 1 ? 'y' : 'ies'}
+              </span>
+            </>
+          )}
+        </button>
+      </article>
+    )
+  }
+
   return (
-    <article
-      className={cn('space-y-1.5', indent > 0 && 'border-border/50 border-l pl-3')}
-      aria-label={`Comment by ${author}`}
-    >
+    <article className="space-y-1.5" aria-label={`Comment by ${author}`}>
       <header className="text-muted-foreground flex items-center gap-2 text-xs">
         {username ? (
           <Link
@@ -93,16 +115,6 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               edited
             </button>
           </>
-        )}
-        {childCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setCollapsed((v) => !v)}
-            aria-expanded={!collapsed}
-            className="hover:text-foreground ml-auto font-mono tabular-nums"
-          >
-            {collapsed ? `[+] ${childCount}` : '[−]'}
-          </button>
         )}
       </header>
 
@@ -162,29 +174,43 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
         </div>
       )}
 
-      {childCount > 0 && !collapsed && (
-        <div className="mt-2 space-y-3 pt-1">
-          {visibleChildren.map((child) => (
-            <CommentItem
-              key={child.id}
-              node={child}
-              eventId={eventId}
-              slug={slug}
-              viewerId={viewerId}
-              isAuthed={isAuthed}
-              depth={depth + 1}
+      {childCount > 0 && (
+        <div className="mt-2 flex gap-2 pt-1">
+          {/* Rail vertical cliquable : replie ce fil (modèle Reddit). */}
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse thread"
+            className="group/rail flex w-3 shrink-0 cursor-pointer justify-center"
+          >
+            <span
+              className="bg-border/70 group-hover/rail:bg-primary w-px rounded-full transition-colors"
+              aria-hidden
             />
-          ))}
-          {!showAllReplies && childCount > REPLY_LIMIT && (
-            <button
-              type="button"
-              onClick={() => setShowAllReplies(true)}
-              className="text-primary text-xs hover:underline"
-            >
-              Show {childCount - REPLY_LIMIT} more repl
-              {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
-            </button>
-          )}
+          </button>
+          <div className="min-w-0 flex-1 space-y-3">
+            {visibleChildren.map((child) => (
+              <CommentItem
+                key={child.id}
+                node={child}
+                eventId={eventId}
+                slug={slug}
+                viewerId={viewerId}
+                isAuthed={isAuthed}
+                depth={depth + 1}
+              />
+            ))}
+            {!showAllReplies && childCount > REPLY_LIMIT && (
+              <button
+                type="button"
+                onClick={() => setShowAllReplies(true)}
+                className="text-primary text-xs hover:underline"
+              >
+                Show {childCount - REPLY_LIMIT} more repl
+                {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
