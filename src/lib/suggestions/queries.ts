@@ -2,22 +2,6 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 
-/** Suggestions de l'utilisateur courant (RLS own-rows). */
-export async function getMySuggestions() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data, error } = await supabase
-    .from('event_suggestions')
-    .select('id, type, title, start_at, status, created_at, groups!inner(name)')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
-
 /** Toutes les suggestions en attente (service_role) — appelé uniquement depuis la page admin gardée. */
 export async function getPendingSuggestions() {
   const admin = createServiceClient<Database>(
@@ -84,7 +68,6 @@ export async function getTargetableEvents() {
   return data ?? []
 }
 
-export type MySuggestion = Awaited<ReturnType<typeof getMySuggestions>>[number]
 export type PendingSuggestion = Awaited<ReturnType<typeof getPendingSuggestions>>[number]
 export type PendingArtistSuggestion = Awaited<
   ReturnType<typeof getPendingArtistSuggestions>

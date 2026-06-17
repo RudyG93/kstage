@@ -6,6 +6,8 @@ import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
+import { getProfile } from '@/lib/profiles/queries'
+import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import { TypeFilterVertical } from './type-filter-vertical'
 
@@ -26,6 +28,13 @@ export async function SidebarLeft({
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
   const followed = groups.filter((g) => followedIds.has(g.id))
+  // « +X more » pointe vers le profil (où vit la liste des groupes suivis).
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const profile = user ? await getProfile(user.id) : null
+  const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
   const [counts, annivCounts] = await Promise.all([
     getUpcomingEventCountsByGroup([...followedIds]),
     getUpcomingAnniversaryCountsByGroup([...followedIds]),
@@ -105,7 +114,7 @@ export async function SidebarLeft({
             </ul>
             {hiddenCount > 0 && (
               <Link
-                href="/groups"
+                href={profileHref}
                 className="text-muted-foreground hover:text-foreground mt-2 inline-block text-xs underline underline-offset-4"
               >
                 + {hiddenCount} more

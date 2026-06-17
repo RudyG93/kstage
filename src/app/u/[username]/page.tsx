@@ -1,24 +1,24 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { Settings } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
+import { GroupCard } from '@/components/group-card'
 import { MvsGrid } from '@/components/group/mvs-grid'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
-import { ProfileSettings } from '@/components/profile/profile-settings'
 import { ProfilePicker, type PickerItem } from '@/components/profile/profile-picker'
+import { PushBell } from '@/components/notifications/push-bell'
+import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
 import { getProfileByUsername, getProfileStats } from '@/lib/profiles/queries'
 import { setBias, setFavoriteGroup } from '@/lib/profiles/actions'
 import { getAllMembers } from '@/lib/members/queries'
-import { getGroups } from '@/lib/groups/queries'
+import { getGroups, type GroupSummary } from '@/lib/groups/queries'
+import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getLikedMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { isAdmin } from '@/lib/auth/admin'
-import {
-  getMySuggestions,
-  getPendingSuggestionsCount,
-  type MySuggestion,
-} from '@/lib/suggestions/queries'
+import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
 
@@ -49,18 +49,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   let admin = false
   let pendingCount = 0
-  let mySuggestions: MySuggestion[] = []
   let memberItems: PickerItem[] = []
   let groupItems: PickerItem[] = []
+  let followedGroups: GroupSummary[] = []
   if (isOwner && user) {
     admin = isAdmin(user.email)
-    const [sugg, pending, members, groups] = await Promise.all([
-      getMySuggestions(),
+    const [pending, members, groups, followedIds, countRes] = await Promise.all([
       admin ? getPendingSuggestionsCount() : Promise.resolve(0),
       getAllMembers(),
       getGroups(),
+      getFollowedGroupIds(),
+      supabase.rpc('group_follow_counts'),
     ])
-    mySuggestions = sugg
     pendingCount = pending
     memberItems = members.map((m) => ({
       id: m.id,
@@ -69,6 +69,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       subtitle: one(m.groups)?.name,
     }))
     groupItems = groups.map((g) => ({ id: g.id, name: g.name, avatar: g.image_url }))
+    // Groupes suivis (owner-only ; follows sous RLS), triés popularité puis alpha.
+    const followCount = new Map((countRes.data ?? []).map((r) => [r.group_id, r.follows]))
+    followedGroups = groups
+      .filter((g) => followedIds.has(g.id))
+      .sort(
+        (a, b) =>
+          (followCount.get(b.id) ?? 0) - (followCount.get(a.id) ?? 0) ||
+          a.name.localeCompare(b.name),
+      )
   }
 
   return (
@@ -96,6 +105,34 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               Member since {memberSince(profile.created_at)}
             </p>
           </div>
+          {isOwner && (
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              {admin && (
+                <>
+                  <Link
+                    href="/admin/suggestions"
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  >
+                    Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                  </Link>
+                  <Link
+                    href="/admin/reports"
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  >
+                    Reports
+                  </Link>
+                </>
+              )}
+              <PushBell />
+              <Link
+                href="/account"
+                aria-label="Account settings"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2"
+              >
+                <Settings className="size-5" aria-hidden />
+              </Link>
+            </div>
+          )}
         </header>
 
         {stats && (
@@ -164,6 +201,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </div>
         )}
 
+        {isOwner && followedGroups.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Followed groups</h2>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {followedGroups.map((g) => (
+                <GroupCard key={g.id} group={g} isFollowing isAuthed />
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Liked MVs</h2>
           {likedMvs.length === 0 ? (
@@ -180,10 +228,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <MvsGrid mvs={likedMvs} ratings={ratings} />
           )}
         </section>
-
-        {isOwner && (
-          <ProfileSettings admin={admin} pendingCount={pendingCount} suggestions={mySuggestions} />
-        )}
       </div>
     </div>
   )
