@@ -44,8 +44,9 @@ export async function SidebarLeft({
           <div className="mb-3">
             <span className="text-faint text-xs font-semibold">Filters</span>
           </div>
+          {/* Filtre groupe/artiste (Calendar) au-dessus du filtre de type. */}
+          {groupFilter && <div className="mb-3">{groupFilter}</div>}
           <TypeFilterVertical />
-          {groupFilter && <div className="mt-3">{groupFilter}</div>}
         </section>
       )}
 

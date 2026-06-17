@@ -39,16 +39,6 @@ export function TypeFilterVertical() {
 
   return (
     <div className="space-y-1">
-      {/* « All events » = reset (aucun filtre actif), carré sombre (maquette). */}
-      <button
-        type="button"
-        onClick={() => pushTypes(new Set())}
-        aria-pressed={active.size === 0}
-        className={rowClass(active.size === 0)}
-      >
-        <span className="bg-foreground size-2 shrink-0 rounded-[3px]" aria-hidden />
-        All events
-      </button>
       {FILTERABLE_EVENT_TYPES.map((t) => {
         const isActive = active.has(t)
         return (

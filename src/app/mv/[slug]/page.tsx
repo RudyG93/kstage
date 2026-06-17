@@ -129,10 +129,7 @@ export default async function MvPage({
           </div>
         )}
 
-        <section aria-labelledby="like-heading" className="space-y-2">
-          <h2 id="like-heading" className="text-sm font-medium">
-            Like
-          </h2>
+        <section aria-label="Like this music video">
           <LikeButton
             eventId={event.id}
             initialLiked={like.liked}

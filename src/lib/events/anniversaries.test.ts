@@ -31,7 +31,7 @@ describe('generateAnniversaries', () => {
       { todayKey: '2026-05-10', days: 30 },
     )
     expect(res).toHaveLength(1)
-    expect(res[0].title).toBe('Turns 33')
+    expect(res[0].title).toBe('33')
     expect(res[0].type).toBe('anniversary')
     expect(kstDayKey(res[0].start_at)).toBe('2026-05-16')
   })
@@ -42,7 +42,7 @@ describe('generateAnniversaries', () => {
       [{ group_id: 'g1', stage_name: 'Karina', birthday: '2000-04-11' }],
       { todayKey: '2026-04-01', days: 30 },
     )
-    expect(res[0].title).toBe('Karina — turns 26')
+    expect(res[0].title).toBe('Karina — 26')
   })
 
   it('exclut un birthday hors fenêtre', () => {
@@ -62,6 +62,6 @@ describe('generateAnniversaries', () => {
     )
     expect(res).toHaveLength(1)
     expect(kstDayKey(res[0].start_at)).toBe('2027-01-05')
-    expect(res[0].title).toBe('Karina — turns 27')
+    expect(res[0].title).toBe('Karina — 27')
   })
 })

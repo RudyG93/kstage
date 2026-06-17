@@ -4,8 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Slider } from '@base-ui/react/slider'
 import { toast } from 'sonner'
-import { Trash2 } from 'lucide-react'
-import { rateEvent, deleteRating } from '@/lib/events/rating-actions'
+import { rateEvent } from '@/lib/events/rating-actions'
 import { cn } from '@/lib/utils'
 
 const TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -42,18 +41,6 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
     })
   }
 
-  function remove() {
-    startTransition(async () => {
-      const res = await deleteRating(eventId, slug)
-      if ('error' in res) toast.error(res.error)
-      else {
-        setRated(false)
-        setValue(5)
-        toast.success('Rating removed')
-      }
-    })
-  }
-
   if (!isAuthed) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -78,17 +65,6 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
           {value.toFixed(1)}
         </span>
         <span className="text-muted-foreground text-xs">/ 10</span>
-        {rated && (
-          <button
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            className="text-muted-foreground hover:text-destructive ml-auto inline-flex items-center gap-1 text-xs"
-          >
-            <Trash2 className="size-3.5" aria-hidden />
-            Remove
-          </button>
-        )}
       </div>
 
       <Slider.Root
