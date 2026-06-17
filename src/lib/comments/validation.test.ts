@@ -13,12 +13,24 @@ const UUID = '550e8400-e29b-41d4-a716-446655440000'
 const UUID2 = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
 describe('normalizeBody', () => {
-  it('limite les sauts de ligne consécutifs à 3', () => {
-    expect(normalizeBody('a\n\n\n\n\n\nb')).toBe('a\n\n\nb')
+  it('limite à 1 ligne vide consécutive', () => {
+    expect(normalizeBody('a\n\n\n\n\n\nb')).toBe('a\n\nb')
     expect(normalizeBody('a\n\nb')).toBe('a\n\nb')
   })
   it('convertit CRLF en LF et trim', () => {
     expect(normalizeBody('  a\r\nb  ')).toBe('a\nb')
+  })
+})
+
+describe('parseCommentInput — mur de texte', () => {
+  it('rejette une lettre par ligne (trop de lignes)', () => {
+    const wall = Array.from({ length: 60 }, (_, i) => String.fromCharCode(97 + (i % 26))).join('\n')
+    const r = parseCommentInput({ eventId: UUID, body: wall })
+    expect(r).toHaveProperty('error')
+  })
+  it('laisse passer un commentaire multi-lignes raisonnable', () => {
+    const r = parseCommentInput({ eventId: UUID, body: 'line1\nline2\nline3' })
+    expect(r).toHaveProperty('value')
   })
 })
 
