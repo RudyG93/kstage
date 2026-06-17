@@ -4,9 +4,10 @@ import type { UpcomingEvent } from './queries'
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEK_MS = 7 * DAY_MS
 
-// Section « Later » : au plus 10 bannières et 1 mois dans le futur (§3.1).
+// Section « Later » : au plus 10 bannières, fenêtre = 4 semaines à partir de la
+// semaine prochaine (≈ J+35). Au-delà = territoire du calendrier, hors feed.
 const LATER_CAP = 10
-const LATER_MAX_AHEAD_DAYS = 31
+const LATER_MAX_AHEAD_DAYS = 35
 
 export interface CappedLater {
   display: UpcomingEvent[]
@@ -15,9 +16,10 @@ export interface CappedLater {
 }
 
 /**
- * Borne le bucket « later » : ≤ 1 mois ET ≤ 10 events affichés. `moreCount`
- * compte tout le reste (au-delà du mois ou du cap) ; `moreHref` pointe le
- * calendrier au dernier jour affiché (fuseau utilisateur).
+ * Borne le bucket « later » : fenêtre ≤ J+35 ET ≤ 10 events affichés. `moreCount`
+ * ne compte que l'overflow DANS la fenêtre (pas les events au-delà de J+35, qui
+ * relèvent du calendrier) — évite l'effet « 1 event + 8 more » qui faisait vide.
+ * `moreHref` pointe le calendrier au dernier jour affiché (fuseau utilisateur).
  */
 export function capLaterEvents(
   later: UpcomingEvent[],
@@ -27,7 +29,7 @@ export function capLaterEvents(
   const limit = nowMs + LATER_MAX_AHEAD_DAYS * DAY_MS
   const within = later.filter((e) => new Date(e.start_at).getTime() <= limit)
   const display = within.slice(0, LATER_CAP)
-  const moreCount = later.length - display.length
+  const moreCount = within.length - display.length
   const last = display[display.length - 1]
   const dayKey = last ? localDayKey(last.start_at, timeZone) : null
   const moreHref = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : null
