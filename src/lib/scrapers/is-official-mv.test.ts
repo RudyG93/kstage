@@ -27,6 +27,8 @@ describe('isOfficialMvTitle', () => {
     ["NewJeans 'Supernatural' (Official Audio)", 'blacklist:audio'],
     ["aespa 'LEMONADE' Behind the scenes", 'blacklist:behind'],
     ["ILLIT 'Magnetic' M/V Making Film", 'blacklist:making'],
+    ['(G)I-DLE - M/V Bloopers : [I feel]', 'blacklist:bloopers'],
+    ["(G)I-DLE - 'Uh-Oh' M/V 응원법", 'blacklist:fanchant'],
     ["aespa 'Whiplash' Special Clip", 'blacklist:special clip'],
     ["RIIZE 'Get A Guitar' Dance Cover", 'blacklist:dance cover'],
     ["aespa 'Drama' Stage @ Music Core", 'blacklist:stage'],

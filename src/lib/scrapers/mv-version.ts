@@ -37,31 +37,45 @@ function stripVer(content: string): string {
   return content.replace(/(?<![a-zA-Z])[Vv]er\.?(?![a-zA-Z])/g, '').trim()
 }
 
+/** Artiste de tête d'un titre : avant le premier « - » ou la première quote. */
+function leadArtist(title: string): string {
+  return title.split(/\s[-–—]\s|['‘"]/)[0] ?? title
+}
+
 /**
- * Détecte la version d'un MV à partir de son titre + les membres connus du
- * groupe. Ordre des règles : Performance > Member > other_version.
+ * Détecte la version d'un MV à partir de son titre + les membres du groupe.
  *
- * - 'main' : pas de paire `(... ver.)` → c'est le clip principal.
- * - 'performance' : descripteur ∈ {performance, dance, choreography, choreo}.
- * - 'member' : descripteur égal au stage_name d'un membre du groupe
- *   (égalité stricte après normalize Unicode). Renseigne memberId.
- * - 'other_version' : tout le reste (English, Remake, æ-aespa, etc.).
+ * - `(... ver.)` présent → Performance > Member (descripteur) > other_version.
+ * - sinon → 'main', SAUF si l'artiste de tête est un **membre** (solo posté sur
+ *   la chaîne du groupe, ex. « YUQI - 'FREAK' ») et pas le groupe → 'member'.
+ *   `groupName` (optionnel) évite de prendre un MV de groupe pour un solo.
  */
-export function detectMvVersion(title: string, members: readonly MemberRef[]): VersionResult {
+export function detectMvVersion(
+  title: string,
+  members: readonly MemberRef[],
+  groupName?: string,
+): VersionResult {
   const content = extractVerContent(title)
-  if (!content) return { kind: 'main', memberId: null }
-
-  const descriptor = stripVer(content)
-  if (!descriptor) return { kind: 'other_version', memberId: null }
-
-  if (PERFORMANCE_RE.test(descriptor)) return { kind: 'performance', memberId: null }
-
-  const desc = normalize(descriptor)
-  for (const m of members) {
-    if (desc === normalize(m.stage_name)) {
-      return { kind: 'member', memberId: m.id }
+  if (content) {
+    const descriptor = stripVer(content)
+    if (!descriptor) return { kind: 'other_version', memberId: null }
+    if (PERFORMANCE_RE.test(descriptor)) return { kind: 'performance', memberId: null }
+    const desc = normalize(descriptor)
+    for (const m of members) {
+      if (desc === normalize(m.stage_name)) return { kind: 'member', memberId: m.id }
     }
+    return { kind: 'other_version', memberId: null }
   }
 
-  return { kind: 'other_version', memberId: null }
+  // Pas de « (… ver.) » → clip principal, sauf solo de membre en tête de titre.
+  const lead = normalize(leadArtist(title))
+  const grp = groupName ? normalize(groupName) : ''
+  const isGroupLead = grp.length >= 2 && lead.includes(grp)
+  if (!isGroupLead) {
+    for (const m of members) {
+      const n = normalize(m.stage_name)
+      if (n.length >= 3 && lead.includes(n)) return { kind: 'member', memberId: m.id }
+    }
+  }
+  return { kind: 'main', memberId: null }
 }

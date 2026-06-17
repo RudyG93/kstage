@@ -421,7 +421,7 @@ export async function scrapeGroup(
 
     // mv_kind + member_id : classification de version (main / performance /
     // member / other_version) — tout ce qui passe le gate est un MV.
-    const version = detectMvVersion(item.title, members)
+    const version = detectMvVersion(item.title, members, groupName ?? undefined)
 
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
