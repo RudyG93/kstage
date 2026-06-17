@@ -12,19 +12,22 @@ test.describe('auth golden path', () => {
     'Set E2E_AUTH_EMAIL / E2E_AUTH_PASSWORD (a confirmed Supabase user) to run.',
   )
 
-  test('sign in, follow, multi-filter, see My events, sign out', async ({ page }) => {
-    // Sign in → redirigé vers /my.
+  test('sign in, follow, multi-filter, connected home, sign out', async ({ page }) => {
+    // Sign in → redirigé vers l'accueil connecté `/` (l'ancienne route `/my`
+    // a été retirée ; ce test l'attendait encore mais ne tournait jamais).
     await page.goto('/login')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(password)
+    await page.getByLabel('Email or username').fill(email)
+    // `exact` : sinon "Password" matche aussi le bouton "Show password".
+    await page.getByLabel('Password', { exact: true }).fill(password)
     await page.getByRole('button', { name: 'Sign in' }).click()
-    await expect(page).toHaveURL(/\/my$/)
+    await expect(page).toHaveURL(/\/$/)
 
-    // Suivre un groupe (idempotent : si déjà suivi, le bouton "Follow" est absent).
+    // Suivre un groupe. Le bouton de suivi des cards est un cœur icon-only :
+    // son nom accessible est "Follow" / "Unfollow" (aria-label), pas du texte.
     await page.goto('/groups')
     const firstFollow = page.getByRole('button', { name: 'Follow' }).first()
     if (await firstFollow.count()) await firstFollow.click()
-    await expect(page.getByRole('button', { name: 'Following' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Unfollow' }).first()).toBeVisible()
 
     // Home connectée : sidebar gauche TypeFilterVertical (post round-4 layout).
     await page.goto('/')
@@ -47,9 +50,9 @@ test.describe('auth golden path', () => {
     await expect(page).toHaveURL(/[?&]type=release(?:[,&]|$)/)
     await expect(mvBtn).toHaveAttribute('aria-pressed', 'false')
 
-    // L'état "aucun groupe suivi" a disparu de /my.
-    await page.goto('/my')
-    await expect(page.getByRole('heading', { name: 'My events', level: 1 })).toBeVisible()
+    // La home connectée affiche la sidebar "My groups" (preuve d'état connecté
+    // + au moins un groupe suivi → l'empty-state a disparu).
+    await expect(page.getByText('My groups')).toBeVisible()
     await expect(page.getByText("You don't follow any groups yet.")).toHaveCount(0)
 
     // Sign out → ouvrir le menu compte (avatar) puis Sign out → retour à l'accueil.
