@@ -414,5 +414,121 @@
       { "name": "NCT 127 · NCT 127", "url": "https://www.youtube.com/@NCT127" },
       { "name": "NCT 127 · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
     ]
+  },
+  {
+    "slug": "dreamcatcher",
+    "channels": [
+      {
+        "name": "Dreamcatcher · Dreamcatcher",
+        "url": "https://www.youtube.com/@dreamcatcherofficial"
+      }
+    ]
+  },
+  {
+    "slug": "viviz",
+    "channels": [{ "name": "VIVIZ · VIVIZ", "url": "https://www.youtube.com/@viviz.official" }]
+  },
+  {
+    "slug": "btob",
+    "channels": [{ "name": "BTOB · BTOB", "url": "https://www.youtube.com/@officialbtob" }]
+  },
+  {
+    "slug": "vixx",
+    "channels": [{ "name": "VIXX · RealVIXX", "url": "https://www.youtube.com/@realvixx" }]
+  },
+  {
+    "slug": "apink",
+    "channels": [{ "name": "Apink · Apink", "url": "https://www.youtube.com/@officialapink" }]
+  },
+  {
+    "slug": "everglow",
+    "channels": [
+      { "name": "EVERGLOW · EVERGLOW", "url": "https://www.youtube.com/@everglowofficial" }
+    ]
+  },
+  {
+    "slug": "kard",
+    "channels": [{ "name": "KARD · KARD", "url": "https://www.youtube.com/@kard" }]
+  },
+  {
+    "slug": "chungha",
+    "channels": [
+      { "name": "Chung Ha · CHUNG HA", "url": "https://www.youtube.com/@chungha__official" }
+    ]
+  },
+  {
+    "slug": "bibi",
+    "channels": [{ "name": "BIBI · BIBI", "url": "https://www.youtube.com/@naked_bibi" }]
+  },
+  {
+    "slug": "highlight",
+    "channels": [
+      {
+        "name": "Highlight · OFFICIAL HIGHLIGHT",
+        "url": "https://www.youtube.com/@officialhighlight"
+      }
+    ]
+  },
+  {
+    "slug": "zico",
+    "channels": [{ "name": "ZICO · ZICO", "url": "https://www.youtube.com/@zicoofficial" }]
+  },
+  {
+    "slug": "crush",
+    "channels": [{ "name": "Crush · Crush", "url": "https://www.youtube.com/@crushofficial" }]
+  },
+  {
+    "slug": "jaypark",
+    "channels": [{ "name": "Jay Park · JAY PARK", "url": "https://www.youtube.com/@jaypark0425" }]
+  },
+  {
+    "slug": "secretnumber",
+    "channels": [
+      {
+        "name": "Secret Number · SECRET NUMBER",
+        "url": "https://www.youtube.com/@secretnumberofficial"
+      }
+    ]
+  },
+  {
+    "slug": "ohmygirl",
+    "channels": [{ "name": "Oh My Girl · OH MY GIRL", "url": "https://www.youtube.com/@ohmygirl" }]
+  },
+  {
+    "slug": "tribe",
+    "channels": [{ "name": "TRI.BE · TRI_BE", "url": "https://www.youtube.com/@tribe_2021" }]
+  },
+  {
+    "slug": "fiftyfifty",
+    "channels": [
+      {
+        "name": "Fifty Fifty · FIFTY FIFTY Official",
+        "url": "https://www.youtube.com/@we_fiftyfifty"
+      }
+    ]
+  },
+  {
+    "slug": "youngposse",
+    "channels": [
+      { "name": "Young Posse · YOUNG POSSE", "url": "https://www.youtube.com/@youngposseup" }
+    ]
+  },
+  {
+    "slug": "akmu",
+    "channels": [{ "name": "AKMU · AKMU", "url": "https://www.youtube.com/@akmu" }]
+  },
+  {
+    "slug": "exo",
+    "channels": [{ "name": "EXO · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+  },
+  {
+    "slug": "hearts2hearts",
+    "channels": [{ "name": "Hearts2Hearts · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+  },
+  {
+    "slug": "izna",
+    "channels": [
+      { "name": "izna · izna", "url": "https://www.youtube.com/channel/UCfbYNlxgLuKJXQZEhkMmaCQ" }
+    ]
   }
 ]
