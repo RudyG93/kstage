@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { AccountForm } from '@/components/account/account-form'
 import { ChangePasswordForm } from '@/components/account/change-password-form'
+import { IosInstallHint } from '@/components/notifications/ios-install-hint'
+import { PushToggle } from '@/components/notifications/push-toggle'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profiles/queries'
 
@@ -30,6 +32,13 @@ export default async function AccountPage() {
           username={profile?.username ?? ''}
           avatarUrl={profile?.avatar_url ?? null}
         />
+
+        <section className="space-y-3">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">Notifications</h2>
+          <IosInstallHint />
+          <PushToggle />
+        </section>
+
         <ChangePasswordForm />
       </div>
     </div>

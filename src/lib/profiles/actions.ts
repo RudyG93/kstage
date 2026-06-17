@@ -15,6 +15,17 @@ const AVATAR_EXT: Record<string, string> = {
   'image/webp': 'webp',
 }
 
+/** Chemin storage d'une URL d'avatar du bucket `avatars` si elle appartient au
+ *  dossier de l'utilisateur, sinon null (URL externe/legacy). Sert au nettoyage
+ *  de l'ancien fichier après un upload sur chemin unique. */
+function ownAvatarPath(url: string | null, userId: string): string | null {
+  if (!url) return null
+  const i = url.indexOf('/avatars/')
+  if (i === -1) return null
+  const path = url.slice(i + '/avatars/'.length).split('?')[0]
+  return path.startsWith(`${userId}/`) ? path : null
+}
+
 /** Définit (ou retire si null) le bias = membre favori du user. */
 export async function setBias(memberId: string | null): Promise<{ error: string } | { ok: true }> {
   const supabase = await createClient()
@@ -92,18 +103,33 @@ export async function updateAvatar(formData: FormData): Promise<AvatarResult> {
   const ext = AVATAR_EXT[file.type]
   if (!ext) return { error: 'Avatar must be a PNG, JPEG or WebP image.' }
 
-  const path = `${user.id}/avatar.${ext}`
+  // Chemin UNIQUE par upload → INSERT simple (pas d'upsert). L'upsert exigeait
+  // un SELECT sur le bucket pour retrouver l'objet existant ; or 0035 a retiré
+  // cette policy SELECT → l'upsert tombait en collision unique (bug « changement
+  // d'avatar »). Un chemin neuf ne dépend que de la policy INSERT « own folder ».
+  // L'URL change à chaque fois → plus besoin du cache-bust `?v=`.
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`
   const { error: uploadErr } = await supabase.storage
     .from('avatars')
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, file, { contentType: file.type })
   if (uploadErr) return { error: 'Could not upload the avatar. Please try again.' }
 
   const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
-  // cache-bust : force le navigateur à recharger l'avatar après remplacement
-  const avatarUrl = `${pub.publicUrl}?v=${Date.now()}`
+  const avatarUrl = pub.publicUrl
+
+  // Ancien avatar (chemin unique → sinon accumulation d'orphelins).
+  const { data: prev } = await supabase
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', user.id)
+    .single()
 
   const { error } = await supabase.from('profiles').upsert({ id: user.id, avatar_url: avatarUrl })
   if (error) return { error: 'Could not save your avatar. Please try again.' }
+
+  // Best-effort : retire l'ancien objet du bucket (ignore toute erreur).
+  const oldPath = ownAvatarPath(prev?.avatar_url ?? null, user.id)
+  if (oldPath) await supabase.storage.from('avatars').remove([oldPath])
 
   revalidatePath('/account')
   revalidatePath('/', 'layout')

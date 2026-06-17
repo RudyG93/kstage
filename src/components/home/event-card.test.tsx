@@ -28,9 +28,15 @@ function makeEvent(overrides: Partial<UpcomingEvent> = {}): UpcomingEvent {
 
 describe('HomeEventCard', () => {
   it('marks external events: opens in a new tab + sr-only hint', () => {
+    // Policy Lot 2 : seul un music_show pointant une URL YouTube reste externe ;
+    // les autres sources (carrd, broadcaster) redirigent vers la page groupe.
     render(
       <HomeEventCard
-        event={makeEvent({ type: 'music_show', slug: null, source_url: 'https://kbs.example/mb' })}
+        event={makeEvent({
+          type: 'music_show',
+          slug: null,
+          source_url: 'https://www.youtube.com/watch?v=abc123',
+        })}
       />,
     )
     const link = screen.getByRole('link')
