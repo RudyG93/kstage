@@ -1,7 +1,9 @@
-// Limites alignées sur la contrainte DB `comments_body_len`
-// (cf. supabase/migrations/0009_community.sql:60).
+// Limite app < contrainte DB `comments_body_len` (5000, migration 0009) : 2000
+// suffit largement pour un avis de fan et coupe les pavés.
 export const BODY_MIN = 1
-export const BODY_MAX = 5000
+export const BODY_MAX = 2000
+// Anti mur-de-texte (« une lettre par ligne ») : au-delà = rejet.
+export const MAX_LINES = 25
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -20,12 +22,17 @@ export function containsBlockedContent(body: string): boolean {
   return BLOCKED_PATTERNS.some((re) => re.test(body))
 }
 
-/** Normalise un body : CRLF→LF, limite les sauts de ligne consécutifs à 3, trim. */
+/** Normalise un body : CRLF→LF, max 1 ligne vide consécutive, trim. */
 export function normalizeBody(raw: string): string {
   return raw
     .replace(/\r\n/g, '\n')
-    .replace(/\n{4,}/g, '\n\n\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+/** Rejette les murs de texte (trop de lignes — ex. « une lettre par ligne »). */
+function tooManyLines(body: string): boolean {
+  return body.split('\n').length > MAX_LINES
 }
 
 export interface CommentInput {
@@ -55,6 +62,7 @@ export function parseCommentInput(raw: RawComment): { error: string } | { value:
   const body = normalizeBody(raw.body ?? '')
   if (body.length < BODY_MIN) return { error: 'Comment cannot be empty.' }
   if (body.length > BODY_MAX) return { error: `Comment is too long (${BODY_MAX} chars max).` }
+  if (tooManyLines(body)) return { error: 'Too many line breaks — please tighten your comment.' }
   if (containsBlockedContent(body)) return { error: 'Your comment was blocked by our spam filter.' }
 
   return { value: { eventId, parentId, body } }
@@ -75,6 +83,7 @@ export function parseEditInput(raw: RawEdit): { error: string } | { value: EditI
   const body = normalizeBody(raw.body ?? '')
   if (body.length < BODY_MIN) return { error: 'Comment cannot be empty.' }
   if (body.length > BODY_MAX) return { error: `Comment is too long (${BODY_MAX} chars max).` }
+  if (tooManyLines(body)) return { error: 'Too many line breaks — please tighten your comment.' }
   if (containsBlockedContent(body)) return { error: 'Your comment was blocked by our spam filter.' }
   return { value: { commentId, body } }
 }
