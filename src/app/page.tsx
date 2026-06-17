@@ -70,7 +70,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
           <SidebarLeft tier={tier} />
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
-          <NextDropCard event={nextDrop} />
+          <NextDropCard
+            event={nextDrop}
+            isAuthed
+            isFollowing={nextDrop?.group_id ? followedIds.has(nextDrop.group_id) : false}
+          />
           <Feed events={feedEvents} timeZone={timeZone} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">

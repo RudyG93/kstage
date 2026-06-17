@@ -34,13 +34,15 @@ export function SiteNav() {
             href={href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors md:flex-none md:flex-row md:gap-1.5 md:px-3 md:py-1.5 md:text-sm',
+              // Mobile : barre du bas (icône + label). Desktop : pills texte dans
+              // le header (maquette) — actif = pill lilas, pas d'icône.
+              'flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors md:flex-none md:flex-row md:gap-1.5 md:rounded-[10px] md:px-3 md:py-1.5 md:text-sm',
               active
-                ? 'text-foreground font-medium'
+                ? 'text-foreground md:bg-accent md:text-accent-foreground font-medium md:font-semibold'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <Icon className="size-5 md:size-4" />
+            <Icon className="size-5 md:hidden" />
             <span>{label}</span>
           </Link>
         )
