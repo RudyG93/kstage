@@ -187,13 +187,14 @@
     font-family: var(--font-numeric);
     font-feature-settings: 'tnum' 1;
   }
-  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe.
-     Portée par la fenêtre app (.app-window) — cf. maquette KStage Home, overlay
-     d'opacité --atmo à l'intérieur du cadre, pas sur la page extérieure. */
-  .dark .app-atmosphere {
+  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe, posée sur la
+     page (plus de cadre fenêtre) — discrète, fixée au scroll. */
+  .dark body {
     background-image:
-      radial-gradient(820px 420px at 86% -10%, oklch(0.675 0.176 281 / 0.18), transparent 60%),
-      radial-gradient(620px 360px at -6% 4%, oklch(0.815 0.143 172 / 0.1), transparent 58%);
+      radial-gradient(900px 520px at 88% -12%, oklch(0.675 0.176 281 / 0.14), transparent 60%),
+      radial-gradient(760px 440px at -8% 2%, oklch(0.815 0.143 172 / 0.08), transparent 55%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 }
 
