@@ -267,5 +267,64 @@
         "url": "https://www.youtube.com/@BPMEntertainment-official"
       }
     ]
+  },
+  {
+    "slug": "iu",
+    "channels": [{ "name": "IU · 이지금 [IU Official]", "url": "https://www.youtube.com/@dlwlrma" }]
+  },
+  {
+    "slug": "treasure",
+    "channels": [{ "name": "Treasure · TREASURE", "url": "https://www.youtube.com/@TREASURE" }]
+  },
+  {
+    "slug": "shinee",
+    "channels": [
+      { "name": "SHINee · SHINee", "url": "https://www.youtube.com/@SHINee" },
+      { "name": "SHINee · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+    ]
+  },
+  {
+    "slug": "xikers",
+    "channels": [{ "name": "xikers · xikers", "url": "https://www.youtube.com/@xikers_official" }]
+  },
+  {
+    "slug": "meovv",
+    "channels": [{ "name": "MEOVV · MEOVV", "url": "https://www.youtube.com/@MEOVV_official" }]
+  },
+  {
+    "slug": "kangdaniel",
+    "channels": [
+      { "name": "KANG DANIEL · KANGDANIEL", "url": "https://www.youtube.com/@kangdaniel" }
+    ]
+  },
+  {
+    "slug": "yena",
+    "channels": [{ "name": "YENA · YENA", "url": "https://www.youtube.com/@YENA_official" }]
+  },
+  {
+    "slug": "jacksonwang",
+    "channels": [
+      { "name": "Jackson Wang · Jackson Wang", "url": "https://www.youtube.com/@jacksonwang" }
+    ]
+  },
+  {
+    "slug": "heize",
+    "channels": [
+      { "name": "Heize · Heize official", "url": "https://www.youtube.com/@heizeofficial" }
+    ]
+  },
+  {
+    "slug": "younha",
+    "channels": [
+      { "name": "Younha · YOUNHA OFFICIAL", "url": "https://www.youtube.com/@younhaofficial" }
+    ]
+  },
+  {
+    "slug": "sunmi",
+    "channels": [{ "name": "Sunmi · SUNMI", "url": "https://www.youtube.com/@SUNMI_official" }]
+  },
+  {
+    "slug": "sf9",
+    "channels": [{ "name": "SF9 · SF9", "url": "https://www.youtube.com/@SF9official" }]
   }
 ]

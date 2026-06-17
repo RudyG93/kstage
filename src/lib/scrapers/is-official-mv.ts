@@ -34,6 +34,8 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['choreography', /\bchoreography\b/i],
   ['special video', /\bspecial video\b/i],
   ['special clip', /\bspecial clip\b/i],
+  // « MV Commentary » / « M/V 코멘터리 » : l'artiste commente le clip — pas le MV.
+  ['commentary', /\bcommentary\b|코멘터리/i],
   ['reaction', /\breaction\b/i],
   ['live', /\blive\b/i],
   ['concert', /\bconcert\b/i],
