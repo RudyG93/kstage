@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
+import { faceCrop } from '@/lib/images/cloudinary'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displaySongTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
@@ -40,11 +41,12 @@ export function HomeEventCard({
     >
       {group?.image_url ? (
         <Image
-          src={group.image_url}
+          src={faceCrop(group.image_url, 72, 72)}
           alt=""
           aria-hidden
           width={40}
           height={40}
+          unoptimized
           className="size-9 shrink-0 rounded-md object-cover"
         />
       ) : (

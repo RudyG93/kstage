@@ -6,6 +6,7 @@ import { MvScrollRow } from '@/components/mv/mv-scroll-row'
 import { getAllMvs, type MvEvent } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { getGroups } from '@/lib/groups/queries'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
@@ -33,9 +34,11 @@ export default async function MvsPage() {
     tier = profile?.tier ?? 'free'
   }
 
-  const [followedMvs, latest] = await Promise.all([
+  const [followedMvs, latest, groups, { data: countRows }] = await Promise.all([
     followedArr.length > 0 ? getAllMvs({ groupIds: followedArr, limit: 300 }) : Promise.resolve([]),
     getAllMvs({ limit: 30 }),
+    getGroups(),
+    supabase.rpc('group_follow_counts'),
   ])
 
   // 1 ligne par groupe suivi (ordre = MV le plus récent), 10 MV max chacun.
@@ -53,7 +56,16 @@ export default async function MvsPage() {
     }
     if (row.mvs.length < PER_GROUP) row.mvs.push(mv)
   }
-  const rows = [...byGroup.values()]
+  // Tri par popularité (nb de follows) décroissante puis alpha. Le RPC renvoie
+  // group_id ; on relie au slug des rows via getGroups (le select MV n'expose
+  // pas l'id du groupe).
+  const countById = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
+  const followBySlug = new Map(groups.map((g) => [g.slug, countById.get(g.id) ?? 0]))
+  const rows = [...byGroup.values()].sort(
+    (a, b) =>
+      (followBySlug.get(b.slug) ?? 0) - (followBySlug.get(a.slug) ?? 0) ||
+      a.name.localeCompare(b.name),
+  )
 
   const ratings = await getRatingsForEvents([
     ...rows.flatMap((r) => r.mvs.map((m) => m.id)),
