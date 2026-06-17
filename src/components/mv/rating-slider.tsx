@@ -102,9 +102,9 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
         aria-label="Your rating from 0 to 10"
       >
         <Slider.Control className="flex h-6 w-full items-center">
-          <Slider.Track className="relative h-1.5 w-full rounded-full bg-[linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)]">
-            <Slider.Indicator className="rounded-full bg-transparent" />
-            <Slider.Thumb className="focus-visible:ring-ring/60 size-5 rounded-full border-2 border-white bg-white shadow ring-offset-2 outline-none focus-visible:ring-2" />
+          <Slider.Track className="bg-muted relative h-1.5 w-full rounded-full">
+            <Slider.Indicator className="bg-primary rounded-full" />
+            <Slider.Thumb className="border-primary bg-card focus-visible:ring-ring/60 size-5 rounded-full border-2 shadow ring-offset-2 outline-none focus-visible:ring-2" />
           </Slider.Track>
         </Slider.Control>
       </Slider.Root>

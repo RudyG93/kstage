@@ -7,9 +7,10 @@ import { getEventBySlug, getEventRatingSummary, getLikeSummary } from '@/lib/eve
 import { getCommentsForEvent } from '@/lib/comments/queries'
 import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
-import { displayEventTitle } from '@/lib/events/title'
+import { displaySongTitle } from '@/lib/events/title'
 import { formatKst } from '@/lib/events/date'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { LocalTime } from '@/components/local-time'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { RatingSlider } from '@/components/mv/rating-slider'
 import { LikeButton } from '@/components/mv/like-button'
@@ -30,7 +31,7 @@ export async function generateMetadata({
   const event = await loadMv(slug)
   if (!event) return { title: 'MV not found · KStage' }
   const group = event.groups
-  const title = displayEventTitle(event.title, group?.name)
+  const title = displaySongTitle(event.title, group?.name)
   return {
     title: `${title} — ${group?.name ?? 'KStage'}`,
     description: event.description ?? `${group?.name} music video.`,
@@ -53,7 +54,7 @@ export default async function MvPage({
 
   const group = event.groups
   const color = group?.color_hex ?? '#7c5cff'
-  const title = displayEventTitle(event.title, group?.name)
+  const title = displaySongTitle(event.title, group?.name)
 
   const [rating, userRes] = await Promise.all([
     getEventRatingSummary(event.id),
@@ -115,7 +116,8 @@ export default async function MvPage({
           </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight text-balance">{title}</h1>
           <p className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
-            {dateLabel} · {timeLabel} KST
+            {dateLabel} · <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} /> ·{' '}
+            {timeLabel} KST
           </p>
         </header>
 
