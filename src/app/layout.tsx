@@ -115,25 +115,34 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <header className="bg-background/95 sticky top-0 z-30 border-b">
-            <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
-              <Link href="/" className="text-lg tracking-tight transition-opacity hover:opacity-80">
-                <span className="font-heading font-bold">
-                  K<span className="font-serif font-normal italic">stage</span>
-                </span>
-              </Link>
-              <div className="flex-1" />
-              <SiteNav />
-              {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
-              <AuthMenu
-                email={user?.email ?? null}
-                username={profile?.username ?? null}
-                avatarUrl={profile?.avatar_url ?? null}
-              />
-              <ThemeToggle />
+          {/* Fenêtre app (maquette KStage Home) : cadre arrondi sur fond --page,
+              ombre douce + halo d'atmosphère en Midnight. Header + contenu vivent
+              dedans, à la même largeur. */}
+          <div className="mx-auto w-full max-w-[1400px] flex-1 px-2 py-3 sm:px-5 sm:py-6">
+            <div className="app-window bg-background border-border/60 relative overflow-hidden rounded-3xl border shadow-[0_30px_80px_-40px_oklch(0.2_0.02_285/0.45)]">
+              <div className="app-atmosphere pointer-events-none absolute inset-0" aria-hidden />
+              <header className="bg-card border-border relative flex h-14 items-center gap-3 border-b px-4 sm:px-6">
+                <Link
+                  href="/"
+                  className="text-lg tracking-tight transition-opacity hover:opacity-80"
+                >
+                  <span className="font-heading font-bold">
+                    K<span className="font-serif font-normal italic">stage</span>
+                  </span>
+                </Link>
+                <SiteNav />
+                <div className="flex-1" />
+                {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
+                <ThemeToggle />
+                <AuthMenu
+                  email={user?.email ?? null}
+                  username={profile?.username ?? null}
+                  avatarUrl={profile?.avatar_url ?? null}
+                />
+              </header>
+              <main className="relative pb-24 md:pb-6">{children}</main>
             </div>
-          </header>
-          <main className="flex-1 pb-24 md:pb-6">{children}</main>
+          </div>
           <Footer />
           <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>

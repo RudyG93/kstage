@@ -14,6 +14,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* fond « page » extérieur, sous la fenêtre app (maquette : --page < --bg < --card) */
+  --color-page: var(--page);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-bricolage);
@@ -65,7 +67,8 @@
 
 /* ===================== DAYLIGHT (clair) ===================== */
 :root {
-  --background: oklch(0.982 0.003 85); /* blanc cassé chaud */
+  --page: oklch(0.928 0.005 286); /* gris lilas clair, fond extérieur (#ecebef) */
+  --background: oklch(0.982 0.003 85); /* blanc cassé chaud — surface fenêtre */
   --foreground: oklch(0.23 0.015 285); /* encre */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.23 0.015 285);
@@ -116,7 +119,8 @@
 
 /* ===================== MIDNIGHT (sombre) ===================== */
 .dark {
-  --background: oklch(0.179 0.015 272); /* bleu encre profond */
+  --page: oklch(0.1 0.015 274); /* presque noir bleuté, fond extérieur (#070810) */
+  --background: oklch(0.179 0.015 272); /* bleu encre profond — surface fenêtre */
   --foreground: oklch(0.955 0.007 269);
   --card: oklch(0.238 0.024 274);
   --card-foreground: oklch(0.955 0.007 269);
@@ -165,7 +169,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-page text-foreground;
   }
   html {
     @apply font-sans;
@@ -183,13 +187,13 @@
     font-family: var(--font-numeric);
     font-feature-settings: 'tnum' 1;
   }
-  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe. */
-  .dark body {
+  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe.
+     Portée par la fenêtre app (.app-window) — cf. maquette KStage Home, overlay
+     d'opacité --atmo à l'intérieur du cadre, pas sur la page extérieure. */
+  .dark .app-atmosphere {
     background-image:
-      radial-gradient(900px 520px at 88% -12%, oklch(0.675 0.176 281 / 0.16), transparent 60%),
-      radial-gradient(760px 440px at -8% 2%, oklch(0.815 0.143 172 / 0.1), transparent 55%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+      radial-gradient(820px 420px at 86% -10%, oklch(0.675 0.176 281 / 0.18), transparent 60%),
+      radial-gradient(620px 360px at -6% 4%, oklch(0.815 0.143 172 / 0.1), transparent 58%);
   }
 }
 
