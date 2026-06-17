@@ -1,24 +1,24 @@
 /**
- * Détermine l'href cible d'un event selon son type (§4) :
- * - `mv` / `release` avec slug → page article interne `/mv/[slug]`
- * - `music_show` / `live` / `concert` / `other` / `release` → source officielle
- *   externe (`source_url`) si présente (broadcaster, Premiere YouTube, tweet…)
- * - sinon (anniversary, ou pas de destination) → page du groupe.
+ * Destination d'une carte d'event selon son type. Règle clé : on ne renvoie
+ * JAMAIS vers une source scrapée / site concurrent (kpopofficial, carrd…).
  *
- * Les appelants qui ne fournissent pas `source_url` retombent naturellement sur
- * le fallback groupe — comportement inchangé pour eux.
+ * - `mv` (+ slug) → page article interne `/mv/[slug]`.
+ * - `music_show` → la page YouTube du show **uniquement si `source_url` est une
+ *   URL YouTube** ; sinon page du groupe (jamais la source carrd).
+ * - `release` / `anniversary` / `live` / `concert` / `other` → page du groupe.
  */
+const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i
+
 export function eventHref(event: {
   type: string
   slug: string | null
   source_url?: string | null
   groups?: { slug?: string | null } | null
 }): string {
-  if ((event.type === 'mv' || event.type === 'release') && event.slug) {
+  if (event.type === 'mv' && event.slug) {
     return `/mv/${event.slug}`
   }
-  const EXTERNAL_TYPES = ['music_show', 'live', 'concert', 'other', 'release']
-  if (event.source_url && EXTERNAL_TYPES.includes(event.type)) {
+  if (event.type === 'music_show' && event.source_url && YOUTUBE_RE.test(event.source_url)) {
     return event.source_url
   }
   return `/groups/${event.groups?.slug ?? ''}`
