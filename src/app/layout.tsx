@@ -115,34 +115,28 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {/* Fenêtre app (maquette KStage Home) : cadre arrondi sur fond --page,
-              ombre douce + halo d'atmosphère en Midnight. Header + contenu vivent
-              dedans, à la même largeur. */}
-          <div className="mx-auto w-full max-w-[1400px] flex-1 px-2 py-3 sm:px-5 sm:py-6">
-            <div className="app-window bg-background border-border/60 relative overflow-hidden rounded-3xl border shadow-[0_30px_80px_-40px_oklch(0.2_0.02_285/0.45)]">
-              <div className="app-atmosphere pointer-events-none absolute inset-0" aria-hidden />
-              <header className="bg-card border-border relative flex h-14 items-center gap-3 border-b px-4 sm:px-6">
-                <Link
-                  href="/"
-                  className="text-lg tracking-tight transition-opacity hover:opacity-80"
-                >
-                  <span className="font-heading font-bold">
-                    K<span className="font-serif font-normal italic">stage</span>
-                  </span>
-                </Link>
-                <SiteNav />
-                <div className="flex-1" />
-                {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
-                <ThemeToggle />
-                <AuthMenu
-                  email={user?.email ?? null}
-                  username={profile?.username ?? null}
-                  avatarUrl={profile?.avatar_url ?? null}
-                />
-              </header>
-              <main className="relative pb-24 md:pb-6">{children}</main>
+          {/* Header pleine largeur, sticky (apps réelles edge-to-edge) ; le contenu
+              interne s'aligne sur la largeur des pages (max-w-[1400px], px-4). Le
+              calme vient du fond --page + des ombres douces, pas d'un cadre. */}
+          <header className="bg-background/90 sticky top-0 z-30 border-b backdrop-blur">
+            <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4">
+              <Link href="/" className="text-lg tracking-tight transition-opacity hover:opacity-80">
+                <span className="font-heading font-bold">
+                  K<span className="font-serif font-normal italic">stage</span>
+                </span>
+              </Link>
+              <SiteNav />
+              <div className="flex-1" />
+              {user && dialogGroups && <SuggestEventDialog groups={dialogGroups} />}
+              <ThemeToggle />
+              <AuthMenu
+                email={user?.email ?? null}
+                username={profile?.username ?? null}
+                avatarUrl={profile?.avatar_url ?? null}
+              />
             </div>
-          </div>
+          </header>
+          <main className="flex-1 pb-24 md:pb-6">{children}</main>
           <Footer />
           <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>
