@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { faceCrop } from '@/lib/images/cloudinary'
 import type { MemberSummary } from '@/lib/members/queries'
 
 /**
@@ -26,7 +27,9 @@ export function MemberCard({
       <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-xl">
         {member.photo_url ? (
           <Image
-            src={member.photo_url}
+            // faceCrop = proxy Cloudinary (certains hosts comme kprofiles bloquent
+            // le hotlinking direct) + centrage visage (g_auto).
+            src={faceCrop(member.photo_url, 400, 400)}
             alt=""
             fill
             unoptimized
