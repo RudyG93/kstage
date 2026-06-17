@@ -5,6 +5,18 @@ import { TypeBadge } from './type-badge'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
 import type { UpcomingEvent } from '@/lib/events/queries'
+import type { Database } from '@/types/database'
+
+// Libellé du compte à rebours selon le type de l'event (le « next drop » n'est
+// pas toujours une release — ça pouvait afficher « until release » à tort).
+const COUNTDOWN_LABEL: Partial<Record<Database['public']['Enums']['event_type'], string>> = {
+  release: 'until release',
+  mv: 'until premiere',
+  music_show: 'until show',
+  concert: 'until concert',
+  live: 'until live',
+  anniversary: 'until anniversary',
+}
 
 export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
   if (!event) return null
@@ -12,6 +24,7 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
   const title = displayEventTitle(event.title, group?.name)
   const href = eventHref(event)
   const external = isExternalHref(href)
+  const countdownLabel = COUNTDOWN_LABEL[event.type] ?? 'until drop'
   return (
     <Link
       href={href}
@@ -51,7 +64,7 @@ export function NextDropCard({ event }: { event: UpcomingEvent | null }) {
           <p className="text-muted-foreground mt-1 text-sm">{group?.name}</p>
         </div>
         <div className="hidden shrink-0 sm:block">
-          <Countdown targetIso={event.start_at} />
+          <Countdown targetIso={event.start_at} label={countdownLabel} />
         </div>
       </div>
       <div className="border-border mt-4 border-t pt-4 sm:hidden">

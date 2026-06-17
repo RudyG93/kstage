@@ -24,7 +24,9 @@ function dayLabel(iso: string, timeZone: string): string {
     timeZone,
   }).formatToParts(new Date(iso))
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  return `${part('weekday')} · ${part('month')} ${part('day')}`.toUpperCase()
+  // Maquette KStage Home.dc.html : libellé de jour en clair (« Fri · Oct 18 »),
+  // ni mono ni majuscules — le mono reste réservé aux vraies données (heures).
+  return `${part('weekday')} · ${part('month')} ${part('day')}`
 }
 
 function overflowHref(firstHiddenEvent: UpcomingEvent): string {
@@ -71,7 +73,7 @@ function FeedSection({
       <div className="space-y-5">
         {[...byDay.entries()].map(([dayKey, dayEvents]) => (
           <div key={dayKey}>
-            <p className="text-muted-foreground/70 mb-1 font-mono text-[11px] tracking-[0.12em]">
+            <p className="text-faint mb-1.5 text-[11px] font-medium">
               {dayLabel(dayEvents[0].start_at, timeZone)}
             </p>
             <div className="space-y-3">

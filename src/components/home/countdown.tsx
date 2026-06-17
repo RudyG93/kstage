@@ -14,7 +14,13 @@ function format(targetIso: string): string {
   return `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m`
 }
 
-export function Countdown({ targetIso }: { targetIso: string }) {
+export function Countdown({
+  targetIso,
+  label = 'until drop',
+}: {
+  targetIso: string
+  label?: string
+}) {
   const hydrated = useHydrated()
   const [, tick] = useState(0)
 
@@ -25,10 +31,11 @@ export function Countdown({ targetIso }: { targetIso: string }) {
 
   return (
     <div className="text-right">
-      <div className="font-mono text-4xl tracking-tight tabular-nums">
+      {/* Chiffres en Space Grotesk (police numérique du design), pas en mono. */}
+      <div className="tabular text-4xl tracking-tight tabular-nums">
         {hydrated ? format(targetIso) : '--d --h --m'}
       </div>
-      <div className="text-muted-foreground mt-1 text-xs">until release</div>
+      <div className="text-muted-foreground mt-1 text-xs">{label}</div>
     </div>
   )
 }
