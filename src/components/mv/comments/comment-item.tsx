@@ -86,97 +86,12 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
   }
 
   return (
-    <article className="space-y-1.5" aria-label={`Comment by ${author}`}>
-      <header className="text-muted-foreground flex items-center gap-2 text-xs">
-        {username ? (
-          <Link
-            href={`/u/${username}`}
-            className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
-          >
-            <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
-            {author}
-          </Link>
-        ) : (
-          <span className="text-foreground flex items-center gap-1.5 font-medium">
-            <Avatar username={author} avatarUrl={null} size={20} />
-            {author}
-          </span>
-        )}
-        <span aria-hidden>·</span>
-        <time dateTime={node.created_at}>{relTime(node.created_at)}</time>
-        {isEdited && (
-          <>
-            <span aria-hidden>·</span>
-            <button
-              type="button"
-              onClick={() => setHistoryOpen(true)}
-              className="italic hover:underline"
-            >
-              edited
-            </button>
-          </>
-        )}
-      </header>
-
-      {isDeleted ? (
-        <p className="text-muted-foreground text-sm italic">[deleted]</p>
-      ) : showEdit ? (
-        <EditForm node={node} slug={slug} onDone={() => setShowEdit(false)} />
-      ) : (
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
-      )}
-
-      {!isDeleted && !showEdit && (
-        <div className="flex items-center gap-3 text-xs">
-          <VoteButtons
-            commentId={node.id}
-            slug={slug}
-            initialScore={node.score}
-            initialUserVote={node.userVote}
-            isAuthed={isAuthed}
-          />
-          {isAuthed && (
-            <button
-              type="button"
-              onClick={() => setShowReply((v) => !v)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {showReply ? 'Cancel' : 'Reply'}
-            </button>
-          )}
-          {isOwn ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowEdit(true)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Edit
-              </button>
-              <DeleteButton commentId={node.id} slug={slug} />
-            </>
-          ) : (
-            isAuthed && <ReportButton commentId={node.id} />
-          )}
-        </div>
-      )}
-
-      {showReply && (
-        <div className="pt-2">
-          <CommentCompose
-            eventId={eventId}
-            slug={slug}
-            parentId={node.id}
-            focusOnMount
-            onCancel={() => setShowReply(false)}
-            placeholder={`Reply to ${author}…`}
-          />
-        </div>
-      )}
-
-      {childCount > 0 && (
-        <div className="mt-2 flex gap-2 pt-1">
-          {/* Rail vertical cliquable : replie ce fil (modèle Reddit). */}
+    <article aria-label={`Comment by ${author}`}>
+      <div className={childCount > 0 ? 'flex gap-2' : undefined}>
+        {/* Rail vertical cliquable : replie CE commentaire et son sous-arbre
+            (modèle Reddit). Présent uniquement quand il y a des réponses — la
+            racine incluse. */}
+        {childCount > 0 && (
           <button
             type="button"
             onClick={() => setCollapsed(true)}
@@ -188,31 +103,122 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               aria-hidden
             />
           </button>
-          <div className="min-w-0 flex-1 space-y-3">
-            {visibleChildren.map((child) => (
-              <CommentItem
-                key={child.id}
-                node={child}
+        )}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <header className="text-muted-foreground flex items-center gap-2 text-xs">
+            {username ? (
+              <Link
+                href={`/u/${username}`}
+                className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
+              >
+                <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
+                {author}
+              </Link>
+            ) : (
+              <span className="text-foreground flex items-center gap-1.5 font-medium">
+                <Avatar username={author} avatarUrl={null} size={20} />
+                {author}
+              </span>
+            )}
+            <span aria-hidden>·</span>
+            <time dateTime={node.created_at}>{relTime(node.created_at)}</time>
+            {isEdited && (
+              <>
+                <span aria-hidden>·</span>
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen(true)}
+                  className="italic hover:underline"
+                >
+                  edited
+                </button>
+              </>
+            )}
+          </header>
+
+          {isDeleted ? (
+            <p className="text-muted-foreground text-sm italic">[deleted]</p>
+          ) : showEdit ? (
+            <EditForm node={node} slug={slug} onDone={() => setShowEdit(false)} />
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
+          )}
+
+          {!isDeleted && !showEdit && (
+            <div className="flex items-center gap-3 text-xs">
+              <VoteButtons
+                commentId={node.id}
+                slug={slug}
+                initialScore={node.score}
+                initialUserVote={node.userVote}
+                isAuthed={isAuthed}
+              />
+              {isAuthed && (
+                <button
+                  type="button"
+                  onClick={() => setShowReply((v) => !v)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {showReply ? 'Cancel' : 'Reply'}
+                </button>
+              )}
+              {isOwn ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowEdit(true)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Edit
+                  </button>
+                  <DeleteButton commentId={node.id} slug={slug} />
+                </>
+              ) : (
+                isAuthed && <ReportButton commentId={node.id} />
+              )}
+            </div>
+          )}
+
+          {showReply && (
+            <div className="pt-2">
+              <CommentCompose
                 eventId={eventId}
                 slug={slug}
-                viewerId={viewerId}
-                isAuthed={isAuthed}
-                depth={depth + 1}
+                parentId={node.id}
+                focusOnMount
+                onCancel={() => setShowReply(false)}
+                placeholder={`Reply to ${author}…`}
               />
-            ))}
-            {!showAllReplies && childCount > REPLY_LIMIT && (
-              <button
-                type="button"
-                onClick={() => setShowAllReplies(true)}
-                className="text-primary text-xs hover:underline"
-              >
-                Show {childCount - REPLY_LIMIT} more repl
-                {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
-              </button>
-            )}
-          </div>
+            </div>
+          )}
+
+          {childCount > 0 && (
+            <div className="space-y-3 pt-1">
+              {visibleChildren.map((child) => (
+                <CommentItem
+                  key={child.id}
+                  node={child}
+                  eventId={eventId}
+                  slug={slug}
+                  viewerId={viewerId}
+                  isAuthed={isAuthed}
+                  depth={depth + 1}
+                />
+              ))}
+              {!showAllReplies && childCount > REPLY_LIMIT && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllReplies(true)}
+                  className="text-primary text-xs hover:underline"
+                >
+                  Show {childCount - REPLY_LIMIT} more repl
+                  {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {historyOpen && (
         <HistoryModal
