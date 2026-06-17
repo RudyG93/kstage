@@ -4,18 +4,22 @@ import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
+import { formatKst } from '@/lib/events/date'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
-const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
-
+/**
+ * Carte d'event « compacte » : barre de couleur du groupe à gauche + dégradé,
+ * date/heure KST à droite. Utilisée sur les pages secondaires (page groupe).
+ * À distinguer de `home/event-card.tsx` (`HomeEventCard`) qui est la carte du
+ * feed/calendrier : carré d'identité du groupe + heure KST + heure locale.
+ */
 export function EventCard({ event }: { event: UpcomingEvent }) {
   const group = event.groups
   const color = group?.color_hex ?? '#7c5cff'
   const isAnniversary = event.type === 'anniversary'
 
-  const dateLabel = kstFormat(event.start_at, { month: 'short', day: '2-digit' }).toUpperCase()
-  const timeLabel = kstFormat(event.start_at, { hour: 'numeric', minute: '2-digit' })
+  const dateLabel = formatKst(event.start_at, { month: 'short', day: '2-digit' }).toUpperCase()
+  const timeLabel = formatKst(event.start_at, { hour: 'numeric', minute: '2-digit' })
 
   const href = eventHref(event)
   const external = isExternalHref(href)

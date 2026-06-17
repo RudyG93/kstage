@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { getKstMonthRange, kstDayKey, groupEventsByKstDay, formatEventDate } from './date'
+import {
+  getKstMonthRange,
+  kstDayKey,
+  groupEventsByKstDay,
+  formatEventDate,
+  formatKst,
+  kstTime24h,
+} from './date'
 
 describe('getKstMonthRange', () => {
   it('returns the KST month boundaries as UTC ISO', () => {
@@ -50,5 +57,26 @@ describe('formatEventDate', () => {
   it('shifts the local day according to the timezone', () => {
     const seoul = formatEventDate('2026-06-15T23:00:00Z', 'Asia/Seoul')
     expect(seoul).toMatch(/Jun.*16.*2026/)
+  })
+})
+
+describe('formatKst', () => {
+  it('formats an instant in Seoul time with the requested fields', () => {
+    // 09:00Z = 18:00 KST le même jour.
+    expect(
+      formatKst('2026-03-24T09:00:00Z', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    ).toBe('18:00')
+  })
+
+  it('rolls to the next KST day after 15:00Z', () => {
+    // 16:00Z = 01:00 KST le lendemain.
+    expect(formatKst('2026-03-24T16:00:00Z', { month: 'short', day: '2-digit' })).toBe('Mar 25')
+  })
+})
+
+describe('kstTime24h', () => {
+  it('renders a 24h KST clock without AM/PM', () => {
+    expect(kstTime24h('2026-03-24T09:00:00Z')).toBe('18:00')
+    expect(kstTime24h('2026-03-24T15:30:00Z')).toBe('00:30')
   })
 })

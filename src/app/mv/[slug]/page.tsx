@@ -8,14 +8,12 @@ import { getCommentsForEvent } from '@/lib/comments/queries'
 import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displayEventTitle } from '@/lib/events/title'
+import { formatKst } from '@/lib/events/date'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { RatingSlider } from '@/components/mv/rating-slider'
 import { LikeButton } from '@/components/mv/like-button'
 import { CommentSection } from '@/components/mv/comments/comment-section'
-
-const kstFormat = (iso: string, opts: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
 
 async function loadMv(slug: string) {
   const event = await getEventBySlug(slug)
@@ -72,13 +70,13 @@ export default async function MvPage({
   const flatComments = await getCommentsForEvent(event.id, viewerId)
   const commentRoots = sortTree(buildCommentTree(flatComments), sort)
 
-  const dateLabel = kstFormat(event.start_at, {
+  const dateLabel = formatKst(event.start_at, {
     weekday: 'short',
     month: 'short',
     day: '2-digit',
     year: 'numeric',
   })
-  const timeLabel = kstFormat(event.start_at, { hour: 'numeric', minute: '2-digit' })
+  const timeLabel = formatKst(event.start_at, { hour: 'numeric', minute: '2-digit' })
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">

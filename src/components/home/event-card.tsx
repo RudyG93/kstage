@@ -5,17 +5,8 @@ import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displaySongTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
+import { kstTime24h } from '@/lib/events/date'
 import type { UpcomingEvent } from '@/lib/events/queries'
-
-// Heure KST en 24 h (« 18:00 ») — la référence k-pop, mise en avant ; l'heure
-// locale du visiteur est rendue en second (client) via <LocalTime>.
-const kstFormat = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(iso))
 
 /**
  * Carte d'event du feed/calendrier — design « Daylight/Midnight » (handoff) :
@@ -90,8 +81,9 @@ export function HomeEventCard({
           <div className="text-muted-foreground text-sm font-medium">All day</div>
         ) : (
           <>
+            {/* Heure KST 24 h mise en avant ; l'heure locale du visiteur suit. */}
             <div className="tabular text-[15px] font-semibold tabular-nums">
-              {kstFormat(event.start_at)}
+              {kstTime24h(event.start_at)}
             </div>
             <div className="text-faint font-mono text-[10px]">
               KST · <LocalTime iso={event.start_at} /> local

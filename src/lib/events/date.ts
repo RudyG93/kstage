@@ -76,3 +76,17 @@ export function formatEventDate(iso: string, timezone: string) {
     timeZone: timezone,
   }).format(new Date(iso))
 }
+
+/**
+ * Formate un instant en heure de Séoul (KST), locale en-US, avec les champs
+ * Intl voulus. Source unique : remplace les helpers `kstFormat` qui étaient
+ * copiés à l'identique dans event-card, home/event-card et la page /mv/[slug].
+ */
+export function formatKst(iso: string, opts: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
+}
+
+/** Heure KST en 24 h (« 18:00 ») — la référence k-pop, mise en avant. */
+export function kstTime24h(iso: string): string {
+  return formatKst(iso, { hour: '2-digit', minute: '2-digit', hour12: false })
+}
