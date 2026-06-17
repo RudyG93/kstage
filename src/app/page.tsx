@@ -17,12 +17,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   } = await supabase.auth.getUser()
 
   if (!user) {
-    // Liste de groupes seulement nécessaire ici (visiteur) → fetch caché, pas
-    // pour les connectés qui ne l'utilisent pas.
-    const groups = await getGroupsCached()
+    // Landing = aperçu produit : la liste des groupes (cachée) + les vrais
+    // prochains events (toutes sources) pour montrer le calendrier en action
+    // plutôt qu'un mur de noms.
+    const [groups, previewEvents] = await Promise.all([
+      getGroupsCached(),
+      getUpcomingEvents({ limit: 4 }),
+    ])
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-6">
-        <Landing groups={groups} />
+      <div className="mx-auto w-full max-w-4xl px-4 py-6">
+        <Landing groups={groups} previewEvents={previewEvents} />
       </div>
     )
   }
