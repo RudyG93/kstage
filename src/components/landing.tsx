@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { ArrowRight, BellRing, CalendarHeart, Globe2 } from 'lucide-react'
+import { NextDropCard } from '@/components/home/next-drop-card'
+import { HomeEventCard } from '@/components/home/event-card'
+import { GroupCard } from '@/components/group-card'
 import type { GroupSummary } from '@/lib/groups/queries'
+import type { UpcomingEvent } from '@/lib/events/queries'
 
 const FEATURES = [
   {
@@ -20,7 +24,20 @@ const FEATURES = [
   },
 ] as const
 
-export function Landing({ groups }: { groups: GroupSummary[] }) {
+// Nombre de groupes (avec photo) montrés dans la grille d'aperçu.
+const PHOTO_GRID_COUNT = 12
+
+export function Landing({
+  groups,
+  previewEvents,
+}: {
+  groups: GroupSummary[]
+  previewEvents: UpcomingEvent[]
+}) {
+  const nextDrop = previewEvents[0] ?? null
+  const previewRows = previewEvents.slice(1, 4)
+  const photoGroups = groups.filter((g) => g.image_url).slice(0, PHOTO_GRID_COUNT)
+
   return (
     <div className="space-y-16 py-6 sm:py-10">
       {/* Hero */}
@@ -71,12 +88,56 @@ export function Landing({ groups }: { groups: GroupSummary[] }) {
         </p>
       </section>
 
+      {/* Product preview — vrais prochains events pour montrer le produit en action */}
+      {nextDrop && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <span
+              className="bg-teal size-2 rounded-full"
+              style={{ boxShadow: '0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent)' }}
+              aria-hidden
+            />
+            <span className="text-sm font-semibold">Coming up on KStage</span>
+          </div>
+          <div className="bg-card/30 border-border/60 space-y-3 rounded-2xl border p-3 sm:p-4">
+            <NextDropCard event={nextDrop} />
+            {previewRows.length > 0 && (
+              <div className="space-y-2">
+                {previewRows.map((event) => (
+                  <HomeEventCard key={event.id} event={event} compact />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Groups preview — grille de photos (au lieu d'un mur de noms) */}
+      {photoGroups.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-lg font-bold tracking-tight">Track your groups</h2>
+            <span className="text-muted-foreground font-mono text-[11px] tracking-wider uppercase">
+              {groups.length} groups
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {photoGroups.map((group) => (
+              <GroupCard key={group.id} group={group} isFollowing={false} isAuthed={false} />
+            ))}
+          </div>
+          <p className="text-muted-foreground text-center text-sm">
+            …and {groups.length - photoGroups.length}+ more — new groups added as fans request them.
+          </p>
+        </section>
+      )}
+
       {/* Features */}
-      <section className="space-y-3">
+      <section className="grid gap-3 sm:grid-cols-3">
         {FEATURES.map(({ icon: Icon, title, desc }) => (
           <div
             key={title}
-            className="bg-card/60 border-border/70 flex items-start gap-4 rounded-xl border p-4"
+            className="bg-card/60 border-border/70 flex flex-col gap-3 rounded-xl border p-4"
           >
             <span className="bg-primary/12 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
               <Icon className="size-5" aria-hidden />
@@ -89,38 +150,20 @@ export function Landing({ groups }: { groups: GroupSummary[] }) {
         ))}
       </section>
 
-      {/* Groups preview */}
-      {groups.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-lg font-bold tracking-tight">Now tracking</h2>
-            <span className="text-muted-foreground font-mono text-[11px] tracking-wider uppercase">
-              {groups.length} groups
-            </span>
-          </div>
-          <ul className="grid grid-cols-2 gap-2">
-            {groups.map((group) => (
-              <li
-                key={group.id}
-                className="bg-card/60 border-border/70 flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
-              >
-                <span
-                  className="size-3 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor: group.color_hex ?? 'var(--muted-foreground)',
-                    boxShadow: group.color_hex ? `0 0 10px ${group.color_hex}99` : undefined,
-                  }}
-                  aria-hidden
-                />
-                <span className="truncate text-sm font-medium">{group.name}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-muted-foreground text-center text-sm">
-            More groups added as fans request them.
-          </p>
-        </section>
-      )}
+      {/* Closing CTA */}
+      <section className="bg-card/40 border-border/60 flex flex-col items-center gap-4 rounded-2xl border px-6 py-10 text-center">
+        <h2 className="text-2xl font-bold tracking-tight">Your k-pop calendar, sorted.</h2>
+        <p className="text-muted-foreground max-w-sm text-sm">
+          Free to use. Follow your groups, get a clean schedule and timely alerts.
+        </p>
+        <Link
+          href="/signup"
+          className="focus-visible:ring-ring/50 bg-primary text-primary-foreground shadow-primary/25 inline-flex h-11 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold shadow-lg transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3"
+        >
+          Get started
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
+      </section>
     </div>
   )
 }

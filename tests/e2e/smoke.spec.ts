@@ -19,9 +19,9 @@ test.describe('Landing (logged out)', () => {
     // Features : au moins l'un des 3 cards.
     await expect(page.getByRole('heading', { level: 2, name: /follow your groups/i })).toBeVisible()
 
-    // Groups grid : section "Now tracking" rendue (les groupes sont seedés
-    // en prod donc la liste n'est jamais vide).
-    await expect(page.getByRole('heading', { level: 2, name: /now tracking/i })).toBeVisible()
+    // Groups grid : section "Track your groups" rendue (les groupes sont seedés
+    // en prod donc la grille de photos n'est jamais vide).
+    await expect(page.getByRole('heading', { level: 2, name: /track your groups/i })).toBeVisible()
   })
 
   test('CTA Get started navigates to /signup', async ({ page }) => {
