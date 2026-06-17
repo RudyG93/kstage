@@ -325,6 +325,76 @@
   },
   {
     "slug": "sf9",
-    "channels": [{ "name": "SF9 · SF9", "url": "https://www.youtube.com/@SF9official" }]
+    "channels": [
+      { "name": "SF9 · SF9", "url": "https://www.youtube.com/@SF9official" },
+      { "name": "SF9 · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+    ]
+  },
+  {
+    "slug": "meovv",
+    "channels": [
+      { "name": "MEOVV · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+    ]
+  },
+  {
+    "slug": "alldayproject",
+    "channels": [
+      { "name": "ALLDAY PROJECT · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+    ]
+  },
+  {
+    "slug": "xikers",
+    "channels": [{ "name": "xikers · KQ ENTERTAINMENT", "url": "https://www.youtube.com/@KQENT" }]
+  },
+  {
+    "slug": "cnblue",
+    "channels": [
+      { "name": "CNBLUE · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+    ]
+  },
+  {
+    "slug": "ftisland",
+    "channels": [
+      { "name": "FTISLAND · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+    ]
+  },
+  {
+    "slug": "cravity",
+    "channels": [
+      { "name": "CRAVITY · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+    ]
+  },
+  {
+    "slug": "kiiikiii",
+    "channels": [
+      { "name": "KiiiKiii · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+    ]
+  },
+  {
+    "slug": "day6",
+    "channels": [
+      { "name": "DAY6 · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+    ]
+  },
+  {
+    "slug": "xdinaryheroes",
+    "channels": [
+      {
+        "name": "Xdinary Heroes · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
+    ]
+  },
+  {
+    "slug": "akmu",
+    "channels": [
+      { "name": "AKMU · YG ENTERTAINMENT", "url": "https://www.youtube.com/@YGEntertainment" }
+    ]
+  },
+  {
+    "slug": "oneus",
+    "channels": [
+      { "name": "Oneus · RBW", "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc" }
+    ]
   }
 ]
