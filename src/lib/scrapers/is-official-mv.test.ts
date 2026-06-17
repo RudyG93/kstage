@@ -32,6 +32,7 @@ describe('isOfficialMvTitle', () => {
     ["aespa 'Whiplash' Special Clip", 'blacklist:special clip'],
     ["SHINee 'Atmos' MV Commentary", 'blacklist:commentary'],
     ['강다니엘(KANGDANIEL) - PARANOIA M/V 코멘터리', 'blacklist:commentary'],
+    ["[#TAEYONG Focus] '질주 (2 Baddies)' @MV Film", 'blacklist:mv film'],
     ["RIIZE 'Get A Guitar' Dance Cover", 'blacklist:dance cover'],
     ["aespa 'Drama' Stage @ Music Core", 'blacklist:stage'],
     ["BABYMONSTER 'SHEESH' @ Inkigayo", 'blacklist:music show'],
