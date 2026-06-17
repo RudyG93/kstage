@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { faceCrop } from '@/lib/images/cloudinary'
 
 function getInitials(source: string): string {
   const base = source.includes('@') ? (source.split('@')[0] ?? '') : source
@@ -17,9 +18,15 @@ export function Avatar({
   size?: number
 }) {
   if (avatarUrl) {
+    // Hosts externes (kprofiles, Deezer, up.kpop.re…) bloquent parfois le
+    // hotlinking → proxy Cloudinary + centrage visage. Les avatars users
+    // (Supabase Storage) restent bruts (déjà servis correctement).
+    const src = avatarUrl.includes('/storage/v1/object/')
+      ? avatarUrl
+      : faceCrop(avatarUrl, size * 2, size * 2)
     return (
       <Image
-        src={avatarUrl}
+        src={src}
         alt=""
         width={size}
         height={size}

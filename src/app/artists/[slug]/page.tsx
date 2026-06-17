@@ -200,7 +200,8 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   // ── Membre de groupe : vue centrée membre (inchangée). ─────────────────────
   const color = group?.color_hex ?? '#888'
   const initial = member.stage_name.slice(0, 1).toUpperCase()
-  const photo = member.photo_url ?? (group?.image_url ? faceCrop(group.image_url, 192, 192) : null)
+  const photoRaw = member.photo_url ?? group?.image_url ?? null
+  const photo = photoRaw ? faceCrop(photoRaw, 192, 192) : null
   const statusText = statusLabel[member.status]
 
   return (
