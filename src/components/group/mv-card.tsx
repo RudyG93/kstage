@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { PlayCircle, Star } from 'lucide-react'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
-import { displayEventTitle } from '@/lib/events/title'
+import { displaySongTitle } from '@/lib/events/title'
 import { cn } from '@/lib/utils'
 import type { MvEvent } from '@/lib/events/queries'
 
@@ -62,7 +62,7 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
       </div>
       <div className="mt-1.5 px-0.5">
         <p className="line-clamp-2 text-sm leading-snug font-medium">
-          {displayEventTitle(mv.title, group?.name)}
+          {displaySongTitle(mv.title, group?.name)}
         </p>
         <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] tracking-wider uppercase">
           <span>{group?.name}</span>

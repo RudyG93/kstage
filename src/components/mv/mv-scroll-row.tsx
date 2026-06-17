@@ -105,7 +105,7 @@ export function MvScrollRow({
         onPointerLeave={onPointerUp}
         onClickCapture={onClickCapture}
         onDragStart={(e) => e.preventDefault()}
-        className="flex cursor-grab gap-3 overflow-x-auto pb-2 select-none active:cursor-grabbing"
+        className="flex cursor-grab scrollbar-thin gap-3 overflow-x-auto pb-2 select-none active:cursor-grabbing"
       >
         {mvs.map((mv) => (
           <div key={mv.id} className="w-44 shrink-0">

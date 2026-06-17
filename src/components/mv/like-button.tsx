@@ -22,11 +22,16 @@ export function LikeButton({
   const [optimistic, setOptimistic] = useOptimistic({ liked: initialLiked, count })
   const [pending, startTransition] = useTransition()
 
+  // Cœur seul + compteur (le mot « Like » était redondant). a11y via aria-label.
   if (!isAuthed) {
     return (
-      <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+      <Link
+        href="/login"
+        aria-label="Like"
+        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+      >
         <HeartIcon className="size-4" aria-hidden />
-        Like{count > 0 ? ` · ${count}` : ''}
+        {count > 0 ? count : ''}
       </Link>
     )
   }
@@ -49,13 +54,13 @@ export function LikeButton({
       onClick={onClick}
       disabled={pending}
       aria-pressed={optimistic.liked}
+      aria-label={optimistic.liked ? 'Unlike' : 'Like'}
     >
       <HeartIcon
         className={cn('size-4', optimistic.liked && 'fill-red-500 text-red-500')}
         aria-hidden
       />
-      {optimistic.liked ? 'Liked' : 'Like'}
-      {optimistic.count > 0 ? ` · ${optimistic.count}` : ''}
+      {optimistic.count > 0 ? optimistic.count : ''}
     </Button>
   )
 }
