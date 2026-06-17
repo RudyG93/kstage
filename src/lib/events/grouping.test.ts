@@ -86,27 +86,27 @@ describe('splitUpcomingByBuckets', () => {
 })
 
 describe('capLaterEvents (§3.1)', () => {
-  const now = new Date('2026-06-01T00:00:00Z').getTime() // limite ≈ 2026-07-02
+  const now = new Date('2026-06-01T00:00:00Z').getTime() // limite J+35 ≈ 2026-07-06
 
-  it('borne à ≤10 events dans le mois et compte le reste', () => {
+  it('borne à ≤10 events dans la fenêtre et ne compte que l’overflow interne', () => {
     const within = Array.from({ length: 12 }, (_, i) =>
       ev(`w${i}`, `2026-06-${String(i + 2).padStart(2, '0')}T03:00:00Z`),
-    ) // 2..13 juin, tous dans le mois
-    const beyond = [ev('b1', '2026-08-01T03:00:00Z')] // > 1 mois
+    ) // 2..13 juin, tous dans la fenêtre
+    const beyond = [ev('b1', '2026-08-01T03:00:00Z')] // > J+35 → hors feed, non compté
     const { display, moreCount, moreHref } = capLaterEvents(
       [...within, ...beyond],
       now,
       'Asia/Seoul',
     )
     expect(display).toHaveLength(10)
-    expect(moreCount).toBe(3) // 13 total - 10 affichés
+    expect(moreCount).toBe(2) // 12 dans la fenêtre - 10 affichés (l'event d'août non compté)
     expect(moreHref).toMatch(/^\/calendar\?month=\d{4}-\d{2}&day=\d{4}-\d{2}-\d{2}$/)
   })
 
-  it('exclut les events au-delà d’1 mois du display', () => {
+  it('exclut du feed (display ET moreCount) les events au-delà de la fenêtre', () => {
     const { display, moreCount } = capLaterEvents([ev('b', '2026-08-01T03:00:00Z')], now)
     expect(display).toEqual([])
-    expect(moreCount).toBe(1)
+    expect(moreCount).toBe(0)
   })
 
   it('liste vide → display vide, pas de lien', () => {

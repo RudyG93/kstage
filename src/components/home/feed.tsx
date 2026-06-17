@@ -1,20 +1,11 @@
 import Link from 'next/link'
-import { splitUpcomingByBuckets, capLaterEvents, type UpcomingBuckets } from '@/lib/events/grouping'
+import { splitUpcomingByBuckets, capLaterEvents } from '@/lib/events/grouping'
 import { groupEventsByDay, kstDayKey } from '@/lib/events/date'
 import { HomeEventCard } from './event-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const BUCKET_CAP = 10
-
-type BucketKey = keyof UpcomingBuckets
-
-const BUCKET_LABELS: Record<BucketKey, string> = {
-  today: 'Today',
-  tomorrow: 'Tomorrow',
-  thisWeek: 'This week',
-  later: 'Later',
-}
 
 function dayLabel(iso: string, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -111,37 +102,27 @@ export function Feed({ events, timeZone }: { events: UpcomingEvent[]; timeZone: 
   // nowMs laissé au défaut (Date.now() dans la lib) pour ne pas appeler une
   // fonction impure dans le render ; on n'injecte que le fuseau utilisateur.
   const buckets = splitUpcomingByBuckets(events, undefined, timeZone)
+  // 3 catégories (Rudy) : Today / This week (= demain + cette semaine) / Later.
+  const thisWeek = [...buckets.tomorrow, ...buckets.thisWeek]
   const later = capLaterEvents(buckets.later, undefined, timeZone)
-  const order: BucketKey[] = ['today', 'tomorrow', 'thisWeek', 'later']
 
   return (
     <div className="space-y-8">
-      {order.map((key) => {
-        if (key === 'later') {
-          if (later.display.length === 0) return null
-          return (
-            <FeedSection
-              key="later"
-              label={BUCKET_LABELS.later}
-              events={later.display}
-              compact
-              timeZone={timeZone}
-              more={{ count: later.moreCount, href: later.moreHref }}
-            />
-          )
-        }
-        const bucketEvents = buckets[key]
-        if (bucketEvents.length === 0) return null
-        return (
-          <FeedSection
-            key={key}
-            label={BUCKET_LABELS[key]}
-            events={bucketEvents}
-            compact={false}
-            timeZone={timeZone}
-          />
-        )
-      })}
+      {buckets.today.length > 0 && (
+        <FeedSection label="Today" events={buckets.today} compact={false} timeZone={timeZone} />
+      )}
+      {thisWeek.length > 0 && (
+        <FeedSection label="This week" events={thisWeek} compact={false} timeZone={timeZone} />
+      )}
+      {later.display.length > 0 && (
+        <FeedSection
+          label="Later"
+          events={later.display}
+          compact
+          timeZone={timeZone}
+          more={{ count: later.moreCount, href: later.moreHref }}
+        />
+      )}
     </div>
   )
 }
