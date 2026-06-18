@@ -1015,29 +1015,11 @@
     ]
   },
   {
-    "slug": "drippin",
-    "channels": [
-      {
-        "name": "DRIPPIN · DRIPPIN",
-        "url": "https://www.youtube.com/@drippin"
-      }
-    ]
-  },
-  {
     "slug": "epex",
     "channels": [
       {
         "name": "EPEX · EPEX",
         "url": "https://www.youtube.com/@epexofficial"
-      }
-    ]
-  },
-  {
-    "slug": "goldenchild",
-    "channels": [
-      {
-        "name": "Golden Child · Golden Child",
-        "url": "https://www.youtube.com/@goldenchild"
       }
     ]
   },
