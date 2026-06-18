@@ -102,21 +102,28 @@ function parseMembers(html: string, groupName: string): Parsed {
         const file = src.split('/').pop() ?? ''
         if (/logo|herald|banner|cover|google|adsense|gravatar/i.test(file)) return
         if (norm(file).startsWith(gNorm)) return // photo de groupe
-        // Portrait via dims du filename OU des attributs width/height.
+        // Portrait/carré OK ; seul le paysage strict (vignettes widgets) est exclu.
         const fdim = src.match(/-(\d+)x(\d+)\.(?:jpe?g|png|webp)/i)
         const w = Number(fdim?.[1] ?? $(el).attr('width') ?? 0)
         const h = Number(fdim?.[2] ?? $(el).attr('height') ?? 0)
-        if (w && h && h <= w) return // paysage → exclu
+        if (w && h && h < w) return // paysage → exclu
         orderedImgs.push(src)
-        // Nom via alt (préféré) sinon filename (sans dims/digits/extension).
-        const alt = ($(el).attr('alt') ?? '').trim()
+        // Candidats de nom : alt (nettoyé de « of <groupe> »/parenthèses) ET
+        // filename (sans dims/digits). On matche le membre si l'un des deux colle.
+        const alt = ($(el).attr('alt') ?? '')
+          .replace(/\s+of\s+.+$/i, '')
+          .replace(/\(.*?\)/g, '')
+          .trim()
         const fromFile = file
           .replace(/\.(jpe?g|png|webp)$/i, '')
           .replace(/-\d+x\d+$/i, '')
           .replace(/[-_]?\d+$/g, '')
-        const nameNorm = norm(alt || fromFile)
-        if (nameNorm.length >= 2 && nameNorm !== gNorm && !nameNorm.startsWith(gNorm))
-          imgByName.push({ nameNorm, url: src })
+          .replace(/[-_]/g, ' ')
+        for (const cand of [alt, fromFile]) {
+          const nameNorm = norm(cand)
+          if (nameNorm.length >= 2 && nameNorm !== gNorm && !nameNorm.startsWith(gNorm))
+            imgByName.push({ nameNorm, url: src })
+        }
       } else {
         const m = $(el)
           .text()
@@ -137,7 +144,7 @@ async function main() {
   for (const g of groups ?? []) {
     const { data: members } = await supabase
       .from('members')
-      .select('id, stage_name, photo_url')
+      .select('id, stage_name, real_name, photo_url')
       .eq('group_id', g.id)
     if (!members?.length) continue
     const missing = members.filter((m) => !m.photo_url)
@@ -161,30 +168,34 @@ async function main() {
     // Résout l'URL d'un stage_name : 1) match par nom d'image (alt/filename),
     // 2) fallback pairing par ordre « Stage Name: » ↔ portrait. Sous-chaîne ≥3
     // pour « U-Know Yunho »↔« Yunho », « Bang Jeemin »↔« Jeemin »…
-    const resolve = (stage: string): string | null => {
-      const n = norm(stage)
-      const e =
-        parsed.imgByName.find((x) => !usedUrl.has(x.url) && x.nameNorm === n) ||
-        (n.length >= 3
-          ? parsed.imgByName.find((x) => !usedUrl.has(x.url) && sub(x.nameNorm, n))
-          : null)
-      if (e) {
-        usedUrl.add(e.url)
-        return e.url
+    const resolve = (stage: string, real: string | null): string | null => {
+      const names = [norm(stage), real ? norm(real) : ''].filter((s) => s.length >= 2)
+      for (const n of names) {
+        const e =
+          parsed.imgByName.find((x) => !usedUrl.has(x.url) && x.nameNorm === n) ||
+          (n.length >= 3
+            ? parsed.imgByName.find((x) => !usedUrl.has(x.url) && sub(x.nameNorm, n))
+            : null)
+        if (e) {
+          usedUrl.add(e.url)
+          return e.url
+        }
       }
-      let idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && norm(s) === n)
-      if (idx < 0 && n.length >= 3)
-        idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && sub(norm(s), n))
-      if (idx >= 0 && idx < parsed.orderedImgs.length) {
-        usedIdx.add(idx)
-        return parsed.orderedImgs[idx]
+      for (const n of names) {
+        let idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && norm(s) === n)
+        if (idx < 0 && n.length >= 3)
+          idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && sub(norm(s), n))
+        if (idx >= 0 && idx < parsed.orderedImgs.length) {
+          usedIdx.add(idx)
+          return parsed.orderedImgs[idx]
+        }
       }
       return null
     }
     let updated = 0
     const unmatched: string[] = []
     for (const m of missing) {
-      const url = resolve(m.stage_name)
+      const url = resolve(m.stage_name, m.real_name)
       if (!url) {
         unmatched.push(m.stage_name)
         continue
