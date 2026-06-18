@@ -406,24 +406,6 @@
     ]
   },
   {
-    "slug": "jungkook",
-    "channels": [
-      {
-        "name": "Jung Kook · HYBE LABELS",
-        "url": "https://www.youtube.com/@HYBELABELS"
-      }
-    ]
-  },
-  {
-    "slug": "jimin",
-    "channels": [
-      {
-        "name": "Jimin · HYBE LABELS",
-        "url": "https://www.youtube.com/@HYBELABELS"
-      }
-    ]
-  },
-  {
     "slug": "jeonsomi",
     "channels": [
       {
@@ -889,15 +871,6 @@
     ]
   },
   {
-    "slug": "baekhyun",
-    "channels": [
-      {
-        "name": "BAEKHYUN · Baekhyun",
-        "url": "https://www.youtube.com/@baekhyun"
-      }
-    ]
-  },
-  {
     "slug": "ericnam",
     "channels": [
       {
@@ -912,15 +885,6 @@
       {
         "name": "Gaho · Gaho",
         "url": "https://www.youtube.com/@gaho_official"
-      }
-    ]
-  },
-  {
-    "slug": "marktuan",
-    "channels": [
-      {
-        "name": "Mark Tuan · Mark Tuan",
-        "url": "https://www.youtube.com/@marktuan"
       }
     ]
   },
@@ -966,15 +930,6 @@
       {
         "name": "Hyolyn · HYOLYN",
         "url": "https://www.youtube.com/@hyolyn"
-      }
-    ]
-  },
-  {
-    "slug": "punch",
-    "channels": [
-      {
-        "name": "punch · Punch_official",
-        "url": "https://www.youtube.com/@punch_official"
       }
     ]
   },
@@ -1060,24 +1015,6 @@
     ]
   },
   {
-    "slug": "jhope",
-    "channels": [
-      {
-        "name": "j-hope · HYBE LABELS",
-        "url": "https://www.youtube.com/@HYBELABELS"
-      }
-    ]
-  },
-  {
-    "slug": "kai",
-    "channels": [
-      {
-        "name": "KAI · SMTOWN",
-        "url": "https://www.youtube.com/@SMTOWN"
-      }
-    ]
-  },
-  {
     "slug": "drippin",
     "channels": [
       {
@@ -1159,15 +1096,6 @@
     ]
   },
   {
-    "slug": "wjsn",
-    "channels": [
-      {
-        "name": "WJSN · WJSN",
-        "url": "https://www.youtube.com/@wjsnofficial"
-      }
-    ]
-  },
-  {
     "slug": "hyolyn",
     "channels": [
       {
@@ -1200,24 +1128,6 @@
       {
         "name": "pH-1 · H1GHR MUSIC",
         "url": "https://www.youtube.com/@h1ghrmusicofficial"
-      }
-    ]
-  },
-  {
-    "slug": "baekhyun",
-    "channels": [
-      {
-        "name": "BAEKHYUN · SMTOWN",
-        "url": "https://www.youtube.com/@SMTOWN"
-      }
-    ]
-  },
-  {
-    "slug": "agustd",
-    "channels": [
-      {
-        "name": "Agust D · HYBE LABELS",
-        "url": "https://www.youtube.com/@HYBELABELS"
       }
     ]
   },
@@ -1263,6 +1173,15 @@
       {
         "name": "Colde · Colde",
         "url": "https://www.youtube.com/@wavy_colde"
+      }
+    ]
+  },
+  {
+    "slug": "gdragon",
+    "channels": [
+      {
+        "name": "G-Dragon · OfficialGDRAGON",
+        "url": "https://www.youtube.com/@xxxibgdrgn"
       }
     ]
   }
