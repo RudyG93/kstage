@@ -71,44 +71,60 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
-/** Extrait des paires (stageName, photoUrl) d'une page membre kprofiles. */
-function parseMembers(html: string, groupName: string): { stage: string; url: string }[] {
+interface Parsed {
+  imgByName: { nameNorm: string; url: string }[] // nom via alt/filename (format galerie)
+  orderedImgs: string[] // portraits dans l'ordre (fallback)
+  stages: string[] // « Stage Name: X » dans l'ordre (fallback)
+}
+
+/** Parse les photos membres d'une page kprofiles. Deux formats gérés :
+ *  (A) filename générique (IMG_xxxx-WxH) + « Stage Name: » → pairing par ordre ;
+ *  (B) <img alt="Renjun" .../Renjun-11.jpg width=1440 height=1795> → match par nom.
+ *  Portrait-only (H>W) pour exclure les vignettes paysage (widgets « related »). */
+function parseMembers(html: string, groupName: string): Parsed {
   const $ = cheerio.load(html)
   const gNorm = norm(groupName)
-  const imgs: string[] = []
+  const imgByName: { nameNorm: string; url: string }[] = []
+  const orderedImgs: string[] = []
   const stages: string[] = []
-  // Parcours en ordre du document : on collecte photos membres + « Stage Name ».
   $('article, .entry-content, .td-post-content, body')
     .first()
     .find('img, p, li')
     .each((_, el) => {
-      const tag = el.tagName?.toLowerCase()
-      if (tag === 'img') {
+      if (el.tagName?.toLowerCase() === 'img') {
         const src = (
           $(el).attr('data-lazy-src') ||
           $(el).attr('data-src') ||
           $(el).attr('src') ||
           ''
         ).trim()
+        if (!/\/wp-content\/uploads\//i.test(src)) return
         const file = src.split('/').pop() ?? ''
-        // photo membre = upload avec dimensions WxH, hors logo/banner/nom-de-groupe
-        if (
-          /\/wp-content\/uploads\/.+-\d+x\d+\.(jpe?g|png|webp)/i.test(src) &&
-          !/logo|herald|banner|cover|google|adsense/i.test(file) &&
-          !norm(file).startsWith(gNorm)
-        ) {
-          imgs.push(src) // garde la version dimensionnée (≈640x800, légère, qualité OK)
-        }
+        if (/logo|herald|banner|cover|google|adsense|gravatar/i.test(file)) return
+        if (norm(file).startsWith(gNorm)) return // photo de groupe
+        // Portrait via dims du filename OU des attributs width/height.
+        const fdim = src.match(/-(\d+)x(\d+)\.(?:jpe?g|png|webp)/i)
+        const w = Number(fdim?.[1] ?? $(el).attr('width') ?? 0)
+        const h = Number(fdim?.[2] ?? $(el).attr('height') ?? 0)
+        if (w && h && h <= w) return // paysage → exclu
+        orderedImgs.push(src)
+        // Nom via alt (préféré) sinon filename (sans dims/digits/extension).
+        const alt = ($(el).attr('alt') ?? '').trim()
+        const fromFile = file
+          .replace(/\.(jpe?g|png|webp)$/i, '')
+          .replace(/-\d+x\d+$/i, '')
+          .replace(/[-_]?\d+$/g, '')
+        const nameNorm = norm(alt || fromFile)
+        if (nameNorm.length >= 2 && nameNorm !== gNorm && !nameNorm.startsWith(gNorm))
+          imgByName.push({ nameNorm, url: src })
       } else {
-        const t = $(el).text()
-        const m = t.match(/stage name\s*:\s*([^\n(,/]+)/i)
+        const m = $(el)
+          .text()
+          .match(/stage name\s*:\s*([^\n(,/]+)/i)
         if (m) stages.push(m[1].trim())
       }
     })
-  const n = Math.min(imgs.length, stages.length)
-  const out: { stage: string; url: string }[] = []
-  for (let i = 0; i < n; i++) out.push({ stage: stages[i], url: imgs[i] })
-  return out
+  return { imgByName, orderedImgs, stages }
 }
 
 async function main() {
@@ -138,22 +154,32 @@ async function main() {
       console.log(`✖ ${g.slug.padEnd(16)} — no kprofiles page`)
       continue
     }
-    const pairs = parseMembers(html, g.name)
-    const used = new Set<number>()
-    // Résout l'URL pour un stage_name : exact d'abord, puis sous-chaîne (≥3 car.)
-    // pour absorber « U-Know Yunho »↔« Yunho », « Bang Jeemin »↔« Jeemin »…
+    const parsed = parseMembers(html, g.name)
+    const usedUrl = new Set<string>()
+    const usedIdx = new Set<number>()
+    const sub = (a: string, b: string) => a.includes(b) || (b.length >= 3 && b.includes(a))
+    // Résout l'URL d'un stage_name : 1) match par nom d'image (alt/filename),
+    // 2) fallback pairing par ordre « Stage Name: » ↔ portrait. Sous-chaîne ≥3
+    // pour « U-Know Yunho »↔« Yunho », « Bang Jeemin »↔« Jeemin »…
     const resolve = (stage: string): string | null => {
       const n = norm(stage)
-      let idx = pairs.findIndex((p, i) => !used.has(i) && norm(p.stage) === n)
+      const e =
+        parsed.imgByName.find((x) => !usedUrl.has(x.url) && x.nameNorm === n) ||
+        (n.length >= 3
+          ? parsed.imgByName.find((x) => !usedUrl.has(x.url) && sub(x.nameNorm, n))
+          : null)
+      if (e) {
+        usedUrl.add(e.url)
+        return e.url
+      }
+      let idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && norm(s) === n)
       if (idx < 0 && n.length >= 3)
-        idx = pairs.findIndex(
-          (p, i) =>
-            !used.has(i) &&
-            (norm(p.stage).includes(n) || (norm(p.stage).length >= 3 && n.includes(norm(p.stage)))),
-        )
-      if (idx < 0) return null
-      used.add(idx)
-      return pairs[idx].url
+        idx = parsed.stages.findIndex((s, i) => !usedIdx.has(i) && sub(norm(s), n))
+      if (idx >= 0 && idx < parsed.orderedImgs.length) {
+        usedIdx.add(idx)
+        return parsed.orderedImgs[idx]
+      }
+      return null
     }
     let updated = 0
     const unmatched: string[] = []
@@ -179,7 +205,7 @@ async function main() {
     console.log(
       `${updated > 0 ? '✓' : '·'} ${g.slug.padEnd(16)} ${updated}/${missing.length} matched` +
         (unmatched.length ? `  (miss: ${unmatched.join(', ')})` : '') +
-        `  [${pairs.length} on page]`,
+        `  [${parsed.orderedImgs.length} img / ${parsed.imgByName.length} named]`,
     )
     await sleep(800)
   }
