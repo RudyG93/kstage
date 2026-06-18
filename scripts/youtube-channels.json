@@ -2,28 +2,49 @@
   {
     "slug": "bts",
     "channels": [
-      { "name": "BTS · BANGTANTV", "url": "https://www.youtube.com/@BTS" },
-      { "name": "BTS · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "BTS · BANGTANTV",
+        "url": "https://www.youtube.com/@BTS"
+      },
+      {
+        "name": "BTS · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "blackpink",
     "channels": [
-      { "name": "Blackpink · BLACKPINK", "url": "https://www.youtube.com/@BLACKPINK" },
-      { "name": "Blackpink · YG ENTERTAINMENT", "url": "https://www.youtube.com/@YGEntertainment" }
+      {
+        "name": "Blackpink · BLACKPINK",
+        "url": "https://www.youtube.com/@BLACKPINK"
+      },
+      {
+        "name": "Blackpink · YG ENTERTAINMENT",
+        "url": "https://www.youtube.com/@YGEntertainment"
+      }
     ]
   },
   {
     "slug": "twice",
     "channels": [
-      { "name": "TWICE · TWICE", "url": "https://www.youtube.com/@TWICE" },
-      { "name": "TWICE · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+      {
+        "name": "TWICE · TWICE",
+        "url": "https://www.youtube.com/@TWICE"
+      },
+      {
+        "name": "TWICE · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
     ]
   },
   {
     "slug": "straykids",
     "channels": [
-      { "name": "Stray Kids · Stray Kids", "url": "https://www.youtube.com/@straykids" },
+      {
+        "name": "Stray Kids · Stray Kids",
+        "url": "https://www.youtube.com/@straykids"
+      },
       {
         "name": "Stray Kids · JYP Entertainment",
         "url": "https://www.youtube.com/@JYPEntertainment"
@@ -33,15 +54,27 @@
   {
     "slug": "seventeen",
     "channels": [
-      { "name": "Seventeen · SEVENTEEN", "url": "https://www.youtube.com/@pledis17" },
-      { "name": "Seventeen · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "Seventeen · SEVENTEEN",
+        "url": "https://www.youtube.com/@pledis17"
+      },
+      {
+        "name": "Seventeen · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "newjeans",
     "channels": [
-      { "name": "NewJeans · NewJeans", "url": "https://www.youtube.com/@NewJeans_official" },
-      { "name": "NewJeans · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "NewJeans · NewJeans",
+        "url": "https://www.youtube.com/@NewJeans_official"
+      },
+      {
+        "name": "NewJeans · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
@@ -51,90 +84,162 @@
         "name": "Le Sserafim · LE SSERAFIM",
         "url": "https://www.youtube.com/@LESSERAFIM_official"
       },
-      { "name": "Le Sserafim · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "Le Sserafim · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "enhypen",
     "channels": [
-      { "name": "ENHYPEN · ENHYPEN", "url": "https://www.youtube.com/@ENHYPENOFFICIAL" },
-      { "name": "ENHYPEN · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "ENHYPEN · ENHYPEN",
+        "url": "https://www.youtube.com/@ENHYPENOFFICIAL"
+      },
+      {
+        "name": "ENHYPEN · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "txt",
     "channels": [
-      { "name": "TXT · TOMORROW X TOGETHER", "url": "https://www.youtube.com/@TXT_bighit" },
-      { "name": "TXT · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "TXT · TOMORROW X TOGETHER",
+        "url": "https://www.youtube.com/@TXT_bighit"
+      },
+      {
+        "name": "TXT · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "itzy",
     "channels": [
-      { "name": "ITZY · ITZY", "url": "https://www.youtube.com/channel/UCDhM2k2Cua-JdobAh5moMFg" },
-      { "name": "ITZY · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+      {
+        "name": "ITZY · ITZY",
+        "url": "https://www.youtube.com/channel/UCDhM2k2Cua-JdobAh5moMFg"
+      },
+      {
+        "name": "ITZY · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
     ]
   },
   {
     "slug": "ive",
     "channels": [
-      { "name": "IVE · IVE", "url": "https://www.youtube.com/@IVEstarship" },
-      { "name": "IVE · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+      {
+        "name": "IVE · IVE",
+        "url": "https://www.youtube.com/@IVEstarship"
+      },
+      {
+        "name": "IVE · STARSHIP",
+        "url": "https://www.youtube.com/@STARSHIP_official"
+      }
     ]
   },
   {
     "slug": "nmixx",
     "channels": [
-      { "name": "NMIXX · NMIXX", "url": "https://www.youtube.com/@NMIXXOfficial" },
-      { "name": "NMIXX · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+      {
+        "name": "NMIXX · NMIXX",
+        "url": "https://www.youtube.com/@NMIXXOfficial"
+      },
+      {
+        "name": "NMIXX · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
     ]
   },
   {
     "slug": "ateez",
     "channels": [
-      { "name": "ATEEZ · ATEEZ", "url": "https://www.youtube.com/@ateezofficial" },
-      { "name": "ATEEZ · KQ ENTERTAINMENT", "url": "https://www.youtube.com/@KQENT" }
+      {
+        "name": "ATEEZ · ATEEZ",
+        "url": "https://www.youtube.com/@ateezofficial"
+      },
+      {
+        "name": "ATEEZ · KQ ENTERTAINMENT",
+        "url": "https://www.youtube.com/@KQENT"
+      }
     ]
   },
   {
     "slug": "nctwish",
     "channels": [
-      { "name": "NCT WISH · NCT WISH", "url": "https://www.youtube.com/@NCTWISH" },
-      { "name": "NCT WISH · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "NCT WISH · NCT WISH",
+        "url": "https://www.youtube.com/@NCTWISH"
+      },
+      {
+        "name": "NCT WISH · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "riize",
     "channels": [
-      { "name": "RIIZE · RIIZE", "url": "https://www.youtube.com/@RIIZE_official" },
-      { "name": "RIIZE · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "RIIZE · RIIZE",
+        "url": "https://www.youtube.com/@RIIZE_official"
+      },
+      {
+        "name": "RIIZE · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "theboyz",
     "channels": [
-      { "name": "The Boyz · THE BOYZ", "url": "https://www.youtube.com/@THEBOYZofficial" },
-      { "name": "The Boyz · ONE HUNDRED", "url": "https://www.youtube.com/@100RED_official" }
+      {
+        "name": "The Boyz · THE BOYZ",
+        "url": "https://www.youtube.com/@THEBOYZofficial"
+      },
+      {
+        "name": "The Boyz · ONE HUNDRED",
+        "url": "https://www.youtube.com/@100RED_official"
+      }
     ]
   },
   {
     "slug": "tws",
     "channels": [
-      { "name": "TWS · TWS", "url": "https://www.youtube.com/@TWS_PLEDIS" },
-      { "name": "TWS · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "TWS · TWS",
+        "url": "https://www.youtube.com/@TWS_PLEDIS"
+      },
+      {
+        "name": "TWS · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "team",
     "channels": [
-      { "name": "&TEAM · &TEAM", "url": "https://www.youtube.com/@andTEAM_official" },
-      { "name": "&TEAM · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "&TEAM · &TEAM",
+        "url": "https://www.youtube.com/@andTEAM_official"
+      },
+      {
+        "name": "&TEAM · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "zerobaseone",
     "channels": [
-      { "name": "ZEROBASEONE · ZEROBASEONE", "url": "https://www.youtube.com/@ZB1_official" }
+      {
+        "name": "ZEROBASEONE · ZEROBASEONE",
+        "url": "https://www.youtube.com/@ZB1_official"
+      }
     ]
   },
   {
@@ -144,21 +249,36 @@
         "name": "BOYNEXTDOOR · BOYNEXTDOOR",
         "url": "https://www.youtube.com/@boynextdoor_official"
       },
-      { "name": "BOYNEXTDOOR · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "BOYNEXTDOOR · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "monstax",
     "channels": [
-      { "name": "MONSTA X · MONSTA X", "url": "https://www.youtube.com/@MONSTAX" },
-      { "name": "MONSTA X · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+      {
+        "name": "MONSTA X · MONSTA X",
+        "url": "https://www.youtube.com/@MONSTAX"
+      },
+      {
+        "name": "MONSTA X · STARSHIP",
+        "url": "https://www.youtube.com/@STARSHIP_official"
+      }
     ]
   },
   {
     "slug": "p1harmony",
     "channels": [
-      { "name": "P1Harmony · P1Harmony", "url": "https://www.youtube.com/@P1Harmonyofficial" },
-      { "name": "P1Harmony · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+      {
+        "name": "P1Harmony · P1Harmony",
+        "url": "https://www.youtube.com/@P1Harmonyofficial"
+      },
+      {
+        "name": "P1Harmony · FNC Entertainment",
+        "url": "https://www.youtube.com/@thefncofficial"
+      }
     ]
   },
   {
@@ -172,39 +292,77 @@
   },
   {
     "slug": "stayc",
-    "channels": [{ "name": "STAYC · STAYC", "url": "https://www.youtube.com/@STAYC" }]
+    "channels": [
+      {
+        "name": "STAYC · STAYC",
+        "url": "https://www.youtube.com/@STAYC"
+      }
+    ]
   },
   {
     "slug": "redvelvet",
     "channels": [
-      { "name": "Red Velvet · Red Velvet", "url": "https://www.youtube.com/@redvelvet" },
-      { "name": "Red Velvet · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "Red Velvet · Red Velvet",
+        "url": "https://www.youtube.com/@redvelvet"
+      },
+      {
+        "name": "Red Velvet · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "kep1er",
-    "channels": [{ "name": "Kep1er · Kep1er", "url": "https://www.youtube.com/@Kep1er_Offcl" }]
+    "channels": [
+      {
+        "name": "Kep1er · Kep1er",
+        "url": "https://www.youtube.com/@Kep1er_Offcl"
+      }
+    ]
   },
   {
     "slug": "xg",
-    "channels": [{ "name": "XG · XG", "url": "https://www.youtube.com/@xg_official" }]
+    "channels": [
+      {
+        "name": "XG · XG",
+        "url": "https://www.youtube.com/@xg_official"
+      }
+    ]
   },
   {
     "slug": "triples",
-    "channels": [{ "name": "tripleS · tripleS", "url": "https://www.youtube.com/@triplescosmos" }]
+    "channels": [
+      {
+        "name": "tripleS · tripleS",
+        "url": "https://www.youtube.com/@triplescosmos"
+      }
+    ]
   },
   {
     "slug": "fromis9",
     "channels": [
-      { "name": "fromis_9 · fromis_9", "url": "https://www.youtube.com/@fromis9_official" },
-      { "name": "fromis_9 · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "fromis_9 · fromis_9",
+        "url": "https://www.youtube.com/@fromis9_official"
+      },
+      {
+        "name": "fromis_9 · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "mamamoo",
     "channels": [
-      { "name": "Mamamoo · MAMAMOO", "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL" },
-      { "name": "Mamamoo · RBW", "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc" }
+      {
+        "name": "Mamamoo · MAMAMOO",
+        "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL"
+      },
+      {
+        "name": "Mamamoo · RBW",
+        "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc"
+      }
     ]
   },
   {
@@ -218,46 +376,87 @@
   },
   {
     "slug": "lisa",
-    "channels": [{ "name": "Lisa · LLOUD", "url": "https://www.youtube.com/@wearelloud" }]
+    "channels": [
+      {
+        "name": "Lisa · LLOUD",
+        "url": "https://www.youtube.com/@wearelloud"
+      }
+    ]
   },
   {
     "slug": "rose",
-    "channels": [{ "name": "Rosé · ROSÉ", "url": "https://www.youtube.com/@roses_are_rosie" }]
+    "channels": [
+      {
+        "name": "Rosé · ROSÉ",
+        "url": "https://www.youtube.com/@roses_are_rosie"
+      }
+    ]
   },
   {
     "slug": "jisoo",
     "channels": [
-      { "name": "Jisoo · JISOO", "url": "https://www.youtube.com/@sooyaaa__" },
-      { "name": "Jisoo · BLACKPINK", "url": "https://www.youtube.com/@BLACKPINK" }
+      {
+        "name": "Jisoo · JISOO",
+        "url": "https://www.youtube.com/@sooyaaa__"
+      },
+      {
+        "name": "Jisoo · BLACKPINK",
+        "url": "https://www.youtube.com/@BLACKPINK"
+      }
     ]
   },
   {
     "slug": "jungkook",
     "channels": [
-      { "name": "Jung Kook · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }
+      {
+        "name": "Jung Kook · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
     ]
   },
   {
     "slug": "jimin",
-    "channels": [{ "name": "Jimin · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+    "channels": [
+      {
+        "name": "Jimin · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
+    ]
   },
   {
     "slug": "jeonsomi",
     "channels": [
-      { "name": "Jeon Somi · JEON SOMI", "url": "https://www.youtube.com/@JEONSOMI_OFFICIAL" },
-      { "name": "Jeon Somi · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+      {
+        "name": "Jeon Somi · JEON SOMI",
+        "url": "https://www.youtube.com/@JEONSOMI_OFFICIAL"
+      },
+      {
+        "name": "Jeon Somi · THEBLACKLABEL",
+        "url": "https://www.youtube.com/@THEBLACKLABEL"
+      }
     ]
   },
   {
     "slug": "taeyeon",
     "channels": [
-      { "name": "Taeyeon · TAEYEON", "url": "https://www.youtube.com/@taeyeonofficial" },
-      { "name": "Taeyeon · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "Taeyeon · TAEYEON",
+        "url": "https://www.youtube.com/@taeyeonofficial"
+      },
+      {
+        "name": "Taeyeon · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "hwasa",
-    "channels": [{ "name": "Hwasa · HWASA", "url": "https://www.youtube.com/@HWASA_maria" }]
+    "channels": [
+      {
+        "name": "Hwasa · HWASA",
+        "url": "https://www.youtube.com/@HWASA_maria"
+      }
+    ]
   },
   {
     "slug": "taemin",
@@ -270,110 +469,181 @@
   },
   {
     "slug": "iu",
-    "channels": [{ "name": "IU · 이지금 [IU Official]", "url": "https://www.youtube.com/@dlwlrma" }]
+    "channels": [
+      {
+        "name": "IU · 이지금 [IU Official]",
+        "url": "https://www.youtube.com/@dlwlrma"
+      }
+    ]
   },
   {
     "slug": "treasure",
-    "channels": [{ "name": "Treasure · TREASURE", "url": "https://www.youtube.com/@TREASURE" }]
+    "channels": [
+      {
+        "name": "Treasure · TREASURE",
+        "url": "https://www.youtube.com/@TREASURE"
+      }
+    ]
   },
   {
     "slug": "shinee",
     "channels": [
-      { "name": "SHINee · SHINee", "url": "https://www.youtube.com/@SHINee" },
-      { "name": "SHINee · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "SHINee · SHINee",
+        "url": "https://www.youtube.com/@SHINee"
+      },
+      {
+        "name": "SHINee · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "xikers",
-    "channels": [{ "name": "xikers · xikers", "url": "https://www.youtube.com/@xikers_official" }]
+    "channels": [
+      {
+        "name": "xikers · xikers",
+        "url": "https://www.youtube.com/@xikers_official"
+      }
+    ]
   },
   {
     "slug": "meovv",
-    "channels": [{ "name": "MEOVV · MEOVV", "url": "https://www.youtube.com/@MEOVV_official" }]
+    "channels": [
+      {
+        "name": "MEOVV · MEOVV",
+        "url": "https://www.youtube.com/@MEOVV_official"
+      }
+    ]
   },
   {
     "slug": "kangdaniel",
     "channels": [
-      { "name": "KANG DANIEL · KANGDANIEL", "url": "https://www.youtube.com/@kangdaniel" }
+      {
+        "name": "KANG DANIEL · KANGDANIEL",
+        "url": "https://www.youtube.com/@kangdaniel"
+      }
     ]
   },
   {
     "slug": "yena",
-    "channels": [{ "name": "YENA · YENA", "url": "https://www.youtube.com/@YENA_official" }]
+    "channels": [
+      {
+        "name": "YENA · YENA",
+        "url": "https://www.youtube.com/@YENA_official"
+      }
+    ]
   },
   {
     "slug": "jacksonwang",
     "channels": [
-      { "name": "Jackson Wang · Jackson Wang", "url": "https://www.youtube.com/@jacksonwang" }
+      {
+        "name": "Jackson Wang · Jackson Wang",
+        "url": "https://www.youtube.com/@jacksonwang"
+      }
     ]
   },
   {
     "slug": "heize",
     "channels": [
-      { "name": "Heize · Heize official", "url": "https://www.youtube.com/@heizeofficial" }
+      {
+        "name": "Heize · Heize official",
+        "url": "https://www.youtube.com/@heizeofficial"
+      }
     ]
   },
   {
     "slug": "younha",
     "channels": [
-      { "name": "Younha · YOUNHA OFFICIAL", "url": "https://www.youtube.com/@younhaofficial" }
+      {
+        "name": "Younha · YOUNHA OFFICIAL",
+        "url": "https://www.youtube.com/@younhaofficial"
+      }
     ]
   },
   {
     "slug": "sunmi",
-    "channels": [{ "name": "Sunmi · SUNMI", "url": "https://www.youtube.com/@SUNMI_official" }]
+    "channels": [
+      {
+        "name": "Sunmi · SUNMI",
+        "url": "https://www.youtube.com/@SUNMI_official"
+      }
+    ]
   },
   {
     "slug": "sf9",
     "channels": [
-      { "name": "SF9 · SF9", "url": "https://www.youtube.com/@SF9official" },
-      { "name": "SF9 · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+      {
+        "name": "SF9 · SF9",
+        "url": "https://www.youtube.com/@SF9official"
+      },
+      {
+        "name": "SF9 · FNC Entertainment",
+        "url": "https://www.youtube.com/@thefncofficial"
+      }
     ]
   },
   {
     "slug": "meovv",
     "channels": [
-      { "name": "MEOVV · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+      {
+        "name": "MEOVV · THEBLACKLABEL",
+        "url": "https://www.youtube.com/@THEBLACKLABEL"
+      }
     ]
   },
   {
     "slug": "alldayproject",
     "channels": [
-      { "name": "ALLDAY PROJECT · THEBLACKLABEL", "url": "https://www.youtube.com/@THEBLACKLABEL" }
+      {
+        "name": "ALLDAY PROJECT · THEBLACKLABEL",
+        "url": "https://www.youtube.com/@THEBLACKLABEL"
+      }
     ]
   },
   {
     "slug": "xikers",
-    "channels": [{ "name": "xikers · KQ ENTERTAINMENT", "url": "https://www.youtube.com/@KQENT" }]
-  },
-  {
-    "slug": "cnblue",
     "channels": [
-      { "name": "CNBLUE · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+      {
+        "name": "xikers · KQ ENTERTAINMENT",
+        "url": "https://www.youtube.com/@KQENT"
+      }
     ]
   },
   {
     "slug": "ftisland",
     "channels": [
-      { "name": "FTISLAND · FNC Entertainment", "url": "https://www.youtube.com/@thefncofficial" }
+      {
+        "name": "FTISLAND · FNC Entertainment",
+        "url": "https://www.youtube.com/@thefncofficial"
+      }
     ]
   },
   {
     "slug": "cravity",
     "channels": [
-      { "name": "CRAVITY · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+      {
+        "name": "CRAVITY · STARSHIP",
+        "url": "https://www.youtube.com/@STARSHIP_official"
+      }
     ]
   },
   {
     "slug": "kiiikiii",
     "channels": [
-      { "name": "KiiiKiii · STARSHIP", "url": "https://www.youtube.com/@STARSHIP_official" }
+      {
+        "name": "KiiiKiii · STARSHIP",
+        "url": "https://www.youtube.com/@STARSHIP_official"
+      }
     ]
   },
   {
     "slug": "day6",
     "channels": [
-      { "name": "DAY6 · JYP Entertainment", "url": "https://www.youtube.com/@JYPEntertainment" }
+      {
+        "name": "DAY6 · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
     ]
   },
   {
@@ -388,31 +658,54 @@
   {
     "slug": "akmu",
     "channels": [
-      { "name": "AKMU · YG ENTERTAINMENT", "url": "https://www.youtube.com/@YGEntertainment" }
+      {
+        "name": "AKMU · YG ENTERTAINMENT",
+        "url": "https://www.youtube.com/@YGEntertainment"
+      }
     ]
   },
   {
     "slug": "oneus",
     "channels": [
-      { "name": "Oneus · RBW", "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc" }
+      {
+        "name": "Oneus · RBW",
+        "url": "https://www.youtube.com/@RainbowbridgeWorldRBWInc"
+      }
     ]
   },
   {
     "slug": "qwer",
-    "channels": [{ "name": "QWER · QWER", "url": "https://www.youtube.com/@qwer_band_official" }]
+    "channels": [
+      {
+        "name": "QWER · QWER",
+        "url": "https://www.youtube.com/@qwer_band_official"
+      }
+    ]
   },
   {
     "slug": "nctdream",
     "channels": [
-      { "name": "NCT DREAM · NCT DREAM", "url": "https://www.youtube.com/@NCTDREAM" },
-      { "name": "NCT DREAM · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "NCT DREAM · NCT DREAM",
+        "url": "https://www.youtube.com/@NCTDREAM"
+      },
+      {
+        "name": "NCT DREAM · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
     "slug": "nct127",
     "channels": [
-      { "name": "NCT 127 · NCT 127", "url": "https://www.youtube.com/@NCT127" },
-      { "name": "NCT 127 · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }
+      {
+        "name": "NCT 127 · NCT 127",
+        "url": "https://www.youtube.com/@NCT127"
+      },
+      {
+        "name": "NCT 127 · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
     ]
   },
   {
@@ -426,39 +719,57 @@
   },
   {
     "slug": "viviz",
-    "channels": [{ "name": "VIVIZ · VIVIZ", "url": "https://www.youtube.com/@viviz.official" }]
+    "channels": [
+      {
+        "name": "VIVIZ · VIVIZ",
+        "url": "https://www.youtube.com/@viviz.official"
+      }
+    ]
   },
   {
     "slug": "btob",
-    "channels": [{ "name": "BTOB · BTOB", "url": "https://www.youtube.com/@officialbtob" }]
-  },
-  {
-    "slug": "vixx",
-    "channels": [{ "name": "VIXX · RealVIXX", "url": "https://www.youtube.com/@realvixx" }]
+    "channels": [
+      {
+        "name": "BTOB · BTOB",
+        "url": "https://www.youtube.com/@officialbtob"
+      }
+    ]
   },
   {
     "slug": "apink",
-    "channels": [{ "name": "Apink · Apink", "url": "https://www.youtube.com/@officialapink" }]
-  },
-  {
-    "slug": "everglow",
     "channels": [
-      { "name": "EVERGLOW · EVERGLOW", "url": "https://www.youtube.com/@everglowofficial" }
+      {
+        "name": "Apink · Apink",
+        "url": "https://www.youtube.com/@officialapink"
+      }
     ]
   },
   {
     "slug": "kard",
-    "channels": [{ "name": "KARD · KARD", "url": "https://www.youtube.com/@kard" }]
+    "channels": [
+      {
+        "name": "KARD · KARD",
+        "url": "https://www.youtube.com/@kard"
+      }
+    ]
   },
   {
     "slug": "chungha",
     "channels": [
-      { "name": "Chung Ha · CHUNG HA", "url": "https://www.youtube.com/@chungha__official" }
+      {
+        "name": "Chung Ha · CHUNG HA",
+        "url": "https://www.youtube.com/@chungha__official"
+      }
     ]
   },
   {
     "slug": "bibi",
-    "channels": [{ "name": "BIBI · BIBI", "url": "https://www.youtube.com/@naked_bibi" }]
+    "channels": [
+      {
+        "name": "BIBI · BIBI",
+        "url": "https://www.youtube.com/@naked_bibi"
+      }
+    ]
   },
   {
     "slug": "highlight",
@@ -471,15 +782,30 @@
   },
   {
     "slug": "zico",
-    "channels": [{ "name": "ZICO · ZICO", "url": "https://www.youtube.com/@zicoofficial" }]
+    "channels": [
+      {
+        "name": "ZICO · ZICO",
+        "url": "https://www.youtube.com/@zicoofficial"
+      }
+    ]
   },
   {
     "slug": "crush",
-    "channels": [{ "name": "Crush · Crush", "url": "https://www.youtube.com/@crushofficial" }]
+    "channels": [
+      {
+        "name": "Crush · Crush",
+        "url": "https://www.youtube.com/@crushofficial"
+      }
+    ]
   },
   {
     "slug": "jaypark",
-    "channels": [{ "name": "Jay Park · JAY PARK", "url": "https://www.youtube.com/@jaypark0425" }]
+    "channels": [
+      {
+        "name": "Jay Park · JAY PARK",
+        "url": "https://www.youtube.com/@jaypark0425"
+      }
+    ]
   },
   {
     "slug": "secretnumber",
@@ -492,11 +818,21 @@
   },
   {
     "slug": "ohmygirl",
-    "channels": [{ "name": "Oh My Girl · OH MY GIRL", "url": "https://www.youtube.com/@ohmygirl" }]
+    "channels": [
+      {
+        "name": "Oh My Girl · OH MY GIRL",
+        "url": "https://www.youtube.com/@ohmygirl"
+      }
+    ]
   },
   {
     "slug": "tribe",
-    "channels": [{ "name": "TRI.BE · TRI_BE", "url": "https://www.youtube.com/@tribe_2021" }]
+    "channels": [
+      {
+        "name": "TRI.BE · TRI_BE",
+        "url": "https://www.youtube.com/@tribe_2021"
+      }
+    ]
   },
   {
     "slug": "fiftyfifty",
@@ -510,183 +846,281 @@
   {
     "slug": "youngposse",
     "channels": [
-      { "name": "Young Posse · YOUNG POSSE", "url": "https://www.youtube.com/@youngposseup" }
-    ]
-  },
-  {
-    "slug": "akmu",
-    "channels": [{ "name": "AKMU · AKMU", "url": "https://www.youtube.com/@akmu" }]
-  },
-  {
-    "slug": "exo",
-    "channels": [{ "name": "EXO · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
-  },
-  {
-    "slug": "hearts2hearts",
-    "channels": [{ "name": "Hearts2Hearts · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
-  },
-  {
-    "slug": "izna",
-    "channels": [
-      { "name": "izna · izna", "url": "https://www.youtube.com/channel/UCfbYNlxgLuKJXQZEhkMmaCQ" }
-    ]
-  },
-  {
-    "slug": "baekhyun",
-    "channels": [{ "name": "BAEKHYUN · Baekhyun", "url": "https://www.youtube.com/@baekhyun" }]
-  },
-  {
-    "slug": "dean",
-    "channels": [{ "name": "DEAN · DEANTRBL", "url": "https://www.youtube.com/@deantrbl" }]
-  },
-  {
-    "slug": "ericnam",
-    "channels": [{ "name": "Eric Nam · Eric Nam", "url": "https://www.youtube.com/@ericnam" }]
-  },
-  {
-    "slug": "gaho",
-    "channels": [{ "name": "Gaho · Gaho", "url": "https://www.youtube.com/@gaho_official" }]
-  },
-  {
-    "slug": "marktuan",
-    "channels": [{ "name": "Mark Tuan · Mark Tuan", "url": "https://www.youtube.com/@marktuan" }]
-  },
-  {
-    "slug": "solar",
-    "channels": [{ "name": "Solar · solarsido", "url": "https://www.youtube.com/@solarsido" }]
-  },
-  {
-    "slug": "paulkim",
-    "channels": [
-      { "name": "Paul Kim · PaulKimMusic", "url": "https://www.youtube.com/@paulkimmusic" }
-    ]
-  },
-  {
-    "slug": "ph1",
-    "channels": [{ "name": "pH-1 · pH-1", "url": "https://www.youtube.com/@ph1official" }]
-  },
-  {
-    "slug": "ailee",
-    "channels": [
-      { "name": "AILEE · AILEEOFFICIAL", "url": "https://www.youtube.com/@aileeofficial" }
-    ]
-  },
-  {
-    "slug": "hyolyn",
-    "channels": [{ "name": "Hyolyn · HYOLYN", "url": "https://www.youtube.com/@hyolyn" }]
-  },
-  {
-    "slug": "punch",
-    "channels": [
-      { "name": "punch · Punch_official", "url": "https://www.youtube.com/@punch_official" }
-    ]
-  },
-  {
-    "slug": "2pm",
-    "channels": [{ "name": "2PM · 2PM", "url": "https://www.youtube.com/@2PM" }]
-  },
-  {
-    "slug": "ab6ix",
-    "channels": [{ "name": "AB6IX · AB6IX", "url": "https://www.youtube.com/@AB6IX" }]
-  },
-  {
-    "slug": "artms",
-    "channels": [
-      { "name": "ARTMS · Official ARTMS", "url": "https://www.youtube.com/@official_ARTMS" }
-    ]
-  },
-  {
-    "slug": "astro",
-    "channels": [{ "name": "ASTRO · ASTRO", "url": "https://www.youtube.com/@offclASTRO" }]
-  },
-  {
-    "slug": "bigbang",
-    "channels": [{ "name": "BIGBANG · BIGBANG", "url": "https://www.youtube.com/@BIGBANG" }]
-  },
-  {
-    "slug": "girlsgeneration",
-    "channels": [
       {
-        "name": "Girls' Generation · GIRLS' GENERATION",
-        "url": "https://www.youtube.com/@GirlsGeneration"
+        "name": "Young Posse · YOUNG POSSE",
+        "url": "https://www.youtube.com/@youngposseup"
       }
     ]
   },
   {
-    "slug": "loona",
+    "slug": "akmu",
     "channels": [
-      { "name": "LOONA · loonatheworld", "url": "https://www.youtube.com/@loonatheworld" }
+      {
+        "name": "AKMU · AKMU",
+        "url": "https://www.youtube.com/@akmu"
+      }
+    ]
+  },
+  {
+    "slug": "exo",
+    "channels": [
+      {
+        "name": "EXO · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
+    ]
+  },
+  {
+    "slug": "hearts2hearts",
+    "channels": [
+      {
+        "name": "Hearts2Hearts · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
+    ]
+  },
+  {
+    "slug": "izna",
+    "channels": [
+      {
+        "name": "izna · izna",
+        "url": "https://www.youtube.com/channel/UCfbYNlxgLuKJXQZEhkMmaCQ"
+      }
+    ]
+  },
+  {
+    "slug": "baekhyun",
+    "channels": [
+      {
+        "name": "BAEKHYUN · Baekhyun",
+        "url": "https://www.youtube.com/@baekhyun"
+      }
+    ]
+  },
+  {
+    "slug": "ericnam",
+    "channels": [
+      {
+        "name": "Eric Nam · Eric Nam",
+        "url": "https://www.youtube.com/@ericnam"
+      }
+    ]
+  },
+  {
+    "slug": "gaho",
+    "channels": [
+      {
+        "name": "Gaho · Gaho",
+        "url": "https://www.youtube.com/@gaho_official"
+      }
+    ]
+  },
+  {
+    "slug": "marktuan",
+    "channels": [
+      {
+        "name": "Mark Tuan · Mark Tuan",
+        "url": "https://www.youtube.com/@marktuan"
+      }
+    ]
+  },
+  {
+    "slug": "solar",
+    "channels": [
+      {
+        "name": "Solar · solarsido",
+        "url": "https://www.youtube.com/@solarsido"
+      }
+    ]
+  },
+  {
+    "slug": "paulkim",
+    "channels": [
+      {
+        "name": "Paul Kim · PaulKimMusic",
+        "url": "https://www.youtube.com/@paulkimmusic"
+      }
+    ]
+  },
+  {
+    "slug": "ph1",
+    "channels": [
+      {
+        "name": "pH-1 · pH-1",
+        "url": "https://www.youtube.com/@ph1official"
+      }
+    ]
+  },
+  {
+    "slug": "ailee",
+    "channels": [
+      {
+        "name": "AILEE · AILEEOFFICIAL",
+        "url": "https://www.youtube.com/@aileeofficial"
+      }
+    ]
+  },
+  {
+    "slug": "hyolyn",
+    "channels": [
+      {
+        "name": "Hyolyn · HYOLYN",
+        "url": "https://www.youtube.com/@hyolyn"
+      }
+    ]
+  },
+  {
+    "slug": "punch",
+    "channels": [
+      {
+        "name": "punch · Punch_official",
+        "url": "https://www.youtube.com/@punch_official"
+      }
+    ]
+  },
+  {
+    "slug": "ab6ix",
+    "channels": [
+      {
+        "name": "AB6IX · AB6IX",
+        "url": "https://www.youtube.com/@AB6IX"
+      }
+    ]
+  },
+  {
+    "slug": "artms",
+    "channels": [
+      {
+        "name": "ARTMS · Official ARTMS",
+        "url": "https://www.youtube.com/@official_ARTMS"
+      }
+    ]
+  },
+  {
+    "slug": "astro",
+    "channels": [
+      {
+        "name": "ASTRO · ASTRO",
+        "url": "https://www.youtube.com/@offclASTRO"
+      }
     ]
   },
   {
     "slug": "loossemble",
     "channels": [
-      { "name": "Loossemble · Loossemble", "url": "https://www.youtube.com/@Loossemble_official" }
+      {
+        "name": "Loossemble · Loossemble",
+        "url": "https://www.youtube.com/@Loossemble_official"
+      }
     ]
   },
   {
     "slug": "nflying",
     "channels": [
-      { "name": "N.Flying · N.Flying", "url": "https://www.youtube.com/@NFlyingofficial" }
+      {
+        "name": "N.Flying · N.Flying",
+        "url": "https://www.youtube.com/@NFlyingofficial"
+      }
     ]
   },
   {
     "slug": "onf",
-    "channels": [{ "name": "ONF · ONF OFFICIAL", "url": "https://www.youtube.com/@ONF_official" }]
-  },
-  {
-    "slug": "tvxq",
-    "channels": [{ "name": "TVXQ! · TVXQ!", "url": "https://www.youtube.com/@TVXQ" }]
+    "channels": [
+      {
+        "name": "ONF · ONF OFFICIAL",
+        "url": "https://www.youtube.com/@ONF_official"
+      }
+    ]
   },
   {
     "slug": "verivery",
-    "channels": [{ "name": "VERIVERY · VERIVERY", "url": "https://www.youtube.com/@VERIVERY" }]
+    "channels": [
+      {
+        "name": "VERIVERY · VERIVERY",
+        "url": "https://www.youtube.com/@VERIVERY"
+      }
+    ]
   },
   {
     "slug": "victon",
     "channels": [
-      { "name": "VICTON · Victon_Official", "url": "https://www.youtube.com/@VICTON_official" }
+      {
+        "name": "VICTON · Victon_Official",
+        "url": "https://www.youtube.com/@VICTON_official"
+      }
     ]
   },
   {
-    "slug": "winner",
-    "channels": [{ "name": "WINNER · WINNER", "url": "https://www.youtube.com/@winner" }]
-  },
-  {
     "slug": "ikon",
-    "channels": [{ "name": "iKON · iKONofficial", "url": "https://www.youtube.com/@iKONofficial" }]
+    "channels": [
+      {
+        "name": "iKON · iKONofficial",
+        "url": "https://www.youtube.com/@iKONofficial"
+      }
+    ]
   },
   {
     "slug": "jhope",
-    "channels": [{ "name": "j-hope · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+    "channels": [
+      {
+        "name": "j-hope · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
+    ]
   },
   {
     "slug": "kai",
-    "channels": [{ "name": "KAI · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+    "channels": [
+      {
+        "name": "KAI · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
+    ]
   },
   {
     "slug": "drippin",
-    "channels": [{ "name": "DRIPPIN · DRIPPIN", "url": "https://www.youtube.com/@drippin" }]
+    "channels": [
+      {
+        "name": "DRIPPIN · DRIPPIN",
+        "url": "https://www.youtube.com/@drippin"
+      }
+    ]
   },
   {
     "slug": "epex",
-    "channels": [{ "name": "EPEX · EPEX", "url": "https://www.youtube.com/@epexofficial" }]
+    "channels": [
+      {
+        "name": "EPEX · EPEX",
+        "url": "https://www.youtube.com/@epexofficial"
+      }
+    ]
   },
   {
     "slug": "goldenchild",
     "channels": [
-      { "name": "Golden Child · Golden Child", "url": "https://www.youtube.com/@goldenchild" }
+      {
+        "name": "Golden Child · Golden Child",
+        "url": "https://www.youtube.com/@goldenchild"
+      }
     ]
   },
   {
     "slug": "leehi",
     "channels": [
-      { "name": "LEE HI · OfficialLEEHI", "url": "https://www.youtube.com/@officialleehi" }
+      {
+        "name": "LEE HI · OfficialLEEHI",
+        "url": "https://www.youtube.com/@officialleehi"
+      }
     ]
   },
   {
     "slug": "mcnd",
-    "channels": [{ "name": "MCND · MCND Official", "url": "https://www.youtube.com/@mcndofficial" }]
+    "channels": [
+      {
+        "name": "MCND · MCND Official",
+        "url": "https://www.youtube.com/@mcndofficial"
+      }
+    ]
   },
   {
     "slug": "onlyoneof",
@@ -699,48 +1133,137 @@
   },
   {
     "slug": "pentagon",
-    "channels": [{ "name": "PENTAGON · PENTAGON", "url": "https://www.youtube.com/@cube_ptg" }]
+    "channels": [
+      {
+        "name": "PENTAGON · PENTAGON",
+        "url": "https://www.youtube.com/@cube_ptg"
+      }
+    ]
   },
   {
     "slug": "soojin",
-    "channels": [{ "name": "Soojin · SOOJIN", "url": "https://www.youtube.com/@soojin.official" }]
+    "channels": [
+      {
+        "name": "Soojin · SOOJIN",
+        "url": "https://www.youtube.com/@soojin.official"
+      }
+    ]
   },
   {
     "slug": "wei",
-    "channels": [{ "name": "WEi · WEi", "url": "https://www.youtube.com/@weiofficial" }]
+    "channels": [
+      {
+        "name": "WEi · WEi",
+        "url": "https://www.youtube.com/@weiofficial"
+      }
+    ]
   },
   {
     "slug": "wjsn",
-    "channels": [{ "name": "WJSN · WJSN", "url": "https://www.youtube.com/@wjsnofficial" }]
+    "channels": [
+      {
+        "name": "WJSN · WJSN",
+        "url": "https://www.youtube.com/@wjsnofficial"
+      }
+    ]
   },
   {
     "slug": "hyolyn",
-    "channels": [{ "name": "Hyolyn · HYOLYN", "url": "https://www.youtube.com/@officialhyolyn" }]
+    "channels": [
+      {
+        "name": "Hyolyn · HYOLYN",
+        "url": "https://www.youtube.com/@officialhyolyn"
+      }
+    ]
   },
   {
     "slug": "ikon",
-    "channels": [{ "name": "iKON · iKON", "url": "https://www.youtube.com/@ikon" }]
+    "channels": [
+      {
+        "name": "iKON · iKON",
+        "url": "https://www.youtube.com/@ikon"
+      }
+    ]
   },
   {
     "slug": "victon",
-    "channels": [{ "name": "VICTON · VICTON", "url": "https://www.youtube.com/@victon1109" }]
+    "channels": [
+      {
+        "name": "VICTON · VICTON",
+        "url": "https://www.youtube.com/@victon1109"
+      }
+    ]
   },
   {
     "slug": "ph1",
     "channels": [
-      { "name": "pH-1 · H1GHR MUSIC", "url": "https://www.youtube.com/@h1ghrmusicofficial" }
+      {
+        "name": "pH-1 · H1GHR MUSIC",
+        "url": "https://www.youtube.com/@h1ghrmusicofficial"
+      }
     ]
   },
   {
     "slug": "baekhyun",
-    "channels": [{ "name": "BAEKHYUN · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+    "channels": [
+      {
+        "name": "BAEKHYUN · SMTOWN",
+        "url": "https://www.youtube.com/@SMTOWN"
+      }
+    ]
   },
   {
     "slug": "agustd",
-    "channels": [{ "name": "Agust D · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+    "channels": [
+      {
+        "name": "Agust D · HYBE LABELS",
+        "url": "https://www.youtube.com/@HYBELABELS"
+      }
+    ]
   },
   {
     "slug": "solar",
-    "channels": [{ "name": "Solar · MAMAMOO", "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL" }]
+    "channels": [
+      {
+        "name": "Solar · MAMAMOO",
+        "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL"
+      }
+    ]
+  },
+  {
+    "slug": "ace",
+    "channels": [
+      {
+        "name": "A.C.E · Official A.C.E",
+        "url": "https://www.youtube.com/@officialace_beat"
+      }
+    ]
+  },
+  {
+    "slug": "billlie",
+    "channels": [
+      {
+        "name": "Billlie · Billlie",
+        "url": "https://www.youtube.com/@billlie"
+      }
+    ]
+  },
+  {
+    "slug": "cix",
+    "channels": [
+      {
+        "name": "CIX · CIX Official",
+        "url": "https://www.youtube.com/@cixofficial"
+      }
+    ]
+  },
+  {
+    "slug": "colde",
+    "channels": [
+      {
+        "name": "Colde · Colde",
+        "url": "https://www.youtube.com/@wavy_colde"
+      }
+    ]
   }
 ]
