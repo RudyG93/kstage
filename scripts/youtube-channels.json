@@ -663,5 +663,84 @@
   {
     "slug": "kai",
     "channels": [{ "name": "KAI · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+  },
+  {
+    "slug": "drippin",
+    "channels": [{ "name": "DRIPPIN · DRIPPIN", "url": "https://www.youtube.com/@drippin" }]
+  },
+  {
+    "slug": "epex",
+    "channels": [{ "name": "EPEX · EPEX", "url": "https://www.youtube.com/@epexofficial" }]
+  },
+  {
+    "slug": "goldenchild",
+    "channels": [
+      { "name": "Golden Child · Golden Child", "url": "https://www.youtube.com/@goldenchild" }
+    ]
+  },
+  {
+    "slug": "leehi",
+    "channels": [
+      { "name": "LEE HI · OfficialLEEHI", "url": "https://www.youtube.com/@officialleehi" }
+    ]
+  },
+  {
+    "slug": "mcnd",
+    "channels": [{ "name": "MCND · MCND Official", "url": "https://www.youtube.com/@mcndofficial" }]
+  },
+  {
+    "slug": "onlyoneof",
+    "channels": [
+      {
+        "name": "OnlyOneOf · OnlyOneOf official",
+        "url": "https://www.youtube.com/@onlyoneofofficial"
+      }
+    ]
+  },
+  {
+    "slug": "pentagon",
+    "channels": [{ "name": "PENTAGON · PENTAGON", "url": "https://www.youtube.com/@cube_ptg" }]
+  },
+  {
+    "slug": "soojin",
+    "channels": [{ "name": "Soojin · SOOJIN", "url": "https://www.youtube.com/@soojin.official" }]
+  },
+  {
+    "slug": "wei",
+    "channels": [{ "name": "WEi · WEi", "url": "https://www.youtube.com/@weiofficial" }]
+  },
+  {
+    "slug": "wjsn",
+    "channels": [{ "name": "WJSN · WJSN", "url": "https://www.youtube.com/@wjsnofficial" }]
+  },
+  {
+    "slug": "hyolyn",
+    "channels": [{ "name": "Hyolyn · HYOLYN", "url": "https://www.youtube.com/@officialhyolyn" }]
+  },
+  {
+    "slug": "ikon",
+    "channels": [{ "name": "iKON · iKON", "url": "https://www.youtube.com/@ikon" }]
+  },
+  {
+    "slug": "victon",
+    "channels": [{ "name": "VICTON · VICTON", "url": "https://www.youtube.com/@victon1109" }]
+  },
+  {
+    "slug": "ph1",
+    "channels": [
+      { "name": "pH-1 · H1GHR MUSIC", "url": "https://www.youtube.com/@h1ghrmusicofficial" }
+    ]
+  },
+  {
+    "slug": "baekhyun",
+    "channels": [{ "name": "BAEKHYUN · SMTOWN", "url": "https://www.youtube.com/@SMTOWN" }]
+  },
+  {
+    "slug": "agustd",
+    "channels": [{ "name": "Agust D · HYBE LABELS", "url": "https://www.youtube.com/@HYBELABELS" }]
+  },
+  {
+    "slug": "solar",
+    "channels": [{ "name": "Solar · MAMAMOO", "url": "https://www.youtube.com/@MAMAMOO_OFFICIAL" }]
   }
 ]
