@@ -2,13 +2,18 @@ import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { Feed } from '@/components/home/feed'
-import { SidebarRight } from '@/components/home/sidebar-right'
+import { RecentComebacksGrid } from '@/components/home/recent-comebacks-grid'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { getUpcomingEvents } from '@/lib/events/queries'
+import { getUpcomingEvents, getAllMvs } from '@/lib/events/queries'
+import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
+
+// Types « vrai comeback » mis en avant par le hero (un anniversaire ne doit pas
+// occuper la carte principale — il reste dans le feed).
+const COMEBACK_TYPES = new Set(['mv', 'release', 'music_show', 'live'])
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const supabase = await createClient()
@@ -47,39 +52,45 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
 
   const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
-  const [dbEvents, anniversaries] =
-    ids.length > 0
-      ? await Promise.all([
-          getUpcomingEvents({ groupIds: ids, types, limit: 50 }),
-          wantAnniversaries ? getUpcomingAnniversaries(ids, 90) : Promise.resolve([]),
-        ])
-      : [[], []]
-  // "Next drop" et le feed se basent sur le même flux trié (DB events +
-  // anniversaires), pour que le filtre type s'applique de manière cohérente
-  // (ex: type=anniversary → nextDrop = prochain anniversaire).
+  const [dbEvents, anniversaries, followedMvs, recentMvs] = await Promise.all([
+    ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
+    ids.length > 0 && wantAnniversaries ? getUpcomingAnniversaries(ids, 90) : Promise.resolve([]),
+    // « Valoriser la data » : grilles visuelles centrées (MV + notes).
+    ids.length > 0 ? getAllMvs({ groupIds: ids, limit: 6 }) : Promise.resolve([]),
+    getAllMvs({ limit: 6 }),
+  ])
+  const ratings = await getRatingsForEvents([...followedMvs, ...recentMvs].map((m) => m.id))
+
+  // Hero = prochain VRAI comeback (pas un anniversaire) ; le reste va au feed.
   const merged = [...dbEvents, ...anniversaries].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )
-  const nextDrop = merged[0] ?? null
-  const feedEvents = merged.slice(1)
+  const heroIdx = merged.findIndex((e) => COMEBACK_TYPES.has(e.type))
+  const nextDrop = heroIdx >= 0 ? merged[heroIdx] : null
+  const feedEvents = heroIdx >= 0 ? merged.filter((_, i) => i !== heroIdx) : merged
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
           <SidebarLeft tier={tier} />
         </aside>
         <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
-          <NextDropCard
-            event={nextDrop}
-            isAuthed
-            isFollowing={nextDrop?.group_id ? followedIds.has(nextDrop.group_id) : false}
+          {nextDrop && (
+            <NextDropCard
+              event={nextDrop}
+              isAuthed
+              isFollowing={nextDrop.group_id ? followedIds.has(nextDrop.group_id) : false}
+            />
+          )}
+          <RecentComebacksGrid
+            fromYourGroups={followedMvs}
+            recent={recentMvs}
+            ratings={ratings}
+            hasFollows={ids.length > 0}
           />
-          <Feed events={feedEvents} timeZone={timeZone} />
+          {ids.length > 0 && <Feed events={feedEvents} timeZone={timeZone} />}
         </div>
-        <aside className="order-3 shrink-0 lg:w-80">
-          <SidebarRight />
-        </aside>
       </div>
     </div>
   )
