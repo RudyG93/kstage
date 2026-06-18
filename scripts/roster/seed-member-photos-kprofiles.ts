@@ -30,8 +30,15 @@ const supabase = createClient<Database>(
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Variantes de slug kprofiles à partir du nom du groupe.
-function kpCandidates(name: string): string[] {
+// Override DB slug → base kprofiles quand le nom ne suffit pas.
+const KP_OVERRIDE: Record<string, string> = {
+  nflying: 'n-flying',
+  bts: 'bts-bangtan-boys',
+  zerobaseone: 'zb1-zerobaseone',
+}
+
+// Variantes de slug kprofiles à partir du nom du groupe (+ override éventuel).
+function kpCandidates(name: string, slug: string): string[] {
   const base = name
     .toLowerCase()
     .replace(/[''.!]/g, '')
@@ -39,12 +46,18 @@ function kpCandidates(name: string): string[] {
     .replace(/[()]/g, '')
     .trim()
     .replace(/\s+/g, '-')
-  return [
-    `${base}-members-profile`,
-    `${base}-members-profiles`,
-    `${base}-profile-and-facts`,
-    `${base}-members-profile-and-facts`,
-  ]
+  const bases = [...new Set([KP_OVERRIDE[slug], base].filter(Boolean) as string[])]
+  const out: string[] = []
+  for (const b of bases) {
+    out.push(
+      `${b}-members-profile`,
+      `${b}-members-profiles`,
+      `${b}-kpop-members-profile`,
+      `${b}-profile-and-facts`,
+      `${b}-members-profile-and-facts`,
+    )
+  }
+  return out
 }
 
 async function fetchHtml(url: string): Promise<string | null> {
@@ -71,7 +84,12 @@ function parseMembers(html: string, groupName: string): { stage: string; url: st
     .each((_, el) => {
       const tag = el.tagName?.toLowerCase()
       if (tag === 'img') {
-        const src = ($(el).attr('data-src') || $(el).attr('src') || '').trim()
+        const src = (
+          $(el).attr('data-lazy-src') ||
+          $(el).attr('data-src') ||
+          $(el).attr('src') ||
+          ''
+        ).trim()
         const file = src.split('/').pop() ?? ''
         // photo membre = upload avec dimensions WxH, hors logo/banner/nom-de-groupe
         if (
@@ -111,10 +129,8 @@ async function main() {
     if (!SLUGS.length && !ALL) continue
 
     let html: string | null = null
-    let usedUrl = ''
-    for (const cand of kpCandidates(g.name)) {
-      usedUrl = `https://kprofiles.com/${cand}/`
-      html = await fetchHtml(usedUrl)
+    for (const cand of kpCandidates(g.name, g.slug)) {
+      html = await fetchHtml(`https://kprofiles.com/${cand}/`)
       if (html) break
       await sleep(400)
     }
@@ -123,11 +139,26 @@ async function main() {
       continue
     }
     const pairs = parseMembers(html, g.name)
-    const byNorm = new Map(pairs.map((p) => [norm(p.stage), p.url]))
+    const used = new Set<number>()
+    // Résout l'URL pour un stage_name : exact d'abord, puis sous-chaîne (≥3 car.)
+    // pour absorber « U-Know Yunho »↔« Yunho », « Bang Jeemin »↔« Jeemin »…
+    const resolve = (stage: string): string | null => {
+      const n = norm(stage)
+      let idx = pairs.findIndex((p, i) => !used.has(i) && norm(p.stage) === n)
+      if (idx < 0 && n.length >= 3)
+        idx = pairs.findIndex(
+          (p, i) =>
+            !used.has(i) &&
+            (norm(p.stage).includes(n) || (norm(p.stage).length >= 3 && n.includes(norm(p.stage)))),
+        )
+      if (idx < 0) return null
+      used.add(idx)
+      return pairs[idx].url
+    }
     let updated = 0
     const unmatched: string[] = []
     for (const m of missing) {
-      const url = byNorm.get(norm(m.stage_name))
+      const url = resolve(m.stage_name)
       if (!url) {
         unmatched.push(m.stage_name)
         continue
