@@ -5,6 +5,7 @@ import {
   Bricolage_Grotesque,
   Space_Grotesk,
   Instrument_Serif,
+  Archivo,
 } from 'next/font/google'
 import Link from 'next/link'
 import { Toaster } from 'sonner'
@@ -50,6 +51,14 @@ const instrument = Instrument_Serif({
   style: ['normal', 'italic'],
 })
 
+// Data Desk : Archivo variable (axe wdth) pour les labels condensés
+// (.label-data / .label-data-inline dans globals.css — font-stretch 78-82%).
+const archivo = Archivo({
+  variable: '--font-archivo',
+  subsets: ['latin'],
+  axes: ['wdth'],
+})
+
 const SITE_URL = 'https://kstage.vercel.app'
 const SITE_DESCRIPTION = 'Your k-pop calendar — events, comebacks, and lives.'
 
@@ -75,7 +84,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0f1118',
+  themeColor: '#0B0D12',
   width: 'device-width',
   initialScale: 1,
 }
@@ -105,7 +114,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${spaceGrotesk.variable} ${instrument.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${spaceGrotesk.variable} ${instrument.variable} ${archivo.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
