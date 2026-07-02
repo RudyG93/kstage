@@ -230,25 +230,4 @@
   .shadow-soft {
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
   }
-  /* Scrollbar fine et discrète (rangées MV horizontales) : visible au survol. */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-  }
-  .scrollbar-thin:hover {
-    scrollbar-color: var(--border) transparent;
-  }
-  .scrollbar-thin::-webkit-scrollbar {
-    height: 6px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 99px;
-  }
-  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-    background: var(--border);
-  }
 }
