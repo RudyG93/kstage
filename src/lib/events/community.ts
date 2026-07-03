@@ -151,6 +151,41 @@ export async function getRecentCommunityActivity(limit = 2): Promise<CommunityAc
   })
 }
 
+export interface UserRecentRating {
+  score: number
+  createdAt: string
+  eventTitle: string
+  eventSlug: string | null
+  sourceUrl: string | null
+  groupName: string | null
+}
+
+/** Dernières notes posées par un user (§7.8.4) + sa moyenne globale. */
+export async function getUserRatings(
+  userId: string,
+  limit = 8,
+): Promise<{ recent: UserRecentRating[]; avg: number | null }> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('event_ratings')
+    .select('score, created_at, events!inner(title, slug, source_url, groups!inner(name))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  const rows = data ?? []
+  const avg = rows.length > 0 ? rows.reduce((acc, r) => acc + r.score, 0) / rows.length : null
+  return {
+    avg,
+    recent: rows.slice(0, limit).map((r) => ({
+      score: r.score,
+      createdAt: r.created_at,
+      eventTitle: r.events.title,
+      eventSlug: r.events.slug,
+      sourceUrl: r.events.source_url,
+      groupName: r.events.groups?.name ?? null,
+    })),
+  }
+}
+
 /**
  * Charge un event par son slug (route `/mv/[slug]`). Retourne null si absent.
  * Joint les infos groupe nécessaires pour la page article.
