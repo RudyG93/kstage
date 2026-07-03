@@ -19,7 +19,7 @@ import {
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
-import { getSourcesStatus } from '@/lib/sources/queries'
+import { getSourcesStatus, getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
@@ -38,12 +38,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   } = await supabase.auth.getUser()
 
   if (!user) {
-    const [groups, previewEvents, eventsCount, sourcesStatus] = await Promise.all([
-      getGroupsCached(),
-      getUpcomingEvents({ limit: 4 }),
-      getEventsCount(),
-      getSourcesStatus(),
-    ])
+    const [groups, previewEvents, eventsCount, sourcesStatus, subscriberCounts] = await Promise.all(
+      [
+        getGroupsCached(),
+        getUpcomingEvents({ limit: 4 }),
+        getEventsCount(),
+        getSourcesStatus(),
+        getGroupSubscriberCounts(),
+      ],
+    )
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <Landing
@@ -51,6 +54,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
           previewEvents={previewEvents}
           eventsCount={eventsCount}
           sourcesStatus={sourcesStatus}
+          subscriberCounts={subscriberCounts}
         />
       </div>
     )

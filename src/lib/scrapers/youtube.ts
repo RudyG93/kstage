@@ -25,7 +25,7 @@ export class QuotaExceededError extends Error {
   }
 }
 
-interface UploadItem {
+export interface UploadItem {
   videoId: string
   title: string // décodé (entities HTML, cf. §3.1)
   description: string // décodé
@@ -33,7 +33,7 @@ interface UploadItem {
   thumbnailUrl: string | null
 }
 
-interface VideoDetails {
+export interface VideoDetails {
   liveBroadcastContent: 'none' | 'live' | 'upcoming'
   scheduledStartTime: string | null
   /** Durée en secondes (contentDetails.duration) — null si inconnue (premiere pas encore diffusée). */
@@ -151,7 +151,7 @@ async function ytFetch(url: string): Promise<unknown> {
   return res.json()
 }
 
-interface ChannelMeta {
+export interface ChannelMeta {
   channelId: string
   uploadsPlaylistId: string
   subscriberCount: number | null
@@ -163,7 +163,7 @@ interface ChannelMeta {
  * la chaîne, triées récentes d'abord) et le subscriberCount — notre critère de
  * popularité de remplacement (spotify_followers est inalimentable).
  */
-async function resolveChannel(channelUrl: string, apiKey: string): Promise<ChannelMeta> {
+export async function resolveChannel(channelUrl: string, apiKey: string): Promise<ChannelMeta> {
   const direct = channelUrl.match(/\/channel\/(UC[\w-]+)/)?.[1]
   const handle = channelUrl.match(/@[\w.-]+/)?.[0]
   if (!direct && !handle) throw new Error(`Cannot parse channel URL: ${channelUrl}`)
@@ -192,7 +192,7 @@ async function resolveChannel(channelUrl: string, apiKey: string): Promise<Chann
 }
 
 /** playlistItems.list (1 unit) : une page de 50 uploads, plus récents d'abord. */
-async function fetchUploadsPage(
+export async function fetchUploadsPage(
   playlistId: string,
   apiKey: string,
   pageToken?: string,
@@ -233,7 +233,7 @@ async function fetchUploadsPage(
 }
 
 /** videos.list (1 unit / 50 ids) : détails premiere des seuls candidats MV. */
-async function fetchVideoDetails(
+export async function fetchVideoDetails(
   videoIds: string[],
   apiKey: string,
 ): Promise<{ details: Map<string, VideoDetails>; calls: number }> {

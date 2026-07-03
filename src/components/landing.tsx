@@ -41,15 +41,22 @@ export function Landing({
   previewEvents,
   eventsCount,
   sourcesStatus,
+  subscriberCounts,
 }: {
   groups: GroupSummary[]
   previewEvents: UpcomingEvent[]
   eventsCount: number
   sourcesStatus: SourcesStatus | null
+  /** Popularité (max subs YouTube par groupe) — tri du mur visuel. */
+  subscriberCounts?: Map<string, number>
 }) {
   const nextDrop = previewEvents[0] ?? null
   const previewRows = previewEvents.slice(1, 4)
-  const wallGroups = groups.filter((g) => g.image_url).slice(0, WALL_COUNT)
+  // Mur trié par notoriété (subs YouTube) : les visages les plus connus d'abord.
+  const wallGroups = groups
+    .filter((g) => g.image_url)
+    .sort((a, b) => (subscriberCounts?.get(b.id) ?? 0) - (subscriberCounts?.get(a.id) ?? 0))
+    .slice(0, WALL_COUNT)
   const remaining = Math.max(0, groups.length - wallGroups.length)
 
   return (
@@ -64,9 +71,10 @@ export function Landing({
         }}
       />
 
-      {/* Badge + H1 + sous-titre */}
-      <section className="relative">
-        <p className="flex items-center gap-2">
+      {/* Badge + H1 + sous-titre — centré dès sm (le bloc justifié à gauche
+          tranchait avec le halo, retour Rudy) ; gauche sur petits écrans. */}
+      <section className="relative sm:text-center">
+        <p className="flex items-center gap-2 sm:justify-center">
           <span className="bg-teal animate-upcoming-pulse size-[6px] rounded-full" aria-hidden />
           <span className="label-data-inline text-teal text-[9px] tracking-[0.2em]">
             {compact(eventsCount)}+ events tracked live
@@ -76,7 +84,7 @@ export function Landing({
           Never miss a<br />
           comeback <span className="text-primary font-serif font-normal italic">again.</span>
         </h1>
-        <p className="text-muted-foreground mt-3 max-w-[310px] text-[12.5px] leading-relaxed">
+        <p className="text-muted-foreground mt-3 max-w-[310px] text-[12.5px] leading-relaxed sm:mx-auto">
           The personal calendar for k-pop fans. Follow your groups and get notified the moment
           something drops — wherever you are.
         </p>
@@ -122,7 +130,7 @@ export function Landing({
                 key={g.id}
                 href={`/groups/${g.slug}`}
                 aria-label={g.name}
-                className="focus-visible:ring-ring/50 relative aspect-square overflow-hidden rounded-[10px] outline-none focus-visible:ring-2"
+                className="focus-visible:ring-ring/50 group relative aspect-square overflow-hidden rounded-[10px] outline-none focus-visible:ring-2"
               >
                 <Image
                   src={faceCrop(g.image_url!, 400, 400)}
@@ -130,9 +138,19 @@ export function Landing({
                   fill
                   unoptimized
                   sizes="(min-width: 640px) 25vw, 33vw"
-                  className="object-cover transition-transform duration-300 hover:scale-105"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   aria-hidden
                 />
+                {/* Nom sobre mais lisible : scrim bas léger + petit label. */}
+                <span
+                  className="pointer-events-none absolute inset-x-0 bottom-0 px-1.5 pt-5 pb-1"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, transparent, color-mix(in srgb, var(--page) 78%, transparent))',
+                  }}
+                >
+                  <span className="block truncate text-[10px] font-semibold">{g.name}</span>
+                </span>
               </Link>
             ))}
             {remaining > 0 && (

@@ -72,13 +72,6 @@ export function GroupFilter({
   // vit à plat dans la sidebar (recherche + checkboxes + actions visibles).
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline justify-between">
-        <span className="text-muted-foreground text-xs font-medium">
-          {selected.size > 0
-            ? `${selected.size} group${selected.size > 1 ? 's' : ''} selected`
-            : 'All groups'}
-        </span>
-      </div>
       <input
         type="text"
         value={q}

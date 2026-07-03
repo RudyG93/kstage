@@ -5,6 +5,7 @@ import type { Database } from '@/types/database'
 import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
 import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
+import { enrichStageLinks } from '@/lib/scrapers/music-shows/stage-links'
 import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
@@ -123,6 +124,21 @@ export async function GET(req: Request) {
     }
   }
 
+  // Phase 2 — stage links (2026-07-03) : remplace le source_url carrd des
+  // events diffusés récemment par la vidéo YouTube du passage (chaînes des
+  // diffuseurs vérifiées). Best-effort : un échec ne bloque pas l'ingestion.
+  let stageLinks: Awaited<ReturnType<typeof enrichStageLinks>> | { error: string } = {
+    error: 'YOUTUBE_API_KEY missing',
+  }
+  const ytKey = process.env.YOUTUBE_API_KEY
+  if (ytKey) {
+    try {
+      stageLinks = await enrichStageLinks(supabase, ytKey)
+    } catch (e) {
+      stageLinks = { error: e instanceof Error ? e.message : String(e) }
+    }
+  }
+
   // P0.3 observabilité (SCRAPING.md §6) : statut explicite + ligne scrape_log,
   // 500 si primary ET les 6 fallbacks n'ont rien donné (avant : 200 {ok:true}
   // avec lineups_fetched:0, et last_scraped_at rafraîchi quand même).
@@ -147,6 +163,7 @@ export async function GET(req: Request) {
     unmatched_count: unmatched.length,
     unmatched_sample: unmatched.slice(0, 20),
     by_show: byShow,
+    stage_links: stageLinks,
   }
 
   await logScrapeRun(supabase, {
