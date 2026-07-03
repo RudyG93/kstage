@@ -82,6 +82,67 @@ export async function getLikeSummary(
   return { liked: Boolean(mine.data), count: count ?? 0 }
 }
 
+export interface CommunityActivityItem {
+  username: string | null
+  avatarUrl: string | null
+  eventTitle: string
+  eventSlug: string | null
+  groupName: string | null
+  score: number | null // note de l'auteur sur cet event, si posée
+  body: string
+  createdAt: string
+}
+
+/**
+ * Derniers commentaires pour le strip communauté de la home (Data Desk §7.1.7).
+ * Pas de FK directe comments→profiles → requêtes séparées (cf. PGRST200).
+ */
+export async function getRecentCommunityActivity(limit = 2): Promise<CommunityActivityItem[]> {
+  const supabase = await createClient()
+  const { data: comments } = await supabase
+    .from('comments')
+    .select('event_id, user_id, body, created_at')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (!comments || comments.length === 0) return []
+
+  const userIds = [...new Set(comments.map((c) => c.user_id))]
+  const eventIds = [...new Set(comments.map((c) => c.event_id))]
+  const [profilesRes, eventsRes, ratingsRes] = await Promise.all([
+    supabase.from('profiles').select('id, username, avatar_url').in('id', userIds),
+    supabase.from('events').select('id, title, slug, groups!inner(name)').in('id', eventIds),
+    supabase
+      .from('event_ratings')
+      .select('event_id, user_id, score')
+      .in('event_id', eventIds)
+      .in('user_id', userIds),
+  ])
+  const profileById = new Map((profilesRes.data ?? []).map((p) => [p.id, p]))
+  const eventById = new Map((eventsRes.data ?? []).map((e) => [e.id, e]))
+  const scoreByKey = new Map(
+    (ratingsRes.data ?? []).map((r) => [`${r.event_id}:${r.user_id}`, r.score]),
+  )
+
+  return comments.flatMap((c) => {
+    const event = eventById.get(c.event_id)
+    if (!event) return []
+    const profile = profileById.get(c.user_id)
+    return [
+      {
+        username: profile?.username ?? null,
+        avatarUrl: profile?.avatar_url ?? null,
+        eventTitle: event.title,
+        eventSlug: event.slug,
+        groupName: event.groups?.name ?? null,
+        score: scoreByKey.get(`${c.event_id}:${c.user_id}`) ?? null,
+        body: c.body,
+        createdAt: c.created_at,
+      },
+    ]
+  })
+}
+
 /**
  * Charge un event par son slug (route `/mv/[slug]`). Retourne null si absent.
  * Joint les infos groupe nécessaires pour la page article.

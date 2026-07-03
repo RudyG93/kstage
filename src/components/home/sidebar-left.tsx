@@ -9,7 +9,6 @@ import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import { getProfile } from '@/lib/profiles/queries'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
-import { TypeFilterVertical } from './type-filter-vertical'
 
 // Cap d'affichage des groupes suivis pour les comptes free. Premium = illimité.
 const FREE_VISIBLE_FOLLOWS = 10
@@ -56,20 +55,20 @@ export async function SidebarLeft({
 
   return (
     <div className="space-y-6 lg:sticky lg:top-20">
-      {showFilters && (
-        <section className="bg-card border-border shadow-soft rounded-xl border p-4">
+      {showFilters && groupFilter && (
+        <section className="bg-card rounded-[10px] border p-4">
           <div className="mb-3">
-            <span className="text-faint text-xs font-semibold">Filters</span>
+            <span className="label-data">Filters</span>
           </div>
-          {/* Filtre groupe/artiste (Calendar) au-dessus du filtre de type. */}
-          {groupFilter && <div className="mb-3">{groupFilter}</div>}
-          <TypeFilterVertical />
+          {/* Filtre groupe/artiste (Calendar). Le filtre de type vit désormais
+              dans les chips de la page Calendar (Data Desk §7.2). */}
+          {groupFilter}
         </section>
       )}
 
       <section className="bg-card border-border shadow-soft rounded-xl border p-4">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-faint text-xs font-semibold">My groups</span>
+          <span className="label-data">My groups</span>
           <Link href="/groups" className="text-muted-foreground hover:text-foreground text-xs">
             manage
           </Link>
