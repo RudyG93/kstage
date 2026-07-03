@@ -5,6 +5,8 @@ export interface RatingSummary {
   avg: number | null // moyenne /10, null si aucun vote
   count: number
   userScore: number | null // ton score si connecté+voté, null sinon
+  scores: number[] // toutes les notes (histogramme de distribution §7.7)
+  scoreByUser: Record<string, number> // note par user (badge auteur dans les commentaires)
 }
 
 /**
@@ -28,7 +30,13 @@ export async function getEventRatingSummary(eventId: string): Promise<RatingSumm
   const avg = count === 0 ? null : rows.reduce((acc, r) => acc + r.score, 0) / count
   const userScore = user ? (rows.find((r) => r.user_id === user.id)?.score ?? null) : null
 
-  return { avg, count, userScore }
+  return {
+    avg,
+    count,
+    userScore,
+    scores: rows.map((r) => r.score),
+    scoreByUser: Object.fromEntries(rows.map((r) => [r.user_id, r.score])),
+  }
 }
 
 /**

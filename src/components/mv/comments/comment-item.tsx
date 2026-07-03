@@ -26,6 +26,8 @@ interface Props {
   viewerId: string | null
   isAuthed: boolean
   depth?: number
+  // Note posée par chaque auteur sur cet event → badge amber (§7.7.4).
+  ratingsByUser?: Record<string, number>
 }
 
 const REPLY_LIMIT = 5
@@ -42,7 +44,16 @@ const relTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0 }: Props) {
+export function CommentItem({
+  node,
+  eventId,
+  slug,
+  viewerId,
+  isAuthed,
+  depth = 0,
+  ratingsByUser = {},
+}: Props) {
+  const authorScore = ratingsByUser[node.user_id]
   const [showReply, setShowReply] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -99,7 +110,7 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
             className="group/rail flex w-3 shrink-0 cursor-pointer justify-center"
           >
             <span
-              className="bg-border/70 group-hover/rail:bg-primary w-px rounded-full transition-colors"
+              className="bg-primary/35 group-hover/rail:bg-primary w-[2px] rounded-full transition-colors"
               aria-hidden
             />
           </button>
@@ -118,6 +129,14 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
               <span className="text-foreground flex items-center gap-1.5 font-medium">
                 <Avatar username={author} avatarUrl={null} size={20} />
                 {author}
+              </span>
+            )}
+            {authorScore !== undefined && !isDeleted && (
+              <span
+                className="tabular bg-amber/15 text-amber rounded-[4px] px-1 py-0.5 text-[10px] font-bold"
+                title={`Rated this drop ${authorScore}/10`}
+              >
+                {authorScore}
               </span>
             )}
             <span aria-hidden>·</span>
@@ -203,6 +222,7 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
                   viewerId={viewerId}
                   isAuthed={isAuthed}
                   depth={depth + 1}
+                  ratingsByUser={ratingsByUser}
                 />
               ))}
               {!showAllReplies && childCount > REPLY_LIMIT && (

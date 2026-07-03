@@ -60,7 +60,7 @@ export function VoteButtons({ commentId, slug, initialScore, initialUserVote, is
         aria-label="Upvote"
         className={cn(
           'focus-visible:ring-primary/50 rounded p-1 outline-none focus-visible:ring-2',
-          opt.userVote === 1 ? 'text-primary' : 'hover:text-foreground',
+          opt.userVote === 1 ? 'text-teal' : 'hover:text-foreground',
           !isAuthed && 'cursor-not-allowed opacity-60',
         )}
       >

@@ -12,33 +12,28 @@ interface Props {
   viewerId: string | null
   roots: CommentNode[]
   sort: SortMode
+  // Note posée par chaque auteur sur CET event → badge amber (§7.7.4).
+  ratingsByUser?: Record<string, number>
 }
 
-export function CommentSection({ eventId, slug, isAuthed, viewerId, roots, sort }: Props) {
+export function CommentSection({
+  eventId,
+  slug,
+  isAuthed,
+  viewerId,
+  roots,
+  sort,
+  ratingsByUser = {},
+}: Props) {
   const count = countVisible(roots)
   return (
-    <section
-      id="comments"
-      aria-labelledby="comments-heading"
-      className="scroll-mt-6 space-y-4 border-t pt-6"
-    >
+    <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="comments-heading" className="text-sm font-medium">
-          Comments ({count})
+        <h2 id="comments-heading" className="label-data">
+          Discussion — {count}
         </h2>
         <SortToggle slug={slug} sort={sort} />
       </div>
-
-      {isAuthed ? (
-        <CommentCompose eventId={eventId} slug={slug} />
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          <Link href="/login" className="text-primary underline-offset-2 hover:underline">
-            Sign in
-          </Link>{' '}
-          to comment.
-        </p>
-      )}
 
       {roots.length === 0 ? (
         <EmptyState
@@ -55,9 +50,24 @@ export function CommentSection({ eventId, slug, isAuthed, viewerId, roots, sort 
               slug={slug}
               viewerId={viewerId}
               isAuthed={isAuthed}
+              ratingsByUser={ratingsByUser}
             />
           ))}
         </div>
+      )}
+
+      {/* Composer en pied de discussion (§7.7.4). */}
+      {isAuthed ? (
+        <div className="border-t pt-3">
+          <CommentCompose eventId={eventId} slug={slug} placeholder="Join the discussion…" />
+        </div>
+      ) : (
+        <p className="text-muted-foreground border-t pt-3 text-sm">
+          <Link href="/login" className="text-primary underline-offset-2 hover:underline">
+            Sign in
+          </Link>{' '}
+          to join the discussion.
+        </p>
       )}
     </section>
   )
