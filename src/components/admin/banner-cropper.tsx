@@ -93,7 +93,7 @@ export function BannerCropper({
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               aria-label="Zoom"
-              className="flex-1 accent-[#5b5bf0] dark:accent-[#8785ff]"
+              className="accent-primary flex-1"
             />
           </div>
           {error && (
