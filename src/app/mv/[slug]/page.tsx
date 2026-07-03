@@ -88,7 +88,7 @@ export default async function MvPage({
   const filledStars = rating.avg !== null ? Math.round(rating.avg / 2) : 0
 
   return (
-    <div className="mx-auto w-full max-w-3xl md:px-4 md:py-6">
+    <div className="mx-auto w-full max-w-4xl md:px-4 md:py-6">
       <div className="space-y-3">
         {/* Player full-bleed sur mobile + back flottant (§7.7.1). */}
         <div className="relative">

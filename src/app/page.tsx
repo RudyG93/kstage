@@ -1,20 +1,26 @@
 import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
+import { SidebarRight } from '@/components/home/sidebar-right'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { WeekGlance } from '@/components/home/week-glance'
 import { FreshDrops } from '@/components/home/fresh-drops'
-import { CommunityStrip } from '@/components/home/community-strip'
 import { QueueRow } from '@/components/events/queue-row'
 import { Ticker } from '@/components/ticker'
-import { StatusFooter } from '@/components/status-footer'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { getUpcomingEvents, getAllMvs, getEventsCount, type MvEvent } from '@/lib/events/queries'
-import { getRatingsForEvents, getRecentCommunityActivity } from '@/lib/events/community'
+import {
+  getUpcomingEvents,
+  getAllMvs,
+  getGroupMvs,
+  getEventsCount,
+  type MvEvent,
+} from '@/lib/events/queries'
+import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus } from '@/lib/sources/queries'
-import { buildTickerItems } from '@/lib/events/ticker'
+import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
 
@@ -22,8 +28,9 @@ import { createClient } from '@/lib/supabase/server'
 // occuper la carte principale — il reste dans la queue).
 const COMEBACK_TYPES = new Set(['mv', 'release', 'music_show', 'live'])
 
-// Home Data Desk (§7.1) : ticker → hero NEXT UP → UPCOMING QUEUE → THIS WEEK →
-// FRESH DROPS → community strip → footer statut.
+// Home Data Desk : ticker global → hero NEXT UP → UPCOMING QUEUE → THIS WEEK →
+// FRESH DROPS, avec les sidebars My groups (gauche) et Recent comebacks /
+// discussions (droite).
 export default async function Home({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const supabase = await createClient()
   const {
@@ -38,7 +45,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
       getSourcesStatus(),
     ])
     return (
-      <div className="mx-auto w-full max-w-xl px-4 py-6">
+      <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <Landing
           groups={groups}
           previewEvents={previewEvents}
@@ -63,16 +70,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
 
   const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
-  const [dbEvents, anniversaries, followedMvs, recentMvs, community, sourcesStatus, globalEvents] =
+  const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
     await Promise.all([
       ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
       ids.length > 0 && wantAnniversaries ? getUpcomingAnniversaries(ids, 90) : Promise.resolve([]),
       ids.length > 0 ? getAllMvs({ groupIds: ids, limit: 4 }) : Promise.resolve([]),
       getAllMvs({ limit: 4 }),
-      getRecentCommunityActivity(2),
-      getSourcesStatus(),
-      // Repli ticker/queue quand l'user ne suit rien : le flux global.
-      ids.length > 0 ? Promise.resolve([]) : getUpcomingEvents({ limit: 12 }),
+      // Ticker : annonces globales « qui tapent » (tous types, suivi ou non).
+      getUpcomingEvents({ limit: 40 }),
+      supabase.rpc('group_follow_counts'),
     ])
 
   // Fresh drops : les MVs des groupes suivis d'abord, complétés au global (4 max).
@@ -89,17 +95,31 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   )
   const heroIdx = merged.findIndex((e) => COMEBACK_TYPES.has(e.type))
   const nextDrop = heroIdx >= 0 ? merged[heroIdx] : null
+
+  // Fond du hero : thumbnail maxres du DERNIER MV du groupe du hero — le
+  // visuel le plus frais (les banners/landscapes seedés datent, ex. fanart
+  // aespa 2021). Une petite query dédiée : followedMvs (limit 4) ne contient
+  // pas forcément ce groupe.
+  let heroMvImage: string | null = null
+  if (nextDrop?.groups?.slug) {
+    const [latestMv] = await getGroupMvs(nextDrop.groups.slug, 1)
+    const videoId = latestMv ? extractYouTubeId(latestMv.source_url) : null
+    heroMvImage = videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null
+  }
   const queueSource = merged.length > 0 ? merged : globalEvents
   const queueEvents = (heroIdx >= 0 ? merged.filter((_, i) => i !== heroIdx) : queueSource).slice(
     0,
     8,
   )
-  const tickerItems = buildTickerItems(merged.length > 0 ? merged : globalEvents)
+
+  // Ticker global : un event par groupe, groupes les plus suivis d'abord.
+  const followCounts = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
+  const tickerItems = buildTickerItems(pickTickerEvents(globalEvents, followCounts, 8))
 
   return (
     <>
       <Ticker items={tickerItems} />
-      <div className="mx-auto w-full max-w-5xl px-3 py-4 md:px-4 md:py-6">
+      <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
             <SidebarLeft tier={tier} showFilters={false} />
@@ -110,6 +130,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
                 event={nextDrop}
                 isAuthed
                 isFollowing={nextDrop.group_id ? followedIds.has(nextDrop.group_id) : false}
+                latestMvImage={heroMvImage}
               />
             )}
             {queueEvents.length > 0 && (
@@ -127,9 +148,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
             )}
             <WeekGlance events={merged.length > 0 ? merged : globalEvents} timeZone={timeZone} />
             <FreshDrops mvs={freshMvs} ratings={ratings} />
-            <CommunityStrip items={community} />
-            <StatusFooter status={sourcesStatus} />
           </div>
+          {/* Recent comebacks + Recent discussions (retour Rudy 2026-07-03) :
+              sidebar en desktop, sections empilées sous le centre en mobile. */}
+          <aside className="order-3 shrink-0 lg:w-80">
+            <SidebarRight />
+          </aside>
         </div>
       </div>
     </>

@@ -27,10 +27,9 @@ export function MvChart({ items, scope }: { items: TopRatedItem[]; scope: 'week'
   if (items.length === 0) return null
   return (
     <Panel>
-      <PanelHeader
-        label={scope === 'week' ? 'Top rated — this week' : 'Top rated — all time'}
-        action={{ label: 'All MVs', href: '/mvs' }}
-      />
+      {/* Pas d'action : le chart vit sur /mvs — un lien « All MVs » vers la
+          même page était un self-link mort (retour Rudy 2026-07-03). */}
+      <PanelHeader label={scope === 'week' ? 'Top rated — this week' : 'Top rated — all time'} />
       <ol>
         {items.map((item, i) => (
           <li key={item.eventId} className="border-b last:border-b-0">

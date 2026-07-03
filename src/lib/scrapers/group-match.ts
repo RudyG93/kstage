@@ -13,6 +13,17 @@ export function normalize(s: string): string {
 // (le « of BTS » du crédit contient « bts ») — faux positif vu au backfill P0.5.
 const FEATURING_RE = /[([]\s*(?:feat|ft|with|prod)\b[^)\]]*[)\]]/gi
 
+// Hashtags de fin de titre : sur les chaînes de label partagées, ils citent la
+// COMPAGNIE ou d'autres artistes maison (« 유아유(UAU) 'GENE' MV … #Dreamcatcher_UAU »
+// attribuait un MV de UAU à Dreamcatcher — audit prod 2026-07-03). Convention
+// k-pop : l'artiste interprète figure dans le titre éditorial, pas en hashtag.
+const HASHTAG_RE = /#[^\s#]+/g
+
+/** Retire les hashtags d'un titre (avant group-match). */
+export function stripHashtags(s: string): string {
+  return s.replace(HASHTAG_RE, ' ')
+}
+
 /**
  * Vérifie qu'un texte (titre vidéo) mentionne le groupe ciblé.
  * Comparaison après normalisation, donc tolérante aux variantes typographiques
@@ -26,5 +37,12 @@ export function matchesGroup(text: string, groupName: string | null | undefined)
   if (!groupName) return false
   const needle = normalize(groupName)
   if (!needle) return false
-  return normalize(text.replace(FEATURING_RE, ' ')).includes(needle)
+  // 1) Titre éditorial (hashtags retirés, crédits feat. ignorés).
+  if (normalize(stripHashtags(text).replace(FEATURING_RE, ' ')).includes(needle)) return true
+  // 2) Repli : un hashtag STRICTEMENT égal au nom du groupe compte (certaines
+  //    chaînes officielles titrent « #ENHYPEN 'Knife' Official MV »). L'égalité
+  //    est exacte, pas une inclusion : « #Dreamcatcher_UAU » ne matche PAS
+  //    Dreamcatcher (c'est le tag maison d'un autre artiste du label).
+  const hashtags = text.match(HASHTAG_RE) ?? []
+  return hashtags.some((h) => normalize(h) === needle)
 }

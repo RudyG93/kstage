@@ -115,7 +115,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   ].filter(Boolean)
 
   return (
-    <div className="mx-auto w-full max-w-2xl md:px-4 md:py-6">
+    <div className="mx-auto w-full max-w-3xl md:px-4 md:py-6">
       <div className="space-y-3">
         <ArtistHero
           name={group.name}

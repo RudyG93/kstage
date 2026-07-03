@@ -428,6 +428,36 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          page: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          page?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          page?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           agency: string | null

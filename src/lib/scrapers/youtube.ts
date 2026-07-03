@@ -36,6 +36,28 @@ interface UploadItem {
 interface VideoDetails {
   liveBroadcastContent: 'none' | 'live' | 'upcoming'
   scheduledStartTime: string | null
+  /** Durée en secondes (contentDetails.duration) — null si inconnue (premiere pas encore diffusée). */
+  durationSec: number | null
+}
+
+// Un vrai MV dure ≥ 75 s : en dessous c'est un teaser/short/extrait, même si le
+// titre a passé les gates (audit prod 2026-07-03 : teasers 30 s ingérés faute
+// de durée connue). Les premieres à venir n'ont pas de durée → gate inapplicable
+// (rattrapées par le re-scan du catalogue une fois diffusées).
+export const MIN_MV_DURATION_SEC = 75
+
+/**
+ * Parse une durée ISO-8601 YouTube (« PT3M12S », « PT45S », « P0D ») en
+ * secondes. Renvoie null si illisible ou nulle (« P0D » = premiere à venir).
+ */
+export function parseIsoDuration(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const m = iso.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/)
+  if (!m) return null
+  const [, d, h, min, s] = m
+  const total =
+    (Number(d) || 0) * 86_400 + (Number(h) || 0) * 3600 + (Number(min) || 0) * 60 + (Number(s) || 0)
+  return total > 0 ? total : null
 }
 
 interface ScrapeResult {
@@ -221,12 +243,13 @@ async function fetchVideoDetails(
     const chunk = videoIds.slice(i, i + 50)
     calls++
     const data = (await ytFetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails` +
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails` +
         `&id=${chunk.join(',')}&key=${apiKey}`,
     )) as {
       items?: {
         id: string
         snippet?: { liveBroadcastContent?: string }
+        contentDetails?: { duration?: string }
         liveStreamingDetails?: { scheduledStartTime?: string }
       }[]
     }
@@ -237,6 +260,7 @@ async function fetchVideoDetails(
           | 'live'
           | 'upcoming',
         scheduledStartTime: v.liveStreamingDetails?.scheduledStartTime ?? null,
+        durationSec: parseIsoDuration(v.contentDetails?.duration),
       })
     }
   }
@@ -381,6 +405,21 @@ export async function scrapeGroup(
     }
 
     const details = videoDetails.get(item.videoId)
+
+    // Gate durée (audit 2026-07-03) : un « MV » de moins de 75 s est un
+    // teaser/short/extrait — le titre seul ne suffit pas. Les premieres à
+    // venir n'ont pas encore de durée (P0D) → non gatées ici.
+    if (
+      details &&
+      details.liveBroadcastContent === 'none' &&
+      details.durationSec !== null &&
+      details.durationSec < MIN_MV_DURATION_SEC
+    ) {
+      console.warn(`[yt] skip too-short MV (${details.durationSec}s): ${item.title}`)
+      skipped++
+      continue
+    }
+
     const startAt = pickStartAt(details, item.publishedAt)
     if (!startAt) {
       // Vidéo privée/dégénérée sans aucune date exploitable.

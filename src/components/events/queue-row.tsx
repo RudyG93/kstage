@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Countdown } from '@/components/home/countdown'
 import { formatDDay, kstTime24h } from '@/lib/events/date'
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -60,7 +60,7 @@ export function QueueRow({
         ))}
       <span
         className="label-data-inline shrink-0 rounded-[6px] px-1.5 py-1 text-[8px]"
-        style={{ color, backgroundColor: `${color}1f` }}
+        style={{ color, backgroundColor: eventTypeTint(color) }}
       >
         {EVENT_TYPE_LABELS[event.type]}
       </span>

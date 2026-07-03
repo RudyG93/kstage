@@ -38,30 +38,52 @@ export function AuthMenu({
 
   return (
     <DropdownMenu>
+      {/* Trigger en flex : sans ça l'avatar inline garde un offset de baseline
+          et le menu ne s'aligne pas exactement sous lui. */}
       <DropdownMenuTrigger
         render={
           <button
             type="button"
             aria-label="Account menu"
-            className="focus-visible:ring-ring/50 rounded-full outline-none focus-visible:ring-3"
+            className="focus-visible:ring-ring/50 flex rounded-full outline-none focus-visible:ring-2"
           />
         }
       >
         <Avatar email={email} username={username ?? undefined} avatarUrl={avatarUrl} size={32} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8}>
-        <DropdownMenuItem render={<Link href={username ? `/u/${username}` : '/account'} />}>
-          <User className="size-4" />
+      {/* Panneau Data Desk : card + hairline + rayon 10, items compacts. */}
+      <DropdownMenuContent
+        align="end"
+        sideOffset={6}
+        className="bg-card min-w-48 rounded-[10px] border p-1 shadow-lg"
+      >
+        {username && (
+          <div className="border-b px-2.5 pt-1.5 pb-2">
+            <p className="truncate text-xs font-semibold">{username}</p>
+            <p className="text-faint truncate text-[10px]">{email}</p>
+          </div>
+        )}
+        <DropdownMenuItem
+          className="gap-2 rounded-[7px] px-2.5 py-2 text-xs"
+          render={<Link href={username ? `/u/${username}` : '/account'} />}
+        >
+          <User className="text-muted-foreground size-3.5" />
           My profile
         </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/account" />}>
-          <Settings className="size-4" />
+        <DropdownMenuItem
+          className="gap-2 rounded-[7px] px-2.5 py-2 text-xs"
+          render={<Link href="/account" />}
+        >
+          <Settings className="text-muted-foreground size-3.5" />
           Account settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <form action={signOut} className="contents">
-          <DropdownMenuItem render={<button type="submit" />}>
-            <LogOut className="size-4" />
+          <DropdownMenuItem
+            className="text-rose gap-2 rounded-[7px] px-2.5 py-2 text-xs"
+            render={<button type="submit" />}
+          >
+            <LogOut className="size-3.5" />
             Sign out
           </DropdownMenuItem>
         </form>

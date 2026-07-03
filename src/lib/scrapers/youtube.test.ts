@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { detectEventType, normalizeMvTitle, pickStartAt } from './youtube'
+import {
+  detectEventType,
+  normalizeMvTitle,
+  pickStartAt,
+  parseIsoDuration,
+  MIN_MV_DURATION_SEC,
+} from './youtube'
 
 describe('detectEventType', () => {
   it('détecte mv', () => {
@@ -182,29 +188,64 @@ describe('pickStartAt', () => {
 
   it('premiere programmée (upcoming) → scheduledStartTime', () => {
     expect(
-      pickStartAt({ liveBroadcastContent: 'upcoming', scheduledStartTime: scheduled }, published),
+      pickStartAt(
+        { liveBroadcastContent: 'upcoming', scheduledStartTime: scheduled, durationSec: null },
+        published,
+      ),
     ).toBe(scheduled)
   })
 
   it('premiere en cours (live) → scheduledStartTime', () => {
     expect(
-      pickStartAt({ liveBroadcastContent: 'live', scheduledStartTime: scheduled }, published),
+      pickStartAt(
+        { liveBroadcastContent: 'live', scheduledStartTime: scheduled, durationSec: null },
+        published,
+      ),
     ).toBe(scheduled)
   })
 
   it('vidéo publiée (none) → publishedAt, même si scheduledStartTime traîne', () => {
     expect(
-      pickStartAt({ liveBroadcastContent: 'none', scheduledStartTime: scheduled }, published),
+      pickStartAt(
+        { liveBroadcastContent: 'none', scheduledStartTime: scheduled, durationSec: null },
+        published,
+      ),
     ).toBe(published)
   })
 
   it('upcoming sans scheduledStartTime → fallback publishedAt', () => {
     expect(
-      pickStartAt({ liveBroadcastContent: 'upcoming', scheduledStartTime: null }, published),
+      pickStartAt(
+        { liveBroadcastContent: 'upcoming', scheduledStartTime: null, durationSec: null },
+        published,
+      ),
     ).toBe(published)
   })
 
   it('détails absents (videos.list incomplet) → publishedAt', () => {
     expect(pickStartAt(undefined, published)).toBe(published)
+  })
+})
+
+describe('parseIsoDuration (gate durée, audit prod 2026-07-03)', () => {
+  it('parse les formats YouTube courants', () => {
+    expect(parseIsoDuration('PT30S')).toBe(30)
+    expect(parseIsoDuration('PT3M12S')).toBe(192)
+    expect(parseIsoDuration('PT1H2M3S')).toBe(3723)
+    expect(parseIsoDuration('PT4M')).toBe(240)
+  })
+
+  it('renvoie null pour une premiere pas encore diffusée ou un format illisible', () => {
+    expect(parseIsoDuration('P0D')).toBe(null)
+    expect(parseIsoDuration('')).toBe(null)
+    expect(parseIsoDuration(null)).toBe(null)
+    expect(parseIsoDuration(undefined)).toBe(null)
+    expect(parseIsoDuration('garbage')).toBe(null)
+  })
+
+  it('le seuil MV rejette les teasers et garde les clips', () => {
+    expect(parseIsoDuration('PT30S')! < MIN_MV_DURATION_SEC).toBe(true) // teaser 30 s
+    expect(parseIsoDuration('PT1M10S')! < MIN_MV_DURATION_SEC).toBe(true) // extrait 70 s
+    expect(parseIsoDuration('PT2M55S')! >= MIN_MV_DURATION_SEC).toBe(true) // vrai MV
   })
 })
