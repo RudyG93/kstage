@@ -43,6 +43,24 @@ describe('isOfficialMvTitle', () => {
     ["'SUGAR HONEY ICE TEA' M/V OUT NOW", 'blacklist:out now'],
     // Making-of du tournage (BANGTANTV) — dérivé, pas le MV.
     ["진 (Jin) 'Running Wild' MV Shoot Sketch - BTS (방탄소년단)", 'blacklist:shoot sketch'],
+    // ---- Audit prod 2026-07-03 : titres RÉELS passés en mv_kind='main'. ----
+    // « MV촬영 » = tournage du clip (ASTRO, NCT WISH, tripleS, ITZY, Solar, BtoB).
+    ['재밌었던 유정이 MV촬영 #엠제이 #MJ #아스트로 #ASTRO', 'blacklist:filming'],
+    ['tripleS ∞! 오늘 MV 촬영 시작 #tripleS #트리플에스', 'blacklist:filming'],
+    // « M/V BTS » / « MV bts » = behind-the-scenes (RIIZE, ASTRO, Jay Park, ILLIT).
+    ["'Some Things Never Change M/V BTS #ZOONIZINI #아스트로 #ASTRO", 'blacklist:mv behind'],
+    ['Fame MV bts 1 #RIIZE #라이즈#RISEandREALIZE #Fame', 'blacklist:mv behind'],
+    ['Magnetic MV bts #ILLIT #아일릿 #Magnetic #SUPER_REAL_ME', 'blacklist:mv behind'],
+    // « MV Highlight » = extrait/teaser (Taemin, The Boyz, MCND).
+    ["태민 (TAEMIN) - 'Veil' MV Highlight", 'blacklist:mv highlight'],
+    ["더보이즈 (THE BOYZ) 'AURA' MV HIGHLIGHT", 'blacklist:mv highlight'],
+    // « MV Sketch » = making du tournage (Kep1er).
+    ['Shooting Star MV Sketch #3 #Kep1er #케플러', 'blacklist:mv sketch'],
+    // « Shorts M/V » = format vertical court (BIBI).
+    ['비비 (BIBI) - 종말의 사과나무 (Apocalypse) Shorts M/V #bibi', 'blacklist:shorts'],
+    // Déclinaisons non-clip (Dreamcatcher, Highlight).
+    ["Dreamcatcher(드림캐쳐) 'JUSTICE' Dance Video (MV ver.)", 'blacklist:dance video'],
+    ['[MV] 하이라이트(Highlight) - 불어온다 (NOT THE END) Lip ver.', 'blacklist:lip version'],
   ]
 
   it.each(official)('officiel : %s', (title) => {
@@ -57,5 +75,11 @@ describe('isOfficialMvTitle', () => {
 
   it('ne confond pas MVP avec MV', () => {
     expect(isOfficialMvTitle('MVP highlights').official).toBe(false)
+  })
+
+  it('ne confond pas le groupe Highlight avec un « MV Highlight »', () => {
+    // Vrais MVs du groupe Highlight : « MV] » puis le nom — pas un extrait.
+    expect(isOfficialMvTitle('[MV] 하이라이트(HIGHLIGHT) - Chains').official).toBe(true)
+    expect(isOfficialMvTitle('[MV] 하이라이트(HIGHLIGHT) - BODY').official).toBe(true)
   })
 })

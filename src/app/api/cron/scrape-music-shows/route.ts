@@ -7,12 +7,11 @@ import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
 import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
+// normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
+// la copie locale ASCII-only les ratait (DRY, audit 2026-07-03).
+import { normalize } from '@/lib/scrapers/group-match'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
-
-function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
-}
 
 // Aliases DB ↔ noms scrappés (aligné src/lib/scrapers/kpopofficial.ts:80).
 const GROUP_ALIASES: Record<string, string> = {

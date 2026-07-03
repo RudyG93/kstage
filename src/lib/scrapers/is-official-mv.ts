@@ -36,6 +36,32 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['special clip', /\bspecial clip\b/i],
   // « MV Commentary » / « M/V 코멘터리 » : l'artiste commente le clip — pas le MV.
   ['commentary', /\bcommentary\b|코멘터리/i],
+  // Audit prod 2026-07-03 : familles de dérivés passées entre les mailles.
+  // « MV촬영 » / « M/V 촬영 » = tournage du clip (behind coréen).
+  ['filming', /촬영/],
+  // « M/V BTS » / « MV bts » = behind-the-scenes (ancré à M/V : ne matche PAS
+  // le groupe BTS seul).
+  ['mv behind', /\bm\/?v\s*bts\b/i],
+  // « MV Highlight » = extrait/teaser (ancré à M/V : ne matche pas le groupe
+  // Highlight dans « [MV] 하이라이트(HIGHLIGHT) - Chains »).
+  ['mv highlight', /\bm\/?v\s*highlight/i],
+  // « MV Sketch » = making-of du tournage (Kep1er « Shooting Star MV Sketch #3 »).
+  ['mv sketch', /\bm\/?v\s*sketch/i],
+  // « Shorts M/V » / « #shorts » = format vertical court, jamais le clip.
+  ['shorts', /#?\bshorts\b/i],
+  // Markers hangul (déjà dans DERIVATIVE_RE, redoublés ici : ce gate est LA
+  // dernière ligne de défense) : 비하인드 = behind, 메이킹 = making, 티저 = teaser.
+  ['behind kr', /비하인드/],
+  ['making kr', /메이킹/],
+  ['teaser kr', /티저/],
+  // Déclinaisons non-clip : « Dance Video (MV ver.) », « Lip ver. ».
+  ['dance video', /\bdance video\b/i],
+  ['lip version', /\blip ver\b/i],
+  // « MV Moment Clip #2 » (MCND), « M/V Spoiler » (A.C.E), « MV SOON 7/26 »
+  // (posts d'annonce NewJeans) — extraits et annonces, jamais le clip.
+  ['moment clip', /\bmoment clip\b/i],
+  ['spoiler', /\bspoiler\b/i],
+  ['mv soon', /\bm\/?v\s+soon\b/i],
   // « @MV Film » / « M/V Film » : déclinaison (focus film du tournage), pas le MV.
   ['mv film', /\bm\/?v film\b/i],
   // Focus-cam membre : « [#TAEYONG Focus] … » — entre crochets, jamais le MV

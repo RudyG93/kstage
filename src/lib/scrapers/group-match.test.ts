@@ -67,3 +67,32 @@ describe('matchesGroup', () => {
     expect(matchesGroup('aespa Whiplash MV', '   ')).toBe(false)
   })
 })
+
+describe('stripHashtags (garde cross-artiste, audit prod 2026-07-03)', () => {
+  it("n'attribue pas un MV d'un autre artiste via un hashtag de label", () => {
+    // Titre réel : MV de UAU sur la chaîne Dreamcatcher Company, attribué à
+    // Dreamcatcher par « #Dreamcatcher_UAU » avant le fix.
+    const title =
+      "유아유(UAU) 'GENE' MV #유아유 #UAU #Dreamcatcher_UAU #2nd_Mini_Album #Playlist #Your_Youth #GENE"
+    expect(matchesGroup(title, 'Dreamcatcher')).toBe(false)
+    expect(matchesGroup(title, 'UAU')).toBe(true)
+  })
+
+  it('matche toujours un groupe présent dans le titre éditorial', () => {
+    expect(matchesGroup("aespa 에스파 'Whiplash' MV #aespa #Whiplash", 'aespa')).toBe(true)
+    expect(matchesGroup("Dreamcatcher(드림캐쳐) 'JUSTICE' MV", 'Dreamcatcher')).toBe(true)
+  })
+})
+
+describe('repli hashtag exact (chaînes officielles qui titrent en hashtag)', () => {
+  it('accepte un hashtag strictement égal au nom du groupe', () => {
+    expect(matchesGroup("#ENHYPEN (#엔하이픈) 'Knife' Official MV", 'ENHYPEN')).toBe(true)
+    expect(matchesGroup("#Loossemble (루셈블) 'Girls' Night' MV", 'Loossemble')).toBe(true)
+  })
+
+  it("rejette un hashtag composé contenant le nom (tag maison d'un autre artiste)", () => {
+    expect(
+      matchesGroup("유아유(UAU) 'GENE' MV #유아유 #UAU #Dreamcatcher_UAU", 'Dreamcatcher'),
+    ).toBe(false)
+  })
+})

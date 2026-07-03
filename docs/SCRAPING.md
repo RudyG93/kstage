@@ -226,6 +226,20 @@ select a.title, b.title from mv a join mv b
 
 **Méthode de découverte** : c'est en construisant cette fixture réelle (règle « real data over fixtures ») que le parser a révélé 0 sur le carrousel ; croisé avec `scrape_log` (la prod parsait encore la grille) → diagnostic « dégradation, pas panne ». **Vérification post-déploiement** : `matched` doit remonter au prochain run du cron `scrape-comebacks`.
 
+### 3.13 — 202 non-MV en `mv_kind='main'` : durée jamais vérifiée + hashtags de label (résolu 2026-07-03)
+
+**Symptôme** : ~20 % du catalogue MV (202/1017) était du dérivé — teasers, behinds, versions Shorts — dont « Gene » (MV de **UAU** attribué à Dreamcatcher) et des « M/V BTS » ASTRO. Signalé par Rudy comme existentiel.
+
+**Causes (3 trous distincts)** :
+
+1. **Durée jamais récupérée** : `videos.list` demandait `part=snippet,liveStreamingDetails` sans `contentDetails` → un « MV » de 30 s passait tous les gates. ~121 lignes de 14-61 s, dont les **versions Shorts** (59-61 s) postées par les chaînes officielles avec le titre exact du clip — qui en plus **bloquaient l'ingestion du vrai MV** via la dédup par titre ±14 j (§3.9).
+2. **Blacklist lacunaire** : `촬영` (tournage), `M/V BTS` (behind-the-scenes — PAS le groupe), `MV Highlight/Sketch`, `Shorts M/V`, `Dance Video (MV ver.)`, `Lip ver.`, `Moment Clip`, `Spoiler`, `MV SOON` manquaient.
+3. **Hashtags de label dans le group-match** : « 유아유(UAU) 'GENE' MV … #Dreamcatcher_UAU » matchait Dreamcatcher via le hashtag maison. Fix : hashtags strippés du titre éditorial AVANT le match, avec **repli hashtag strictement égal** au nom (`#ENHYPEN` ✓ — certaines chaînes titrent en hashtag — mais `#Dreamcatcher_UAU` ✗).
+
+**Fix** : gate durée `MIN_MV_DURATION_SEC = 75` (les premieres à venir n'ont pas de durée `P0D` → non gatées, rattrapées au re-scan) ; blacklist étendue (title-only — **ne PAS blacklister la description** : les descriptions de vrais MVs contiennent « Teaser : lien » → faux négatifs massifs) ; `stripHashtags` + repli exact dans `matchesGroup`. Purge via `scripts/audit-mv-catalog.ts` (dry-run puis `--write`, FK en CASCADE). **Piège du script** : le select Supabase est plafonné à 1000 rows → pagination `.range()` obligatoire (17 events non audités au premier run).
+
+**Vérification** : SQL zéro pattern restant + 13 fixtures de titres réels prod dans `is-official-mv.test.ts` / `group-match.test.ts`. Post-purge : 815 MVs propres.
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)
