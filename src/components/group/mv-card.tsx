@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { PlayCircle, Star } from 'lucide-react'
+import { Play, Star } from 'lucide-react'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { cn } from '@/lib/utils'
@@ -15,18 +15,36 @@ const yearMonth = (iso: string) =>
 
 export type Rating = { avg: number; count: number }
 
-/** Card MV cliquable vers /mv/[slug] (thumbnail YouTube + titre + meta + note). */
-export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
+/**
+ * Card MV Data Desk (§7.1.6) : panneau hairline, thumbnail 16:9 rounded-[7px],
+ * play 26px, ligne note (étoile amber + score + count) + chip RATE.
+ * 0 note → bordure dashed primary + « Be the first to rate » (état actionnable).
+ */
+export function MvCard({
+  mv,
+  rating,
+  showRateChip = false,
+}: {
+  mv: MvEvent
+  rating?: Rating
+  // Chip RATE à droite de la ligne note (grilles FRESH/LATEST DROPS).
+  showRateChip?: boolean
+}) {
   const videoId = extractYouTubeId(mv.source_url)
   const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : mv.image_url
   const group = mv.groups
+  const unrated = rating !== undefined && rating.count === 0
+
   return (
     <Link
       href={`/mv/${mv.slug}`}
       draggable={false}
-      className="group focus-visible:ring-primary/40 block rounded-xl focus-visible:ring-2 focus-visible:outline-none"
+      className={cn(
+        'group bg-card focus-visible:ring-primary/40 block rounded-[10px] border p-[7px] transition-colors focus-visible:ring-2 focus-visible:outline-none',
+        showRateChip && unrated ? 'border-primary/45 border-dashed' : 'hover:border-border',
+      )}
     >
-      <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-xl">
+      <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-[7px]">
         {thumb ? (
           <Image
             src={thumb}
@@ -36,45 +54,53 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
             sizes="(min-width: 640px) 33vw, 50vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
-        ) : null}
-        <span
-          className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/30"
-          aria-hidden
-        />
-        <PlayCircle
-          className="pointer-events-none absolute inset-0 m-auto size-10 text-white opacity-0 drop-shadow-lg transition-opacity duration-200 group-hover:opacity-100"
-          strokeWidth={1.5}
-          aria-hidden
-        />
-        {group?.image_url && (
-          <span className="absolute bottom-1.5 left-1.5 size-7 overflow-hidden rounded-full shadow ring-2 ring-white/80">
-            <Image
-              src={group.image_url}
-              alt=""
-              fill
-              unoptimized
-              sizes="28px"
-              className="object-cover"
-              aria-hidden
-            />
-          </span>
+        ) : (
+          <span
+            className="absolute inset-0"
+            style={
+              group?.color_hex
+                ? {
+                    background: `linear-gradient(135deg, ${group.color_hex}66, ${group.color_hex}1f)`,
+                  }
+                : undefined
+            }
+            aria-hidden
+          />
         )}
+        <span
+          className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/25"
+          aria-hidden
+        />
+        <Play
+          className="pointer-events-none absolute inset-0 m-auto size-[26px] fill-white text-white opacity-80 drop-shadow-lg transition-opacity duration-200 group-hover:opacity-100"
+          strokeWidth={1}
+          aria-hidden
+        />
       </div>
       <div className="mt-1.5 px-0.5">
-        <p className="line-clamp-2 text-sm leading-snug font-medium">
+        <p className="line-clamp-2 text-[11.5px] leading-snug font-semibold">
           {displaySongTitle(mv.title, group?.name)}
         </p>
-        <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] tracking-wider uppercase">
-          <span>{group?.name}</span>
-          <span aria-hidden>·</span>
-          <span>{yearMonth(mv.start_at)}</span>
-          {rating !== undefined && (
-            <>
-              <span aria-hidden>·</span>
-              <RatingLabel r={rating} />
-            </>
-          )}
+        <p className="label-data-inline text-muted-foreground mt-0.5 truncate text-[9px]">
+          {group?.name} · {yearMonth(mv.start_at)}
         </p>
+        {rating !== undefined && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <RatingLabel r={rating} />
+            {showRateChip && (
+              <span
+                className={cn(
+                  'label-data-inline ml-auto rounded-[6px] px-2 py-1 text-[8.5px]',
+                  unrated
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border-primary/50 text-primary border',
+                )}
+              >
+                Rate
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   )
@@ -82,27 +108,19 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
 
 function RatingLabel({ r }: { r?: Rating }) {
   const hasVotes = r && r.count > 0
+  if (!hasVotes) {
+    return <span className="text-muted-foreground text-[10px]">Be the first to rate</span>
+  }
   return (
-    <span className="inline-flex items-center gap-0.5">
-      <Star
-        className={cn(
-          'size-3',
-          hasVotes
-            ? 'fill-yellow-400 text-yellow-400'
-            : 'text-muted-foreground/60 fill-transparent',
-        )}
-        strokeWidth={1.5}
-        aria-hidden
-      />
+    <span className="inline-flex items-center gap-1">
+      <Star className="fill-amber text-amber size-3.5" strokeWidth={1.5} aria-hidden />
       <span
-        aria-label={
-          hasVotes
-            ? `Average ${r.avg.toFixed(1)} out of 10 from ${r.count} votes`
-            : 'No ratings yet'
-        }
+        className="tabular text-xs font-semibold"
+        aria-label={`Average ${r.avg.toFixed(1)} out of 10 from ${r.count} votes`}
       >
-        {hasVotes ? `${r.avg.toFixed(1)} (${r.count})` : '—'}
+        {r.avg.toFixed(1)}
       </span>
+      <span className="text-muted-foreground text-[10px]">· {r.count}</span>
     </span>
   )
 }

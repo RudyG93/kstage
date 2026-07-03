@@ -6,3 +6,9 @@ package-lock.json
 src/types/database.ts
 src/components/ui/
 docs/email-templates/
+# Artefacts de référence, pas du code produit : bundles design (prototypes
+# HTML) et fixtures de scraping (HTML brut — les reformater casserait les
+# tests de parsing).
+design_handoff_kstage_redesign/
+design_handoff_kstage_theme/
+src/lib/scrapers/__fixtures__/

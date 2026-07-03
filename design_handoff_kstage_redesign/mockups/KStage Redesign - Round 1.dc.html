@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&amp;family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Geist:wght@300..800&amp;family=Instrument+Serif:ital@0;1&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#edeae4;font-family:'Geist',system-ui,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 'Geist',system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Geist',system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-opt:target .dv-oid{background:#5b5bf0;color:#fff}
+.dv-next{margin:26px 0 0;font:12px/1.5 'Geist',system-ui,sans-serif;color:rgba(0,0,0,.5)}
+@keyframes kmarq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes kpulse{0%,100%{opacity:1}50%{opacity:.3}}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</helmet>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Home connectée — trois directions (Midnight d'abord, Daylight déclinée après choix)</span></div>
+
+  <div style="max-width:860px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:18px 22px;margin:0 0 28px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+    <div style="font:700 15px 'Bricolage Grotesque',sans-serif;color:#1a1a1a;margin-bottom:8px">Ce que corrigent ces trois pistes (audit juin 2026)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <span style="font:500 11px 'Geist',sans-serif;color:#7a3030;background:#fbeaea;border-radius:999px;padding:4px 10px">Centre de la home vide, contenu riche relégué en sidebar</span>
+      <span style="font:500 11px 'Geist',sans-serif;color:#7a3030;background:#fbeaea;border-radius:999px;padding:4px 10px">Rétention 2.5/5 — pas de raison de revenir</span>
+      <span style="font:500 11px 'Geist',sans-serif;color:#7a3030;background:#fbeaea;border-radius:999px;padding:4px 10px">Différenciateur notes/commentaires invisible</span>
+    </div>
+    <div style="font:400 12px/1.65 'Geist',sans-serif;color:rgba(0,0,0,.62)">
+      Même produit, mêmes données (tes groupes suivis : aespa, NewJeans, LE SSERAFIM, Stray Kids, IVE, ITZY) — trois habillages. Les countdowns sont <strong>live</strong>, les écrans scrollent. <a class="dv-oid" href="#1a">1a</a> pousse le premium visuel image-forward, <a class="dv-oid" href="#1b">1b</a> assume le « HLTV du k-pop » dense et data-forward, <a class="dv-oid" href="#1c">1c</a> met la communauté (notes, avis, RSVP) au centre. Les trois gardent l'ADN periwinkle et fonctionnent en Daylight (nuanciers sous chaque écran).
+    </div>
+  </div>
+
+  <div class="dv-opts">
+
+    <!-- ══════════════════ OPTION 1A — STAGE LIGHTS ══════════════════ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Stage Lights — premium, image-forward, app-feel</div>
+      <div data-screen-label="1a Stage Lights — Home">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0A0B15;color:#F2F3FA;font-family:'Geist',sans-serif">
+          <div style="flex:1;overflow-y:auto;position:relative">
+            <div style="position:absolute;top:0;left:0;right:0;height:420px;background:radial-gradient(340px 220px at 85% -8%,rgba(138,135,255,.22),transparent 65%),radial-gradient(300px 200px at -5% 6%,rgba(63,224,184,.10),transparent 60%);pointer-events:none"></div>
+            <!-- header -->
+            <div style="display:flex;align-items:center;gap:12px;padding:58px 18px 10px;position:sticky;top:0;z-index:20;background:linear-gradient(180deg,rgba(10,11,21,.95) 60%,rgba(10,11,21,0));backdrop-filter:blur(10px)">
+              <div style="display:flex;align-items:baseline"><span style="font:800 21px 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">K</span><span style="font:italic 400 20px 'Instrument Serif',serif;letter-spacing:.01em">stage</span></div>
+              <div style="flex:1"></div>
+              <div style="width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A7ABC4" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>
+              <div style="width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;position:relative"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A7ABC4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><span style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:999px;background:#F16A9C;border:2px solid #0A0B15"></span></div>
+              <div style="width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,#8A87FF,#3FE0B8);display:flex;align-items:center;justify-content:center;font:700 13px 'Bricolage Grotesque',sans-serif;color:#10102a">m</div>
+            </div>
+            <!-- hero -->
+            <div style="margin:8px 16px 0;border-radius:24px;position:relative;overflow:hidden;background:linear-gradient(160deg,#231650 0%,#41279e 48%,#7A4EE0 100%);border:1px solid rgba(255,255,255,.14);padding:18px 18px 16px">
+              <div style="position:absolute;inset:0;background:radial-gradient(240px 140px at 80% 0%,rgba(255,255,255,.16),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);pointer-events:none"></div>
+              <div style="position:relative;display:flex;align-items:center;gap:8px">
+                <span style="font:700 9.5px 'Geist',sans-serif;letter-spacing:.14em;background:rgba(255,255,255,.18);border-radius:999px;padding:5px 10px">COMEBACK</span>
+                <span style="font:700 11px 'Space Grotesk',sans-serif;letter-spacing:.06em;background:rgba(10,11,21,.45);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:4px 9px">D-2</span>
+                <div style="flex:1"></div>
+                <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font:800 17px 'Bricolage Grotesque',sans-serif">æ</div>
+              </div>
+              <div style="position:relative;font:800 34px/1.05 'Bricolage Grotesque',sans-serif;letter-spacing:-.025em;margin:12px 0 5px">Whiplash</div>
+              <div style="position:relative;font:500 12.5px 'Geist',sans-serif;color:rgba(255,255,255,.82)">aespa · The 6th Mini Album</div>
+              <div style="position:relative;font:400 11px 'Geist',sans-serif;color:rgba(255,255,255,.55);margin-top:2px">Sun, Jul 5 · 6:00 PM KST · 11:00 AM your time</div>
+              <div style="position:relative;display:flex;gap:8px;margin-top:14px">
+                <div style="flex:1;background:rgba(10,11,21,.5);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 0;text-align:center"><div style="font:700 27px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.d }}</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.16em;color:rgba(255,255,255,.55);margin-top:1px">DAYS</div></div>
+                <div style="flex:1;background:rgba(10,11,21,.5);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 0;text-align:center"><div style="font:700 27px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.h }}</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.16em;color:rgba(255,255,255,.55);margin-top:1px">HRS</div></div>
+                <div style="flex:1;background:rgba(10,11,21,.5);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 0;text-align:center"><div style="font:700 27px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.m }}</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.16em;color:rgba(255,255,255,.55);margin-top:1px">MIN</div></div>
+                <div style="flex:1;background:rgba(10,11,21,.5);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 0;text-align:center"><div style="font:700 27px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1;color:#3FE0B8">{{ a.s }}</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.16em;color:rgba(255,255,255,.55);margin-top:1px">SEC</div></div>
+              </div>
+              <div style="position:relative;display:flex;align-items:center;gap:9px;margin-top:14px">
+                <div style="display:flex">
+                  <span style="width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#FF7AA8,#E8C36A);border:2px solid #41279e"></span>
+                  <span style="width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#3FE0B8,#5B8DEF);border:2px solid #41279e;margin-left:-7px"></span>
+                  <span style="width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#8A87FF,#F16A9C);border:2px solid #41279e;margin-left:-7px"></span>
+                </div>
+                <span style="font:500 11.5px 'Geist',sans-serif;color:rgba(255,255,255,.75)"><span style="font:700 11.5px 'Space Grotesk',sans-serif">{{ waitStr }}</span> waiting</span>
+                <div style="flex:1"></div>
+                <div style="display:flex;align-items:center;gap:6px;background:#F2F3FA;color:#14142B;border-radius:999px;padding:9px 14px;font:700 12.5px 'Geist',sans-serif"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path></svg>Remind me</div>
+              </div>
+            </div>
+            <!-- lineup -->
+            <div style="display:flex;align-items:baseline;padding:24px 18px 10px"><span style="font:700 13px 'Geist',sans-serif;letter-spacing:.01em">Your lineup</span><div style="flex:1"></div><span style="font:600 11.5px 'Geist',sans-serif;color:#8A87FF">See all</span></div>
+            <div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px">
+              <div style="flex:none;width:118px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:9px">
+                <div style="height:70px;border-radius:12px;background:linear-gradient(135deg,#6E4BFF,#B14EFF);display:flex;align-items:center;justify-content:center;font:800 21px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92)">æ</div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:8px 0 2px">aespa</div>
+                <div style="font:500 10.5px 'Geist',sans-serif;color:#8A87FF">Comeback</div>
+                <div style="font:700 13px 'Space Grotesk',sans-serif;margin-top:3px">D-2</div>
+              </div>
+              <div style="flex:none;width:118px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:9px">
+                <div style="height:70px;border-radius:12px;background:linear-gradient(135deg,#B8D62E,#3DBE8B);display:flex;align-items:center;justify-content:center;font:800 17px 'Bricolage Grotesque',sans-serif;color:rgba(20,25,12,.85)">ITZY</div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:8px 0 2px">ITZY</div>
+                <div style="font:500 10.5px 'Geist',sans-serif;color:#EBAE4E">M Countdown</div>
+                <div style="font:700 13px 'Space Grotesk',sans-serif;margin-top:3px;color:#EBAE4E">Today</div>
+              </div>
+              <div style="flex:none;width:118px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:9px">
+                <div style="height:70px;border-radius:12px;background:linear-gradient(135deg,#C9184A,#FF5C8A);display:flex;align-items:center;justify-content:center;font:800 17px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92)">IVE</div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:8px 0 2px">IVE</div>
+                <div style="font:500 10.5px 'Geist',sans-serif;color:#3FE0B8">MV drop</div>
+                <div style="font:700 13px 'Space Grotesk',sans-serif;margin-top:3px">D-6</div>
+              </div>
+              <div style="flex:none;width:118px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:9px">
+                <div style="height:70px;border-radius:12px;background:linear-gradient(135deg,#D23B45,#5A1220);display:flex;align-items:center;justify-content:center;font:800 17px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92)">SKZ</div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:8px 0 2px">Stray Kids</div>
+                <div style="font:500 10.5px 'Geist',sans-serif;color:#F16A9C">Seoul, night 1</div>
+                <div style="font:700 13px 'Space Grotesk',sans-serif;margin-top:3px">D-10</div>
+              </div>
+              <div style="flex:none;width:118px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:9px">
+                <div style="height:70px;border-radius:12px;background:linear-gradient(135deg,#5B8DEF,#9BC4FF);display:flex;align-items:center;justify-content:center;font:800 17px 'Bricolage Grotesque',sans-serif;color:rgba(16,20,40,.85)">NJ</div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:8px 0 2px">NewJeans</div>
+                <div style="font:500 10.5px 'Geist',sans-serif;color:#A7ABC4">4th anniversary</div>
+                <div style="font:700 13px 'Space Grotesk',sans-serif;margin-top:3px">D-30</div>
+              </div>
+              <div style="flex:none;width:86px;border:1px dashed rgba(255,255,255,.18);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#A7ABC4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg><span style="font:600 10px 'Geist',sans-serif">Add groups</span></div>
+            </div>
+            <!-- tonight -->
+            <div style="display:flex;align-items:baseline;padding:24px 18px 10px"><span style="font:700 13px 'Geist',sans-serif">Tonight</span><span style="font:500 10.5px 'Space Grotesk',sans-serif;color:#6E7391;margin-left:8px">KST → local</span><div style="flex:1"></div><span style="font:600 11.5px 'Geist',sans-serif;color:#8A87FF">Calendar</span></div>
+            <div style="margin:0 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06)">
+                <div style="width:44px;text-align:center"><div style="font:700 13px 'Space Grotesk',sans-serif">18:00</div><div style="font:500 9.5px 'Space Grotesk',sans-serif;color:#6E7391">11:00</div></div>
+                <span style="width:8px;height:8px;border-radius:999px;background:#EBAE4E;animation:kpulse 1.6s infinite"></span>
+                <div style="flex:1"><div style="font:600 13px 'Geist',sans-serif">M Countdown</div><div style="font:400 11px 'Geist',sans-serif;color:#A7ABC4">ITZY · Mnet</div></div>
+                <span style="font:700 11px 'Space Grotesk',sans-serif;color:#3FE0B8;background:rgba(63,224,184,.1);border:1px solid rgba(63,224,184,.25);border-radius:999px;padding:5px 9px">in {{ bStr }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 14px">
+                <div style="width:44px;text-align:center"><div style="font:700 13px 'Space Grotesk',sans-serif">17:00</div><div style="font:500 9.5px 'Space Grotesk',sans-serif;color:#6E7391">Fri</div></div>
+                <span style="width:8px;height:8px;border-radius:999px;background:#EBAE4E"></span>
+                <div style="flex:1"><div style="font:600 13px 'Geist',sans-serif">Music Bank</div><div style="font:400 11px 'Geist',sans-serif;color:#A7ABC4">IVE · KBS2 · tomorrow</div></div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7391" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+            </div>
+            <!-- fresh drops -->
+            <div style="display:flex;align-items:baseline;padding:24px 18px 10px"><span style="font:700 13px 'Geist',sans-serif">Fresh drops</span><span style="font:400 11px 'Geist',sans-serif;color:#6E7391;margin-left:8px">rate them</span><div style="flex:1"></div><span style="font:600 11.5px 'Geist',sans-serif;color:#8A87FF">All MVs</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 18px">
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px">
+                <div style="aspect-ratio:16/9;border-radius:10px;background:linear-gradient(135deg,#4E5AA8,#8F9BD4);position:relative;display:flex;align-items:center;justify-content:center"><span style="position:absolute;top:6px;left:6px;font:800 10px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.85)">LE SSERAFIM</span><div style="width:28px;height:28px;border-radius:999px;background:rgba(10,11,21,.55);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></div></div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:7px 2px 3px">Crazy</div>
+                <div style="display:flex;align-items:center;gap:4px;margin:0 2px"><svg width="11" height="11" viewBox="0 0 24 24" fill="#EBAE4E"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span style="font:700 11.5px 'Space Grotesk',sans-serif">8.7</span><span style="font:400 10.5px 'Geist',sans-serif;color:#6E7391">· 214</span><div style="flex:1"></div><span style="font:700 10px 'Geist',sans-serif;color:#8A87FF;border:1px solid rgba(138,135,255,.45);border-radius:999px;padding:3px 8px">Rate</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px">
+                <div style="aspect-ratio:16/9;border-radius:10px;background:linear-gradient(135deg,#5B8DEF,#9BC4FF);position:relative;display:flex;align-items:center;justify-content:center"><span style="position:absolute;top:6px;left:6px;font:800 10px 'Bricolage Grotesque',sans-serif;color:rgba(16,20,40,.75)">NewJeans</span><div style="width:28px;height:28px;border-radius:999px;background:rgba(10,11,21,.55);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></div></div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:7px 2px 3px">How Sweet</div>
+                <div style="display:flex;align-items:center;gap:4px;margin:0 2px"><svg width="11" height="11" viewBox="0 0 24 24" fill="#EBAE4E"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span style="font:700 11.5px 'Space Grotesk',sans-serif">9.1</span><span style="font:400 10.5px 'Geist',sans-serif;color:#6E7391">· 342</span><div style="flex:1"></div><span style="font:700 10px 'Geist',sans-serif;color:#8A87FF;border:1px solid rgba(138,135,255,.45);border-radius:999px;padding:3px 8px">Rate</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px">
+                <div style="aspect-ratio:16/9;border-radius:10px;background:linear-gradient(135deg,#D23B45,#5A1220);position:relative;display:flex;align-items:center;justify-content:center"><span style="position:absolute;top:6px;left:6px;font:800 10px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.85)">Stray Kids</span><div style="width:28px;height:28px;border-radius:999px;background:rgba(10,11,21,.55);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></div></div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:7px 2px 3px">Chk Chk Boom</div>
+                <div style="display:flex;align-items:center;gap:4px;margin:0 2px"><svg width="11" height="11" viewBox="0 0 24 24" fill="#EBAE4E"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span style="font:700 11.5px 'Space Grotesk',sans-serif">8.2</span><span style="font:400 10.5px 'Geist',sans-serif;color:#6E7391">· 187</span><div style="flex:1"></div><span style="font:700 10px 'Geist',sans-serif;color:#8A87FF;border:1px solid rgba(138,135,255,.45);border-radius:999px;padding:3px 8px">Rate</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,.05);border:1px dashed rgba(138,135,255,.4);border-radius:16px;padding:8px">
+                <div style="aspect-ratio:16/9;border-radius:10px;background:linear-gradient(135deg,#C9184A,#FF5C8A);position:relative;display:flex;align-items:center;justify-content:center"><span style="position:absolute;top:6px;left:6px;font:800 10px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.85)">IVE</span><div style="width:28px;height:28px;border-radius:999px;background:rgba(10,11,21,.55);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></div></div>
+                <div style="font:600 12px 'Geist',sans-serif;margin:7px 2px 3px">Rebel Heart</div>
+                <div style="display:flex;align-items:center;gap:4px;margin:0 2px"><span style="font:500 10.5px 'Geist',sans-serif;color:#8A87FF">Be the first to rate</span><div style="flex:1"></div><span style="font:700 10px 'Geist',sans-serif;color:#14142B;background:#8A87FF;border-radius:999px;padding:3px 8px">Rate</span></div>
+              </div>
+            </div>
+            <!-- community pulse -->
+            <div style="margin:0 16px 20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:999px;background:linear-gradient(135deg,#FF7AA8,#E8C36A)"></span><span style="font:500 11.5px 'Geist',sans-serif;color:#A7ABC4"><strong style="color:#F2F3FA">@minji</strong> rated How Sweet <strong style="color:#EBAE4E">9</strong> — “summer serotonin”</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:9px"><span style="width:20px;height:20px;border-radius:999px;background:linear-gradient(135deg,#3FE0B8,#5B8DEF)"></span><span style="font:500 11.5px 'Geist',sans-serif;color:#A7ABC4"><strong style="color:#F2F3FA">@dyl4n</strong> is waiting for Whiplash · <span style="color:#8A87FF">join 1.2k others →</span></span></div>
+            </div>
+          </div>
+          <!-- bottom nav -->
+          <div style="flex:none;display:flex;align-items:stretch;padding:8px 10px 30px;background:rgba(10,11,21,.92);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(14px)">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;background:rgba(138,135,255,.14);border-radius:14px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8A87FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg><span style="font:700 9.5px 'Geist',sans-serif;color:#8A87FF">Today</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6E7391" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span style="font:600 9.5px 'Geist',sans-serif;color:#6E7391">Calendar</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6E7391" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2.5"></circle></svg><span style="font:600 9.5px 'Geist',sans-serif;color:#6E7391">Drops</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6E7391" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span style="font:600 9.5px 'Geist',sans-serif;color:#6E7391">Groups</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6E7391" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span style="font:600 9.5px 'Geist',sans-serif;color:#6E7391">Me</span></div>
+          </div>
+        </div>
+      </x-import>
+      </div>
+      <div style="width:402px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:14px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:9px 12px">
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">DAYLIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#F7F6F2;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#1D1D28"></span><span style="width:16px;height:16px;border-radius:5px;background:#5B5BF0"></span><span style="width:16px;height:16px;border-radius:5px;background:#17A98F"></span><span style="width:16px;height:16px;border-radius:5px;background:#E8618C"></span></div>
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">MIDNIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#0A0B15"></span><span style="width:16px;height:16px;border-radius:5px;background:#181A2E"></span><span style="width:16px;height:16px;border-radius:5px;background:#F2F3FA;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#8A87FF"></span><span style="width:16px;height:16px;border-radius:5px;background:#3FE0B8"></span><span style="width:16px;height:16px;border-radius:5px;background:#F16A9C"></span></div>
+        </div>
+        <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:12px 14px">
+          <div style="font:700 11px 'Geist',sans-serif;color:#1a1a1a;margin-bottom:6px">Le pari — l'app premium, image-forward</div>
+          <div style="font:400 11px/1.6 'Geist',sans-serif;color:rgba(0,0,0,.6)">Évolution directe de l'ADN actuel (periwinkle + menthe conservés) : hero immersif aux couleurs du groupe, rail « lineup » avec D-days, grille de drops à noter. Hooks rétention : countdown géant, RSVP + preuve sociale, chips « Rate » partout, nav 5 onglets avec « Today » en ancrage quotidien.</div>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ══════════════════ OPTION 1B — DATA DESK ══════════════════ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Data Desk — le « HLTV du k-pop », dense &amp; data-forward</div>
+      <div data-screen-label="1b Data Desk — Home">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0B0D12;color:#E8EBF4;font-family:'Geist',sans-serif">
+          <div style="flex:1;overflow-y:auto">
+            <!-- header -->
+            <div style="display:flex;align-items:center;gap:10px;padding:58px 14px 10px;position:sticky;top:0;z-index:20;background:rgba(11,13,18,.96);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(10px)">
+              <div style="width:27px;height:27px;border-radius:8px;background:#7D7AFF;display:flex;align-items:center;justify-content:center;font:800 14px 'Bricolage Grotesque',sans-serif;color:#0B0D12">K</div>
+              <span style="font:700 12px 'Archivo',sans-serif;font-stretch:78%;letter-spacing:.22em;color:#E8EBF4">STAGE</span>
+              <div style="flex:1;display:flex;align-items:center;gap:7px;height:33px;background:#12151C;border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:0 10px;margin-left:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg><span style="font:400 11px 'Geist',sans-serif;color:#5F6779">Groups, MVs, events…</span></div>
+              <div style="position:relative;display:flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9BA3B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><span style="position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:999px;background:#E3A83C;border:2px solid #0B0D12"></span></div>
+            </div>
+            <!-- ticker -->
+            <div style="height:30px;background:#0E1118;border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden;display:flex;align-items:center">
+              <div style="display:flex;flex:none;align-items:center;gap:26px;padding-right:26px;white-space:nowrap;animation:kmarq 26s linear infinite">
+                <span style="display:flex;align-items:center;gap:6px;font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#E8EBF4"><span style="width:6px;height:6px;border-radius:999px;background:#FF4757;animation:kpulse 1.2s infinite"></span>LIVE TONIGHT — M COUNTDOWN 18:00 KST</span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">AESPA COMEBACK <span style="color:#7D7AFF">D-2</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">IVE · MUSIC BANK <span style="color:#E3A83C">D-1</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">STRAY KIDS · SEOUL <span style="color:#E85D8A">D-10</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">NEWJEANS 4TH ANNIVERSARY <span style="color:#2FD4AC">D-30</span></span>
+                <span style="display:flex;align-items:center;gap:6px;font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#E8EBF4"><span style="width:6px;height:6px;border-radius:999px;background:#FF4757;animation:kpulse 1.2s infinite"></span>LIVE TONIGHT — M COUNTDOWN 18:00 KST</span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">AESPA COMEBACK <span style="color:#7D7AFF">D-2</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">IVE · MUSIC BANK <span style="color:#E3A83C">D-1</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">STRAY KIDS · SEOUL <span style="color:#E85D8A">D-10</span></span>
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7">NEWJEANS 4TH ANNIVERSARY <span style="color:#2FD4AC">D-30</span></span>
+              </div>
+            </div>
+            <!-- next up -->
+            <div style="margin:12px 12px 0;background:#10131A;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden">
+              <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:700 9.5px 'Archivo',sans-serif;font-stretch:78%;letter-spacing:.18em;color:#9BA3B7">NEXT UP — YOUR GROUPS</span><div style="flex:1"></div><span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#7D7AFF">ALL →</span></div>
+              <div style="display:flex;align-items:center;gap:11px;padding:12px;border-left:3px solid #7D7AFF">
+                <div style="width:56px;height:56px;border-radius:8px;background:linear-gradient(135deg,#6E4BFF,#B14EFF);display:flex;align-items:center;justify-content:center;font:800 20px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92);flex:none">æ</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font:700 14.5px 'Geist',sans-serif;letter-spacing:-.01em">aespa — Whiplash</div>
+                  <div style="font:500 10.5px 'Geist',sans-serif;color:#9BA3B7;margin-top:2px">Comeback · The 6th Mini Album</div>
+                  <div style="font:500 10px 'Space Grotesk',sans-serif;color:#5F6779;margin-top:2px">SUN JUL 5 · 18:00 KST · 11:00 LOCAL</div>
+                </div>
+                <div style="text-align:right;flex:none">
+                  <div style="font:700 21px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1;letter-spacing:.02em">{{ a.d }}<span style="color:#5F6779">:</span>{{ a.h }}<span style="color:#5F6779">:</span>{{ a.m }}<span style="color:#5F6779">:</span><span style="color:#7D7AFF">{{ a.s }}</span></div>
+                  <div style="font:600 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.34em;color:#5F6779;margin-top:2px;text-align:right">D&nbsp;&nbsp;&nbsp;H&nbsp;&nbsp;&nbsp;M&nbsp;&nbsp;&nbsp;S&nbsp;</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid rgba(255,255,255,.07)">
+                <span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.12em;color:#9BA3B7"><span style="color:#E8EBF4;font-weight:700">{{ waitStr }}</span> WAITING</span>
+                <div style="flex:1"></div>
+                <span style="display:flex;align-items:center;gap:5px;font:700 10px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#7D7AFF;border:1px solid rgba(125,122,255,.5);border-radius:7px;padding:6px 10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path></svg>NOTIFY ME</span>
+                <span style="font:700 10px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#9BA3B7;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:6px 10px">RSVP</span>
+              </div>
+            </div>
+            <!-- queue -->
+            <div style="margin:12px 12px 0;background:#10131A;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden">
+              <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:700 9.5px 'Archivo',sans-serif;font-stretch:78%;letter-spacing:.18em;color:#9BA3B7">UPCOMING QUEUE</span><div style="flex:1"></div><span style="display:flex;align-items:center;gap:4px;font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#5F6779"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 6h18M7 12h10M10 18h4"></path></svg>FILTER</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:2px solid #E3A83C;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:38px;font:700 12px 'Space Grotesk',sans-serif;color:#E3A83C">D-1</span>
+                <span style="width:50px;text-align:center;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.12em;color:#E3A83C;background:rgba(227,168,60,.12);border-radius:4px;padding:3px 0">SHOW</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">IVE — Music Bank</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">KBS2 · Fri</div></div>
+                <span style="font:600 11px 'Space Grotesk',sans-serif;color:#9BA3B7">17:00</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:2px solid #7D7AFF;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:38px;font:700 12px 'Space Grotesk',sans-serif;color:#7D7AFF">D-2</span>
+                <span style="width:50px;text-align:center;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.12em;color:#7D7AFF;background:rgba(125,122,255,.12);border-radius:4px;padding:3px 0">CMBK</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">aespa — Whiplash</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">Mini album · Sun</div></div>
+                <span style="font:600 11px 'Space Grotesk',sans-serif;color:#9BA3B7">18:00</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#7D7AFF" stroke="#7D7AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:2px solid #2FD4AC;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:38px;font:700 12px 'Space Grotesk',sans-serif;color:#2FD4AC">D-6</span>
+                <span style="width:50px;text-align:center;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.12em;color:#2FD4AC;background:rgba(47,212,172,.12);border-radius:4px;padding:3px 0">MV</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">IVE — Rebel Heart</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">YouTube premiere</div></div>
+                <span style="font:600 11px 'Space Grotesk',sans-serif;color:#9BA3B7">00:00</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:2px solid #E85D8A;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:38px;font:700 12px 'Space Grotesk',sans-serif;color:#E85D8A">D-10</span>
+                <span style="width:50px;text-align:center;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.12em;color:#E85D8A;background:rgba(232,93,138,.12);border-radius:4px;padding:3px 0">LIVE</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Stray Kids — dominATE Seoul</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">Night 1 · Olympic Stadium</div></div>
+                <span style="font:600 11px 'Space Grotesk',sans-serif;color:#9BA3B7">19:00</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:2px solid #8b90a3">
+                <span style="width:38px;font:700 12px 'Space Grotesk',sans-serif;color:#9BA3B7">D-30</span>
+                <span style="width:50px;text-align:center;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.12em;color:#9BA3B7;background:rgba(139,144,163,.12);border-radius:4px;padding:3px 0">ANNIV</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">NewJeans — 4 years</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">Debut anniversary · Aug 1</div></div>
+                <span style="font:600 11px 'Space Grotesk',sans-serif;color:#5F6779">—</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+            </div>
+            <!-- week glance -->
+            <div style="margin:12px 12px 0;background:#10131A;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px 12px">
+              <div style="display:flex;align-items:center;margin-bottom:9px"><span style="font:700 9.5px 'Archivo',sans-serif;font-stretch:78%;letter-spacing:.18em;color:#9BA3B7">THIS WEEK</span><div style="flex:1"></div><span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#7D7AFF">JULY →</span></div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+                <div style="background:rgba(125,122,255,.1);border:1px solid rgba(125,122,255,.55);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#7D7AFF">THU</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">2</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#E3A83C"></span></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">FRI</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">3</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#E3A83C"></span><span style="width:4px;height:4px;border-radius:999px;background:#2FD4AC"></span></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">SAT</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">4</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#E3A83C"></span></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">SUN</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">5</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#7D7AFF"></span><span style="width:4px;height:4px;border-radius:999px;background:#E3A83C"></span></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">MON</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">6</div><div style="display:flex;justify-content:center;gap:3px"></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">TUE</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">7</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#2FD4AC"></span></div></div>
+                <div style="background:#12151C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 0 7px;text-align:center"><div style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">WED</div><div style="font:600 13px 'Space Grotesk',sans-serif;margin:2px 0 4px">8</div><div style="display:flex;justify-content:center;gap:3px"><span style="width:4px;height:4px;border-radius:999px;background:#E85D8A"></span></div></div>
+              </div>
+            </div>
+            <!-- chart -->
+            <div style="margin:12px 12px 0;background:#10131A;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden">
+              <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:700 9.5px 'Archivo',sans-serif;font-stretch:78%;letter-spacing:.18em;color:#9BA3B7">TOP RATED — THIS WEEK</span><div style="flex:1"></div><span style="font:600 9.5px 'Archivo',sans-serif;font-stretch:82%;letter-spacing:.1em;color:#7D7AFF">CHART →</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:18px;font:700 13px 'Space Grotesk',sans-serif;color:#E3A83C">1</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif">How Sweet</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">NewJeans · 342 ratings</div></div>
+                <div style="width:64px;height:4px;border-radius:99px;background:rgba(255,255,255,.08)"><div style="width:91%;height:4px;border-radius:99px;background:linear-gradient(90deg,#7D7AFF,#2FD4AC)"></div></div>
+                <span style="width:26px;text-align:right;font:700 12.5px 'Space Grotesk',sans-serif">9.1</span>
+                <span style="width:24px;font:600 9.5px 'Space Grotesk',sans-serif;color:#2FD4AC">▲2</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:18px;font:700 13px 'Space Grotesk',sans-serif;color:#9BA3B7">2</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif">Crazy</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">LE SSERAFIM · 214 ratings</div></div>
+                <div style="width:64px;height:4px;border-radius:99px;background:rgba(255,255,255,.08)"><div style="width:87%;height:4px;border-radius:99px;background:linear-gradient(90deg,#7D7AFF,#2FD4AC)"></div></div>
+                <span style="width:26px;text-align:right;font:700 12.5px 'Space Grotesk',sans-serif">8.7</span>
+                <span style="width:24px;font:600 9.5px 'Space Grotesk',sans-serif;color:#5F6779">—</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:18px;font:700 13px 'Space Grotesk',sans-serif;color:#9BA3B7">3</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif">Supernova</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">aespa · 489 ratings</div></div>
+                <div style="width:64px;height:4px;border-radius:99px;background:rgba(255,255,255,.08)"><div style="width:86%;height:4px;border-radius:99px;background:linear-gradient(90deg,#7D7AFF,#2FD4AC)"></div></div>
+                <span style="width:26px;text-align:right;font:700 12.5px 'Space Grotesk',sans-serif">8.6</span>
+                <span style="width:24px;font:600 9.5px 'Space Grotesk',sans-serif;color:#E85D8A">▼1</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05)">
+                <span style="width:18px;font:700 13px 'Space Grotesk',sans-serif;color:#9BA3B7">4</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif">Chk Chk Boom</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">Stray Kids · 187 ratings</div></div>
+                <div style="width:64px;height:4px;border-radius:99px;background:rgba(255,255,255,.08)"><div style="width:82%;height:4px;border-radius:99px;background:linear-gradient(90deg,#7D7AFF,#2FD4AC)"></div></div>
+                <span style="width:26px;text-align:right;font:700 12.5px 'Space Grotesk',sans-serif">8.2</span>
+                <span style="width:24px;font:600 9.5px 'Space Grotesk',sans-serif;color:#2FD4AC">▲1</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+                <span style="width:18px;font:700 13px 'Space Grotesk',sans-serif;color:#9BA3B7">5</span>
+                <div style="flex:1;min-width:0"><div style="font:600 12px 'Geist',sans-serif">Gold</div><div style="font:400 10px 'Geist',sans-serif;color:#5F6779">ITZY · 96 ratings</div></div>
+                <div style="width:64px;height:4px;border-radius:99px;background:rgba(255,255,255,.08)"><div style="width:79%;height:4px;border-radius:99px;background:linear-gradient(90deg,#7D7AFF,#2FD4AC)"></div></div>
+                <span style="width:26px;text-align:right;font:700 12.5px 'Space Grotesk',sans-serif">7.9</span>
+                <span style="width:24px;font:700 8px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.08em;color:#E3A83C">NEW</span>
+              </div>
+            </div>
+            <div style="padding:14px 0 18px;text-align:center;font:500 9px 'Space Grotesk',sans-serif;letter-spacing:.18em;color:#3E4453">12 SOURCES SCRAPED · UPDATED 2 MIN AGO</div>
+          </div>
+          <div style="flex:none;display:flex;align-items:flex-end;padding:6px 8px 28px;background:#0E1118;border-top:1px solid rgba(255,255,255,.09)">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7D7AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg><span style="font:700 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#7D7AFF">HOME</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">CALENDAR</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="width:46px;height:46px;border-radius:14px;background:#7D7AFF;display:flex;align-items:center;justify-content:center;transform:translateY(-14px);box-shadow:0 8px 20px rgba(125,122,255,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B0D12" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div><span style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779;margin-top:-9px">SEARCH</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg><span style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">CHARTS</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6779" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span style="font:600 8.5px 'Archivo',sans-serif;font-stretch:80%;letter-spacing:.1em;color:#5F6779">GROUPS</span></div>
+          </div>
+        </div>
+      </x-import>
+      </div>
+      <div style="width:402px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:14px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:9px 12px">
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">DAYLIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#F2F3F5;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#16181D"></span><span style="width:16px;height:16px;border-radius:5px;background:#4E4AE8"></span><span style="width:16px;height:16px;border-radius:5px;background:#159E80"></span><span style="width:16px;height:16px;border-radius:5px;background:#C88A28"></span></div>
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">MIDNIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#0B0D12"></span><span style="width:16px;height:16px;border-radius:5px;background:#10131A"></span><span style="width:16px;height:16px;border-radius:5px;background:#E8EBF4;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#7D7AFF"></span><span style="width:16px;height:16px;border-radius:5px;background:#2FD4AC"></span><span style="width:16px;height:16px;border-radius:5px;background:#E3A83C"></span></div>
+        </div>
+        <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:12px 14px">
+          <div style="font:700 11px 'Geist',sans-serif;color:#1a1a1a;margin-bottom:6px">Le pari — la donnée EST le décor (direction HLTV assumée)</div>
+          <div style="font:400 11px/1.6 'Geist',sans-serif;color:rgba(0,0,0,.6)">Densité maximale : ticker live, file d'events en D-day, semaine en un coup d'œil, chart des mieux notés avec barres. Rayons réduits, type condensée, hairlines — identité « outil sérieux » très différenciante face au pastel ambiant. Hooks : ticker, queue D-day, chart hebdo, recherche globale en nav centrale.</div>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ══════════════════ OPTION 1C — FAN CLUB ══════════════════ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Fan Club — le « Letterboxd du k-pop », communauté d'abord</div>
+      <div data-screen-label="1c Fan Club — Home">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#120E1B;color:#F5F1FA;font-family:'Geist',sans-serif">
+          <div style="flex:1;overflow-y:auto;position:relative">
+            <div style="position:absolute;top:0;left:0;right:0;height:460px;background:radial-gradient(320px 220px at 90% -10%,rgba(255,122,168,.14),transparent 60%),radial-gradient(300px 220px at 0% 0%,rgba(169,155,255,.16),transparent 60%);pointer-events:none"></div>
+            <!-- header -->
+            <div style="position:relative;display:flex;align-items:center;gap:12px;padding:60px 18px 8px">
+              <div style="width:36px;height:36px;border-radius:999px;background:linear-gradient(135deg,#A99BFF,#FF7AA8);display:flex;align-items:center;justify-content:center;font:700 14px 'Bricolage Grotesque',sans-serif;color:#171126;box-shadow:0 0 0 2px #120E1B,0 0 0 3.5px rgba(169,155,255,.5)">m</div>
+              <div style="flex:1">
+                <div style="font:italic 400 20px 'Instrument Serif',serif;letter-spacing:.005em">Good evening, mel</div>
+                <div style="font:400 11px 'Geist',sans-serif;color:#B3A9C9;margin-top:1px">3 drops from your groups this week</div>
+              </div>
+              <div style="width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B3A9C9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><span style="position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:999px;background:#FF7AA8;border:2px solid #120E1B"></span></div>
+            </div>
+            <!-- ticket hero -->
+            <div style="position:relative;margin:10px 16px 0;background:linear-gradient(150deg,#251B38 0%,#1C1626 70%);border:1px solid rgba(255,255,255,.1);border-radius:22px;overflow:hidden;display:flex">
+              <div style="flex:1;padding:16px 14px 14px;min-width:0">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="font:700 9px 'Geist',sans-serif;letter-spacing:.15em;color:#A99BFF;background:rgba(169,155,255,.14);border-radius:999px;padding:4px 9px">COMEBACK</span>
+                  <span style="font:600 10px 'Space Grotesk',sans-serif;color:#B3A9C9;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 8px">SUN JUL 5</span>
+                </div>
+                <div style="font:italic 400 36px/1.02 'Instrument Serif',serif;margin:11px 0 5px">Whiplash</div>
+                <div style="font:500 12px 'Geist',sans-serif;color:#D9D2E8">aespa · The 6th Mini Album</div>
+                <div style="font:400 10.5px 'Geist',sans-serif;color:#7A6F94;margin-top:2px">6:00 PM KST · 11:00 AM your time</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+                  <span style="display:flex;align-items:center;gap:6px;background:#A99BFF;color:#171126;border-radius:999px;padding:9px 14px;font:700 12px 'Geist',sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>I'll be there</span>
+                  <div style="display:flex">
+                    <span style="width:20px;height:20px;border-radius:999px;background:linear-gradient(135deg,#FF7AA8,#E8C36A);border:2px solid #1C1626"></span>
+                    <span style="width:20px;height:20px;border-radius:999px;background:linear-gradient(135deg,#45E0BB,#5B8DEF);border:2px solid #1C1626;margin-left:-6px"></span>
+                  </div>
+                  <span style="font:600 10.5px 'Space Grotesk',sans-serif;color:#B3A9C9">+{{ waitStr }}</span>
+                </div>
+              </div>
+              <div style="position:relative;width:104px;flex:none;border-left:2px dashed rgba(255,255,255,.16);padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center">
+                <span style="position:absolute;top:-9px;left:-10px;width:18px;height:18px;border-radius:999px;background:#120E1B"></span>
+                <span style="position:absolute;bottom:-9px;left:-10px;width:18px;height:18px;border-radius:999px;background:#120E1B"></span>
+                <div style="font:600 7.5px 'Geist',sans-serif;letter-spacing:.24em;color:#7A6F94">COUNTDOWN</div>
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;text-align:center">
+                  <div><span style="font:700 19px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.d }}</span><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94;margin-left:3px">d</span></div>
+                  <div><span style="font:700 19px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.h }}</span><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94;margin-left:3px">h</span></div>
+                  <div><span style="font:700 19px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1">{{ a.m }}</span><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94;margin-left:3px">m</span></div>
+                  <div><span style="font:700 19px 'Space Grotesk',sans-serif;font-feature-settings:'tnum' 1;color:#FF7AA8">{{ a.s }}</span><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94;margin-left:3px">s</span></div>
+                </div>
+                <div style="width:64px;height:22px;background:repeating-linear-gradient(90deg,rgba(245,241,250,.8) 0 2px,transparent 2px 4.5px)"></div>
+                <div style="font:500 8px 'Space Grotesk',sans-serif;letter-spacing:.14em;color:#7A6F94;margin-top:4px">N° 070526</div>
+              </div>
+            </div>
+            <!-- week pills -->
+            <div style="position:relative;display:flex;gap:8px;overflow-x:auto;padding:14px 16px 2px">
+              <span style="flex:none;display:flex;align-items:center;gap:7px;background:#1C1626;border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:8px 13px;font:500 11px 'Geist',sans-serif;color:#D9D2E8"><span style="width:7px;height:7px;border-radius:999px;background:#E8C36A;animation:kpulse 1.6s infinite"></span>Tonight — ITZY · M Countdown</span>
+              <span style="flex:none;display:flex;align-items:center;gap:7px;background:#1C1626;border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:8px 13px;font:500 11px 'Geist',sans-serif;color:#D9D2E8"><span style="width:7px;height:7px;border-radius:999px;background:#E8C36A"></span>Fri — IVE · Music Bank</span>
+              <span style="flex:none;display:flex;align-items:center;gap:7px;background:#1C1626;border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:8px 13px;font:500 11px 'Geist',sans-serif;color:#D9D2E8"><span style="width:7px;height:7px;border-radius:999px;background:#45E0BB"></span>Jul 8 — IVE · MV drop</span>
+            </div>
+            <!-- feed -->
+            <div style="position:relative;display:flex;align-items:baseline;padding:22px 18px 10px"><span style="font:italic 400 17px 'Instrument Serif',serif">Your circle</span><span style="font:400 10.5px 'Geist',sans-serif;color:#7A6F94;margin-left:8px">on your groups</span><div style="flex:1"></div><span style="display:flex;gap:2px;background:#1C1626;border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:3px"><span style="font:700 9.5px 'Geist',sans-serif;color:#171126;background:#A99BFF;border-radius:999px;padding:3px 9px">Top</span><span style="font:600 9.5px 'Geist',sans-serif;color:#7A6F94;padding:3px 9px">New</span></span></div>
+            <div style="position:relative;margin:0 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="background:#1C1626;border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:13px 14px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#FF7AA8,#E8C36A);display:flex;align-items:center;justify-content:center;font:700 11px 'Bricolage Grotesque',sans-serif;color:#2A1420">y</span>
+                  <span style="font:600 12px 'Geist',sans-serif">@yeji_4</span>
+                  <span style="font:400 11px 'Geist',sans-serif;color:#7A6F94">rated</span>
+                  <span style="font:600 11px 'Geist',sans-serif;color:#A99BFF">Supernova</span>
+                  <div style="flex:1"></div>
+                  <span style="font:700 12px 'Space Grotesk',sans-serif;color:#E8C36A;background:rgba(232,195,106,.13);border-radius:8px;padding:3px 8px">9.5</span>
+                </div>
+                <div style="font:italic 400 14.5px/1.35 'Instrument Serif',serif;color:#EDE7F7;margin:9px 2px 8px">“ate and left no crumbs. the bridge is criminal.”</div>
+                <div style="display:flex;align-items:center;gap:14px;color:#7A6F94">
+                  <span style="display:flex;align-items:center;gap:4px;font:600 10.5px 'Geist',sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>24</span>
+                  <span style="display:flex;align-items:center;gap:4px;font:600 10.5px 'Geist',sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>6 replies</span>
+                  <div style="flex:1"></div><span style="font:500 10px 'Geist',sans-serif">2h</span>
+                </div>
+              </div>
+              <div style="background:linear-gradient(160deg,rgba(232,195,106,.13),rgba(232,195,106,.02) 60%),#1C1626;border:1px solid rgba(232,195,106,.35);border-radius:18px;padding:13px 14px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21 1.18.54 2.03 2.03 2.03 3.79"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+                  <span style="font:700 9px 'Geist',sans-serif;letter-spacing:.18em;color:#E8C36A">MV OF JUNE — COMMUNITY PICK</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:11px;margin-top:10px">
+                  <div style="width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#6E4BFF,#B14EFF);display:flex;align-items:center;justify-content:center;font:800 18px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92)">æ</div>
+                  <div style="flex:1"><div style="font:700 14px 'Geist',sans-serif">Armageddon</div><div style="font:400 11px 'Geist',sans-serif;color:#B3A9C9">aespa · score 9.2 · 428 ratings</div></div>
+                  <span style="font:600 10.5px 'Geist',sans-serif;color:#E8C36A">Podium →</span>
+                </div>
+              </div>
+              <div style="border:1.5px dashed rgba(169,155,255,.4);border-radius:18px;padding:14px">
+                <div style="font:600 13px 'Geist',sans-serif">How Sweet just dropped.</div>
+                <div style="font:400 11px 'Geist',sans-serif;color:#B3A9C9;margin-top:2px">No rating from you yet — be the first in your circle.</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                  <span style="font:700 11px 'Space Grotesk',sans-serif;color:#7A6F94">0</span>
+                  <div style="flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.09);position:relative"><div style="width:70%;height:6px;border-radius:99px;background:linear-gradient(90deg,#A99BFF,#FF7AA8)"></div><span style="position:absolute;left:70%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:999px;background:#F5F1FA;box-shadow:0 2px 8px rgba(0,0,0,.5)"></span></div>
+                  <span style="font:700 11px 'Space Grotesk',sans-serif;color:#7A6F94">10</span>
+                  <span style="font:700 13px 'Space Grotesk',sans-serif;color:#A99BFF;width:24px;text-align:right">7</span>
+                </div>
+                <div style="display:flex;margin-top:12px"><span style="flex:1"></span><span style="font:700 11.5px 'Geist',sans-serif;color:#171126;background:#A99BFF;border-radius:999px;padding:8px 16px">Rate it</span></div>
+              </div>
+            </div>
+            <!-- fan card -->
+            <div style="position:relative;margin:14px 16px 18px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(140deg,rgba(169,155,255,.14),rgba(255,122,168,.08) 70%),#1C1626;padding:13px 14px">
+              <div style="display:flex;align-items:center"><span style="font:italic 400 15px 'Instrument Serif',serif">Your fan card</span><div style="flex:1"></div><span style="display:flex;align-items:center;gap:5px;font:600 10.5px 'Geist',sans-serif;color:#A99BFF;border:1px solid rgba(169,155,255,.45);border-radius:999px;padding:5px 10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="m16 6-4-4-4 4"></path><path d="M12 2v13"></path></svg>Share</span></div>
+              <div style="display:flex;gap:8px;margin-top:11px">
+                <div style="flex:1;background:rgba(18,14,27,.55);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:9px 0;text-align:center"><div style="font:700 19px 'Space Grotesk',sans-serif">12</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.14em;color:#7A6F94;margin-top:1px">FOLLOWING</div></div>
+                <div style="flex:1;background:rgba(18,14,27,.55);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:9px 0;text-align:center"><div style="font:700 19px 'Space Grotesk',sans-serif">34</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.14em;color:#7A6F94;margin-top:1px">RATED</div></div>
+                <div style="flex:1;background:rgba(18,14,27,.55);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:9px 0;text-align:center"><div style="font:700 19px 'Space Grotesk',sans-serif;color:#E8C36A">7.8</div><div style="font:600 8.5px 'Geist',sans-serif;letter-spacing:.14em;color:#7A6F94;margin-top:1px">AVG SCORE</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;padding:0 14px 26px;background:transparent">
+            <div style="display:flex;align-items:stretch;background:rgba(30,23,42,.92);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:6px;backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.4)">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;background:rgba(169,155,255,.16);border-radius:999px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A99BFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg><span style="font:700 9px 'Geist',sans-serif;color:#A99BFF">Home</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A6F94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94">Calendar</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A6F94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94">Feed</span><span style="position:absolute;top:4px;right:26px;width:6px;height:6px;border-radius:999px;background:#FF7AA8"></span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A6F94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2.5"></circle></svg><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94">Drops</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A6F94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span style="font:600 9px 'Geist',sans-serif;color:#7A6F94">Me</span></div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      </div>
+      <div style="width:402px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:14px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:9px 12px">
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">DAYLIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#F6F2EC;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#221A2E"></span><span style="width:16px;height:16px;border-radius:5px;background:#6D5BEA"></span><span style="width:16px;height:16px;border-radius:5px;background:#E0577E"></span><span style="width:16px;height:16px;border-radius:5px;background:#C99B3F"></span></div>
+          <div style="display:flex;align-items:center;gap:5px"><span style="font:600 9px 'Geist',sans-serif;color:rgba(0,0,0,.45);width:52px">MIDNIGHT</span><span style="width:16px;height:16px;border-radius:5px;background:#120E1B"></span><span style="width:16px;height:16px;border-radius:5px;background:#1C1626"></span><span style="width:16px;height:16px;border-radius:5px;background:#F5F1FA;border:1px solid rgba(0,0,0,.1)"></span><span style="width:16px;height:16px;border-radius:5px;background:#A99BFF"></span><span style="width:16px;height:16px;border-radius:5px;background:#FF7AA8"></span><span style="width:16px;height:16px;border-radius:5px;background:#E8C36A"></span></div>
+        </div>
+        <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:12px 14px">
+          <div style="font:700 11px 'Geist',sans-serif;color:#1a1a1a;margin-bottom:6px">Le pari — la communauté au centre (l'angle Letterboxd)</div>
+          <div style="font:400 11px/1.6 'Geist',sans-serif;color:rgba(0,0,0,.6)">Le comeback devient un ticket qu'on RSVP, le feed d'avis est le cœur de la page, le « MV du mois » et la fan card capitalisent l'investissement. Serif Instrument élargie en signature de marque. Hooks : feed d'activité, winner mensuel, invitation « be the first to rate », fan card partageable, tab Feed dédiée.</div>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Essaie ensuite : « décline <a class="dv-oid" href="#1a">1a</a> sur toutes les pages » · « garde le hero de <a class="dv-oid" href="#1a">1a</a> avec la densité de <a class="dv-oid" href="#1b">1b</a> » · « montre <a class="dv-oid" href="#1c">1c</a> en Daylight » — puis je décline la direction choisie en prototype navigable complet (landing, calendar, groupe, MV, profil).</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;waitingCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1248,&quot;min&quot;:0,&quot;max&quot;:100000,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Contenu&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const now = Date.now();
+    this.targets = {
+      a: now + (2 * 86400 + 14 * 3600 + 37 * 60 + 9) * 1000,
+      b: now + (7 * 3600 + 22 * 60 + 14) * 1000,
+      c: now + (1 * 86400 + 3 * 3600 + 12 * 60 + 41) * 1000,
+    };
+    this.state = { tick: 0 };
+  }
+  componentDidMount() {
+    this._iv = setInterval(() => this.setState((s) => ({ tick: s.tick + 1 })), 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this._iv);
+  }
+  fmt(ms) {
+    if (ms < 0) ms = 0;
+    const t = Math.floor(ms / 1000);
+    const p = (n) => String(n).padStart(2, '0');
+    return {
+      d: p(Math.floor(t / 86400)),
+      h: p(Math.floor((t % 86400) / 3600)),
+      m: p(Math.floor((t % 3600) / 60)),
+      s: p(t % 60),
+    };
+  }
+  renderVals() {
+    const n = Date.now();
+    const a = this.fmt(this.targets.a - n);
+    const b = this.fmt(this.targets.b - n);
+    const c = this.fmt(this.targets.c - n);
+    return {
+      a, b, c,
+      bStr: b.h + ':' + b.m + ':' + b.s,
+      waitStr: (this.props.waitingCount ?? 1248).toLocaleString('en-US'),
+      showNotes: this.props.showNotes ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

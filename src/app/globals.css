@@ -5,28 +5,32 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ------------------------------------------------------------------ *
- * KStage — thème « Daylight / Midnight »
- * Daylight  = clair par défaut (:root)
- * Midnight  = sombre (.dark)
- * Accent partagé : periwinkle (primary) + menthe (teal).
+ * KStage v2 — thème « Data Desk » (Daylight / Midnight)
+ * Dense / dark / data-forward. Periwinkle affûté + menthe, panneaux
+ * bleu-acier, hairlines, rayons resserrés (10px), labels condensés.
+ * Drop-in pour src/app/globals.css — voir README.md du bundle.
  * ------------------------------------------------------------------ */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* fond « page » extérieur, sous la fenêtre app (maquette : --page < --bg < --card) */
+  /* fond « page » extérieur, sous la surface app */
   --color-page: var(--page);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-bricolage);
-  /* nouveau : chiffres (countdowns, heures) + accent éditorial */
+  /* chiffres (countdowns, heures, scores) + accent éditorial rare */
   --font-numeric: var(--font-space-grotesk);
   --font-serif: var(--font-instrument);
-  /* nouveau : couleurs sémantiques d'event, utilisables en bg-teal / text-rose… */
+  /* NOUVEAU : labels condensés (sections, tags, nav) — Archivo variable wdth */
+  --font-condensed: var(--font-archivo);
+  /* couleurs sémantiques d'event */
   --color-teal: var(--teal);
   --color-amber: var(--amber);
   --color-rose: var(--rose);
   --color-faint: var(--faint);
+  /* NOUVEAU : indicateur temps réel (dot LIVE, ticker) */
+  --color-live: var(--live);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -56,112 +60,112 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: calc(var(--radius) * 0.6); /* 6px — tags, chips */
+  --radius-md: calc(var(--radius) * 0.8); /* 8px — thumbnails, segments */
+  --radius-lg: var(--radius); /* 10px — panneaux, cartes */
+  --radius-xl: calc(var(--radius) * 1.2); /* 12px — hero, bannières, tuiles */
+  --radius-2xl: calc(var(--radius) * 1.4); /* 14px — FAB search */
+  --radius-3xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.2);
 }
 
 /* ===================== DAYLIGHT (clair) ===================== */
 :root {
-  --page: oklch(0.928 0.005 286); /* gris lilas clair, fond extérieur (#ecebef) */
-  --background: oklch(0.982 0.003 85); /* blanc cassé chaud — surface fenêtre */
-  --foreground: oklch(0.23 0.015 285); /* encre */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.015 285);
+  --page: oklch(0.937 0.005 275); /* gris froid, fond extérieur (#e9eaee) */
+  --background: oklch(0.97 0.003 264); /* surface app (#f4f5f7) */
+  --foreground: oklch(0.209 0.01 268); /* encre (#16181d) */
+  --card: oklch(1 0 0); /* panneau (#ffffff) */
+  --card-foreground: oklch(0.209 0.01 268);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.015 285);
+  --popover-foreground: oklch(0.209 0.01 268);
 
-  --primary: oklch(0.561 0.218 277); /* periwinkle #5b5bf0 */
+  --primary: oklch(0.519 0.23 276); /* periwinkle affûté #4e4ae8 */
   --primary-foreground: oklch(0.99 0 0);
 
-  --secondary: oklch(0.955 0.008 301);
-  --secondary-foreground: oklch(0.23 0.015 285);
-  --muted: oklch(0.955 0.008 301);
-  --muted-foreground: oklch(0.531 0.014 286);
+  --secondary: oklch(0.944 0.004 272); /* panneau secondaire (#ecedf1) */
+  --secondary-foreground: oklch(0.209 0.01 268);
+  --muted: oklch(0.944 0.004 272);
+  --muted-foreground: oklch(0.501 0.024 262); /* texte secondaire (#5c6472) */
 
-  --accent: oklch(0.945 0.027 290); /* lilas doux (chips actifs) */
-  --accent-foreground: oklch(0.561 0.218 277); /* texte periwinkle sur lilas */
+  --accent: oklch(0.94 0.026 286); /* lilas très pâle (chips actifs) */
+  --accent-foreground: oklch(0.519 0.23 276);
 
   --destructive: oklch(0.58 0.23 25);
-  --border: oklch(0.947 0.003 68); /* hairline */
-  --input: oklch(0.947 0.003 68);
-  --ring: oklch(0.561 0.218 277);
+  --border: oklch(0.923 0.007 277); /* hairline (#e4e5ea) */
+  --input: oklch(0.923 0.007 277);
+  --ring: oklch(0.519 0.23 276);
 
   /* couleurs sémantiques d'event */
-  --teal: oklch(0.664 0.111 187); /* MV / release */
-  --amber: oklch(0.655 0.134 70); /* music show */
-  --rose: oklch(0.637 0.179 1); /* live */
-  --faint: oklch(
-    0.635 0.013 286
-  ); /* texte tertiaire / labels — assombri pour ≥3:1 WCAG sur carte blanche (était 0.689 ≈ 2.8:1) */
+  --teal: oklch(0.624 0.118 172.6); /* MV / release (#0f9e80) */
+  --amber: oklch(0.64 0.126 74.2); /* music show (#b97f1e) */
+  --rose: oklch(0.617 0.178 1.5); /* live / concert (#d64c7e) */
+  --live: oklch(0.593 0.211 26.5); /* LIVE NOW (#e03131) */
+  --faint: oklch(0.661 0.026 262); /* micro-labels (#8a93a3) */
 
-  --chart-1: oklch(0.561 0.218 277);
-  --chart-2: oklch(0.664 0.111 187);
-  --chart-3: oklch(0.655 0.134 70);
-  --chart-4: oklch(0.637 0.179 1);
-  --chart-5: oklch(0.7 0.16 150);
+  --chart-1: oklch(0.519 0.23 276);
+  --chart-2: oklch(0.624 0.118 172.6);
+  --chart-3: oklch(0.64 0.126 74.2);
+  --chart-4: oklch(0.617 0.178 1.5);
+  --chart-5: oklch(0.661 0.026 262);
 
-  --radius: 1rem; /* plus généreux (était 0.9rem) */
+  --radius: 0.625rem; /* 10px — resserré (v1 : 1rem) */
 
-  --sidebar: oklch(0.982 0.003 85);
-  --sidebar-foreground: oklch(0.23 0.015 285);
-  --sidebar-primary: oklch(0.561 0.218 277);
+  --sidebar: oklch(0.97 0.003 264);
+  --sidebar-foreground: oklch(0.209 0.01 268);
+  --sidebar-primary: oklch(0.519 0.23 276);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.945 0.027 290);
-  --sidebar-accent-foreground: oklch(0.561 0.218 277);
-  --sidebar-border: oklch(0.947 0.003 68);
-  --sidebar-ring: oklch(0.561 0.218 277);
+  --sidebar-accent: oklch(0.94 0.026 286);
+  --sidebar-accent-foreground: oklch(0.519 0.23 276);
+  --sidebar-border: oklch(0.923 0.007 277);
+  --sidebar-ring: oklch(0.519 0.23 276);
 }
 
 /* ===================== MIDNIGHT (sombre) ===================== */
 .dark {
-  --page: oklch(0.1 0.015 274); /* presque noir bleuté, fond extérieur (#070810) */
-  --background: oklch(0.179 0.015 272); /* bleu encre profond — surface fenêtre */
-  --foreground: oklch(0.955 0.007 269);
-  --card: oklch(0.238 0.024 274);
-  --card-foreground: oklch(0.955 0.007 269);
-  --popover: oklch(0.238 0.024 274);
-  --popover-foreground: oklch(0.955 0.007 269);
+  --page: oklch(0.141 0.011 275); /* fond extérieur (#08090e) */
+  --background: oklch(0.159 0.011 268); /* surface app bleu-acier (#0b0d12) */
+  --foreground: oklch(0.94 0.013 271); /* encre (#e8ebf4) */
+  --card: oklch(0.187 0.015 267); /* panneau (#10131a) */
+  --card-foreground: oklch(0.94 0.013 271);
+  --popover: oklch(0.196 0.015 267); /* (#12151c) */
+  --popover-foreground: oklch(0.94 0.013 271);
 
-  --primary: oklch(0.675 0.176 281); /* periwinkle lumineux #8785ff */
-  --primary-foreground: oklch(0.99 0 0);
+  --primary: oklch(0.648 0.192 280.6); /* periwinkle lumineux #7d7aff */
+  --primary-foreground: oklch(0.159 0.011 268); /* ENCRE SOMBRE sur primary */
 
-  --secondary: oklch(0.288 0.03 274);
-  --secondary-foreground: oklch(0.955 0.007 269);
-  --muted: oklch(0.288 0.03 274);
-  --muted-foreground: oklch(0.656 0.029 274);
+  --secondary: oklch(0.196 0.015 267); /* panneau secondaire (#12151c) */
+  --secondary-foreground: oklch(0.94 0.013 271);
+  --muted: oklch(0.196 0.015 267);
+  --muted-foreground: oklch(0.716 0.03 268); /* texte secondaire (#9ba3b7) */
 
-  --accent: oklch(0.32 0.055 281); /* lilas sombre (chips actifs) */
+  --accent: oklch(0.252 0.042 277); /* lilas sombre (chips actifs) (#1d2036) */
   --accent-foreground: oklch(0.78 0.13 282);
 
   --destructive: oklch(0.7 0.19 25);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.675 0.176 281);
+  --border: oklch(1 0 0 / 8%); /* hairline */
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.648 0.192 280.6);
 
-  --teal: oklch(0.815 0.143 172); /* menthe électrique #3fe0b8 */
-  --amber: oklch(0.783 0.131 78);
-  --rose: oklch(0.699 0.17 359);
-  --faint: oklch(0.55 0.038 276);
+  --teal: oklch(0.779 0.142 171.6); /* menthe (#2fd4ac) */
+  --amber: oklch(0.769 0.138 78.7); /* (#e3a83c) */
+  --rose: oklch(0.668 0.176 3); /* (#e85d8a) */
+  --live: oklch(0.669 0.219 20.9); /* LIVE NOW (#ff4757) */
+  --faint: oklch(0.514 0.03 266); /* micro-labels (#5f6779) */
 
-  --chart-1: oklch(0.675 0.176 281);
-  --chart-2: oklch(0.815 0.143 172);
-  --chart-3: oklch(0.783 0.131 78);
-  --chart-4: oklch(0.699 0.17 359);
-  --chart-5: oklch(0.78 0.15 150);
+  --chart-1: oklch(0.648 0.192 280.6);
+  --chart-2: oklch(0.779 0.142 171.6);
+  --chart-3: oklch(0.769 0.138 78.7);
+  --chart-4: oklch(0.668 0.176 3);
+  --chart-5: oklch(0.514 0.03 266);
 
-  --sidebar: oklch(0.238 0.024 274);
-  --sidebar-foreground: oklch(0.955 0.007 269);
-  --sidebar-primary: oklch(0.675 0.176 281);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.32 0.055 281);
+  --sidebar: oklch(0.187 0.015 267);
+  --sidebar-foreground: oklch(0.94 0.013 271);
+  --sidebar-primary: oklch(0.648 0.192 280.6);
+  --sidebar-primary-foreground: oklch(0.159 0.011 268);
+  --sidebar-accent: oklch(0.252 0.042 277);
   --sidebar-accent-foreground: oklch(0.78 0.13 282);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.675 0.176 281);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.648 0.192 280.6);
 }
 
 @layer base {
@@ -179,44 +183,100 @@
   h3,
   h4 {
     font-family: var(--font-heading);
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
   }
-  /* chiffres : countdowns, heures, compteurs */
+  /* chiffres : countdowns, D-days, heures, scores, compteurs */
   .tabular,
   [data-numeric] {
     font-family: var(--font-numeric);
     font-feature-settings: 'tnum' 1;
   }
-  /* Atmosphère subtile en Midnight : halo periwinkle + halo menthe, posée sur la
-     page (plus de cadre fenêtre) — discrète, fixée au scroll. */
-  .dark body {
-    background-image:
-      radial-gradient(900px 520px at 88% -12%, oklch(0.675 0.176 281 / 0.14), transparent 60%),
-      radial-gradient(760px 440px at -8% 2%, oklch(0.815 0.143 172 / 0.08), transparent 55%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+  /* v2 : PAS de halos d'atmosphère sur .dark body (supprimés volontairement).
+     Le seul glow autorisé est local : gradient de marque dans le hero
+     comeback / bannière groupe / hero landing. */
+}
+
+/* Ticker live (§7.1.2) : défilement continu, contenu dupliqué ×2. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Dots LIVE / à venir : pulse d'opacité (§8). */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
   }
 }
 
 @layer utilities {
-  /* Signature de marque modernisée (periwinkle → menthe).
-     Pour le wordmark, préférer désormais l'accent serif italique :
-     <span class="font-heading">K<span class="font-serif italic">stage</span></span> */
-  .gradient-text {
-    background: linear-gradient(120deg, var(--primary) 0%, var(--teal) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .animate-marquee {
+    animation: marquee 26s linear infinite;
   }
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+  .animate-live-pulse {
+    animation: live-pulse 1.2s ease-in-out infinite;
+  }
+  .animate-upcoming-pulse {
+    animation: live-pulse 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-marquee,
+    .animate-live-pulse,
+    .animate-upcoming-pulse {
+      animation: none;
+    }
+  }
+  /* Scanlines subtiles posées sur les gradients de marque (hero, bannières). */
+  .scanlines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgb(255 255 255 / 0.018) 0 1px,
+      transparent 1px 4px
+    );
+  }
+  /* Label de section « Data Desk » — remplace le font-mono uppercase v1.
+     Usage : <span class="label-data">NEXT UP — YOUR GROUPS</span> */
+  .label-data {
+    font-family: var(--font-condensed);
+    font-stretch: 78%;
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  /* Variante inline (tags, nav, boutons condensés) */
+  .label-data-inline {
+    font-family: var(--font-condensed);
+    font-stretch: 82%;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  /* Signature de marque (fallbacks d'avatar, accents) — primary → menthe */
   .gradient-signature {
-    background: linear-gradient(120deg, var(--primary) 0%, var(--teal) 100%);
+    background-image: linear-gradient(135deg, var(--primary), var(--teal));
   }
-  /* ombre douce standard (remplace les ring durs) */
+  .gradient-text {
+    background-image: linear-gradient(90deg, var(--primary), var(--teal));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  /* Ombre douce résiduelle (compat v1) — quasi plate en Data Desk */
   .shadow-soft {
-    box-shadow: 0 3px 12px -9px oklch(0.2 0.02 285 / 0.4);
-  }
-  .dark .shadow-soft {
-    box-shadow: 0 8px 22px -14px oklch(0 0 0 / 0.6);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
   }
   /* Scrollbar fine et discrète (rangées MV horizontales) : visible au survol. */
   .scrollbar-thin {

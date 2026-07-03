@@ -6,6 +6,7 @@ import {
   formatEventDate,
   formatKst,
   kstTime24h,
+  formatDDay,
 } from './date'
 
 describe('getKstMonthRange', () => {
@@ -78,5 +79,31 @@ describe('kstTime24h', () => {
   it('renders a 24h KST clock without AM/PM', () => {
     expect(kstTime24h('2026-03-24T09:00:00Z')).toBe('18:00')
     expect(kstTime24h('2026-03-24T15:30:00Z')).toBe('00:30')
+  })
+})
+
+describe('formatDDay', () => {
+  // now = 2026-07-02 12:00 KST (03:00 UTC)
+  const now = '2026-07-02T03:00:00Z'
+
+  it('returns D-DAY for the same calendar day in the given timezone', () => {
+    expect(formatDDay('2026-07-02T13:00:00Z', 'Asia/Seoul', now)).toBe('D-DAY')
+  })
+
+  it('counts calendar days, not 24h windows', () => {
+    // 2026-07-03 09:00 KST = lendemain matin → D-1 même si <24h d'écart.
+    expect(formatDDay('2026-07-03T00:00:00Z', 'Asia/Seoul', now)).toBe('D-1')
+    expect(formatDDay('2026-07-04T10:00:00Z', 'Asia/Seoul', now)).toBe('D-2')
+  })
+
+  it('depends on the timezone: same instant, different day', () => {
+    // 2026-07-02 17:00 UTC = 2026-07-03 02:00 KST (D-1) mais 19:00 le 2 à Paris (D-DAY).
+    const iso = '2026-07-02T17:00:00Z'
+    expect(formatDDay(iso, 'Asia/Seoul', now)).toBe('D-1')
+    expect(formatDDay(iso, 'Europe/Paris', now)).toBe('D-DAY')
+  })
+
+  it('labels past days with D+', () => {
+    expect(formatDDay('2026-06-30T03:00:00Z', 'Asia/Seoul', now)).toBe('D+2')
   })
 })

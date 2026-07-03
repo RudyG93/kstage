@@ -3,7 +3,7 @@
 import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 
 const boxClass =
-  'h-12 w-10 rounded-lg border bg-background text-center font-mono text-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60'
+  'h-12 w-10 rounded-lg border bg-background text-center tabular text-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60'
 
 /**
  * Saisie OTP en cases séparées (§1.2) — pattern Discord/Twitch, sans dépendance.

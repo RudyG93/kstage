@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
-import { GroupCard } from '@/components/group-card'
+import { GroupCard, type NextEventInfo } from '@/components/group-card'
 import type { GroupSummary } from '@/lib/groups/queries'
 
 export type GroupGridItem = {
@@ -10,6 +10,7 @@ export type GroupGridItem = {
   isFollowing: boolean
   isAuthed: boolean
   href?: string
+  nextEvent?: NextEventInfo | null
 }
 
 /**
@@ -47,7 +48,7 @@ export function GroupsGrid({ items }: { items: GroupGridItem[] }) {
       {filtered.length === 0 ? (
         <p className="text-muted-foreground py-12 text-center text-sm">No group matches “{q}”.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
           {filtered.map((it) => (
             <GroupCard
               key={it.group.slug}
@@ -55,6 +56,7 @@ export function GroupsGrid({ items }: { items: GroupGridItem[] }) {
               isFollowing={it.isFollowing}
               isAuthed={it.isAuthed}
               href={it.href}
+              nextEvent={it.nextEvent}
             />
           ))}
         </div>

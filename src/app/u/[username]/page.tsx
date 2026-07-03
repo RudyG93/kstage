@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Settings } from 'lucide-react'
+import Image from 'next/image'
+import { ChevronRight, Settings } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { GroupCard } from '@/components/group-card'
 import { MvsGrid } from '@/components/group/mvs-grid'
+import { Panel, PanelHeader } from '@/components/ui/panel'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfilePicker, type PickerItem } from '@/components/profile/profile-picker'
+import { FanCard } from '@/components/profile/fan-card'
 import { PushBell } from '@/components/notifications/push-bell'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
@@ -16,14 +20,21 @@ import { getAllMembers } from '@/lib/members/queries'
 import { getGroups, type GroupSummary } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getLikedMvs } from '@/lib/events/queries'
-import { getRatingsForEvents } from '@/lib/events/community'
+import { getRatingsForEvents, getUserRatings } from '@/lib/events/community'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
+import { displaySongTitle } from '@/lib/events/title'
 import { isAdmin } from '@/lib/auth/admin'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
 
-const memberSince = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+const fanSince = (iso: string) =>
+  new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(iso),
+  )
+
+const shortDate = (iso: string) =>
+  new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
     new Date(iso),
   )
 
@@ -38,9 +49,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   } = await supabase.auth.getUser()
   const isOwner = user?.id === profile.id
 
-  const [stats, likedMvs] = await Promise.all([
+  const [stats, likedMvs, userRatings] = await Promise.all([
     getProfileStats(profile.id),
     getLikedMvs(profile.id, 30),
+    getUserRatings(profile.id, 8),
   ])
   const ratings = await getRatingsForEvents(likedMvs.map((m) => m.id))
 
@@ -69,7 +81,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       subtitle: one(m.groups)?.name,
     }))
     groupItems = groups.map((g) => ({ id: g.id, name: g.name, avatar: g.image_url }))
-    // Groupes suivis (owner-only ; follows sous RLS), triés popularité puis alpha.
     const followCount = new Map((countRes.data ?? []).map((r) => [r.group_id, r.follows]))
     followedGroups = groups
       .filter((g) => followedIds.has(g.id))
@@ -81,47 +92,42 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="space-y-6">
-        <header className="flex items-center gap-5">
-          {isOwner ? (
-            <ProfileAvatar
-              email={user?.email ?? null}
-              username={profile.username}
-              avatarUrl={profile.avatar_url}
-            />
-          ) : (
-            <Avatar
-              username={profile.username ?? undefined}
-              avatarUrl={profile.avatar_url}
-              size={112}
-            />
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">
-              {profile.username ?? 'User'}
+    <div className="mx-auto w-full max-w-2xl px-3 py-4 md:px-4 md:py-6">
+      <div className="space-y-3">
+        {/* Identité (§7.8.2) : avatar 64 ring primary, @user, fan since, EDIT. */}
+        <header className="flex items-center gap-4">
+          <div className="ring-primary shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-[var(--page)]">
+            {isOwner ? (
+              <ProfileAvatar
+                email={user?.email ?? null}
+                username={profile.username}
+                avatarUrl={profile.avatar_url}
+              />
+            ) : (
+              <Avatar
+                username={profile.username ?? undefined}
+                avatarUrl={profile.avatar_url}
+                size={64}
+              />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-heading truncate text-xl font-extrabold tracking-[-0.01em]">
+              @{profile.username ?? 'user'}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Member since {memberSince(profile.created_at)}
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Fan since {fanSince(profile.created_at)}
             </p>
           </div>
           {isOwner && (
-            <div className="ml-auto flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {admin && (
-                <>
-                  <Link
-                    href="/admin/suggestions"
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-                  </Link>
-                  <Link
-                    href="/admin/reports"
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    Reports
-                  </Link>
-                </>
+                <Link
+                  href="/admin/suggestions"
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                >
+                  Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                </Link>
               )}
               <PushBell />
               <Link
@@ -136,75 +142,84 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </header>
 
         {stats && (
-          <dl className="grid grid-cols-4 gap-2">
-            {(
-              [
-                ['Following', stats.followed],
-                ['Rated', stats.rated],
-                ['Liked', stats.liked],
-                ['Comments', stats.comments],
-              ] as const
-            ).map(([label, value]) => (
-              <div
-                key={label}
-                className="bg-card border-border shadow-soft rounded-xl border p-3 text-center"
-              >
-                <dd className="text-lg font-bold tabular-nums">{value}</dd>
-                <dt className="text-muted-foreground text-[11px] tracking-wide uppercase">
-                  {label}
-                </dt>
-              </div>
-            ))}
-          </dl>
+          <FanCard
+            year={new Date().getUTCFullYear()}
+            username={profile.username ?? 'user'}
+            following={stats.followed}
+            rated={stats.rated}
+            avg={userRatings.avg}
+            likes={stats.liked}
+            ultGroup={favorite?.name ?? null}
+            bias={bias?.stage_name ?? null}
+          />
         )}
 
-        {(isOwner || bias || favorite) && (
+        {isOwner && (
           <div className="flex gap-3">
-            {isOwner ? (
-              <ProfilePicker
-                label="Bias"
-                current={bias ? { name: bias.stage_name, avatar: bias.photo_url } : null}
-                items={memberItems}
-                onSelect={setBias}
-              />
-            ) : bias ? (
-              // Non cliquable : la page membre /artists/[slug] est quasi-vide (pruning).
-              <div className="bg-card border-border shadow-soft flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border p-3">
-                <Avatar username={bias.stage_name} avatarUrl={bias.photo_url} size={36} />
-                <div className="min-w-0">
-                  <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Bias</p>
-                  <p className="truncate text-sm font-medium">{bias.stage_name}</p>
-                </div>
-              </div>
-            ) : null}
-            {isOwner ? (
-              <ProfilePicker
-                label="Favorite"
-                current={favorite ? { name: favorite.name, avatar: favorite.image_url } : null}
-                items={groupItems}
-                onSelect={setFavoriteGroup}
-              />
-            ) : favorite ? (
-              <Link
-                href={`/groups/${favorite.slug}`}
-                className="bg-card border-border shadow-soft hover:bg-muted/40 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border p-3 transition-colors"
-              >
-                <Avatar username={favorite.name} avatarUrl={favorite.image_url} size={36} />
-                <div className="min-w-0">
-                  <p className="text-muted-foreground text-[11px] tracking-wide uppercase">
-                    Favorite
-                  </p>
-                  <p className="truncate text-sm font-medium">{favorite.name}</p>
-                </div>
-              </Link>
-            ) : null}
+            <ProfilePicker
+              label="Bias"
+              current={bias ? { name: bias.stage_name, avatar: bias.photo_url } : null}
+              items={memberItems}
+              onSelect={setBias}
+            />
+            <ProfilePicker
+              label="Favorite"
+              current={favorite ? { name: favorite.name, avatar: favorite.image_url } : null}
+              items={groupItems}
+              onSelect={setFavoriteGroup}
+            />
           </div>
         )}
 
+        {/* Dernières notes (§7.8.4). */}
+        {userRatings.recent.length > 0 && (
+          <Panel>
+            <PanelHeader label={isOwner ? 'Your recent ratings' : 'Recent ratings'} />
+            <div className="divide-y">
+              {userRatings.recent.map((r, i) => {
+                const videoId = extractYouTubeId(r.sourceUrl)
+                const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null
+                return (
+                  <Link
+                    key={i}
+                    href={r.eventSlug ? `/mv/${r.eventSlug}` : '/mvs'}
+                    className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-1.5 transition-colors"
+                  >
+                    {thumb ? (
+                      <Image
+                        src={thumb}
+                        alt=""
+                        width={50}
+                        height={28}
+                        unoptimized
+                        className="h-7 w-[50px] shrink-0 rounded-[6px] object-cover"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="bg-muted h-7 w-[50px] shrink-0 rounded-[6px]" aria-hidden />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold">
+                        {displaySongTitle(r.eventTitle, r.groupName ?? undefined)}
+                      </span>
+                      <span className="text-muted-foreground block truncate text-[10px]">
+                        {r.groupName} · {shortDate(r.createdAt)}
+                      </span>
+                    </span>
+                    <span className="tabular bg-amber/15 text-amber shrink-0 rounded-[4px] px-1.5 py-0.5 text-xs font-bold">
+                      {r.score}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </Panel>
+        )}
+
         {isOwner && followedGroups.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Followed groups</h2>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <section className="space-y-2">
+            <span className="label-data">Followed groups — {followedGroups.length}</span>
+            <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
               {followedGroups.map((g) => (
                 <GroupCard key={g.id} group={g} isFollowing isAuthed />
               ))}
@@ -212,8 +227,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </section>
         )}
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium">Liked MVs</h2>
+        <section className="space-y-2">
+          <span className="label-data">Liked MVs</span>
           {likedMvs.length === 0 ? (
             <EmptyState
               title="No liked MVs yet"
@@ -228,6 +243,48 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <MvsGrid mvs={likedMvs} ratings={ratings} />
           )}
         </section>
+
+        {/* Raccourcis réglages (§7.8.5). */}
+        {isOwner && (
+          <Panel>
+            <PanelHeader label="Settings" />
+            <div className="divide-y">
+              <Link
+                href="/account"
+                className="hover:bg-secondary/60 flex min-h-[44px] items-center justify-between gap-3 px-3 py-2 transition-colors"
+              >
+                <span>
+                  <span className="block text-xs font-semibold">Push notifications</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    Comebacks: announced + day-of, in your timezone
+                  </span>
+                </span>
+                <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
+              </Link>
+              <div className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2">
+                <span>
+                  <span className="block text-xs font-semibold">Theme</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    Midnight — Daylight available
+                  </span>
+                </span>
+                <ThemeToggle />
+              </div>
+              <Link
+                href="/account"
+                className="hover:bg-secondary/60 flex min-h-[44px] items-center justify-between gap-3 px-3 py-2 transition-colors"
+              >
+                <span>
+                  <span className="block text-xs font-semibold">Account</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    Email, username, avatar, password
+                  </span>
+                </span>
+                <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
+              </Link>
+            </div>
+          </Panel>
+        )}
       </div>
     </div>
   )

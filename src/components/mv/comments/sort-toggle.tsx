@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { SortMode } from '@/lib/comments/tree'
 
-/**
- * Toggle URL-driven Top / New pour le tri des commentaires.
- * Pattern visuel aligné sur `src/app/groups/page.tsx:67-93` (TabLink Groups/Solo).
- */
+/** Segments condensés Top / New (§7.7.4), URL-driven. */
 export function SortToggle({ slug, sort }: { slug: string; sort: SortMode }) {
   return (
-    <nav aria-label="Sort comments" className="bg-muted inline-flex rounded-lg p-0.5 text-xs">
+    <nav
+      aria-label="Sort comments"
+      className="bg-secondary inline-flex gap-0.5 rounded-[8px] border p-0.5"
+    >
       <SortLink slug={slug} target="top" current={sort}>
         Top
       </SortLink>
@@ -39,10 +39,8 @@ function SortLink({
       aria-current={isActive ? 'page' : undefined}
       scroll={false}
       className={cn(
-        'focus-visible:ring-ring/50 rounded-md px-2.5 py-1 font-medium outline-none focus-visible:ring-2',
-        isActive
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground',
+        'label-data-inline focus-visible:ring-ring/50 rounded-[6px] px-2.5 py-1 text-[9px] outline-none focus-visible:ring-2',
+        isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}

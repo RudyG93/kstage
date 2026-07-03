@@ -1,4 +1,5 @@
 import { CalendarMonth } from '@/components/calendar-month'
+import { FilterChips } from '@/components/calendar/filter-chips'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupFilter } from '@/components/home/group-filter'
@@ -24,15 +25,12 @@ export const metadata = { title: 'Calendar' }
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; group?: string; type?: string }>
+  searchParams: Promise<{ month?: string; group?: string; type?: string; scope?: string }>
 }) {
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
-  const groupSlugs = sp.group ? sp.group.split(',').filter(Boolean) : undefined
+  const explicitSlugs = sp.group ? sp.group.split(',').filter(Boolean) : undefined
   const types = parseTypesParam(sp.type)
-  // Les anniversaires sont générés à la volée (pas en table events) → on les
-  // fusionne ici pour qu'ils apparaissent au calendrier, sauf si un filtre de
-  // type actif les exclut.
   const wantAnniversaries = types.length === 0 || types.includes('anniversary')
 
   const supabase = await createClient()
@@ -49,19 +47,23 @@ export default async function CalendarPage({
     tier = profile?.tier ?? 'free'
   }
 
-  const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
-    getGroups(),
-    getFollowedGroupIds(),
+  const [groups, followedIds] = await Promise.all([getGroups(), getFollowedGroupIds()])
+  const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
+  // Portée MY GROUPS (§7.2) : restreint aux groupes suivis quand aucun filtre
+  // de groupe explicite n'est posé.
+  const groupSlugs =
+    explicitSlugs ?? (sp.scope === 'mine' && followedSlugs.length > 0 ? followedSlugs : undefined)
+
+  const [dbEvents, anniversaries] = await Promise.all([
     getEventsForMonth({ year, month, groupSlugs, types }),
     wantAnniversaries ? getAnniversariesForMonth({ year, month, groupSlugs }) : Promise.resolve([]),
   ])
   const events = [...dbEvents, ...anniversaries].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )
-  const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
           <SidebarLeft
@@ -74,7 +76,8 @@ export default async function CalendarPage({
             }
           />
         </aside>
-        <div className="order-1 min-w-0 flex-1 lg:order-2">
+        <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
+          <FilterChips eventCount={events.length} isAuthed={Boolean(user)} />
           <CalendarMonth year={year} month={month} events={events} />
         </div>
         <aside className="order-3 shrink-0 lg:w-80">

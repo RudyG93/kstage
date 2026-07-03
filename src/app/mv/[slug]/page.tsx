@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
+import { Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getEventBySlug, getEventRatingSummary, getLikeSummary } from '@/lib/events/community'
 import { getCommentsForEvent } from '@/lib/comments/queries'
@@ -9,10 +9,12 @@ import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { formatKst } from '@/lib/events/date'
-import { faceCrop } from '@/lib/images/cloudinary'
-import { LocalTime } from '@/components/local-time'
+import { cn } from '@/lib/utils'
+import { BackButton } from '@/components/back-button'
+import { Panel } from '@/components/ui/panel'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { RatingSlider } from '@/components/mv/rating-slider'
+import { RatingHistogram } from '@/components/mv/rating-histogram'
 import { LikeButton } from '@/components/mv/like-button'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 
@@ -38,6 +40,17 @@ export async function generateMetadata({
   }
 }
 
+const droppedAgo = (iso: string) => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return '1 day ago'
+  if (days < 30) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`
+  const years = Math.floor(days / 365)
+  return `${years} year${years === 1 ? '' : 's'} ago`
+}
+
 export default async function MvPage({
   params,
   searchParams,
@@ -53,8 +66,6 @@ export default async function MvPage({
   const sort: SortMode = sp.sort === 'new' ? 'new' : 'top'
 
   const group = event.groups
-  const color = group?.color_hex ?? '#7c5cff'
-  const title = displaySongTitle(event.title, group?.name)
 
   const [rating, userRes] = await Promise.all([
     getEventRatingSummary(event.id),
@@ -71,95 +82,97 @@ export default async function MvPage({
   const flatComments = await getCommentsForEvent(event.id, viewerId)
   const commentRoots = sortTree(buildCommentTree(flatComments), sort)
 
-  const dateLabel = formatKst(event.start_at, {
-    weekday: 'short',
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  })
-  const timeLabel = formatKst(event.start_at, { hour: 'numeric', minute: '2-digit' })
+  const title = displaySongTitle(event.title, group?.name)
+  const kstLabel = formatKst(event.start_at, { month: 'short', day: 'numeric', year: 'numeric' })
+  // Étoiles de moyenne : avg/2 arrondi (affichage compact §7.7.3).
+  const filledStars = rating.avg !== null ? Math.round(rating.avg / 2) : 0
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      <div className="space-y-6">
-        <header className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Link
-              href={`/groups/${group?.slug ?? ''}`}
-              className="hover:text-foreground text-muted-foreground inline-flex items-center gap-2"
-            >
-              {group?.image_url ? (
-                <Image
-                  src={faceCrop(group.image_url, 56, 56)}
-                  alt=""
-                  width={20}
-                  height={20}
-                  unoptimized
-                  className="size-5 rounded-full object-cover"
-                />
-              ) : (
-                <span
-                  className="size-3 rounded-full"
-                  style={{ backgroundColor: color }}
-                  aria-hidden
-                />
-              )}
-              {group?.name}
-            </Link>
-            <span className="text-muted-foreground">·</span>
-            <span
-              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase"
-              style={{ color, backgroundColor: `${color}24` }}
-            >
-              MV
-            </span>
-          </div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-balance">{title}</h1>
-          <p className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
-            {dateLabel} · <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} /> ·{' '}
-            {timeLabel} KST
-          </p>
-        </header>
+    <div className="mx-auto w-full max-w-3xl md:px-4 md:py-6">
+      <div className="space-y-3">
+        {/* Player full-bleed sur mobile + back flottant (§7.7.1). */}
+        <div className="relative">
+          {videoId ? (
+            <div className="overflow-hidden md:rounded-[10px] [&_iframe]:!rounded-none md:[&_iframe]:!rounded-[10px]">
+              <YouTubeEmbed videoId={videoId} title={title} />
+            </div>
+          ) : (
+            <div className="bg-muted text-muted-foreground flex aspect-video w-full items-center justify-center text-sm md:rounded-[10px]">
+              Video unavailable
+            </div>
+          )}
+          <BackButton className="absolute top-3 left-3 z-10" />
+        </div>
 
-        {videoId ? (
-          <YouTubeEmbed videoId={videoId} title={title} />
-        ) : (
-          <div className="bg-muted text-muted-foreground flex aspect-video w-full items-center justify-center rounded-xl text-sm">
-            Video unavailable
-          </div>
-        )}
+        <div className="space-y-3 px-3 md:px-0">
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-heading text-xl font-extrabold tracking-[-0.02em] text-balance">
+                {title}
+              </h1>
+              <p className="text-muted-foreground mt-0.5 text-[10px]">
+                <Link href={`/groups/${group?.slug ?? ''}`} className="hover:text-foreground">
+                  {group?.name}
+                </Link>{' '}
+                · MV · dropped {droppedAgo(event.start_at)} · {kstLabel}
+              </p>
+            </div>
+            <LikeButton
+              eventId={event.id}
+              initialLiked={like.liked}
+              count={like.count}
+              isAuthed={isAuthed}
+            />
+          </header>
 
-        <section aria-label="Like this music video">
-          <LikeButton
-            eventId={event.id}
-            initialLiked={like.liked}
-            count={like.count}
-            isAuthed={isAuthed}
-          />
-        </section>
+          {/* Panneau notation : moyenne + étoiles | histogramme, puis slider (§7.7.3). */}
+          <Panel>
+            <div className="flex items-center justify-between gap-4 p-3.5">
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="tabular text-[30px] leading-none font-bold">
+                    {rating.avg !== null ? rating.avg.toFixed(1) : '—'}
+                  </span>
+                  <span className="text-muted-foreground text-xs">/ 10</span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-0.5" aria-hidden>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        'size-3.5',
+                        i < filledStars ? 'fill-amber text-amber' : 'text-faint fill-transparent',
+                      )}
+                      strokeWidth={1.5}
+                    />
+                  ))}
+                </div>
+                <p className="tabular text-muted-foreground mt-1 text-[10px]">
+                  {rating.count} rating{rating.count === 1 ? '' : 's'}
+                </p>
+              </div>
+              <RatingHistogram scores={rating.scores} />
+            </div>
+            <div className="border-t p-3.5">
+              <RatingSlider
+                eventId={event.id}
+                slug={event.slug as string}
+                initialScore={rating.userScore}
+                isAuthed={isAuthed}
+              />
+            </div>
+          </Panel>
 
-        <section aria-labelledby="rating-heading" className="space-y-2">
-          <h2 id="rating-heading" className="text-sm font-medium">
-            Your rating
-          </h2>
-          <RatingSlider
+          <CommentSection
             eventId={event.id}
             slug={event.slug as string}
-            initialScore={rating.userScore}
-            avgScore={rating.avg}
-            count={rating.count}
             isAuthed={isAuthed}
+            viewerId={viewerId}
+            roots={commentRoots}
+            sort={sort}
+            ratingsByUser={rating.scoreByUser}
           />
-        </section>
-
-        <CommentSection
-          eventId={event.id}
-          slug={event.slug as string}
-          isAuthed={isAuthed}
-          viewerId={viewerId}
-          roots={commentRoots}
-          sort={sort}
-        />
+        </div>
       </div>
     </div>
   )

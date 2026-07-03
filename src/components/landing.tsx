@@ -1,168 +1,195 @@
 import Link from 'next/link'
-import { ArrowRight, BellRing, CalendarHeart, Globe2 } from 'lucide-react'
-import { NextDropCard } from '@/components/home/next-drop-card'
-import { HomeEventCard } from '@/components/home/event-card'
-import { GroupCard } from '@/components/group-card'
+import Image from 'next/image'
+import { ArrowRight, BellRing, HeartIcon, Star } from 'lucide-react'
+import { Countdown } from '@/components/home/countdown'
+import { Panel } from '@/components/ui/panel'
+import { QueueRow } from '@/components/events/queue-row'
+import { faceCrop } from '@/lib/images/cloudinary'
+import { displayEventTitle } from '@/lib/events/title'
 import type { GroupSummary } from '@/lib/groups/queries'
 import type { UpcomingEvent } from '@/lib/events/queries'
+import type { SourcesStatus } from '@/lib/sources/queries'
 
-const FEATURES = [
+const STEPS = [
   {
-    icon: CalendarHeart,
+    icon: HeartIcon,
     title: 'Follow your groups',
-    desc: 'Pick your biases. KStage filters out everyone else — your calendar, no noise.',
+    desc: 'One tap — everything else filters itself out.',
   },
   {
     icon: BellRing,
-    title: 'Notified at the right time',
-    desc: 'Push alerts for comebacks, music shows and lives. J-1, day-of, or whenever you choose.',
+    title: 'Get pinged at the right time',
+    desc: 'Comeback announced, day before, day of — in your timezone.',
   },
   {
-    icon: Globe2,
-    title: 'In your timezone',
-    desc: 'Every drop shown in KST and your local time. No more 3am math before a release.',
+    icon: Star,
+    title: 'Rate every drop /10',
+    desc: 'The Letterboxd of k-pop: score it, discuss it, own your taste.',
   },
 ] as const
 
-// Nombre de groupes (avec photo) montrés dans la grille d'aperçu.
-const PHOTO_GRID_COUNT = 12
+// Mur visuel : tuiles photos (3 colonnes) + tuile « +n ».
+const WALL_COUNT = 11
 
+const compact = (n: number) =>
+  n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n)
+
+// Landing Data Desk (§7.9) : la donnée vend le produit — badge live, preuve
+// countdown temps réel, mur visuel, proof bar, 3 étapes, double CTA.
 export function Landing({
   groups,
   previewEvents,
+  eventsCount,
+  sourcesStatus,
 }: {
   groups: GroupSummary[]
   previewEvents: UpcomingEvent[]
+  eventsCount: number
+  sourcesStatus: SourcesStatus | null
 }) {
   const nextDrop = previewEvents[0] ?? null
   const previewRows = previewEvents.slice(1, 4)
-  const photoGroups = groups.filter((g) => g.image_url).slice(0, PHOTO_GRID_COUNT)
+  const wallGroups = groups.filter((g) => g.image_url).slice(0, WALL_COUNT)
+  const remaining = Math.max(0, groups.length - wallGroups.length)
 
   return (
-    <div className="space-y-16 py-6 sm:py-10">
-      {/* Hero */}
-      <section className="flex flex-col items-center text-center">
-        <span
-          className="text-faint animate-in fade-in-0 slide-in-from-bottom-2 border-border/60 bg-card/50 mb-6 rounded-full border px-3 py-1 text-xs font-semibold duration-700"
-          style={{ animationFillMode: 'both' }}
-        >
-          K-pop event calendar
-        </span>
+    <div className="relative space-y-10 py-4 sm:py-8">
+      {/* Halo discret en haut — seule exception « glow » (page marketing §7.9.2). */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
+        aria-hidden
+        style={{
+          background:
+            'radial-gradient(340px 240px at 85% -6%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 65%), radial-gradient(280px 200px at -5% 10%, color-mix(in srgb, var(--teal) 9%, transparent), transparent 60%)',
+        }}
+      />
 
-        <h1
-          className="animate-in fade-in-0 slide-in-from-bottom-3 text-4xl leading-[1.05] font-extrabold tracking-tight duration-700 sm:text-5xl"
-          style={{ animationDelay: '90ms', animationFillMode: 'both' }}
-        >
-          Never miss a <span className="gradient-text">comeback</span> again.
+      {/* Badge + H1 + sous-titre */}
+      <section className="relative">
+        <p className="flex items-center gap-2">
+          <span className="bg-teal animate-upcoming-pulse size-[6px] rounded-full" aria-hidden />
+          <span className="label-data-inline text-teal text-[9px] tracking-[0.2em]">
+            {compact(eventsCount)}+ events tracked live
+          </span>
+        </p>
+        <h1 className="font-heading mt-3 text-[34px] leading-[1.06] font-extrabold tracking-[-0.028em]">
+          Never miss a<br />
+          comeback <span className="text-primary font-serif font-normal italic">again.</span>
         </h1>
-
-        <p
-          className="text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-3 mt-5 max-w-md text-base leading-relaxed duration-700 sm:text-lg"
-          style={{ animationDelay: '180ms', animationFillMode: 'both' }}
-        >
+        <p className="text-muted-foreground mt-3 max-w-[310px] text-[12.5px] leading-relaxed">
           The personal calendar for k-pop fans. Follow your groups and get notified the moment
           something drops — wherever you are.
         </p>
-
-        <div
-          className="animate-in fade-in-0 slide-in-from-bottom-3 mt-8 flex w-full flex-col items-center gap-3 duration-700 sm:w-auto sm:flex-row"
-          style={{ animationDelay: '270ms', animationFillMode: 'both' }}
-        >
-          <Link
-            href="/signup"
-            className="focus-visible:ring-ring/50 bg-primary text-primary-foreground shadow-primary/25 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold shadow-lg transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3 sm:w-auto"
-          >
-            Get started
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
-          <Link
-            href="/login"
-            className="border-border hover:bg-muted focus-visible:ring-ring/50 inline-flex h-11 w-full items-center justify-center rounded-xl border px-6 text-base font-medium transition-colors outline-none focus-visible:ring-3 sm:w-auto"
-          >
-            Sign in
-          </Link>
-        </div>
-
-        <p className="text-muted-foreground/70 mt-4 font-mono text-[11px] tracking-wider">
-          Free · No spam · Your timezone
-        </p>
       </section>
 
-      {/* Product preview — vrais prochains events pour montrer le produit en action */}
+      {/* Preuve live : countdown temps réel (§7.9.4). */}
       {nextDrop && (
-        <section className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <span
-              className="bg-teal size-2 rounded-full"
-              style={{ boxShadow: '0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent)' }}
-              aria-hidden
-            />
-            <span className="text-sm font-semibold">Coming up on KStage</span>
-          </div>
-          <div className="bg-card/30 border-border/60 space-y-3 rounded-2xl border p-3 sm:p-4">
-            <NextDropCard event={nextDrop} />
+        <section className="relative">
+          <Panel>
+            <div className="flex items-center gap-2 border-b px-3 py-2">
+              <span className="bg-live animate-live-pulse size-[5px] rounded-full" aria-hidden />
+              <span className="label-data text-[8.5px] tracking-[0.16em]">
+                Happening on KStage right now
+              </span>
+            </div>
+            <div className="space-y-3 p-3.5">
+              <div>
+                <p className="text-sm font-semibold">
+                  {displayEventTitle(nextDrop.title, nextDrop.groups?.name)}
+                </p>
+                <p className="text-muted-foreground text-[10.5px]">{nextDrop.groups?.name}</p>
+              </div>
+              <Countdown targetIso={nextDrop.start_at} variant="cells" />
+            </div>
             {previewRows.length > 0 && (
-              <div className="space-y-2">
+              <div className="divide-y border-t">
                 {previewRows.map((event) => (
-                  <HomeEventCard key={event.id} event={event} compact />
+                  <QueueRow key={event.id} event={event} />
                 ))}
               </div>
+            )}
+          </Panel>
+        </section>
+      )}
+
+      {/* Mur visuel (§7.9.5). */}
+      {wallGroups.length > 0 && (
+        <section className="relative space-y-2">
+          <span className="label-data">{groups.length} groups &amp; soloists</span>
+          <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
+            {wallGroups.map((g) => (
+              <Link
+                key={g.id}
+                href={`/groups/${g.slug}`}
+                aria-label={g.name}
+                className="focus-visible:ring-ring/50 relative aspect-square overflow-hidden rounded-[10px] outline-none focus-visible:ring-2"
+              >
+                <Image
+                  src={faceCrop(g.image_url!, 400, 400)}
+                  alt=""
+                  fill
+                  unoptimized
+                  sizes="(min-width: 640px) 25vw, 33vw"
+                  className="object-cover transition-transform duration-300 hover:scale-105"
+                  aria-hidden
+                />
+              </Link>
+            ))}
+            {remaining > 0 && (
+              <Link
+                href="/groups"
+                className="bg-secondary hover:bg-muted focus-visible:ring-ring/50 flex aspect-square items-center justify-center rounded-[10px] border outline-none focus-visible:ring-2"
+              >
+                <span className="tabular text-muted-foreground text-lg font-bold">
+                  +{remaining}
+                </span>
+              </Link>
             )}
           </div>
         </section>
       )}
 
-      {/* Groups preview — grille de photos (au lieu d'un mur de noms) */}
-      {photoGroups.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-lg font-bold tracking-tight">Track your groups</h2>
-            <span className="text-muted-foreground font-mono text-[11px] tracking-wider uppercase">
-              {groups.length} groups
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {photoGroups.map((group) => (
-              <GroupCard key={group.id} group={group} isFollowing={false} isAuthed={false} />
-            ))}
-          </div>
-          <p className="text-muted-foreground text-center text-sm">
-            …and {groups.length - photoGroups.length}+ more — new groups added as fans request them.
-          </p>
-        </section>
-      )}
+      {/* Proof bar (§7.9.6). */}
+      <p className="tabular text-faint relative text-center text-[9px] font-semibold tracking-[0.18em] uppercase">
+        {compact(eventsCount)} events · {groups.length} groups
+        {sourcesStatus ? ` · ${sourcesStatus.count} sources` : ''} · daily refresh
+      </p>
 
-      {/* Features */}
-      <section className="grid gap-3 sm:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, desc }) => (
-          <div
-            key={title}
-            className="bg-card/60 border-border/70 flex flex-col gap-3 rounded-xl border p-4"
-          >
-            <span className="bg-primary/12 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
-              <Icon className="size-5" aria-hidden />
+      {/* 3 étapes (§7.9.7). */}
+      <section className="relative space-y-3">
+        {STEPS.map(({ icon: Icon, title, desc }, i) => (
+          <div key={title} className="flex items-center gap-3">
+            <span className="bg-primary/14 text-primary tabular flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
+              {i + 1}
             </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{desc}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{title}</p>
+              <p className="text-muted-foreground text-xs">{desc}</p>
             </div>
+            <Icon className="text-rose size-4 shrink-0" aria-hidden />
           </div>
         ))}
       </section>
 
-      {/* Closing CTA */}
-      <section className="bg-card/40 border-border/60 flex flex-col items-center gap-4 rounded-2xl border px-6 py-10 text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Your k-pop calendar, sorted.</h2>
-        <p className="text-muted-foreground max-w-sm text-sm">
-          Free to use. Follow your groups, get a clean schedule and timely alerts.
-        </p>
+      {/* CTA (§7.9.8). */}
+      <section className="relative space-y-3">
         <Link
           href="/signup"
-          className="focus-visible:ring-ring/50 bg-primary text-primary-foreground shadow-primary/25 inline-flex h-11 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold shadow-lg transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-3"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-[10px] text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
         >
-          Get started
+          Create your calendar — free
           <ArrowRight className="size-4" aria-hidden />
         </Link>
+        <Link
+          href="/calendar"
+          className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 text-xs font-semibold transition-colors"
+        >
+          Browse the calendar first
+          <ArrowRight className="text-primary size-3.5" aria-hidden />
+        </Link>
+        <p className="tabular text-faint pt-1 text-center text-[8.5px] font-semibold tracking-[0.16em] uppercase">
+          PWA — install from your browser · no app store
+        </p>
       </section>
     </div>
   )

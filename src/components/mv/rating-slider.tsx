@@ -7,35 +7,33 @@ import { toast } from 'sonner'
 import { rateEvent } from '@/lib/events/rating-actions'
 import { cn } from '@/lib/utils'
 
-const TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
 interface Props {
   eventId: string
   slug: string
   initialScore: number | null
-  avgScore: number | null
-  count: number
   isAuthed: boolean
 }
 
-export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isAuthed }: Props) {
+/**
+ * YOUR RATING (§7.7.3) : slider 0-10 pas 0.5 — track 6px, fill gradient
+ * primary→teal, thumb 16px — + bouton SAVE explicite (fini le save-on-release).
+ */
+export function RatingSlider({ eventId, slug, initialScore, isAuthed }: Props) {
   const [value, setValue] = useState<number>(initialScore ?? 5)
-  const [rated, setRated] = useState<boolean>(initialScore !== null)
+  const [savedScore, setSavedScore] = useState<number | null>(initialScore)
   const [pending, startTransition] = useTransition()
+  const dirty = savedScore === null || value !== savedScore
 
-  const avgLabel = avgScore !== null ? avgScore.toFixed(1) : null
-  const countLabel = count === 1 ? 'vote' : 'votes'
-
-  function save(score: number) {
+  function save() {
     startTransition(async () => {
       const fd = new FormData()
       fd.set('eventId', eventId)
       fd.set('slug', slug)
-      fd.set('score', String(score))
+      fd.set('score', String(value))
       const res = await rateEvent(null, fd)
       if (res && 'error' in res) toast.error(res.error)
       else {
-        setRated(true)
+        setSavedScore(value)
         toast.success('Rating saved')
       }
     })
@@ -47,24 +45,23 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
         <Link href="/login" className="text-primary underline-offset-2 hover:underline">
           Sign in
         </Link>{' '}
-        to rate
-        {avgLabel ? ` · Average: ${avgLabel}/10 (${count} ${countLabel})` : ''}
+        to rate this drop.
       </p>
     )
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline gap-3">
+      <div className="flex items-baseline justify-between">
+        <span className="label-data">Your rating</span>
         <span
           className={cn(
-            'font-mono text-3xl font-bold tabular-nums',
-            rated ? 'text-foreground' : 'text-muted-foreground/50',
+            'tabular text-base font-bold',
+            savedScore !== null || dirty ? 'text-primary' : 'text-muted-foreground/50',
           )}
         >
           {value.toFixed(1)}
         </span>
-        <span className="text-muted-foreground text-xs">/ 10</span>
       </div>
 
       <Slider.Root
@@ -74,27 +71,27 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
         step={0.5}
         disabled={pending}
         onValueChange={(v) => setValue(Array.isArray(v) ? (v[0] ?? 0) : v)}
-        onValueCommitted={(v) => save(Array.isArray(v) ? (v[0] ?? 0) : v)}
         aria-label="Your rating from 0 to 10"
       >
         <Slider.Control className="flex h-6 w-full items-center">
-          <Slider.Track className="bg-muted relative h-1.5 w-full rounded-full">
-            <Slider.Indicator className="bg-primary rounded-full" />
-            <Slider.Thumb className="border-primary bg-card focus-visible:ring-ring/60 size-5 rounded-full border-2 shadow ring-offset-2 outline-none focus-visible:ring-2" />
+          <Slider.Track className="bg-foreground/9 relative h-[6px] w-full rounded-full">
+            <Slider.Indicator className="gradient-signature rounded-full" />
+            <Slider.Thumb className="bg-foreground focus-visible:ring-ring/60 size-4 rounded-full shadow-[0_2px_8px_rgba(0,0,0,.5)] outline-none focus-visible:ring-2" />
           </Slider.Track>
         </Slider.Control>
       </Slider.Root>
 
-      <div className="text-muted-foreground flex justify-between px-0.5 font-mono text-[10px] tabular-nums">
-        {TICKS.map((t) => (
-          <span key={t}>{t}</span>
-        ))}
+      <div className="flex items-center justify-between">
+        <span className="tabular text-muted-foreground text-[10px]">0 — 10 · step 0.5</span>
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending || !dirty}
+          className="label-data-inline bg-primary text-primary-foreground focus-visible:ring-ring/50 rounded-[6px] px-3 py-1.5 text-[9px] transition-opacity outline-none focus-visible:ring-2 disabled:opacity-40"
+        >
+          {pending ? 'Saving…' : savedScore !== null && !dirty ? 'Saved' : 'Save'}
+        </button>
       </div>
-
-      <p className="text-muted-foreground text-sm">
-        {rated ? 'Drag to update your rating.' : 'Drag the slider to rate.'}
-        {avgLabel ? ` · Average: ${avgLabel}/10 (${count} ${countLabel})` : ''}
-      </p>
     </div>
   )
 }

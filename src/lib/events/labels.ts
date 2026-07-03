@@ -12,17 +12,17 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   other: 'Other',
 }
 
-// Thème Daylight/Midnight : un jeu unique lisible en clair ET sombre. Chaque
-// type a SA couleur (mv ≠ release, sinon on s'y perd) : mv = teal (clip vidéo),
-// release = periwinkle (audio/album), music_show = ambre, live = rose,
-// anniversary/other = neutre.
+// Data Desk : jeu réduit lisible en clair ET sombre (décision 2026-07-03,
+// supersède « mv ≠ release ») : teal = sortie musicale (mv + release, la
+// distinction reste portée par les tags texte), ambre = music show,
+// rose = live/concert, neutre = anniversary/other.
 export const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  mv: '#20bfae',
-  release: '#6d6bf2',
-  music_show: '#d49830',
-  live: '#e85d8a',
+  mv: '#2FD4AC',
+  release: '#2FD4AC',
+  music_show: '#E3A83C',
+  live: '#E85D8A',
   anniversary: '#8b90a3',
-  concert: '#8b90a3',
+  concert: '#E85D8A',
   other: '#8b90a3',
 }
 

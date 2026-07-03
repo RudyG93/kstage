@@ -29,29 +29,32 @@ test.describe('auth golden path', () => {
     if (await firstFollow.count()) await firstFollow.click()
     await expect(page.getByRole('button', { name: 'Unfollow' }).first()).toBeVisible()
 
-    // Home connectée : sidebar gauche TypeFilterVertical (post round-4 layout).
-    await page.goto('/')
+    // Filtres de type : chips URL-driven de la page Calendar (Data Desk §7.2 —
+    // le TypeFilterVertical de la home a été remplacé par ces chips).
+    await page.goto('/calendar')
 
     // 1er filtre : "MV" → URL contient `type=mv`.
-    const mvBtn = page.getByRole('button', { name: 'MV', exact: true })
-    await mvBtn.scrollIntoViewIfNeeded()
-    await mvBtn.click()
+    const mvChip = page.getByRole('link', { name: 'MV', exact: true })
+    await mvChip.scrollIntoViewIfNeeded()
+    await mvChip.click()
     await expect(page).toHaveURL(/[?&]type=mv(?:[,&]|$)/)
-    await expect(mvBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(mvChip).toHaveAttribute('aria-current', 'true')
 
-    // 2e filtre : "Release" → URL CSV `type=mv,release` (insertion order).
-    const releaseBtn = page.getByRole('button', { name: 'Release', exact: true })
-    await releaseBtn.click()
-    await expect(page).toHaveURL(/[?&]type=mv,release(?:[,&]|$)/)
-    await expect(releaseBtn).toHaveAttribute('aria-pressed', 'true')
+    // 2e filtre : "Release" → URL CSV `type=mv,release` (insertion order ;
+    // URLSearchParams encode la virgule en %2C).
+    const releaseChip = page.getByRole('link', { name: 'Release', exact: true })
+    await releaseChip.click()
+    await expect(page).toHaveURL(/[?&]type=mv(?:%2C|,)release(?:[,&]|$)/)
+    await expect(releaseChip).toHaveAttribute('aria-current', 'true')
 
     // Re-click MV → URL ne contient plus que `release`.
-    await mvBtn.click()
+    await mvChip.click()
     await expect(page).toHaveURL(/[?&]type=release(?:[,&]|$)/)
-    await expect(mvBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(mvChip).not.toHaveAttribute('aria-current', 'true')
 
     // La home connectée affiche la sidebar "My groups" (preuve d'état connecté
     // + au moins un groupe suivi → l'empty-state a disparu).
+    await page.goto('/')
     await expect(page.getByText('My groups')).toBeVisible()
     await expect(page.getByText("You don't follow any groups yet.")).toHaveCount(0)
 

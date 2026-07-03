@@ -60,9 +60,21 @@ const ENTRIES: {
   { key: 'weibo', Icon: SiSinaweibo, label: 'Weibo', group: 'social', brand: '#E6162D' },
 ]
 
-function Row({ entries, links }: { entries: typeof ENTRIES; links: Record<string, string> }) {
+function Row({
+  entries,
+  links,
+  compact,
+}: {
+  entries: typeof ENTRIES
+  links: Record<string, string>
+  compact?: boolean
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      className={
+        compact ? 'flex flex-wrap items-center gap-0.5' : 'flex flex-wrap items-center gap-2'
+      }
+    >
       {entries.map(({ key, Icon, label, brand }) => (
         <a
           key={key}
@@ -72,12 +84,16 @@ function Row({ entries, links }: { entries: typeof ENTRIES; links: Record<string
           aria-label={label}
           title={label}
           style={{ '--brand': brand } as CSSProperties}
-          // Couleur de marque en thème CLAIR ; sur fond sombre on garde le
-          // muted-foreground (visible) — sinon les marques noires (X/TikTok/Tidal)
-          // disparaîtraient. Hover = couleur de marque dans les deux thèmes.
-          className="dark:text-muted-foreground hover:bg-muted border-border flex size-9 items-center justify-center rounded-full border text-[var(--brand)] transition-[color,transform] hover:scale-110 hover:text-[var(--brand)]"
+          // Data Desk §7.6.2 : couleur de marque par défaut (les variantes de
+          // palette choisies restent visibles sur fond sombre — X/TikTok/Tidal
+          // sont en bleu/cyan, pas en noir).
+          className={
+            compact
+              ? 'hover:bg-muted flex size-7 items-center justify-center rounded-full text-[var(--brand)] transition-transform hover:scale-110'
+              : 'hover:bg-muted border-border flex size-9 items-center justify-center rounded-full border text-[var(--brand)] transition-transform hover:scale-110'
+          }
         >
-          <Icon size={18} color="currentColor" />
+          <Icon size={compact ? 14 : 18} color="currentColor" />
         </a>
       ))}
     </div>
@@ -85,13 +101,24 @@ function Row({ entries, links }: { entries: typeof ENTRIES; links: Record<string
 }
 
 /**
- * Liens externes d'un groupe/artiste, séparés en deux rangées (§6.2) :
- * plateformes d'écoute puis réseaux sociaux. Couleur de marque au survol (§6.3).
+ * Liens externes d'un groupe/artiste en couleurs de marque (§7.6.2).
+ * Mode plein : deux rangées (streaming puis social). Mode `compact` : une seule
+ * rangée dense (cellule LINKS du stats strip), cap à 6 icônes.
  */
-export function LinksBar({ links }: { links: Record<string, string> | null }) {
+export function LinksBar({
+  links,
+  compact = false,
+}: {
+  links: Record<string, string> | null
+  compact?: boolean
+}) {
   if (!links) return null
   const present = ENTRIES.filter((e) => typeof links[e.key] === 'string' && links[e.key])
   if (present.length === 0) return null
+
+  if (compact) {
+    return <Row entries={present.slice(0, 6)} links={links} compact />
+  }
 
   const streaming = present.filter((e) => e.group === 'streaming')
   const social = present.filter((e) => e.group === 'social')

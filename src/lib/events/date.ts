@@ -90,3 +90,17 @@ export function formatKst(iso: string, opts: Intl.DateTimeFormatOptions): string
 export function kstTime24h(iso: string): string {
   return formatKst(iso, { hour: '2-digit', minute: '2-digit', hour12: false })
 }
+
+/**
+ * Étiquette D-day (« D-2 », « D-DAY ») d'un event, en jours calendaires dans le
+ * fuseau donné (Data Desk : colonne D-day des queues, tags hero/tuiles).
+ * Passé → « D+n » (ne devrait pas s'afficher : les queues sont future-only).
+ */
+export function formatDDay(iso: string, timeZone: string, nowIso?: string): string {
+  const eventKey = localDayKey(iso, timeZone)
+  const todayKey = localDayKey(nowIso ?? new Date().toISOString(), timeZone)
+  // Les clés YYYY-MM-DD se comparent en jours via Date.UTC (pas d'heure → pas de DST).
+  const days = Math.round((Date.parse(eventKey) - Date.parse(todayKey)) / 86_400_000)
+  if (days === 0) return 'D-DAY'
+  return days > 0 ? `D-${days}` : `D+${-days}`
+}

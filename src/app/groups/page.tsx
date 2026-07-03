@@ -1,9 +1,12 @@
 import Link from 'next/link'
+import { GroupCard } from '@/components/group-card'
 import { GroupsGrid } from '@/components/groups-grid'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupSort } from '@/components/home/group-sort'
+import { TrendingList, type TrendingEntry } from '@/components/group/trending-list'
 import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
+import { getNextEventForGroups } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -75,39 +78,75 @@ export default async function GroupsPage({
     }
   })
 
+  // Ligne statut des tuiles (prochain event) : groupes suivis + top trending.
+  const followedItems = sorted.filter((g) => followedIds.has(g.id))
+  const trendingCandidates = [...items]
+    .sort((a, b) => popOf(b.id) - popOf(a.id) || a.name.localeCompare(b.name))
+    .slice(0, 5)
+  const nextEvents = await getNextEventForGroups([
+    ...new Set([...followedItems.map((g) => g.id), ...trendingCandidates.map((g) => g.id)]),
+  ])
+
+  const toGridItem = (item: (typeof sorted)[number]) => ({
+    group: item,
+    isFollowing: followedIds.has(item.id),
+    isAuthed: !!user,
+    href: 'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
+    nextEvent: nextEvents.get(item.id) ?? null,
+  })
+
+  const trendingEntries: TrendingEntry[] = trendingCandidates.map((g) => ({
+    group: g,
+    follows: popOf(g.id),
+    isFollowing: followedIds.has(g.id),
+    nextEvent: nextEvents.get(g.id) ?? null,
+  }))
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
           <SidebarLeft tier={tier} showFilters={false} />
         </aside>
 
-        <div className="order-1 min-w-0 flex-1 space-y-5 lg:order-2">
+        <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <nav
-              aria-label="Filter by kind"
-              className="bg-muted inline-flex rounded-lg p-0.5 text-sm"
-            >
-              <SegmentLink href={buildHref('groups', activeSort)} active={activeTab === 'groups'}>
-                Groups
-              </SegmentLink>
-              <SegmentLink href={buildHref('solo', activeSort)} active={activeTab === 'solo'}>
-                Solo
-              </SegmentLink>
-            </nav>
-
-            <GroupSort value={activeSort} />
+            <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Groups</h1>
+            <div className="flex items-center gap-2">
+              <nav
+                aria-label="Filter by kind"
+                className="bg-secondary inline-flex gap-0.5 rounded-[8px] border p-0.5"
+              >
+                <SegmentLink href={buildHref('groups', activeSort)} active={activeTab === 'groups'}>
+                  Groups
+                </SegmentLink>
+                <SegmentLink href={buildHref('solo', activeSort)} active={activeTab === 'solo'}>
+                  Solo
+                </SegmentLink>
+              </nav>
+              <GroupSort value={activeSort} />
+            </div>
           </div>
 
-          <GroupsGrid
-            items={sorted.map((item) => ({
-              group: item,
-              isFollowing: followedIds.has(item.id),
-              isAuthed: !!user,
-              href:
-                'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
-            }))}
-          />
+          {followedItems.length > 0 && (
+            <section className="space-y-2">
+              <span className="label-data">Following — {followedItems.length}</span>
+              <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
+                {followedItems.map((item) => (
+                  <GroupCard key={item.slug} {...toGridItem(item)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <TrendingList entries={trendingEntries} isAuthed={!!user} />
+
+          <section className="space-y-2">
+            <span className="label-data">
+              All {activeTab === 'solo' ? 'soloists' : 'groups'} — {sorted.length}
+            </span>
+            <GroupsGrid items={sorted.map(toGridItem)} />
+          </section>
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">
@@ -132,10 +171,8 @@ function SegmentLink({
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'focus-visible:ring-ring/50 rounded-md px-3 py-1 font-medium transition-colors outline-none focus-visible:ring-2',
-        active
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground',
+        'label-data-inline focus-visible:ring-ring/50 rounded-[6px] px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2',
+        active ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}

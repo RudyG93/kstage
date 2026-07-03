@@ -1,22 +1,24 @@
 import Image from 'next/image'
+import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { faceCrop } from '@/lib/images/cloudinary'
 import type { MemberSummary } from '@/lib/members/queries'
 
 /**
- * Carte membre NON cliquable : photo si dispo, sinon placeholder gradient dérivé
- * de `color_hex` du groupe parent + initiale du stage_name.
+ * Carte membre 84px du rail (§7.6.5) : portrait rounded-[12px] (fallback
+ * gradient couleur groupe + initiale), nom, position. Bias = ring dorée + ★.
  *
  * Volontairement non navigable : la page membre `/artists/[slug]` est quasi-vide
- * et redondante avec cette grille → on ne crée plus de cul-de-sac. La route reste
- * (redirect solo + artistes solo riches), juste plus d'entrée depuis la grille.
+ * et redondante avec ce rail → on ne crée plus de cul-de-sac.
  */
 export function MemberCard({
   member,
   groupColorHex,
+  isBias = false,
 }: {
   member: MemberSummary
   groupColorHex: string | null
+  isBias?: boolean
 }) {
   const initial = member.stage_name.slice(0, 1).toUpperCase()
   const color = groupColorHex ?? '#888'
@@ -24,16 +26,21 @@ export function MemberCard({
 
   return (
     <div className={cn('block', isDimmed && 'opacity-70')}>
-      <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-xl">
+      <div
+        className={cn(
+          'bg-muted relative aspect-square w-full overflow-hidden rounded-[12px]',
+          isBias && 'ring-amber ring-2',
+        )}
+      >
         {member.photo_url ? (
           <Image
             // faceCrop = proxy Cloudinary (certains hosts comme kprofiles bloquent
             // le hotlinking direct) + centrage visage (g_auto).
-            src={faceCrop(member.photo_url, 400, 400)}
+            src={faceCrop(member.photo_url, 200, 200)}
             alt=""
             fill
             unoptimized
-            sizes="(min-width: 640px) 25vw, 33vw"
+            sizes="84px"
             className="object-cover"
           />
         ) : (
@@ -44,17 +51,27 @@ export function MemberCard({
             }}
             aria-hidden
           >
-            <span className="text-3xl font-bold text-white/90 drop-shadow-sm">{initial}</span>
+            <span className="text-xl font-bold text-white/90 drop-shadow-sm">{initial}</span>
           </div>
         )}
-      </div>
-      <div className="mt-1.5 px-0.5">
-        <p className="line-clamp-1 text-sm leading-snug font-medium">{member.stage_name}</p>
-        {member.status !== 'active' && (
-          <p className="text-muted-foreground mt-0.5 font-mono text-[11px] tracking-wider uppercase">
-            {member.status === 'former' ? 'Former' : 'Pre-debut'}
-          </p>
+        {isBias && (
+          <span
+            className="bg-amber absolute top-1 right-1 flex size-4 items-center justify-center rounded-full"
+            title="Your bias"
+          >
+            <Star className="size-2.5 fill-white text-white" aria-hidden />
+          </span>
         )}
+      </div>
+      <div className="mt-1 px-0.5">
+        <p className="truncate text-[11px] leading-snug font-semibold">{member.stage_name}</p>
+        <p className="label-data-inline text-faint truncate text-[8px]">
+          {member.status === 'active'
+            ? (member.position ?? '—')
+            : member.status === 'former'
+              ? 'Former'
+              : 'Pre-debut'}
+        </p>
       </div>
     </div>
   )

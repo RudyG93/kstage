@@ -168,6 +168,38 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
   return data ?? []
 }
 
+/** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */
+export async function getEventsCount(): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase.from('events').select('id', { count: 'exact', head: true })
+  return count ?? 0
+}
+
+/**
+ * Prochain event (futur) par groupe — ligne statut des tuiles Groups et
+ * contexte du panneau Trending (Data Desk §7.5). Un fetch, réduction en TS.
+ */
+export async function getNextEventForGroups(
+  groupIds: string[],
+): Promise<Map<string, { type: EventType; start_at: string; title: string }>> {
+  const out = new Map<string, { type: EventType; start_at: string; title: string }>()
+  if (groupIds.length === 0) return out
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('group_id, type, start_at, title')
+    .in('group_id', groupIds)
+    .gte('start_at', new Date().toISOString())
+    .or(isMainOrNonMv)
+    .order('start_at', { ascending: true })
+  if (error) throw error
+  for (const e of data ?? []) {
+    if (!e.group_id || out.has(e.group_id)) continue
+    out.set(e.group_id, { type: e.type, start_at: e.start_at, title: e.title })
+  }
+  return out
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]
