@@ -9,9 +9,16 @@ import { Ticker } from '@/components/ticker'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { getUpcomingEvents, getAllMvs, getEventsCount, type MvEvent } from '@/lib/events/queries'
+import {
+  getUpcomingEvents,
+  getAllMvs,
+  getGroupMvs,
+  getEventsCount,
+  type MvEvent,
+} from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
 import { parseTypesParam } from '@/lib/events/filters'
@@ -88,6 +95,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   )
   const heroIdx = merged.findIndex((e) => COMEBACK_TYPES.has(e.type))
   const nextDrop = heroIdx >= 0 ? merged[heroIdx] : null
+
+  // Fond du hero : thumbnail maxres du DERNIER MV du groupe du hero — le
+  // visuel le plus frais (les banners/landscapes seedés datent, ex. fanart
+  // aespa 2021). Une petite query dédiée : followedMvs (limit 4) ne contient
+  // pas forcément ce groupe.
+  let heroMvImage: string | null = null
+  if (nextDrop?.groups?.slug) {
+    const [latestMv] = await getGroupMvs(nextDrop.groups.slug, 1)
+    const videoId = latestMv ? extractYouTubeId(latestMv.source_url) : null
+    heroMvImage = videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null
+  }
   const queueSource = merged.length > 0 ? merged : globalEvents
   const queueEvents = (heroIdx >= 0 ? merged.filter((_, i) => i !== heroIdx) : queueSource).slice(
     0,
@@ -112,6 +130,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
                 event={nextDrop}
                 isAuthed
                 isFollowing={nextDrop.group_id ? followedIds.has(nextDrop.group_id) : false}
+                latestMvImage={heroMvImage}
               />
             )}
             {queueEvents.length > 0 && (

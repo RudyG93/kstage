@@ -17,10 +17,14 @@ export function NextDropCard({
   event,
   isFollowing = false,
   isAuthed = false,
+  latestMvImage = null,
 }: {
   event: UpcomingEvent | null
   isFollowing?: boolean
   isAuthed?: boolean
+  // Thumbnail maxres du dernier MV du groupe : le visuel le plus FRAIS
+  // disponible (les fanarts TheAudioDB datent — aespa servait un backdrop 2021).
+  latestMvImage?: string | null
 }) {
   if (!event) return null
   const group = event.groups
@@ -28,9 +32,9 @@ export function NextDropCard({
   const href = eventHref(event)
   const external = isExternalHref(href)
   const hex = group?.color_hex ?? 'var(--primary)'
-  // Photo du groupe en fond (le visuel qui manquait à la home) ; repli sur le
-  // gradient de marque seul quand aucune image paysage n'existe.
-  const bgImage = group?.banner_url ?? group?.image_landscape ?? null
+  // Fond : banner admin > thumbnail du dernier MV (ère en cours) > landscape ;
+  // repli gradient de marque seul quand rien n'existe.
+  const bgImage = group?.banner_url ?? latestMvImage ?? group?.image_landscape ?? null
   // Scrim : opaque côté texte → transparent côté image, teinté par la marque.
   const gradient = bgImage
     ? `linear-gradient(100deg, var(--card) 0%, color-mix(in srgb, var(--card) 82%, ${group?.color_hex ?? 'transparent'}) 42%, color-mix(in srgb, var(--card) 30%, transparent) 78%, transparent 100%)`
