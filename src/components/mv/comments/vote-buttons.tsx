@@ -68,7 +68,7 @@ export function VoteButtons({ commentId, slug, initialScore, initialUserVote, is
       </button>
       <span
         className={cn(
-          'min-w-[1.25rem] text-center font-mono tabular-nums',
+          'tabular min-w-[1.25rem] text-center',
           opt.userVote === 1 && 'text-primary',
           opt.userVote === -1 && 'text-destructive',
         )}

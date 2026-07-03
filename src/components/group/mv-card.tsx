@@ -64,7 +64,7 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
         <p className="line-clamp-2 text-sm leading-snug font-medium">
           {displaySongTitle(mv.title, group?.name)}
         </p>
-        <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] tracking-wider uppercase">
+        <p className="label-data-inline text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px]">
           <span>{group?.name}</span>
           <span aria-hidden>·</span>
           <span>{yearMonth(mv.start_at)}</span>

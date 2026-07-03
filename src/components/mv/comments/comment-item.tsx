@@ -68,7 +68,7 @@ export function CommentItem({ node, eventId, slug, viewerId, isAuthed, depth = 0
           aria-expanded={false}
           className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-xs"
         >
-          <span className="font-mono">[+]</span>
+          <span className="tabular">[+]</span>
           <span className="text-foreground font-medium">{author}</span>
           <span aria-hidden>·</span>
           <span className="tabular-nums">{node.score} pts</span>

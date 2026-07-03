@@ -53,15 +53,13 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">{group?.name}</span>
           <span
-            className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase"
-            style={{ color, backgroundColor: `${color}24` }}
+            className="label-data-inline rounded-[6px] px-1.5 py-0.5 text-[10px]"
+            style={{ color, backgroundColor: `${color}1f` }}
           >
             {EVENT_TYPE_LABELS[event.type]}
           </span>
           {event.status === 'tentative' && (
-            <span className="text-muted-foreground font-mono text-[10px] tracking-wider uppercase">
-              · tentative
-            </span>
+            <span className="label-data-inline text-muted-foreground text-[10px]">· tentative</span>
           )}
           {external && (
             <span className="text-faint inline-flex items-center" title="Opens an external site">
@@ -76,18 +74,14 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
       </div>
 
       <div className="flex shrink-0 flex-col items-end justify-center py-3 text-right">
-        <span className="font-mono text-sm font-semibold tracking-tight tabular-nums">
-          {dateLabel}
-        </span>
+        <span className="tabular text-sm font-semibold tracking-tight">{dateLabel}</span>
         {!isAnniversary && (
           <>
             {/* Heure locale en avant, KST en référence dessous. */}
-            <span className="text-foreground mt-0.5 font-mono text-[12px] font-medium tabular-nums">
+            <span className="tabular text-foreground mt-0.5 text-[12px] font-medium">
               <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} />
             </span>
-            <span className="text-muted-foreground/70 font-mono text-[10px] tabular-nums">
-              {timeLabel} KST
-            </span>
+            <span className="tabular text-muted-foreground/70 text-[10px]">{timeLabel} KST</span>
           </>
         )}
       </div>

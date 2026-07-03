@@ -83,7 +83,7 @@ export function Landing({
           </Link>
         </div>
 
-        <p className="text-muted-foreground/70 mt-4 font-mono text-[11px] tracking-wider">
+        <p className="label-data-inline text-muted-foreground/70 mt-4 text-[10px]">
           Free · No spam · Your timezone
         </p>
       </section>
@@ -117,9 +117,7 @@ export function Landing({
         <section className="space-y-4">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-lg font-bold tracking-tight">Track your groups</h2>
-            <span className="text-muted-foreground font-mono text-[11px] tracking-wider uppercase">
-              {groups.length} groups
-            </span>
+            <span className="label-data text-[10px]">{groups.length} groups</span>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {photoGroups.map((group) => (

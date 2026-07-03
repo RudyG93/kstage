@@ -51,7 +51,7 @@ export function MemberCard({
       <div className="mt-1.5 px-0.5">
         <p className="line-clamp-1 text-sm leading-snug font-medium">{member.stage_name}</p>
         {member.status !== 'active' && (
-          <p className="text-muted-foreground mt-0.5 font-mono text-[11px] tracking-wider uppercase">
+          <p className="label-data-inline text-muted-foreground mt-0.5 text-[10px]">
             {member.status === 'former' ? 'Former' : 'Pre-debut'}
           </p>
         )}

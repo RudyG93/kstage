@@ -91,7 +91,7 @@ export function HomeEventCard({
                 fallback={kstTime24h(event.start_at)}
               />
             </div>
-            <div className="text-faint font-mono text-[10px]">{kstTime24h(event.start_at)} KST</div>
+            <div className="tabular text-faint text-[10px]">{kstTime24h(event.start_at)} KST</div>
           </>
         )}
       </div>

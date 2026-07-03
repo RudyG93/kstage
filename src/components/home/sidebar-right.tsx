@@ -121,7 +121,7 @@ export async function SidebarRight() {
                       </p>
                       <p className="text-muted-foreground text-xs">{cb.groups?.name}</p>
                     </div>
-                    <span className="text-muted-foreground shrink-0 font-mono text-[11px] tabular-nums">
+                    <span className="tabular text-muted-foreground shrink-0 text-[11px]">
                       {shortDate(cb.start_at)}
                     </span>
                   </Link>

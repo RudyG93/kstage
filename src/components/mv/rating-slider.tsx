@@ -58,7 +58,7 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
       <div className="flex items-baseline gap-3">
         <span
           className={cn(
-            'font-mono text-3xl font-bold tabular-nums',
+            'tabular text-3xl font-bold',
             rated ? 'text-foreground' : 'text-muted-foreground/50',
           )}
         >
@@ -85,7 +85,7 @@ export function RatingSlider({ eventId, slug, initialScore, avgScore, count, isA
         </Slider.Control>
       </Slider.Root>
 
-      <div className="text-muted-foreground flex justify-between px-0.5 font-mono text-[10px] tabular-nums">
+      <div className="tabular text-muted-foreground flex justify-between px-0.5 text-[10px]">
         {TICKS.map((t) => (
           <span key={t}>{t}</span>
         ))}

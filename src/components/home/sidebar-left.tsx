@@ -113,9 +113,7 @@ export async function SidebarLeft({
                       </span>
                     )}
                     <span className="flex-1 truncate text-sm font-medium">{group.name}</span>
-                    <span className="text-faint font-mono text-xs tabular-nums">
-                      {countFor(group.id)}
-                    </span>
+                    <span className="tabular text-faint text-xs">{countFor(group.id)}</span>
                   </Link>
                 </li>
               ))}
@@ -132,7 +130,7 @@ export async function SidebarLeft({
         )}
       </section>
 
-      <p className="text-muted-foreground px-2 font-mono text-xs">
+      <p className="tabular text-muted-foreground px-2 text-xs">
         {followed.length} groups · {totalUpcoming} upcoming
       </p>
     </div>

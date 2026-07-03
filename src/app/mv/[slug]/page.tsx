@@ -108,14 +108,14 @@ export default async function MvPage({
             </Link>
             <span className="text-muted-foreground">·</span>
             <span
-              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase"
-              style={{ color, backgroundColor: `${color}24` }}
+              className="label-data-inline rounded-[6px] px-1.5 py-0.5 text-[10px]"
+              style={{ color, backgroundColor: `${color}1f` }}
             >
               MV
             </span>
           </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight text-balance">{title}</h1>
-          <p className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
+          <p className="label-data-inline text-muted-foreground text-[10px]">
             {dateLabel} · <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} /> ·{' '}
             {timeLabel} KST
           </p>
