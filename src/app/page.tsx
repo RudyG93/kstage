@@ -10,7 +10,7 @@ import { StatusFooter } from '@/components/status-footer'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { getUpcomingEvents, getAllMvs, type MvEvent } from '@/lib/events/queries'
+import { getUpcomingEvents, getAllMvs, getEventsCount, type MvEvent } from '@/lib/events/queries'
 import { getRatingsForEvents, getRecentCommunityActivity } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getSourcesStatus } from '@/lib/sources/queries'
@@ -31,13 +31,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   } = await supabase.auth.getUser()
 
   if (!user) {
-    const [groups, previewEvents] = await Promise.all([
+    const [groups, previewEvents, eventsCount, sourcesStatus] = await Promise.all([
       getGroupsCached(),
       getUpcomingEvents({ limit: 4 }),
+      getEventsCount(),
+      getSourcesStatus(),
     ])
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-6">
-        <Landing groups={groups} previewEvents={previewEvents} />
+      <div className="mx-auto w-full max-w-xl px-4 py-6">
+        <Landing
+          groups={groups}
+          previewEvents={previewEvents}
+          eventsCount={eventsCount}
+          sourcesStatus={sourcesStatus}
+        />
       </div>
     )
   }

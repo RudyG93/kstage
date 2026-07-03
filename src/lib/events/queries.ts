@@ -168,6 +168,13 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
   return data ?? []
 }
 
+/** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */
+export async function getEventsCount(): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase.from('events').select('id', { count: 'exact', head: true })
+  return count ?? 0
+}
+
 /**
  * Prochain event (futur) par groupe — ligne statut des tuiles Groups et
  * contexte du panneau Trending (Data Desk §7.5). Un fetch, réduction en TS.
