@@ -1,3 +1,5 @@
+/* eslint-disable */
+// Runtime du prototype de design (référence visuelle) — pas du code produit.
 // @ds-adherence-ignore -- omelette starter scaffold (raw elements/hex/px by design)
 
 /* BEGIN USAGE */
