@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { Countdown } from '@/components/home/countdown'
 import { formatDDay, kstTime24h } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
@@ -14,10 +15,13 @@ export function QueueRow({
   event,
   timeZone = 'Asia/Seoul',
   showThumb = false,
+  withCountdown = false,
 }: {
   event: UpcomingEvent
   timeZone?: string
   showThumb?: boolean
+  // Countdown inline « in 07:22:14 » (teal) pour les events du soir (§7.2).
+  withCountdown?: boolean
 }) {
   const color = EVENT_TYPE_COLORS[event.type]
   const group = event.groups
@@ -68,8 +72,13 @@ export function QueueRow({
           <span className="text-muted-foreground block truncate text-[10px]">{group.name}</span>
         )}
       </span>
-      <span className="tabular text-muted-foreground shrink-0 text-[10px]">
-        {kstTime24h(event.start_at)} KST
+      <span className="flex shrink-0 flex-col items-end gap-0.5">
+        <span className="tabular text-muted-foreground text-[10px]">
+          {kstTime24h(event.start_at)} KST
+        </span>
+        {withCountdown && dday === 'D-DAY' && (
+          <Countdown targetIso={event.start_at} variant="inline" />
+        )}
       </span>
     </Link>
   )

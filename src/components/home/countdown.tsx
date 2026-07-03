@@ -40,6 +40,8 @@ export function Countdown({
   const p = partsMs(targetIso)
 
   if (variant === 'inline') {
+    // Event déjà passé (ou pile maintenant) : rien à décompter.
+    if (hydrated && p.days === 0 && p.hours === 0 && p.min === 0 && p.sec === 0) return null
     const hoursTotal = p.days * 24 + p.hours
     return (
       <span className="tabular text-teal text-xs font-semibold">

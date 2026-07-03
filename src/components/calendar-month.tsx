@@ -7,21 +7,24 @@ import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
-import { HomeEventCard } from '@/components/home/event-card'
+import { Panel } from '@/components/ui/panel'
+import { QueueRow } from '@/components/events/queue-row'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-// Ordre canonique d'affichage des pastilles (une par type d'event présent ce
-// jour-là), aligné sur la palette partagée EVENT_TYPE_COLORS.
+// Ordre canonique des dots (un par type d'event présent ce jour-là).
 type DotType = keyof typeof EVENT_TYPE_COLORS
 const TYPE_ORDER = Object.keys(EVENT_TYPE_COLORS) as DotType[]
-const MAX_DOTS = 5
+const MAX_DOTS = 3
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
 }
 
+// Calendrier Data Desk (§7.2) : pager panneau ‹ JUL 2026 ›, cellules 44px
+// rounded-[7px] à dots 4px, jours hors-mois faint, listes denses par jour
+// sous la grille (QueueRow + countdown inline pour les events du soir).
 export function CalendarMonth({
   year,
   month,
@@ -37,139 +40,186 @@ export function CalendarMonth({
 
   const monthPrefix = `${year}-${pad(month)}`
   const todayKey = kstDayKey(new Date().toISOString())
-  // `?day=YYYY-MM-DD` permet à un lien externe (footer Feed) de préselectionner
-  // un jour précis. Doit appartenir au mois affiché pour être respecté.
+  // `?day=YYYY-MM-DD` préselectionne un jour (deep-link WeekGlance / feed).
   const dayParam = searchParams.get('day')
   const initialSelectedKey =
     dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam.startsWith(monthPrefix)
       ? dayParam
-      : todayKey.startsWith(monthPrefix)
-        ? todayKey
-        : null
+      : null
   const [selectedKey, setSelectedKey] = useState<string | null>(initialSelectedKey)
 
   const firstWeekday = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
-  const cells: (number | null)[] = [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  const prevMonthDays = new Date(Date.UTC(year, month - 1, 0)).getUTCDate()
+  // Jours hors-mois affichés en faint (mockup) : fin du mois précédent +
+  // début du suivant pour compléter la dernière semaine.
+  const trailing = (7 - ((firstWeekday + daysInMonth) % 7)) % 7
+  const cells: { day: number; inMonth: boolean }[] = [
+    ...Array.from({ length: firstWeekday }, (_, i) => ({
+      day: prevMonthDays - firstWeekday + 1 + i,
+      inMonth: false,
+    })),
+    ...Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, inMonth: true })),
+    ...Array.from({ length: trailing }, (_, i) => ({ day: i + 1, inMonth: false })),
   ]
 
-  const monthTitle = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, month - 1, 1)))
+  const monthShort = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, 1)))
+    .toUpperCase()
 
   function monthHref(targetYear: number, targetMonth: number) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('month', `${targetYear}-${pad(targetMonth)}`)
+    params.delete('day')
     return `${pathname}?${params.toString()}`
   }
 
   const prev = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 }
   const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 }
 
-  const selectedEvents = selectedKey ? (byDay.get(selectedKey) ?? []) : []
-  const selectedTitle = selectedKey
-    ? new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC',
-      }).format(new Date(`${selectedKey}T00:00:00Z`))
-    : null
+  // Listes par jour : le jour sélectionné seul, sinon tous les jours à venir du
+  // mois (aujourd'hui inclus) — ou tout le mois s'il est déjà passé.
+  const dayKeys = [...byDay.keys()].sort()
+  const upcomingKeys = dayKeys.filter((k) => k >= todayKey)
+  const listedKeys = selectedKey ? [selectedKey] : upcomingKeys.length > 0 ? upcomingKeys : dayKeys
+
+  const dayTitle = (key: string) => {
+    const label = new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+      .format(new Date(`${key}T00:00:00Z`))
+      .toUpperCase()
+    return key === todayKey ? `${label} — TODAY` : label
+  }
 
   const arrowClass =
-    'bg-muted/60 hover:bg-muted focus-visible:ring-ring/50 inline-flex size-8 items-center justify-center rounded-md outline-none focus-visible:ring-3'
+    'hover:bg-muted focus-visible:ring-ring/50 inline-flex size-7 items-center justify-center rounded-[6px] outline-none focus-visible:ring-2'
 
   return (
-    <div className="space-y-5">
-      {/* Grille calendrier en carte (maquette KStage Home.dc.html) ; le détail
-          du jour reste sous la carte. */}
-      <div className="bg-card border-border shadow-soft rounded-2xl border p-4 sm:p-5">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Calendar</h1>
+        <div className="bg-secondary flex items-center gap-0.5 rounded-[8px] border p-0.5">
           <Link href={monthHref(prev.y, prev.m)} aria-label="Previous month" className={arrowClass}>
-            <ChevronLeftIcon className="size-5" />
+            <ChevronLeftIcon className="size-[13px]" />
           </Link>
-          <h1 className="font-heading text-lg font-bold tracking-tight">{monthTitle}</h1>
+          <span className="tabular px-1.5 text-xs font-semibold">
+            {monthShort} {year}
+          </span>
           <Link href={monthHref(next.y, next.m)} aria-label="Next month" className={arrowClass}>
-            <ChevronRightIcon className="size-5" />
+            <ChevronRightIcon className="size-[13px]" />
           </Link>
         </div>
+      </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center">
+      <Panel>
+        <div className="grid grid-cols-7 gap-1 p-2.5">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="text-faint py-1 text-xs font-semibold">
+            <div key={w} className="label-data-inline text-faint py-1 text-center text-[8px]">
               {w}
             </div>
           ))}
-          {cells.map((day, i) => {
-            if (day === null) return <div key={`empty-${i}`} />
+          {cells.map(({ day, inMonth }, i) => {
+            if (!inMonth) {
+              return (
+                <div
+                  key={`out-${i}`}
+                  className="tabular text-faint/60 flex h-11 items-start justify-center pt-1.5 text-[11px]"
+                  aria-hidden
+                >
+                  {day}
+                </div>
+              )
+            }
             const key = `${monthPrefix}-${pad(day)}`
             const dayEvents = byDay.get(key) ?? []
-            // Une pastille par TYPE d'event présent (pas par groupe), couleur issue
-            // de la palette partagée. Cap à 5 types, surplus indiqué via `+N`.
             const dayTypes = TYPE_ORDER.filter((t) => dayEvents.some((e) => e.type === t))
             const shownTypes = dayTypes.slice(0, MAX_DOTS)
-            const overflow = dayTypes.length - shownTypes.length
             const isSelected = selectedKey === key
             const isToday = todayKey === key
+            // Ring réservé aux jours de comeback (mv/release), pas à tout event (§7.2).
+            const hasComeback = dayEvents.some((e) => e.type === 'mv' || e.type === 'release')
             return (
               <button
                 key={key}
                 type="button"
-                onClick={() => setSelectedKey(key)}
+                onClick={() => setSelectedKey(isSelected ? null : key)}
                 aria-pressed={isSelected}
-                aria-label={`${monthTitle} ${day}, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`}
+                aria-label={`${monthShort} ${day}, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`}
                 className={cn(
-                  'tabular focus-visible:ring-ring/50 relative flex aspect-square flex-col items-center justify-center gap-1 rounded-md text-sm tabular-nums outline-none focus-visible:ring-3',
-                  isSelected ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted',
-                  isToday && !isSelected && 'ring-primary/70 ring-1 ring-inset',
+                  'focus-visible:ring-ring/50 flex h-11 flex-col items-center rounded-[7px] pt-1.5 outline-none focus-visible:ring-2',
+                  isToday
+                    ? 'bg-primary/12 border-primary/60 border'
+                    : 'bg-secondary hover:bg-muted border border-transparent',
+                  isSelected && 'ring-primary/60 ring-2',
+                  hasComeback && !isToday && !isSelected && 'ring-primary/35 ring-1 ring-inset',
                 )}
               >
-                <span>{day}</span>
-                {dayTypes.length > 0 && (
-                  <span className="flex items-center gap-0.5" aria-hidden>
-                    {shownTypes.map((t) => (
-                      <span
-                        key={t}
-                        className="size-1.5 rounded-full"
-                        style={{ backgroundColor: EVENT_TYPE_COLORS[t] }}
-                      />
-                    ))}
-                    {overflow > 0 && (
-                      <span
-                        className={cn(
-                          'text-[9px] leading-none font-medium',
-                          isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground',
-                        )}
-                      >
-                        +{overflow}
-                      </span>
-                    )}
-                  </span>
-                )}
+                <span
+                  className={cn(
+                    'tabular text-[11px] leading-none font-semibold',
+                    isToday && 'text-primary',
+                  )}
+                >
+                  {day}
+                </span>
+                <span className="mt-1 flex h-[4px] items-center gap-[2px]" aria-hidden>
+                  {shownTypes.map((t) => (
+                    <span
+                      key={t}
+                      className="size-[4px] rounded-full"
+                      style={{ backgroundColor: EVENT_TYPE_COLORS[t] }}
+                    />
+                  ))}
+                </span>
               </button>
             )
           })}
         </div>
-      </div>
+      </Panel>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium">{selectedTitle ?? 'Select a day'}</h3>
-        {selectedEvents.length === 0 ? (
-          <div className="border-border/70 text-muted-foreground rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-            No events this day.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {selectedEvents.map((event) => (
-              <HomeEventCard key={event.id} event={event} />
-            ))}
-          </div>
-        )}
-      </div>
+      {listedKeys.length === 0 ? (
+        <div className="text-muted-foreground rounded-[10px] border border-dashed px-6 py-12 text-center text-sm">
+          No events this month.
+        </div>
+      ) : (
+        listedKeys.map((key) => {
+          const dayEvents = byDay.get(key) ?? []
+          if (dayEvents.length === 0) {
+            return (
+              <div key={key} className="space-y-1.5">
+                <div className="flex items-baseline justify-between px-1">
+                  <span className="label-data">{dayTitle(key)}</span>
+                  <span className="label-data-inline text-faint text-[9px]">0 events</span>
+                </div>
+                <div className="text-muted-foreground rounded-[10px] border border-dashed px-6 py-8 text-center text-sm">
+                  No events this day.
+                </div>
+              </div>
+            )
+          }
+          return (
+            <div key={key} className="space-y-1.5">
+              <div className="flex items-baseline justify-between px-1">
+                <span className="label-data">{dayTitle(key)}</span>
+                <span className="label-data-inline text-faint tabular text-[9px]">
+                  {dayEvents.length} event{dayEvents.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <Panel>
+                <div className="divide-y">
+                  {dayEvents.map((event) => (
+                    <QueueRow key={event.id} event={event} showThumb withCountdown />
+                  ))}
+                </div>
+              </Panel>
+            </div>
+          )
+        })
+      )}
     </div>
   )
 }
