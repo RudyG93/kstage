@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeIlike } from './queries'
+import { sanitizeIlike, tokenize, resolveGroupTokens } from './queries'
 
 describe('sanitizeIlike', () => {
   it('escapes ilike wildcards', () => {
@@ -19,5 +19,44 @@ describe('sanitizeIlike', () => {
 
   it('returns an empty string for whitespace-only input', () => {
     expect(sanitizeIlike('   ')).toBe('')
+  })
+})
+
+describe('tokenize', () => {
+  it('splits on whitespace and drops single chars', () => {
+    expect(tokenize('Music Bank aespa')).toEqual(['Music', 'Bank', 'aespa'])
+    expect(tokenize('a  bb')).toEqual(['bb'])
+  })
+})
+
+describe('resolveGroupTokens (« Music Bank aespa », retour Rudy 2026-07-03)', () => {
+  const groups = [
+    { id: 'g-aespa', name: 'aespa' },
+    { id: 'g-ive', name: 'IVE' },
+    { id: 'g-skz', name: 'Stray Kids' },
+    { id: 'g-dc', name: 'Dreamcatcher' },
+  ]
+
+  it('sépare les tokens groupe des tokens titre', () => {
+    const { groupIds, titleTokens } = resolveGroupTokens(['Music', 'Bank', 'aespa'], groups)
+    expect(groupIds).toEqual(['g-aespa'])
+    expect(titleTokens).toEqual(['Music', 'Bank'])
+  })
+
+  it('matche par égalité normalisée même pour les noms courts (IVE) sans faux amis', () => {
+    const { groupIds, titleTokens } = resolveGroupTokens(['ive', 'inkigayo'], groups)
+    expect(groupIds).toEqual(['g-ive'])
+    expect(titleTokens).toEqual(['inkigayo'])
+  })
+
+  it('matche un nom multi-mots par containment (≥ 4 chars)', () => {
+    const { groupIds } = resolveGroupTokens(['stray', 'comeback'], groups)
+    expect(groupIds).toEqual(['g-skz'])
+  })
+
+  it('sans token groupe, tout part en tokens titre', () => {
+    const { groupIds, titleTokens } = resolveGroupTokens(['music', 'bank'], groups)
+    expect(groupIds).toEqual([])
+    expect(titleTokens).toEqual(['music', 'bank'])
   })
 })
