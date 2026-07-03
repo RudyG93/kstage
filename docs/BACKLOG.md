@@ -93,6 +93,27 @@
 - Feed d'activité communautaire ; « j'attends ce comeback » (RSVP + compteur de hype) ; **KStage Wrapped** ; forum/modérateurs ; listes partageables ; reco « à suivre ». Un compteur à zéro est une anti-preuve sociale.
 - Wiring des mocks home (`src/lib/mocks/home.ts` → vraies queries MV/Release of the month, Recent activity) — dépend d'une activité réelle.
 
+## Premium (V2+) — abonnement payant (demande Rudy 2026-07-03)
+
+> Le socle technique existe déjà : `profiles.tier` (`free`/`premium`, protégé par trigger), cap `FREE_VISIBLE_FOLLOWS = 10` dans la sidebar. Aucune de ces features ne se construit avant une audience réelle — mais chaque nouvelle feature devrait se demander « free ou premium ? » dès sa conception.
+
+Idées activables (ordre approximatif valeur/effort) :
+
+1. **Follows illimités visibles** — le cap free=10 existe déjà, il suffit d'un paywall UI. Le plus simple à activer.
+2. **Push personnalisés** — lead-times custom par type d'event (l'infra `user_notification_settings.lead_time_minutes` existe), rappels multiples (J-7 + J-1 + heure H).
+3. **Export calendrier** — flux iCal / sync Google Calendar des events suivis (déclencheur d'abonnement classique des apps calendrier).
+4. **Digest hebdo enrichi** — version email premium avec stats perso, teaser des drops de la semaine (l'infra send-digest existe).
+5. **Stats avancées + Wrapped** — page stats perso approfondie (distribution des notes, streaks, genres) + le Wrapped annuel partageable en premium early-access.
+6. **Thèmes exclusifs** — variantes de thème (couleurs de bias, thèmes par groupe) sur le socle de tokens existant.
+7. **Badge profil premium** — signal social discret (le champ tier est déjà rendu côté profil).
+8. **Alertes mot-clé** — push sur mention d'un mot-clé dans les titres ingérés (« tour », « japan »…).
+
+Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `protect_profile_privileges` devra autoriser le service role). À cadrer le moment venu.
+
+## Ops manuelles en attente
+
+- **Re-scrape kprofiles des photos membres** (2026-07-03) : les photos datent du seed (aespa notamment) ; kprofiles est fragile → op manuelle ciblée sur les groupes phares via les scripts `scripts/roster/`, pas de cron. La fraîcheur du hero home vient désormais du thumbnail du dernier MV, ce qui réduit l'urgence.
+
 ## Reprises de l'ancien backlog (toujours pertinentes, non re-vérifiées par l'audit)
 
 - **Admin hub** (`/admin`) : grille de liens vers les sous-sections.
