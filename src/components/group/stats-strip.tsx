@@ -19,11 +19,13 @@ export function StatsStrip({
 }) {
   return (
     <Panel>
-      <div className="grid grid-cols-3 divide-x md:grid-cols-4">
+      {/* items-stretch + justify-center par cellule : centrage vertical réel
+          quel que soit le contenu (le texte flottait en haut de la rangée). */}
+      <div className="grid grid-cols-3 items-stretch divide-x md:grid-cols-4">
         <Cell value={compact(followers)} label="Followers" />
         <Cell value={String(upcoming)} label="Upcoming" />
         <Cell value={avgScore !== null ? avgScore.toFixed(1) : '—'} label="Avg score" />
-        <div className="col-span-3 flex items-center justify-center gap-1 border-t p-2 md:col-span-1 md:border-t-0">
+        <div className="col-span-3 flex min-h-[52px] items-center justify-center gap-1 border-t p-2 md:col-span-1 md:border-t-0">
           <LinksBar links={links} compact />
         </div>
       </div>
@@ -33,7 +35,7 @@ export function StatsStrip({
 
 function Cell({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 p-2.5">
+    <div className="flex min-h-[52px] flex-col items-center justify-center gap-1 p-2.5">
       <span className="tabular text-base leading-none font-bold">{value}</span>
       <span className="label-data-inline text-faint text-[8px]">{label}</span>
     </div>

@@ -4,8 +4,8 @@ import { BackButton } from '@/components/back-button'
 import { ShareButton } from '@/components/share-button'
 
 // Bannière Data Desk 210px (§7.6.1) : image (fallback gradient color_hex 150deg
-// + scanlines + monogramme géant), boutons back/share flottants, tags + nom
-// 30/800 + méta, slot follow (pilule).
+// + monogramme géant), boutons back/share flottants, tags + nom 30/800 + méta,
+// slot follow (pilule).
 export function ArtistHero({
   name,
   image,
@@ -46,7 +46,6 @@ export function ArtistHero({
           aria-hidden
         >
           {!colorHex && <span className="gradient-signature absolute inset-0" />}
-          <span className="scanlines absolute inset-0" />
           <span className="font-heading absolute -right-2 -bottom-8 text-[150px] leading-none font-extrabold text-white/10 select-none">
             {name.slice(0, 2)}
           </span>

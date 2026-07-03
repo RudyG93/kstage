@@ -32,12 +32,13 @@ export function SuggestEventDialog({
         onClick={() => setOpen(true)}
         aria-label="Suggest an event or a fix"
         className={
+          // Discret (retour Rudy 2026-07-03) : ghost, petit, en périphérie.
           triggerClassName ??
-          'border-foreground/15 hover:bg-muted focus-visible:ring-ring/50 inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm font-medium outline-none focus-visible:ring-3'
+          'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[9px] transition-colors outline-none focus-visible:ring-2'
         }
       >
-        <Plus className="size-4" aria-hidden />
-        <span className="hidden sm:inline">{triggerLabel}</span>
+        <Plus className="size-3.5" aria-hidden />
+        <span>{triggerLabel}</span>
       </button>
 
       <DialogContent>

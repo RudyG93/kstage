@@ -8,7 +8,7 @@ import { MvsGrid } from '@/components/group/mvs-grid'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfilePicker, type PickerItem } from '@/components/profile/profile-picker'
-import { FanCard } from '@/components/profile/fan-card'
+import { ProfileStats } from '@/components/profile/profile-stats'
 import { PushBell } from '@/components/notifications/push-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { buttonVariants } from '@/components/ui/button'
@@ -92,7 +92,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-3 py-4 md:px-4 md:py-6">
+    <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
         {/* Identité (§7.8.2) : avatar 64 ring primary, @user, fan since, EDIT. */}
         <header className="flex items-center gap-4">
@@ -113,7 +113,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="font-heading truncate text-xl font-extrabold tracking-[-0.01em]">
-              @{profile.username ?? 'user'}
+              {profile.username ?? 'User'}
             </h1>
             <p className="text-muted-foreground mt-0.5 text-xs">
               Fan since {fanSince(profile.created_at)}
@@ -122,12 +122,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {isOwner && (
             <div className="flex shrink-0 items-center gap-1">
               {admin && (
-                <Link
-                  href="/admin/suggestions"
-                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                >
-                  Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-                </Link>
+                <>
+                  <Link
+                    href="/admin/suggestions"
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  >
+                    Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                  </Link>
+                  <Link
+                    href="/admin/feedback"
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  >
+                    Feedback
+                  </Link>
+                </>
               )}
               <PushBell />
               <Link
@@ -142,9 +150,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </header>
 
         {stats && (
-          <FanCard
-            year={new Date().getUTCFullYear()}
-            username={profile.username ?? 'user'}
+          <ProfileStats
             following={stats.followed}
             rated={stats.rated}
             avg={userRatings.avg}

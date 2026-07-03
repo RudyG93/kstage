@@ -14,6 +14,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
+import { HeaderSearch } from '@/components/search/header-search'
 import { AuthMenu } from '@/components/auth/auth-menu'
 import { Footer } from '@/components/footer'
 import { Analytics } from '@vercel/analytics/next'
@@ -121,46 +122,58 @@ export default async function RootLayout({
               cloche → réglages notifs, avatar = entrée profil. Nav desktop inline ;
               sur mobile la nav vit dans la bottom-bar (SiteNav fixed). */}
           <header className="bg-background/95 sticky top-0 z-30 border-b backdrop-blur">
-            <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-3 md:px-4">
-              <Link
-                href="/"
-                className="flex shrink-0 items-center gap-1.5 transition-opacity hover:opacity-80"
-              >
-                <span className="bg-primary text-primary-foreground font-heading flex size-[27px] items-center justify-center rounded-[8px] text-[14px] font-extrabold">
-                  K
-                </span>
-                <span className="label-data-inline text-[12px] tracking-[0.22em]">Stage</span>
-              </Link>
-              <SiteNav variant="header" />
-              {/* Champ recherche factice : simple lien stylé vers /search. */}
-              <Link
-                href="/search"
-                className="bg-secondary text-muted-foreground hover:text-foreground flex h-[33px] min-w-0 flex-1 items-center gap-2 rounded-[8px] border px-3 text-xs transition-colors md:max-w-64"
-              >
-                <SearchIcon className="size-3.5 shrink-0" />
-                <span className="truncate">Groups, MVs, events…</span>
-              </Link>
-              <div className="hidden md:block">
-                <ThemeToggle />
-              </div>
-              {user && (
+            {/* Grid 3 zones (gauche/centre/droite) : la recherche est centrée au
+                lieu de pousser les groupes avec un flex-1 déséquilibré. */}
+            <div className="mx-auto grid h-14 w-full max-w-[1400px] grid-cols-[auto_1fr_auto] items-center gap-3 px-3 md:px-4">
+              <div className="flex items-center gap-3">
                 <Link
-                  href="/account"
-                  aria-label="Notification settings"
-                  className="text-muted-foreground hover:text-foreground relative shrink-0 p-1 transition-colors"
+                  href="/"
+                  className="flex shrink-0 items-center gap-1.5 transition-opacity hover:opacity-80"
                 >
-                  <BellIcon className="size-[18px]" />
-                  <span
-                    aria-hidden
-                    className="bg-amber border-background absolute top-0.5 right-0.5 size-[7px] rounded-full border-2"
-                  />
+                  <span className="bg-primary text-primary-foreground font-heading flex size-[27px] items-center justify-center rounded-[8px] text-[14px] font-extrabold">
+                    K
+                  </span>
+                  <span className="label-data-inline text-[12px] tracking-[0.22em]">Stage</span>
                 </Link>
-              )}
-              <AuthMenu
-                email={user?.email ?? null}
-                username={profile?.username ?? null}
-                avatarUrl={profile?.avatar_url ?? null}
-              />
+                <SiteNav variant="header" />
+              </div>
+              <div className="flex min-w-0 justify-center">
+                {/* Desktop : recherche live avec dropdown. Mobile : lien /search
+                    (clavier virtuel + place — la vraie recherche vit sur la page). */}
+                <div className="hidden w-full max-w-md md:block">
+                  <HeaderSearch />
+                </div>
+                <Link
+                  href="/search"
+                  className="bg-secondary text-muted-foreground hover:text-foreground flex h-[33px] w-full min-w-0 items-center gap-2 rounded-[8px] border px-3 text-xs transition-colors md:hidden"
+                >
+                  <SearchIcon className="size-3.5 shrink-0" />
+                  <span className="truncate">Groups, MVs, events…</span>
+                </Link>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="hidden md:block">
+                  <ThemeToggle />
+                </div>
+                {user && (
+                  <Link
+                    href="/account"
+                    aria-label="Notification settings"
+                    className="text-muted-foreground hover:text-foreground relative shrink-0 p-1 transition-colors"
+                  >
+                    <BellIcon className="size-[18px]" />
+                    <span
+                      aria-hidden
+                      className="bg-amber border-background absolute top-0.5 right-0.5 size-[7px] rounded-full border-2"
+                    />
+                  </Link>
+                )}
+                <AuthMenu
+                  email={user?.email ?? null}
+                  username={profile?.username ?? null}
+                  avatarUrl={profile?.avatar_url ?? null}
+                />
+              </div>
             </div>
           </header>
           <main className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6">

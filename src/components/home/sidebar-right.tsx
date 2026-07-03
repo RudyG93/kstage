@@ -14,7 +14,7 @@ import { CommentsRealtime } from '@/components/home/comments-realtime'
 const DISCUSSIONS_MIN = 3
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return <span className="text-faint text-xs font-semibold">{children}</span>
+  return <span className="label-data">{children}</span>
 }
 
 const shortDate = (iso: string) =>
@@ -84,7 +84,7 @@ export async function SidebarRight() {
       <CommentsRealtime />
 
       {/* Recent comebacks — au-dessus de Recent discussions (§7.1) */}
-      <section className="bg-card border-border shadow-soft rounded-xl border p-4">
+      <section className="bg-card rounded-[10px] border p-4">
         <div className="mb-3">
           <SectionLabel>Recent comebacks</SectionLabel>
         </div>
@@ -143,7 +143,7 @@ export async function SidebarRight() {
           dépend de l'audience (règle de gel) → affichée seulement avec assez de
           matière. */}
       {discussions.length >= DISCUSSIONS_MIN && (
-        <section className="bg-card border-border shadow-soft rounded-xl border p-4">
+        <section className="bg-card rounded-[10px] border p-4">
           <div className="mb-3">
             <SectionLabel>Recent discussions</SectionLabel>
           </div>

@@ -57,7 +57,7 @@ export default async function SearchPage({
   const topResult = groups[0]
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-3 py-4 md:px-4 md:py-6">
+    <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
         <SearchInput />
 

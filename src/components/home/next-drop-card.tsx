@@ -10,8 +10,9 @@ import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { LocalTime } from '@/components/local-time'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
-// Hero « NEXT UP » (§7.1.3) : gradient de marque du groupe + scanlines,
-// border-left primary, tags GROUP + D-day, countdown 4 cellules, CTA notify.
+// Hero « NEXT UP » : photo du groupe en fond (banner/landscape) + scrim de
+// marque pour la lisibilité, border-left primary, tags GROUP + D-day,
+// countdown 4 cellules, CTA notify.
 export function NextDropCard({
   event,
   isFollowing = false,
@@ -27,17 +28,37 @@ export function NextDropCard({
   const href = eventHref(event)
   const external = isExternalHref(href)
   const hex = group?.color_hex ?? 'var(--primary)'
-  // 28% → transparent 75% (115deg) — gradient de marque local, seul glow autorisé.
-  const gradient = group?.color_hex
-    ? `linear-gradient(115deg, ${hex}47 0%, ${hex}1a 55%, transparent 75%)`
-    : `linear-gradient(115deg, color-mix(in srgb, var(--primary) 28%, transparent), transparent 75%)`
+  // Photo du groupe en fond (le visuel qui manquait à la home) ; repli sur le
+  // gradient de marque seul quand aucune image paysage n'existe.
+  const bgImage = group?.banner_url ?? group?.image_landscape ?? null
+  // Scrim : opaque côté texte → transparent côté image, teinté par la marque.
+  const gradient = bgImage
+    ? `linear-gradient(100deg, var(--card) 0%, color-mix(in srgb, var(--card) 82%, ${group?.color_hex ?? 'transparent'}) 42%, color-mix(in srgb, var(--card) 30%, transparent) 78%, transparent 100%)`
+    : group?.color_hex
+      ? `linear-gradient(115deg, ${hex}47 0%, ${hex}1a 55%, transparent 75%)`
+      : `linear-gradient(115deg, color-mix(in srgb, var(--primary) 28%, transparent), transparent 75%)`
   const dateLabel = formatKst(event.start_at, { weekday: 'short', month: 'short', day: 'numeric' })
 
   return (
     <Panel className="animate-in fade-in slide-in-from-bottom-2 duration-500">
       <PanelHeader label="Next up — your groups" action={{ label: 'All', href: '/calendar' }} />
-      <div className="border-primary relative border-l-[3px]" style={{ background: gradient }}>
-        <div className="scanlines pointer-events-none absolute inset-0" aria-hidden />
+      <div className="border-primary relative overflow-hidden border-l-[3px]">
+        {bgImage && (
+          <Image
+            src={bgImage}
+            alt=""
+            fill
+            unoptimized
+            sizes="(min-width: 1024px) 640px, 100vw"
+            className="object-cover object-[70%_30%]"
+            aria-hidden
+          />
+        )}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: gradient }}
+          aria-hidden
+        />
         <div className="relative space-y-3 p-3.5">
           <div className="flex items-start gap-3">
             {group?.image_url ? (

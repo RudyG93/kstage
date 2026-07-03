@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CONTACT_EMAIL } from '@/lib/site'
+import { FeedbackDialog } from '@/components/feedback/feedback-dialog'
 
 const LINKS = [
   { href: '/about', label: 'About' },
@@ -21,6 +22,7 @@ export function Footer() {
           <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground transition-colors">
             Contact
           </a>
+          <FeedbackDialog triggerClassName="hover:text-foreground inline-flex cursor-pointer items-center gap-1 transition-colors" />
         </nav>
         <p className="text-xs">
           Indie project, not affiliated with any of the agencies or artists listed.

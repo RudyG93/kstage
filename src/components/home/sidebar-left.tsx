@@ -66,7 +66,7 @@ export async function SidebarLeft({
         </section>
       )}
 
-      <section className="bg-card border-border shadow-soft rounded-xl border p-4">
+      <section className="bg-card rounded-[10px] border p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="label-data">My groups</span>
           <Link href="/groups" className="text-muted-foreground hover:text-foreground text-xs">

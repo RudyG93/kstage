@@ -2,7 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, FILTERABLE_EVENT_TYPES } from '@/lib/events/labels'
+import {
+  EVENT_TYPE_COLORS,
+  EVENT_TYPE_LABELS,
+  FILTERABLE_EVENT_TYPES,
+  eventTypeTint,
+} from '@/lib/events/labels'
 import { parseTypesParam } from '@/lib/events/filters'
 import { cn } from '@/lib/utils'
 
@@ -67,7 +72,11 @@ export function FilterChips({ eventCount, isAuthed }: { eventCount: number; isAu
               href={typeHref(type)}
               aria-current={active ? 'true' : undefined}
               className={cn(chipBase, !active && 'opacity-60 hover:opacity-100')}
-              style={{ color, backgroundColor: `${color}1f`, border: `1px solid ${color}4d` }}
+              style={{
+                color,
+                backgroundColor: eventTypeTint(color),
+                border: `1px solid ${eventTypeTint(color, 30)}`,
+              }}
             >
               <span
                 className="size-[4px] rounded-full"

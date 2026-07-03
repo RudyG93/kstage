@@ -16,14 +16,24 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
 // supersède « mv ≠ release ») : teal = sortie musicale (mv + release, la
 // distinction reste portée par les tags texte), ambre = music show,
 // rose = live/concert, neutre = anniversary/other.
+//
+// Variables CSS (pas des hex) : les valeurs Midnight en dur (#2FD4AC…)
+// faisaient 1.9-2.6:1 sur le thème clair (audit WCAG 2026-07-03). Chaque thème
+// résout sa propre valeur ; les fonds translucides passent par color-mix
+// (la concaténation `${color}1f` ne marche pas avec var()).
 export const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  mv: '#2FD4AC',
-  release: '#2FD4AC',
-  music_show: '#E3A83C',
-  live: '#E85D8A',
-  anniversary: '#8b90a3',
-  concert: '#E85D8A',
-  other: '#8b90a3',
+  mv: 'var(--teal)',
+  release: 'var(--teal)',
+  music_show: 'var(--amber)',
+  live: 'var(--rose)',
+  anniversary: 'var(--faint)',
+  concert: 'var(--rose)',
+  other: 'var(--faint)',
+}
+
+/** Fond translucide d'un tag/chip de type (color-mix — compatible var()). */
+export function eventTypeTint(color: string, percent = 12): string {
+  return `color-mix(in srgb, ${color} ${percent}%, transparent)`
 }
 
 // Types affichés dans les filtres. `concert` retiré (feature abandonnée, 0 donnée) ;

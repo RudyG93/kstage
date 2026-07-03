@@ -1,12 +1,17 @@
-import Link from 'next/link'
+'use client'
+
+import { useState } from 'react'
 import { Panel, PanelHeader } from '@/components/ui/panel'
+import { QueueRow } from '@/components/events/queue-row'
 import { localDayKey } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { cn } from '@/lib/utils'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 // THIS WEEK (§7.1.5) : 7 cellules jour (abréviation condensée, date Space
-// Grotesk, dots 4px couleur type). Aujourd'hui = fond/bord primary. → /calendar.
+// Grotesk, dots couleur type). Clic sur un jour → ses events s'affichent
+// inline sous la rangée (les données sont déjà chargées) ; le lien du header
+// reste la porte vers le calendrier complet.
 export function WeekGlance({
   events,
   timeZone,
@@ -14,68 +19,94 @@ export function WeekGlance({
   events: readonly UpcomingEvent[]
   timeZone: string
 }) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const now = new Date()
-  const dotsByDay = new Map<string, string[]>()
+  const eventsByDay = new Map<string, UpcomingEvent[]>()
   for (const e of events) {
     const key = localDayKey(e.start_at, timeZone)
-    const dots = dotsByDay.get(key) ?? []
-    if (dots.length < 3) dots.push(EVENT_TYPE_COLORS[e.type])
-    dotsByDay.set(key, dots)
+    const list = eventsByDay.get(key) ?? []
+    list.push(e)
+    eventsByDay.set(key, list)
   }
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now.getTime() + i * 86_400_000)
     const iso = d.toISOString()
+    const key = localDayKey(iso, timeZone)
+    const dayEvents = eventsByDay.get(key) ?? []
     return {
-      key: localDayKey(iso, timeZone),
+      key,
       weekday: new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(d),
       dayNum: new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone }).format(d),
       isToday: i === 0,
-      dots: dotsByDay.get(localDayKey(iso, timeZone)) ?? [],
+      dots: dayEvents.slice(0, 3).map((e) => EVENT_TYPE_COLORS[e.type]),
+      count: dayEvents.length,
     }
   })
 
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone })
     .format(now)
     .toUpperCase()
+  const selectedEvents = selectedKey ? (eventsByDay.get(selectedKey) ?? []) : []
 
   return (
     <Panel>
       <PanelHeader label="This week" action={{ label: monthLabel, href: '/calendar' }} />
       <div className="grid grid-cols-7 gap-1.5 p-3">
-        {days.map((day) => (
-          <Link
-            key={day.key}
-            href={`/calendar?day=${day.key}`}
-            className={cn(
-              'flex flex-col items-center rounded-[8px] border px-0 pt-1.5 pb-2 transition-colors',
-              day.isToday
-                ? 'bg-primary/10 border-primary/55'
-                : 'bg-secondary hover:border-border border-transparent',
-            )}
-          >
-            <span
+        {days.map((day) => {
+          const isSelected = selectedKey === day.key
+          return (
+            <button
+              key={day.key}
+              type="button"
+              onClick={() => setSelectedKey(isSelected ? null : day.key)}
+              aria-pressed={isSelected}
+              aria-label={`${day.weekday} ${day.dayNum}, ${day.count} event${day.count === 1 ? '' : 's'}`}
               className={cn(
-                'label-data-inline text-[8.5px]',
-                day.isToday ? 'text-primary' : 'text-muted-foreground',
+                'focus-visible:ring-ring/50 flex flex-col items-center rounded-[8px] border px-0 pt-1.5 pb-2 transition-colors outline-none focus-visible:ring-2',
+                day.isToday
+                  ? 'bg-primary/10 border-primary/55'
+                  : 'bg-secondary hover:border-border border-transparent',
+                isSelected && 'ring-primary/60 ring-2',
               )}
             >
-              {day.weekday}
-            </span>
-            <span className="tabular mt-0.5 mb-1 text-[13px] font-semibold">{day.dayNum}</span>
-            <span className="flex h-[4px] items-center gap-[3px]">
-              {day.dots.map((color, i) => (
-                <span
-                  key={i}
-                  className="size-[4px] rounded-full"
-                  style={{ backgroundColor: color }}
-                  aria-hidden
-                />
-              ))}
-            </span>
-          </Link>
-        ))}
+              <span
+                className={cn(
+                  'label-data-inline text-[8.5px]',
+                  day.isToday ? 'text-primary' : 'text-muted-foreground',
+                )}
+              >
+                {day.weekday}
+              </span>
+              <span className="tabular mt-0.5 mb-1 text-[13px] font-semibold">{day.dayNum}</span>
+              <span className="flex h-[4px] items-center gap-[3px]" aria-hidden>
+                {day.dots.map((color, i) => (
+                  <span
+                    key={i}
+                    className="size-[4px] rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </span>
+            </button>
+          )
+        })}
       </div>
+      {selectedKey && (
+        <div className="border-t">
+          {selectedEvents.length === 0 ? (
+            <p className="text-muted-foreground px-3 py-4 text-center text-xs">
+              Nothing scheduled this day.
+            </p>
+          ) : (
+            <div className="divide-y">
+              {selectedEvents.map((event) => (
+                <QueueRow key={event.id} event={event} timeZone={timeZone} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Panel>
   )
 }
