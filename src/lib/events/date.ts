@@ -92,6 +92,41 @@ export function kstTime24h(iso: string): string {
 }
 
 /**
+ * Temps relatif court (« just now », « 5m ago », « 3h ago », « 2d ago »,
+ * « 3w ago », « 5mo ago », « 1y ago ») — impl unique pour sidebar, commentaires
+ * et fiche MV (3 copies locales consolidées, audit 2026-07-04).
+ */
+export function relativeTime(iso: string, nowMs = Date.now()): string {
+  const min = Math.floor((nowMs - new Date(iso).getTime()) / 60_000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min}m ago`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7) return `${d}d ago`
+  if (d < 35) return `${Math.floor(d / 7)}w ago`
+  if (d < 365) return `${Math.floor(d / 30)}mo ago`
+  const y = Math.floor(d / 365)
+  return `${y}y ago`
+}
+
+/** « JUN 28 » — date courte uppercased (listes denses), fuseau paramétrable. */
+export function shortDate(iso: string, timeZone = 'Asia/Seoul'): string {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone })
+    .format(new Date(iso))
+    .toUpperCase()
+}
+
+/** « Mar 2026 » — mois + année (profil « Fan since »). */
+export function monthYear(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(iso))
+}
+
+/**
  * Étiquette D-day (« D-2 », « D-DAY ») d'un event, en jours calendaires dans le
  * fuseau donné (Data Desk : colonne D-day des queues, tags hero/tuiles).
  * Passé → « D+n » (ne devrait pas s'afficher : les queues sont future-only).

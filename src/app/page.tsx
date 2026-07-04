@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
@@ -105,10 +106,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   // aespa 2021). Une petite query dédiée : followedMvs (limit 4) ne contient
   // pas forcément ce groupe.
   let heroMvImage: string | null = null
+  let heroMvFallback: string | null = null
   if (nextDrop?.groups?.slug) {
     const [latestMv] = await getGroupMvs(nextDrop.groups.slug, 1)
     const videoId = latestMv ? extractYouTubeId(latestMv.source_url) : null
+    // maxres n'existe pas pour toutes les vidéos → hqdefault en repli client.
     heroMvImage = videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null
+    heroMvFallback = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null
   }
   const queueSource = merged.length > 0 ? merged : globalEvents
   const queueEvents = (heroIdx >= 0 ? merged.filter((_, i) => i !== heroIdx) : queueSource).slice(
@@ -129,12 +133,33 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
             <SidebarLeft tier={tier} showFilters={false} />
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
+            {/* 0 follow : la home affiche des replis globaux — le dire, et
+                donner la sortie (audit UX 2026-07-04, anti-churn J0). */}
+            {followedIds.size === 0 && (
+              <Link
+                href="/groups"
+                className="border-primary/40 bg-primary/8 hover:bg-primary/12 flex items-center justify-between gap-3 rounded-[10px] border border-dashed px-3.5 py-3 transition-colors"
+              >
+                <span>
+                  <span className="block text-sm font-semibold">
+                    You&apos;re seeing global picks
+                  </span>
+                  <span className="text-muted-foreground block text-xs">
+                    Follow your groups to make this calendar yours
+                  </span>
+                </span>
+                <span className="label-data-inline text-primary shrink-0 text-[9px]">
+                  Browse groups →
+                </span>
+              </Link>
+            )}
             {nextDrop && (
               <NextDropCard
                 event={nextDrop}
                 isAuthed
                 isFollowing={nextDrop.group_id ? followedIds.has(nextDrop.group_id) : false}
                 latestMvImage={heroMvImage}
+                latestMvFallback={heroMvFallback}
               />
             )}
             {queueEvents.length > 0 && (

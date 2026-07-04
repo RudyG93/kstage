@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { ExternalLink } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
 import { formatDDay, kstTime24h } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
@@ -73,8 +74,11 @@ export function QueueRow({
         )}
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">
-        <span className="tabular text-muted-foreground text-[10px]">
+        <span className="tabular text-muted-foreground flex items-center gap-1 text-[10px]">
           {kstTime24h(event.start_at)} KST
+          {/* La ligne ouvre YouTube dans un nouvel onglet (stage d'un music
+              show) : l'user doit le voir avant de cliquer (audit UX 2026-07-04). */}
+          {external && <ExternalLink className="text-faint size-3" aria-label="Opens YouTube" />}
         </span>
         {withCountdown && dday === 'D-DAY' && (
           <Countdown targetIso={event.start_at} variant="inline" />

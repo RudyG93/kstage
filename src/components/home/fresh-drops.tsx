@@ -14,7 +14,7 @@ export function FreshDrops({
   if (mvs.length === 0) return null
   return (
     <Panel className="overflow-visible">
-      <PanelHeader label="Fresh drops — rate them" action={{ label: 'All MVs', href: '/mvs' }} />
+      <PanelHeader label="Fresh drops — rate them" action={{ label: 'All drops', href: '/mvs' }} />
       <div className="grid grid-cols-2 gap-[9px] p-3">
         {mvs.map((mv) => (
           <MvCard

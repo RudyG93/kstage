@@ -126,7 +126,9 @@ export async function enrichStageLinks(
     .eq('type', 'music_show')
     .gte('start_at', since)
     .lte('start_at', now)
-    .not('source_url', 'ilike', '%youtube.com%')
+    // « pas encore enrichi » = URL non-YouTube OU null. NOT ILIKE seul exclut
+    // les NULL (sémantique SQL) → le .or couvre les deux cas.
+    .or('source_url.is.null,source_url.not.ilike.%youtube.com%')
     .order('start_at', { ascending: false })
 
   const result: StageLinkResult = { scanned: 0, linked: 0, units: 0, byShow: {} }

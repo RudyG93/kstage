@@ -7,6 +7,7 @@ import {
   formatKst,
   kstTime24h,
   formatDDay,
+  relativeTime,
 } from './date'
 
 describe('getKstMonthRange', () => {
@@ -105,5 +106,19 @@ describe('formatDDay', () => {
 
   it('labels past days with D+', () => {
     expect(formatDDay('2026-06-30T03:00:00Z', 'Asia/Seoul', now)).toBe('D+2')
+  })
+})
+
+describe('relativeTime', () => {
+  const now = Date.parse('2026-07-04T12:00:00Z')
+
+  it('gradue minutes → heures → jours → semaines → mois → années', () => {
+    expect(relativeTime('2026-07-04T11:59:40Z', now)).toBe('just now')
+    expect(relativeTime('2026-07-04T11:45:00Z', now)).toBe('15m ago')
+    expect(relativeTime('2026-07-04T07:00:00Z', now)).toBe('5h ago')
+    expect(relativeTime('2026-07-01T12:00:00Z', now)).toBe('3d ago')
+    expect(relativeTime('2026-06-15T12:00:00Z', now)).toBe('2w ago')
+    expect(relativeTime('2026-03-04T12:00:00Z', now)).toBe('4mo ago')
+    expect(relativeTime('2024-07-04T12:00:00Z', now)).toBe('2y ago')
   })
 })

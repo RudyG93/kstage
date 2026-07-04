@@ -22,21 +22,12 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getLikedMvs } from '@/lib/events/queries'
 import { getRatingsForEvents, getUserRatings } from '@/lib/events/community'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
+import { monthYear, shortDate } from '@/lib/events/date'
 import { displaySongTitle } from '@/lib/events/title'
 import { isAdmin } from '@/lib/auth/admin'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
-
-const fanSince = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(
-    new Date(iso),
-  )
-
-const shortDate = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
-    new Date(iso),
-  )
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
@@ -116,7 +107,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               {profile.username ?? 'User'}
             </h1>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              Fan since {fanSince(profile.created_at)}
+              Fan since {monthYear(profile.created_at)}
             </p>
           </div>
           {isOwner && (
@@ -209,7 +200,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         {displaySongTitle(r.eventTitle, r.groupName ?? undefined)}
                       </span>
                       <span className="text-muted-foreground block truncate text-[10px]">
-                        {r.groupName} · {shortDate(r.createdAt)}
+                        {r.groupName} · {shortDate(r.createdAt, 'UTC')}
                       </span>
                     </span>
                     <span className="tabular bg-amber/15 text-amber shrink-0 rounded-[4px] px-1.5 py-0.5 text-xs font-bold">

@@ -99,5 +99,6 @@ export async function markFeedbackRead(id: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user || !isAdmin(user.email)) return
-  await serviceClient().from('feedback').update({ status: 'read' }).eq('id', id)
+  const { error } = await serviceClient().from('feedback').update({ status: 'read' }).eq('id', id)
+  if (error) console.error(`markFeedbackRead(${id}) failed: ${error.message}`)
 }

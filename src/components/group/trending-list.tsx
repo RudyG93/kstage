@@ -4,7 +4,7 @@ import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { formatDDay } from '@/lib/events/date'
-import { cn } from '@/lib/utils'
+import { cn, compactNumber } from '@/lib/utils'
 import type { GroupSummary } from '@/lib/groups/queries'
 import type { NextEventInfo } from '@/components/group-card'
 
@@ -14,9 +14,6 @@ export interface TrendingEntry {
   isFollowing: boolean
   nextEvent: NextEventInfo | null
 }
-
-const followsLabel = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n)
 
 // TRENDING (§7.5.2) : rang, vignette 32px, contexte (prochain event ou agence),
 // compteur de follows ABSOLU (pas d'historique → pas de « ▲n », écart assumé).
@@ -73,7 +70,7 @@ export function TrendingList({
                 </span>
               </span>
               <span className="tabular text-teal shrink-0 text-[10px] font-semibold">
-                {followsLabel(follows)} follow{follows === 1 ? '' : 's'}
+                {compactNumber(follows)} follow{follows === 1 ? '' : 's'}
               </span>
             </Link>
             <div className="absolute top-1/2 right-2 -translate-y-1/2">
