@@ -207,6 +207,16 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ## 9. État actuel
 
+### État au 2026-07-04
+
+**Phase** : refonte visuelle complète **« Data Desk »** livrée (2026-07-02→04, 4 merges sur main, tous déployés) : nouveau système de tokens oklch (thèmes Daylight/Midnight), typo Archivo condensée pour les labels, nav 5 items, home 8 modules (ticker, hero sur le dernier MV, queue, week glance, fresh drops), calendrier, Drops, fiches groupe/MV, `/search` (recherche live multi-termes, ex. « Music Bank aespa »), profil, landing triée par notoriété.
+
+**Data — bascule qualité** : purge de **202 faux MVs** (teasers, behind, sketchs… — cf. `SCRAPING.md §3.13`) → **815 MVs propres** ; gates scraper durcies (blacklist titre étendue + durée ≥ 75 s obligatoire). **Stage links** : les events music_show pointent vers la vidéo YouTube du stage, enrichis chaque jour par le cron (cf. `SCRAPING.md §9`). Popularité = `sources.subscriber_count` (Spotify inutilisable, API dev-mode).
+
+**Nouveau canal user** : widget **Feedback** (table `feedback`, rate-limit 2/24 h, `/admin/feedback`) — canal de signalement des fausses données, critique pour la confiance dans le calendrier.
+
+**Chiffres prod au 2026-07-04** : 114 groupes (31 solistes), 112 sourcés, 815 MVs, 480 tests unitaires + 10 E2E verts. Restes actés : re-scrape kprofiles photos membres (op manuelle, BACKLOG), page interne de visionnage des stages (piste), quick wins UX différés (BACKLOG).
+
 ### État au 2026-06-12
 
 **Phase** : MVP complet + V2 communautaire amorcée + première vague rétention livrée (push datés comeback announced/J-1/jour-J, countdowns, onboarding follow-first, empty states, profil-vitrine, slider de notation [0,10]/0.5). Repo nettoyé (branches purgées, `main` seul). **Audit complet du projet réalisé le 2026-06-12** → `docs/AUDIT_PROJET_2026-06-12.md` (constats vérifiés en prod, contre-vérification adversariale).

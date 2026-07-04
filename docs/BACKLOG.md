@@ -74,10 +74,18 @@
 - **CSP en enforce** (retirer `unsafe-inline`/`unsafe-eval` via nonces Next 16) — avant toute ouverture publique.
 - **Rate-limit robuste** (atomique) sur postComment/submitSuggestion/savePushSubscription — avant toute ouverture publique.
 
+### UX polish différé (audit 2026-07-04 — écarts assumés, pas des oublis)
+
+- **Page interne de visionnage des stages** (type `/mv` avec player embed) — aujourd'hui les bannières music_show ouvrent YouTube directement (icône lien externe affichée). À faire si les stage links prouvent leur usage.
+- **Quick-tap ratings mobile** (presets à la place du slider) — le slider + bouton Save suffit pour l'instant.
+- **Install hint iOS sur la home** (bannière « Ajouter à l'écran d'accueil ») — l'app est installable, le hint n'existe que sur /account.
+- **Partage d'event** (bouton share/copy link sur une carte event) — aucun mécanisme de partage aujourd'hui.
+
 ## Tests (accompagne P0/P1)
 
 - ✅ **`slots.test.ts`** — fait 2026-06-16 : la logique créneaux hebdo KST (`nextWeeklySlotIso` rollover + tolérance 12 h ; `kstDateTimeToIso` KST→UTC + bornes invalides) est couverte (12 assertions, valeurs ISO calculées à la main confirmées au run).
 - **E2E en CI** : job smoke (sans credentials) + secrets GitHub pour le golden path auth (aujourd'hui : jamais exécuté automatiquement).
+- **E2E smoke `/search`** : la route est nouvelle (refonte 2026-07-03) et n'a aucun test E2E — un smoke « taper une requête → résultats visibles » suffirait.
 - ✅ **Étendre le spec calendrier** — fait 2026-06-16 : test de navigation Next/Previous month (URL + titre de mois changent puis reviennent), **déterministe** — pas d'assertion sur un event seedé précis (la data prod change → flaky ; c'est le câblage de la nav qu'on teste). En route : l'ancien test cherchait un `<h1>Calendar</h1>` retiré lors d'un redesign (e2e jamais lancé en CI → jamais détecté) → la page calendrier reçoit un vrai `h1` (titre de mois `h2`→`h1`, gain a11y/SEO) et l'assertion est corrigée. Vérifié : 4/4 smoke verts (chromium, serveur chaud — les cold-compile Turbopack sur E:\ dépassent le timeout par test, pas un bug app).
 - ✅ **Fixture kpopofficial réelle** — fait 2026-06-16 (`__fixtures__/kpopofficial-june-2026.html`, capture directe datée). En la construisant, **bug de couverture découvert et corrigé** (règle « real data over fixtures » qui paie) : kpopofficial a migré l'artiste de `gspb_meta_value` vers `.gspb-dynamic-title-element` → le parser ratait silencieusement le carrousel + les éditions JP (`matched ~10/run` au lieu de ~20+, **dégradation pas panne** — la grille passait encore). Fix `kpopofficial.ts` (titre dynamique prioritaire, fallback meta) + 3 tests sur la fixture. Strictement non régressif, sans risque de donnée corrompue (`matchGroups` gate l'insert). Cf. `SCRAPING.md §3.12`. Vérif post-déploiement : `matched` doit remonter au prochain cron `scrape-comebacks`.
 - ✅ **Tests `artist-validation.ts`** (input communautaire public) + `normalizeUsername` — fait 2026-06-16 : `parseArtistSuggestionInput` (nom, kind, hex, debut date, URLs http(s), parsing/cap membres, solo→[]) et `normalizeUsername` (casse préservée, trim, bornes 3-20, charset) couverts (16 assertions).

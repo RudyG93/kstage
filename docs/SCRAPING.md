@@ -465,6 +465,33 @@ Vercel cron `/api/cron/scrape-music-shows` daily 13:00 UTC = 22:00 KST. Catche l
 
 Idempotence via unique constraint `events (group_id, type, start_at, source_url)`. `source_url` = URL primary carrd même quand un fallback a fourni les données — la stabilité de la clé prime sur la traçabilité.
 
+### Stage links — enrichissement YouTube des events music_show (livré 2026-07-03)
+
+Phase 2 du cron `scrape-music-shows` : après l'upsert des lineups, `src/lib/scrapers/music-shows/stage-links.ts:enrichStageLinks()` relie chaque event music_show à la **vidéo YouTube du stage** (performance individuelle du groupe) et met à jour `source_url` + `image_url`. Décision produit : la bannière d'un music show clique vers le stage, jamais vers le carrd.
+
+**Chaînes officielles vérifiées** (`STAGE_CHANNELS`, handles confirmés via API `forHandle` — ne jamais deviner) :
+
+| Show          | Chaîne YouTube |
+| ------------- | -------------- |
+| Music Bank    | `@KBSKpop`     |
+| Music Core    | `@MBCkpop`     |
+| Inkigayo      | `@sbskpop`     |
+| M Countdown   | `@Mnet`        |
+| Show Champion | `@ALLTHEKPOP`  |
+| The Show      | `@thekpop`     |
+
+**Pipeline** :
+
+1. **Events candidats** : music_show des 10 derniers jours dont `source_url` est NULL ou non-YouTube. ⚠️ Piège SQL : `NOT ILIKE` exclut les NULL → `.or('source_url.is.null,source_url.not.ilike.%youtube.com%')`.
+2. **Uploads récents** de la chaîne du show (pipeline playlistItems partagé avec le scraper MV).
+3. **Matching** : marker du show dans le titre (`STAGE_TITLE_MARKERS`) + `matchesGroup()` (strip hashtags + fallback hashtag-exact-normalisé) + fenêtre `[H−12h, H+4j]` autour du créneau de diffusion.
+4. **Scoring** (`rankStageCandidates`, seuil `MIN_STAGE_SCORE = 1`) : `방송`/`EP`/`무대` +2, pattern « Song - Group » +1, **multi-artiste −3** (segments variety type « M-Z »), `#shorts` −5.
+5. **Validation durée** : `videos.list` (contentDetails) → **≥ 60 s** obligatoire. Élimine les Shorts/clips caption qui passent le scoring.
+
+**Faux positifs traversés** (chacun devenu un test unitaire, 8 tests dans `stage-links.test.ts`) : run 1 = Shorts « caption clip » Mnet (fix : scoring + durée) ; run 2 = segment variety multi-artistes « M-Z » (fix : pénalité multi-artiste). Premier run réel propre : **24/40 events liés**, tous vérifiés via oembed.
+
+**Quota** : ~16 unités YouTube API par run (6 chaînes × ~2 appels + videos.list batché) — négligeable vs les 10 000/jour.
+
 ### Limite de couverture temporelle — semaine courante seulement (vérifié 2026-06-15, P0.8)
 
 **Constat (BACKLOG P0.8)** : la couverture music-shows ne dépasse jamais la **semaine de diffusion en cours** (~ jusqu'à 7 j). Ce n'est **pas un bug parser** — c'est structurel aux sources :
