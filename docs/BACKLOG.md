@@ -68,11 +68,11 @@
 
 ## P2 — Habitude & surfaces (utile à n=1)
 
-- **Digest hebdo « ta semaine k-pop »** (push + option e-mail) — le hook d'habitude n°1 non livré ; n'a de la valeur qu'une fois P0 fait (sinon le digest est vide).
-- **Refonte landing** : montrer le produit (aperçu calendrier/countdowns, grille de photos) au lieu du mur de 173 noms (`imgTotal=0` mesuré). Nécessaire avant toute exposition publique ; pas urgent tant que P0 n'est pas fait.
-- **Refonte home connectée** (centre sparse) — reprendre l'item #9 de l'audit UX, sans le volet « feed » (gelé).
-- **CSP en enforce** (retirer `unsafe-inline`/`unsafe-eval` via nonces Next 16) — avant toute ouverture publique.
-- **Rate-limit robuste** (atomique) sur postComment/submitSuggestion/savePushSubscription — avant toute ouverture publique.
+- **Digest hebdo « ta semaine k-pop »** (push + option e-mail) — le hook d'habitude n°1 non livré ; n'a de la valeur qu'une fois P0 fait (sinon le digest est vide). **→ Lot E du plan de reprise 2026-07-04 (en cours).**
+- ✅ **Refonte landing** — faite avec la refonte Data Desk (2026-07-03) : grille de photos triée par notoriété YouTube + countdown temps réel + 3 étapes. L'item « mur de 173 noms » est obsolète.
+- ✅ **Refonte home connectée** — faite avec la refonte Data Desk (2026-07-03) : home 8 modules (ticker, hero dernier MV, queue, week glance, fresh drops).
+- **CSP en enforce** — **décision 2026-07-04** : les nonces Next 16 forcent le rendu dynamique global (tue static/ISR) et `style-src` nonce est une impasse (attributs `style=""` React) → durcissement pragmatique à la place (flip enforce de la policy actuelle + retrait `unsafe-eval` en prod, Lot D du plan de reprise). L'enforce script-src complet reste gated pré-ouverture publique.
+- **Rate-limit robuste** (atomique) sur postComment/submitSuggestion/submitFeedback/savePushSubscription — avant toute ouverture publique. **→ Lot B du plan de reprise 2026-07-04 (en cours)** : RPC `consume_rate_limit` + advisory lock ; savePushSubscription n'a aujourd'hui AUCUN cap.
 
 ### UX polish différé (audit 2026-07-04 — écarts assumés, pas des oublis)
 
@@ -92,14 +92,12 @@
 
 ## Risques à documenter (une demi-page, une fois)
 
-- **r.jina.ai = SPOF gratuit** sur toute la couverture music shows + tension avec « respect robots.txt » → règle d'arbitrage à écrire.
-- **Plafonds free tiers** : Vercel Hobby (usage non commercial, crons 1×/jour), Supabase free (MAU/egress) → triggers de bascule (~45 $/mois au total) à connaître avant le premier pic de trafic.
-- **Burn-out solo** : 270 commits / 21 jours. Définir le « minimum maintenable » (les crons tournent seuls) pour pouvoir faire des pauses sans culpabilité.
+✅ **Fait 2026-07-04** → `docs/RISKS.md` (jina SPOF + règle d'arbitrage, plafonds free tiers + triggers ~45 $/mois, minimum maintenable = 1 check hebdo de 10 min).
 
 ## Gelé — gaté sur audience réelle
 
 - Feed d'activité communautaire ; « j'attends ce comeback » (RSVP + compteur de hype) ; **KStage Wrapped** ; forum/modérateurs ; listes partageables ; reco « à suivre ». Un compteur à zéro est une anti-preuve sociale.
-- Wiring des mocks home (`src/lib/mocks/home.ts` → vraies queries MV/Release of the month, Recent activity) — dépend d'une activité réelle.
+- ~~Wiring des mocks home~~ — **obsolète 2026-07-04** : `src/lib/mocks/home.ts` supprimé par la refonte Data Desk, la home branche déjà de vraies queries.
 
 ## Premium (V2+) — abonnement payant (demande Rudy 2026-07-03)
 
