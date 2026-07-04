@@ -1,15 +1,26 @@
 import type { NextConfig } from 'next'
 
-// CSP en mode report-only (Phase 6) : ne bloque rien, log seulement les
-// violations en console. Permet de durcir vers une CSP enforce plus tard sans
-// risquer de casser Next/Supabase/YouTube en prod. Large à dessein.
-const CSP_REPORT_ONLY = [
+// CSP en enforce depuis 2026-07-04 (avant : report-only Phase 6).
+// - `unsafe-eval` : dev uniquement (react-refresh/Turbopack) — ni React ni Next
+//   n'utilisent eval en prod (doc Next 16 CSP).
+// - `unsafe-inline` script-src conservé : les inline scripts RSC de Next
+//   l'exigent sans nonces, et les nonces forceraient le rendu dynamique de
+//   toutes les pages (tue static/ISR) — gated pré-ouverture publique (BACKLOG).
+// - `unsafe-inline` style-src conservé : les attributs style="" de React/
+//   next/image/Base UI ne sont pas couvrables par nonce (impasse connue).
+// En dev le header reste report-only : l'outillage (HMR, overlays) ne doit
+// jamais casser ; l'enforce ne concerne que build/prod.
+const isDev = process.env.NODE_ENV === 'development'
+
+const CSP = [
   "default-src 'self'",
   "img-src 'self' data: blob: https:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+  // wss : Supabase Realtime (comments-realtime.tsx) — vu en enforce local,
+  // silencieux du temps du report-only.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com",
   'frame-src https://www.youtube.com https://www.youtube-nocookie.com',
   "media-src 'self' https:",
   "object-src 'none'",
@@ -24,7 +35,7 @@ const SECURITY_HEADERS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
-  { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
+  { key: isDev ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy', value: CSP },
 ]
 
 const nextConfig: NextConfig = {
