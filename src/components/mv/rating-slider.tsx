@@ -21,8 +21,11 @@ interface Props {
 export function RatingSlider({ eventId, slug, initialScore, isAuthed }: Props) {
   const [value, setValue] = useState<number>(initialScore ?? 5)
   const [savedScore, setSavedScore] = useState<number | null>(initialScore)
+  // Sans note initiale, le 5.0 par défaut n'est PAS une intention : Save reste
+  // désactivé tant que l'user n'a pas touché le slider (audit 2026-07-04).
+  const [touched, setTouched] = useState(false)
   const [pending, startTransition] = useTransition()
-  const dirty = savedScore === null || value !== savedScore
+  const dirty = (touched || savedScore !== null) && value !== savedScore
 
   function save() {
     startTransition(async () => {
@@ -70,7 +73,10 @@ export function RatingSlider({ eventId, slug, initialScore, isAuthed }: Props) {
         max={10}
         step={0.5}
         disabled={pending}
-        onValueChange={(v) => setValue(Array.isArray(v) ? (v[0] ?? 0) : v)}
+        onValueChange={(v) => {
+          setTouched(true)
+          setValue(Array.isArray(v) ? (v[0] ?? 0) : v)
+        }}
         aria-label="Your rating from 0 to 10"
       >
         <Slider.Control className="flex h-6 w-full items-center">

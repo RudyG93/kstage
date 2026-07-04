@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { CheckIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { followMany } from '@/lib/follows/actions'
 import { cn } from '@/lib/utils'
@@ -26,7 +27,14 @@ export function OnboardingGrid({ groups }: { groups: G[] }) {
 
   function go(follow: boolean) {
     startTransition(async () => {
-      if (follow && selected.size > 0) await followMany([...selected])
+      if (follow && selected.size > 0) {
+        await followMany([...selected])
+        // Cap de la promesse : confirmer que le calendrier est prêt (audit UX
+        // 2026-07-04, sinon l'arrivée sur la home semble sortie de nulle part).
+        toast.success(
+          `${selected.size} group${selected.size > 1 ? 's' : ''} followed — your calendar is live!`,
+        )
+      }
       router.push('/')
       router.refresh()
     })

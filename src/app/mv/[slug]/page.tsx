@@ -8,7 +8,7 @@ import { getCommentsForEvent } from '@/lib/comments/queries'
 import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { formatKst } from '@/lib/events/date'
+import { formatKst, relativeTime } from '@/lib/events/date'
 import { cn } from '@/lib/utils'
 import { BackButton } from '@/components/back-button'
 import { Panel } from '@/components/ui/panel'
@@ -38,17 +38,6 @@ export async function generateMetadata({
     title: `${title} — ${group?.name ?? 'KStage'}`,
     description: event.description ?? `${group?.name} music video.`,
   }
-}
-
-const droppedAgo = (iso: string) => {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return '1 day ago'
-  if (days < 30) return `${days} days ago`
-  const months = Math.floor(days / 30)
-  if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`
-  const years = Math.floor(days / 365)
-  return `${years} year${years === 1 ? '' : 's'} ago`
 }
 
 export default async function MvPage({
@@ -114,7 +103,7 @@ export default async function MvPage({
                 <Link href={`/groups/${group?.slug ?? ''}`} className="hover:text-foreground">
                   {group?.name}
                 </Link>{' '}
-                · MV · dropped {droppedAgo(event.start_at)} · {kstLabel}
+                · MV · dropped {relativeTime(event.start_at)} · {kstLabel}
               </p>
             </div>
             <LikeButton

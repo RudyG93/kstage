@@ -161,11 +161,9 @@ export default async function RootLayout({
                     aria-label="Notification settings"
                     className="text-muted-foreground hover:text-foreground relative shrink-0 p-1 transition-colors"
                   >
+                    {/* Pas de dot : il suggérait une notification en attente
+                        alors qu'il était décoratif (audit UX 2026-07-04). */}
                     <BellIcon className="size-[18px]" />
-                    <span
-                      aria-hidden
-                      className="bg-amber border-background absolute top-0.5 right-0.5 size-[7px] rounded-full border-2"
-                    />
                   </Link>
                 )}
                 <AuthMenu

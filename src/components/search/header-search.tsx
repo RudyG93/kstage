@@ -88,6 +88,11 @@ export function HeaderSearch() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') submit()
             if (e.key === 'Escape') setOpen(false)
+            // ↓ entre dans les résultats (navigation clavier, audit UX 2026-07-04).
+            if (e.key === 'ArrowDown' && open) {
+              e.preventDefault()
+              rootRef.current?.querySelector<HTMLElement>('[data-search-result]')?.focus()
+            }
           }}
           onFocus={() => {
             if (hasResults) setOpen(true)
@@ -99,7 +104,26 @@ export function HeaderSearch() {
       </div>
 
       {open && (
-        <div className="bg-card absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-[10px] border shadow-lg">
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- délégation clavier ; les cibles focusables sont les liens enfants
+        <div
+          className="bg-card absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-[10px] border shadow-lg"
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Escape') return
+            e.preventDefault()
+            if (e.key === 'Escape') {
+              setOpen(false)
+              rootRef.current?.querySelector('input')?.focus()
+              return
+            }
+            const items = [
+              ...(rootRef.current?.querySelectorAll<HTMLElement>('[data-search-result]') ?? []),
+            ]
+            const idx = items.indexOf(document.activeElement as HTMLElement)
+            const next = e.key === 'ArrowDown' ? idx + 1 : idx - 1
+            if (next < 0) rootRef.current?.querySelector('input')?.focus()
+            else items[Math.min(next, items.length - 1)]?.focus()
+          }}
+        >
           {!hasResults ? (
             <p className="text-muted-foreground px-3 py-3 text-xs">No results for “{q.trim()}”.</p>
           ) : (
@@ -108,6 +132,7 @@ export function HeaderSearch() {
                 <Link
                   key={g.slug}
                   href={`/groups/${g.slug}`}
+                  data-search-result
                   onClick={closeAndReset}
                   className="hover:bg-secondary/60 flex items-center gap-2.5 px-3 py-2 transition-colors"
                 >
@@ -139,6 +164,7 @@ export function HeaderSearch() {
                 <Link
                   key={m.slug ?? i}
                   href={m.slug ? `/mv/${m.slug}` : '/mvs'}
+                  data-search-result
                   onClick={closeAndReset}
                   className="hover:bg-secondary/60 flex items-center gap-2.5 border-t px-3 py-2 transition-colors"
                 >
@@ -163,6 +189,7 @@ export function HeaderSearch() {
               ))}
               <button
                 type="button"
+                data-search-result
                 onClick={submit}
                 className="label-data-inline text-primary hover:bg-secondary/60 w-full border-t px-3 py-2 text-left text-[9px] transition-colors"
               >

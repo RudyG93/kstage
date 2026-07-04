@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Countdown } from './countdown'
+import { HeroBackdrop } from './hero-backdrop'
 import { NotifyCta } from './notify-cta'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displayEventTitle } from '@/lib/events/title'
@@ -18,6 +19,7 @@ export function NextDropCard({
   isFollowing = false,
   isAuthed = false,
   latestMvImage = null,
+  latestMvFallback = null,
 }: {
   event: UpcomingEvent | null
   isFollowing?: boolean
@@ -25,6 +27,8 @@ export function NextDropCard({
   // Thumbnail maxres du dernier MV du groupe : le visuel le plus FRAIS
   // disponible (les fanarts TheAudioDB datent — aespa servait un backdrop 2021).
   latestMvImage?: string | null
+  // Variante hqdefault du même MV (toujours servie) — repli si la maxres 404.
+  latestMvFallback?: string | null
 }) {
   if (!event) return null
   const group = event.groups
@@ -48,14 +52,10 @@ export function NextDropCard({
       <PanelHeader label="Next up — your groups" action={{ label: 'All', href: '/calendar' }} />
       <div className="border-primary relative overflow-hidden border-l-[3px]">
         {bgImage && (
-          <Image
+          // Client : la maxres d'un MV peut 404 → repli hqdefault, sinon rien.
+          <HeroBackdrop
             src={bgImage}
-            alt=""
-            fill
-            unoptimized
-            sizes="(min-width: 1024px) 640px, 100vw"
-            className="object-cover object-[70%_30%]"
-            aria-hidden
+            fallbackSrc={bgImage === latestMvImage ? latestMvFallback : null}
           />
         )}
         <div

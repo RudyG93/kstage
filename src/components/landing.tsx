@@ -9,6 +9,7 @@ import { displayEventTitle } from '@/lib/events/title'
 import type { GroupSummary } from '@/lib/groups/queries'
 import type { UpcomingEvent } from '@/lib/events/queries'
 import type { SourcesStatus } from '@/lib/sources/queries'
+import { compactNumber } from '@/lib/utils'
 
 const STEPS = [
   {
@@ -30,9 +31,6 @@ const STEPS = [
 
 // Mur visuel : tuiles photos (3 colonnes) + tuile « +n ».
 const WALL_COUNT = 11
-
-const compact = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n)
 
 // Landing Data Desk (§7.9) : la donnée vend le produit — badge live, preuve
 // countdown temps réel, mur visuel, proof bar, 3 étapes, double CTA.
@@ -77,7 +75,7 @@ export function Landing({
         <p className="flex items-center gap-2 sm:justify-center">
           <span className="bg-teal animate-upcoming-pulse size-[6px] rounded-full" aria-hidden />
           <span className="label-data-inline text-teal text-[9px] tracking-[0.2em]">
-            {compact(eventsCount)}+ events tracked live
+            {compactNumber(eventsCount)}+ events tracked live
           </span>
         </p>
         <h1 className="font-heading mt-3 text-[34px] leading-[1.06] font-extrabold tracking-[-0.028em]">
@@ -169,7 +167,7 @@ export function Landing({
 
       {/* Proof bar (§7.9.6). */}
       <p className="tabular text-faint relative text-center text-[9px] font-semibold tracking-[0.18em] uppercase">
-        {compact(eventsCount)} events · {groups.length} groups
+        {compactNumber(eventsCount)} events · {groups.length} groups
         {sourcesStatus ? ` · ${sourcesStatus.count} sources` : ''} · daily refresh
       </p>
 

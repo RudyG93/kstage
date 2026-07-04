@@ -12,6 +12,7 @@ import {
 } from '@/lib/comments/actions'
 import { BODY_MAX } from '@/lib/comments/validation'
 import type { CommentEdit } from '@/lib/comments/queries'
+import { relativeTime } from '@/lib/events/date'
 import { Avatar } from '@/components/avatar'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
@@ -31,18 +32,6 @@ interface Props {
 }
 
 const REPLY_LIMIT = 5
-
-const relTime = (iso: string) => {
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const min = Math.floor(diffMs / 60_000)
-  if (min < 1) return 'just now'
-  if (min < 60) return `${min}m ago`
-  const h = Math.floor(min / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
 
 export function CommentItem({
   node,
@@ -140,7 +129,7 @@ export function CommentItem({
               </span>
             )}
             <span aria-hidden>·</span>
-            <time dateTime={node.created_at}>{relTime(node.created_at)}</time>
+            <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
             {isEdited && (
               <>
                 <span aria-hidden>·</span>

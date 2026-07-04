@@ -8,6 +8,7 @@ import {
 } from '@/lib/events/queries'
 import { displaySongTitle } from '@/lib/events/title'
 import { eventHref } from '@/lib/events/href'
+import { relativeTime, shortDate } from '@/lib/events/date'
 import { CommentsRealtime } from '@/components/home/comments-realtime'
 
 // En dessous, la section « Recent discussions » est masquée (anti-ville-fantôme).
@@ -15,23 +16,6 @@ const DISCUSSIONS_MIN = 3
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return <span className="label-data">{children}</span>
-}
-
-const shortDate = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })
-    .format(new Date(iso))
-    .toUpperCase()
-
-// Temps relatif court (calculé côté serveur au render). Calque de comment-item.
-const relTime = (iso: string) => {
-  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (min < 1) return 'just now'
-  if (min < 60) return `${min}m ago`
-  const h = Math.floor(min / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
-  return shortDate(iso)
 }
 
 function DiscussionLine({ row }: { row: CommentedEvent }) {
@@ -64,7 +48,7 @@ function DiscussionLine({ row }: { row: CommentedEvent }) {
             {displaySongTitle(row.title, row.groups?.name)}
           </p>
           <p className="text-muted-foreground text-xs">
-            {count} comment{count === 1 ? '' : 's'} · {relTime(row.lastCommentAt)}
+            {count} comment{count === 1 ? '' : 's'} · {relativeTime(row.lastCommentAt)}
           </p>
         </div>
       </Link>
@@ -132,7 +116,7 @@ export async function SidebarRight() {
               href="/mvs"
               className="text-primary mt-3 inline-block text-xs underline-offset-2 hover:underline"
             >
-              View all MVs →
+              All drops →
             </Link>
           </>
         )}
