@@ -10,12 +10,25 @@ export type PushSubscriptionInput = {
   userAgent?: string
 }
 
+// Cap anti-abus sur l'enregistrement d'endpoints push : 20/24 h laisse une
+// large marge à un user légitime (2-3 devices + ré-abonnements SW) mais borne
+// le spam d'endpoints dans une table qui alimente web-push.
+const PUSH_SUBSCRIBE_DAILY_CAP = 20
+
 export async function savePushSubscription(sub: PushSubscriptionInput) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'push_subscribe',
+    p_max: PUSH_SUBSCRIBE_DAILY_CAP,
+    p_window_seconds: 24 * 60 * 60,
+  })
+  if (rateErr) throw rateErr
+  if (!allowed) throw new Error('Too many notification updates today. Try again tomorrow.')
 
   const { error } = await supabase.from('push_subscriptions').upsert(
     {

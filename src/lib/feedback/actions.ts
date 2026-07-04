@@ -7,8 +7,9 @@ import type { Database } from '@/types/database'
 
 export type FeedbackState = { error: string } | { ok: true } | null
 
-// Anti-spam : 2 retours max par 24 h et par user (compte DB, pas contournable
-// côté client), longueur bornée (le CHECK DB double la garde), auth requise.
+// Anti-spam : 2 retours max par 24 h et par user (RPC atomique consume_rate_limit,
+// pas contournable côté client), longueur bornée (le CHECK DB double la garde),
+// auth requise.
 const DAILY_FEEDBACK_CAP = 2
 const BODY_MIN = 10
 const BODY_MAX = 500
@@ -36,13 +37,13 @@ export async function submitFeedback(
   if (body.length < BODY_MIN) return { error: `Tell us a bit more (min ${BODY_MIN} characters).` }
   if (body.length > BODY_MAX) return { error: `Keep it under ${BODY_MAX} characters.` }
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count } = await supabase
-    .from('feedback')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', since)
-  if ((count ?? 0) >= DAILY_FEEDBACK_CAP) {
+  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'feedback',
+    p_max: DAILY_FEEDBACK_CAP,
+    p_window_seconds: 24 * 60 * 60,
+  })
+  if (rateErr) return { error: 'Could not send feedback. Try again later.' }
+  if (!allowed) {
     return { error: 'Daily feedback limit reached — thanks, come back tomorrow!' }
   }
 

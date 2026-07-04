@@ -9,7 +9,9 @@ import { getCommentEditHistory, type CommentEdit } from './queries'
 export type CommentState = { error: string } | { ok: true; commentId?: string } | null
 
 // Rate-limit anti-spam : max 5 commentaires par fenêtre de 60 s par user.
-const COMMENT_RATE_WINDOW_MS = 60_000
+// Check atomique côté DB (RPC consume_rate_limit, advisory lock) — un burst
+// parallèle ne peut pas dépasser le cap, contrairement à l'ancien count+insert.
+const COMMENT_RATE_WINDOW_SECONDS = 60
 const COMMENT_RATE_MAX = 5
 
 function revalidateSlug(formData: FormData) {
@@ -33,14 +35,13 @@ export async function postComment(_prev: CommentState, formData: FormData): Prom
   })
   if ('error' in parsed) return { error: parsed.error }
 
-  // Rate-limit DB (sans infra) : compte les commentaires récents du user.
-  const since = new Date(Date.now() - COMMENT_RATE_WINDOW_MS).toISOString()
-  const { count } = await supabase
-    .from('comments')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', since)
-  if ((count ?? 0) >= COMMENT_RATE_MAX) {
+  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'comment',
+    p_max: COMMENT_RATE_MAX,
+    p_window_seconds: COMMENT_RATE_WINDOW_SECONDS,
+  })
+  if (rateErr) return { error: 'Could not post your comment. Please try again.' }
+  if (!allowed) {
     return { error: 'You are commenting too fast. Please wait a moment.' }
   }
 

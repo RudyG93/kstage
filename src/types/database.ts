@@ -711,6 +711,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          action: string
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       scrape_log: {
         Row: {
           details: Json | null
@@ -843,6 +864,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: { p_action: string; p_max: number; p_window_seconds: number }
+        Returns: boolean
+      }
       group_follow_counts: {
         Args: never
         Returns: {

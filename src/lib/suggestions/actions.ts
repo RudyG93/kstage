@@ -43,14 +43,15 @@ export async function submitSuggestion(
   if ('error' in parsed) return { error: parsed.error }
   const v = parsed.value
 
-  // Rate-limit : cap quotidien par user (sans infra, simple count DB).
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count } = await supabase
-    .from('event_suggestions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', since)
-  if ((count ?? 0) >= DAILY_SUGGESTION_CAP) {
+  // Rate-limit quotidien combiné (events + artists) : bucket 'suggestion'
+  // partagé avec submitArtistSuggestion, check atomique (RPC advisory lock).
+  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'suggestion',
+    p_max: DAILY_SUGGESTION_CAP,
+    p_window_seconds: 24 * 60 * 60,
+  })
+  if (rateErr) return { error: 'Could not submit suggestion. Please try again.' }
+  if (!allowed) {
     return { error: `Daily limit reached (${DAILY_SUGGESTION_CAP}/day). Try again tomorrow.` }
   }
 
@@ -120,21 +121,15 @@ export async function submitArtistSuggestion(
   if ('error' in parsed) return { error: parsed.error }
   const v = parsed.value
 
-  // Rate-limit quotidien combiné (events + artists) par user.
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const [{ count: eventCount }, { count: artistCount }] = await Promise.all([
-    supabase
-      .from('event_suggestions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', since),
-    supabase
-      .from('artist_suggestions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', since),
-  ])
-  if ((eventCount ?? 0) + (artistCount ?? 0) >= DAILY_SUGGESTION_CAP) {
+  // Rate-limit quotidien combiné (events + artists) : même bucket 'suggestion'
+  // que submitSuggestion, check atomique (RPC advisory lock).
+  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'suggestion',
+    p_max: DAILY_SUGGESTION_CAP,
+    p_window_seconds: 24 * 60 * 60,
+  })
+  if (rateErr) return { error: 'Could not submit your artist suggestion. Please try again.' }
+  if (!allowed) {
     return { error: `Daily limit reached (${DAILY_SUGGESTION_CAP}/day). Try again tomorrow.` }
   }
 
