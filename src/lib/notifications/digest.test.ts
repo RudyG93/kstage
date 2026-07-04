@@ -72,6 +72,36 @@ describe('buildDigest', () => {
     expect(message.payload.body).toBe('E1, E2, E3, +1 more')
   })
 
+  it('weekly edition: titre « Your k-pop week », body inchangé', () => {
+    const follows = [{ userId: 'u1', groupId: 'g1' }]
+    const events = [
+      ev('g1', 'Comeback', '2026-05-26T00:00:00Z', 'aespa'),
+      ev('g1', 'Music show', '2026-05-28T09:00:00Z', 'aespa'),
+    ]
+    const [message] = buildDigest([sub('u1')], follows, events, 'weekly')
+    expect(message.payload.title).toBe('Your k-pop week: 2 events')
+    expect(message.payload.body).toBe('aespa — Comeback, aespa — Music show')
+  })
+
+  it('weekly edition: singulier à 1 event', () => {
+    const [message] = buildDigest(
+      [sub('u1')],
+      [{ userId: 'u1', groupId: 'g1' }],
+      [ev('g1', 'Comeback', '2026-05-26T00:00:00Z')],
+      'weekly',
+    )
+    expect(message.payload.title).toBe('Your k-pop week: 1 event')
+  })
+
+  it('édition daily par défaut : titre historique inchangé', () => {
+    const [message] = buildDigest(
+      [sub('u1')],
+      [{ userId: 'u1', groupId: 'g1' }],
+      [ev('g1', 'Comeback', '2026-05-26T00:00:00Z')],
+    )
+    expect(message.payload.title).toBe('1 upcoming event')
+  })
+
   it('only notifies the subscriptions of users with matching events', () => {
     const subscriptions = [sub('u1'), sub('u2')]
     const follows = [

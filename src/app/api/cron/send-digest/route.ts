@@ -5,13 +5,15 @@ import webpush from 'web-push'
 import type { Database } from '@/types/database'
 import {
   buildDigest,
+  type DigestEdition,
   type DigestEvent,
   type DigestFollow,
   type DigestSubscription,
 } from '@/lib/notifications/digest'
 import { sendPush } from '@/lib/notifications/send'
 
-const WINDOW_MS = 48 * 60 * 60 * 1000
+const DAILY_WINDOW_MS = 48 * 60 * 60 * 1000
+const WEEKLY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 // Vercel Cron déclenche en GET et ajoute automatiquement l'en-tête
 // `Authorization: Bearer ${CRON_SECRET}` quand la var d'env existe.
@@ -33,8 +35,16 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
+  // Édition hebdo le lundi (« Your k-pop week », fenêtre 7 j) : elle REMPLACE
+  // la quotidienne ce jour-là — même cron, contrainte Vercel Hobby 1×/jour.
+  // `?edition=weekly` permet le déclenchement manuel hors lundi (test).
   const now = new Date()
-  const until = new Date(now.getTime() + WINDOW_MS)
+  const forced = new URL(req.url).searchParams.get('edition')
+  const edition: DigestEdition =
+    forced === 'weekly' || (forced === null && now.getUTCDay() === 1) ? 'weekly' : 'daily'
+  const until = new Date(
+    now.getTime() + (edition === 'weekly' ? WEEKLY_WINDOW_MS : DAILY_WINDOW_MS),
+  )
 
   const [subsRes, followsRes, eventsRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
@@ -68,6 +78,7 @@ export async function GET(req: Request) {
         groupName: e.groups?.name,
       }),
     ),
+    edition,
   )
 
   let sent = 0
@@ -78,5 +89,5 @@ export async function GET(req: Request) {
     else if (res === 'removed') removed += 1
   }
 
-  return NextResponse.json({ ok: true, candidates: messages.length, sent, removed })
+  return NextResponse.json({ ok: true, edition, candidates: messages.length, sent, removed })
 }
