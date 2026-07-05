@@ -119,7 +119,7 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 ## Roadmap R (actée 2026-07-05 — rétention/acquisition/monétisation)
 
 - ✅ **R1 Boucle push** — fait 2026-07-05 (opt-in onboarding, deep link digest, préférences par type ; cf. JOURNAL).
-- **R2 SEO programmatique** — sitemap dynamique (~940 pages invisibles aujourd'hui), JSON-LD MusicGroup/VideoObject, metadata manquantes, OG images dynamiques (version marque). En cours.
+- ✅ **R2 SEO programmatique** — fait 2026-07-05 : sitemap 1403 URLs, JSON-LD MusicGroup/VideoObject (+rating), metadata complètes, OG dynamiques version marque (cf. JOURNAL). Itérations possibles plus tard : OG photo+Archivo, retrait des artistes du sitemap si thin-content signalé. **Action Rudy post-deploy : soumettre le sitemap à Google Search Console** (propriété à créer si besoin).
 - **R3 Export iCal** — feed .ics perso par token (Google/Apple Calendar). Utile à n=1, différenciant, futur déclencheur premium (frontière à poser à l'implémentation : ex. 1 calendrier free / multi-calendriers+filtres premium).
 - **R4 Fond de roulement** — boucle contribution admin (hub `/admin`, édition avant approbation, push contributeur, policies édition/suppression par l'auteur) + **self-host photos membres** (décision 2026-07-05 : script one-shot ~500 photos → bucket public Supabase Storage → update `photo_url` ; élimine le risque hotlinking kprofiles ET remplace le re-scrape fraîcheur) + polish home (Today/Tomorrow, « voir les N autres », agence).
 

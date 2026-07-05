@@ -16,7 +16,10 @@ import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 
-export const metadata: Metadata = { title: 'Search' }
+export const metadata: Metadata = {
+  title: 'Search',
+  description: 'Search k-pop groups, artists, MVs and events on KStage.',
+}
 
 type Segment = 'all' | 'groups' | 'mvs' | 'events'
 const SEGMENTS: Segment[] = ['all', 'groups', 'mvs', 'events']

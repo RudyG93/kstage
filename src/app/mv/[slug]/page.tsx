@@ -12,6 +12,7 @@ import { formatKst, relativeTime } from '@/lib/events/date'
 import { cn } from '@/lib/utils'
 import { BackButton } from '@/components/back-button'
 import { ShareButton } from '@/components/share-button'
+import { JsonLd } from '@/components/seo/json-ld'
 import { Panel } from '@/components/ui/panel'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { RatingSlider } from '@/components/mv/rating-slider'
@@ -35,9 +36,12 @@ export async function generateMetadata({
   if (!event) return { title: 'MV not found · KStage' }
   const group = event.groups
   const title = displaySongTitle(event.title, group?.name)
+  const description = event.description ?? `${group?.name} music video.`
   return {
     title: `${title} — ${group?.name ?? 'KStage'}`,
-    description: event.description ?? `${group?.name} music video.`,
+    description,
+    alternates: { canonical: `/mv/${slug}` },
+    openGraph: { title: `${title} — ${group?.name ?? 'KStage'}`, description },
   }
 }
 
@@ -79,6 +83,29 @@ export default async function MvPage({
 
   return (
     <div className="mx-auto w-full max-w-4xl md:px-4 md:py-6">
+      {videoId && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'VideoObject', // seul type vidéo éligible aux rich results
+            name: title,
+            description: `${title} — music video${group?.name ? ` by ${group.name}` : ''}, rated by the KStage community.`,
+            thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+            uploadDate: event.start_at,
+            embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
+            ...(rating.count > 0 && rating.avg !== null
+              ? {
+                  aggregateRating: {
+                    '@type': 'AggregateRating',
+                    ratingValue: Number(rating.avg.toFixed(2)),
+                    bestRating: 10,
+                    ratingCount: rating.count,
+                  },
+                }
+              : {}),
+          }}
+        />
+      )}
       <div className="space-y-3">
         {/* Player full-bleed sur mobile + back flottant (§7.7.1). */}
         <div className="relative">
