@@ -18,6 +18,7 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { formatDDay } from '@/lib/events/date'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { JsonLd } from '@/components/seo/json-ld'
 import { createClient } from '@/lib/supabase/server'
 
 export async function generateMetadata({
@@ -116,6 +117,18 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="mx-auto w-full max-w-3xl md:px-4 md:py-6">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'MusicGroup',
+          name: group.name,
+          url: `https://kstage.vercel.app/groups/${group.slug}`,
+          genre: 'K-pop',
+          ...(group.image_url ? { image: group.image_url } : {}),
+          ...(group.debut_date ? { foundingDate: group.debut_date } : {}),
+          ...(links && Object.values(links).length > 0 ? { sameAs: Object.values(links) } : {}),
+        }}
+      />
       <div className="space-y-3">
         <ArtistHero
           name={group.name}
