@@ -4,19 +4,25 @@ import { test, expect } from '@playwright/test'
 // Déterministe : on teste le câblage (debounce → URL, segments, empty states),
 // pas le contenu exact des résultats (la data prod bouge). Seul invariant data
 // utilisé : le groupe seed « aespa » existe en prod depuis le MVP.
+//
+// TOUTES les assertions sont scopées au <main> : la recherche du header rend
+// son propre panneau (« Top result », « No results for… », hint) dès que `q`
+// est dans l'URL → doublons DOM = strict mode violation. En dev l'hydratation
+// lente masquait la course ; contre un build prod (CI) elle éclate.
 
 test.describe('Search', () => {
   test('empty state : hint visible + input focus', async ({ page }) => {
     await page.goto('/search')
-    await expect(page.getByText(/search covers groups, artists, mvs and events/i)).toBeVisible()
-    // Deux searchbox coexistent (header + page) : on cible celle de la page.
-    await expect(page.getByRole('main').getByRole('searchbox', { name: 'Search' })).toBeFocused()
+    const main = page.getByRole('main')
+    await expect(main.getByText(/search covers groups, artists, mvs and events/i)).toBeVisible()
+    await expect(main.getByRole('searchbox', { name: 'Search' })).toBeFocused()
   })
 
   test('SSR direct ?q=aespa : top result + lien fiche groupe', async ({ page }) => {
     await page.goto('/search?q=aespa')
-    await expect(page.getByText('Top result')).toBeVisible()
-    await expect(page.getByRole('link', { name: /aespa/i }).first()).toHaveAttribute(
+    const main = page.getByRole('main')
+    await expect(main.getByText('Top result')).toBeVisible()
+    await expect(main.getByRole('link', { name: /aespa/i }).first()).toHaveAttribute(
       'href',
       /\/groups\/aespa$/,
     )
@@ -24,10 +30,11 @@ test.describe('Search', () => {
 
   test('recherche live : saisie debouncée → URL ?q= + résultats', async ({ page }) => {
     await page.goto('/search')
-    await page.getByRole('main').getByRole('searchbox', { name: 'Search' }).fill('aespa')
+    const main = page.getByRole('main')
+    await main.getByRole('searchbox', { name: 'Search' }).fill('aespa')
     // Debounce 300 ms puis router.replace : l'URL porte la requête.
     await expect(page).toHaveURL(/[?&]q=aespa/)
-    await expect(page.getByText('Top result')).toBeVisible()
+    await expect(main.getByText('Top result')).toBeVisible()
   })
 
   test('segments : groups → URL seg= + aria-current', async ({ page }) => {
@@ -46,8 +53,9 @@ test.describe('Search', () => {
 
   test('no results : empty state + lien Browse groups', async ({ page }) => {
     await page.goto('/search?q=zzzqqqxx')
-    await expect(page.getByText(/no results for/i)).toBeVisible()
-    await expect(page.getByRole('link', { name: /browse groups/i })).toHaveAttribute(
+    const main = page.getByRole('main')
+    await expect(main.getByText(/no results for/i)).toBeVisible()
+    await expect(main.getByRole('link', { name: /browse groups/i })).toHaveAttribute(
       'href',
       '/groups',
     )
@@ -55,9 +63,10 @@ test.describe('Search', () => {
 
   test('clear : la croix vide la requête et réaffiche le hint', async ({ page }) => {
     await page.goto('/search?q=aespa')
-    await expect(page.getByText('Top result')).toBeVisible()
-    await page.getByRole('button', { name: 'Clear search' }).click()
+    const main = page.getByRole('main')
+    await expect(main.getByText('Top result')).toBeVisible()
+    await main.getByRole('button', { name: 'Clear search' }).click()
     await expect(page).not.toHaveURL(/[?&]q=/)
-    await expect(page.getByText(/search covers groups, artists, mvs and events/i)).toBeVisible()
+    await expect(main.getByText(/search covers groups, artists, mvs and events/i)).toBeVisible()
   })
 })
