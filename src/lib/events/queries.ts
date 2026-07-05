@@ -10,7 +10,8 @@ const EVENT_SELECT =
 // Predicate appliqué partout sauf getGroupMvs (cf. matrice §8 SCRAPING.md) :
 // les MVs `main` + les non-MV (mv_kind=NULL) sont visibles. Les versions
 // performance/member/other_version sont filtrées.
-const isMainOrNonMv = 'mv_kind.eq.main,mv_kind.is.null'
+// Exporté pour les contextes sans cookies (feed iCal service-role).
+export const isMainOrNonMv = 'mv_kind.eq.main,mv_kind.is.null'
 
 export async function getUpcomingEvents({
   groupSlug,
