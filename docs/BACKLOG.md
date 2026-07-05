@@ -78,8 +78,8 @@
 
 - **Page interne de visionnage des stages** (type `/mv` avec player embed) — aujourd'hui les bannières music_show ouvrent YouTube directement (icône lien externe affichée). À faire si les stage links prouvent leur usage.
 - **Quick-tap ratings mobile** (presets à la place du slider) — le slider + bouton Save suffit pour l'instant.
-- **Install hint iOS sur la home** (bannière « Ajouter à l'écran d'accueil ») — l'app est installable, le hint n'existe que sur /account.
-- **Partage d'event** (bouton share/copy link sur une carte event) — aucun mécanisme de partage aujourd'hui.
+- ✅ **Install hint iOS sur la home** — fait 2026-07-05 : `IosInstallHint` en fin de colonne centrale de la home connectée (auto-gated Safari iOS hors standalone). Vérifié par login E2E en UA iPhone.
+- ✅ **Partage** — fait 2026-07-05 : `ShareButton` sur `/mv/[slug]` (top-right player) ; était déjà sur les fiches groupe/artiste. Écart assumé : pas sur les cartes event (root `<Link>`, bouton imbriqué invalide).
 
 ## Tests (accompagne P0/P1)
 
@@ -126,7 +126,7 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 - **Suggestions** : édition admin avant approbation ; édition/suppression par l'auteur (nécessite policies `update`/`delete` own-rows sur `event_suggestions`) ; notif push au contributeur (infra prête).
 - **Music shows — repenser l'affichage** : un Music Bank à 8 groupes = 8 events redondants ; idée « le show comme entrée suivable » (titre = lineup). À cadrer.
 - **Polish home** : groupage temporel (Aujourd'hui/Demain/Cette semaine), cap 10 events/bucket + « voir les N autres », champ agence incohérent (4 groupes seulement) — à re-trier au prochain passage sur la home.
-- **Community pulse** : formulaire « Suggest event » en modal + « Suggest fix » + toast.
+- ✅ **Community pulse** — vérifié 2026-07-05 : déjà en place depuis mai (modal globale 3 tabs Artist/Event/Fix + toast succès sur les 3 forms, `suggest-event-dialog.tsx`). Un rapport d'agent le disait manquant — contre-vérifié par lecture directe, item clos sans code.
 
 ---
 
