@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { CheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { NotificationsOptIn } from '@/components/notifications/notifications-opt-in'
 import { followMany } from '@/lib/follows/actions'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +15,7 @@ type G = { id: string; name: string; image: string | null }
 export function OnboardingGrid({ groups }: { groups: G[] }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [step, setStep] = useState<'grid' | 'notifications'>('grid')
   const [pending, startTransition] = useTransition()
 
   function toggle(id: string) {
@@ -25,6 +27,11 @@ export function OnboardingGrid({ groups }: { groups: G[] }) {
     })
   }
 
+  function exit() {
+    router.push('/')
+    router.refresh()
+  }
+
   function go(follow: boolean) {
     startTransition(async () => {
       if (follow && selected.size > 0) {
@@ -34,11 +41,16 @@ export function OnboardingGrid({ groups }: { groups: G[] }) {
         toast.success(
           `${selected.size} group${selected.size > 1 ? 's' : ''} followed — your calendar is live!`,
         )
+        // Étape 2 : proposer le push maintenant que le calendrier a du contenu.
+        // Skip / 0 follow → sortie directe (des notifs sans follows = vides).
+        setStep('notifications')
+        return
       }
-      router.push('/')
-      router.refresh()
+      exit()
     })
   }
+
+  if (step === 'notifications') return <NotificationsOptIn onDone={exit} />
 
   return (
     <div className="space-y-6">
