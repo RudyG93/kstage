@@ -74,6 +74,7 @@ Validation : voir `feedback-pre-clear-ritual`, `feedback-real-data-over-fixtures
 - **Vitest** sur la logique métier : parsing de scraping, timezone, idempotence.
 - **Playwright** sur les golden paths : auth, follow, calendrier.
 - **Pas** de test sur composant UI trivial. **Pas** de TDD imposé.
+- **E2E : `exact: true` sur les paires de labels toggle** (Follow/Unfollow…) — `getByRole` matche par sous-chaîne par défaut. Avant de push un changement de spec : reproduire le mode CI en local (`CI=1` = build prod servi par `next start`) — vert en dev ne prouve pas le mode prod.
 
 ---
 

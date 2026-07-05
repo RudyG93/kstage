@@ -240,6 +240,16 @@ select a.title, b.title from mv a join mv b
 
 **Vérification** : SQL zéro pattern restant + 13 fixtures de titres réels prod dans `is-official-mv.test.ts` / `group-match.test.ts`. Post-purge : 815 MVs propres.
 
+### 3.14 — Doublons music_show : l'enrichissement mute la clé d'idempotence (découvert 2026-07-05, cause racine OUVERTE)
+
+**Symptôme** : le même (groupe, épisode) existe en **double** en DB — une row carrd + une row stage YouTube (14 paires en prod au 2026-07-05). Visible sur les jours passés du calendrier et dans le feed iCal (épisode fusionné + stages individuels pour le même show).
+
+**Cause** : la clé d'idempotence du scraper est `unique (group_id, type, start_at, source_url)` et le cron `enrich-stage-links` **UPDATE `source_url`** (carrd → stage YouTube). Au scrape carrd suivant, la row enrichie ne matche plus la clé → réinsertion de la row carrd → doublon. Règle générale : **jamais de colonne mutable dans une clé d'idempotence.**
+
+**Mitigation livrée** : dédup display-level dans `groupMusicShowEpisodes` (`src/lib/events/grouping.ts`) — par (group_id, title, start_at), la row enrichie gagne. Corrige l'app ET le feed iCal.
+
+**Fix racine (BACKLOG 🐛, à faire au prochain passage scraper)** : colonne dédiée `stage_url` pour l'enrichissement (source_url redevient stable), OU dédup applicative par (group_id, type, start_at) avant insert. + purge one-shot des paires existantes (garder la row enrichie).
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)

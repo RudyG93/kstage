@@ -209,17 +209,17 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 > **L'historique daté vit dans `docs/JOURNAL.md`** (journal de bord, une entrée par lot mergé). Ici : uniquement l'état courant, rafraîchi à chaque changement de phase/chiffres.
 
-### État au 2026-07-05
+### État au 2026-07-05 (soir)
 
-**Phase** : MVP + V2 beachhead + refonte « Data Desk » livrés ; socle sécurité/rétention 2026-07-04 livré (rate-limits atomiques, CSP enforce, digest hebdo, E2E en CI). Chantiers en cours : regroupement music shows par épisode, quick wins UX, journal de bord. Roadmap : `docs/BACKLOG.md` · risques structurels : `docs/RISKS.md`.
+**Phase** : MVP + V2 beachhead + Data Desk + **roadmap R livrée jusqu'à R3** — socle sécurité (rate-limits atomiques, CSP enforce), regroupement music shows par épisode, boucle push complète (opt-in onboarding, préférences par type, deep links), SEO programmatique (sitemap 1403 URLs, JSON-LD, OG dynamiques), **export iCal par token** (`/account` → Calendar feed). CI e2e active et stable (build prod). Prochain : R4 (boucle contribution admin, self-host photos, polish home) + bug racine doublons music_show (`SCRAPING.md §3.14`). Roadmap : `docs/BACKLOG.md` · historique : `docs/JOURNAL.md` · risques : `docs/RISKS.md`.
 
-**Chiffres prod** : 114 groupes (31 solistes), 112 sourcés, ~826 MVs propres, 21 events futurs, 483 tests unitaires + 14 specs E2E (×2 projets, job CI actif). App : https://kstage.vercel.app/
+**Chiffres prod** : 114 groupes (31 solistes), ~826 MVs propres, **515 tests unitaires + 27 E2E** (job CI contre build prod). App : https://kstage.vercel.app/
 
-**Pages live** : `/` (landing déconnectée / home 8 modules connectée), `/calendar`, `/mvs`, `/mv/[slug]` (ratings + comments), `/groups` (+tab solo), `/groups/[slug]`, `/artists/[slug]`, `/search`, `/u/[username]`, `/account`, `/admin/*` (suggestions, feedback, reports, banners).
+**Pages live** : `/` (landing / home 8 modules), `/calendar`, `/mvs`, `/mv/[slug]` (ratings + comments), `/groups` (+tab solo), `/groups/[slug]`, `/artists/[slug]`, `/search`, `/u/[username]`, `/account` (notifs par type + calendar feed), `/admin/*`, `/api/ical/[token]`.
 
-**Stack livrée** : Next.js 16 (Turbopack) + React 19 + TS strict + Tailwind v4 + shadcn/Base UI ; Supabase `lgewrmrbksgtjmzzebhz` (eu-west-3, free tier, RLS 100 %) ; Vercel Hobby (6 crons quotidiens) ; push Web Push (VAPID confirmées en prod) ; CI GitHub Actions (lint/tsc/vitest/build + e2e gated `E2E_ENABLED`).
+**Stack livrée** : Next.js 16 (Turbopack) + React 19 + TS strict + Tailwind v4 + shadcn/Base UI ; Supabase (39 migrations, RLS 100 %) ; Vercel Hobby (6 crons quotidiens) ; push Web Push complet ; CI lint/tsc/vitest/build + e2e prod-build.
 
-**Reste produit (hors code)** : soft launch — pas de date (choix assumé).
+**Reste produit (hors code)** : soft launch — pas de date (choix assumé). Actions Rudy en cours : soumettre le sitemap à Search Console, vérifier ses follows (incident E2E du 2026-07-05, cf. JOURNAL), compte E2E dédié un jour.
 
 > ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright.
 > ⏳ Outillage : `gh` CLI inaccessible + MCP GitHub sans accès au repo → opérations GitHub (PRs, variables, secrets) via l'UI web.
