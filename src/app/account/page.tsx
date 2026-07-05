@@ -4,6 +4,7 @@ import { ChangePasswordForm } from '@/components/account/change-password-form'
 import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { PushToggle } from '@/components/notifications/push-toggle'
 import { NotificationPrefs } from '@/components/notifications/notification-prefs'
+import { CalendarFeed } from '@/components/account/calendar-feed'
 import { createClient } from '@/lib/supabase/server'
 import { getNotificationPrefs } from '@/lib/notifications/queries'
 import { getProfile } from '@/lib/profiles/queries'
@@ -17,10 +18,14 @@ export default async function AccountPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profile, notificationPrefs] = await Promise.all([
+  const [profile, notificationPrefs, { data: calendarFeed }] = await Promise.all([
     getProfile(user.id),
     getNotificationPrefs(),
+    supabase.from('calendar_feeds').select('token').maybeSingle(),
   ])
+  const feedUrl = calendarFeed
+    ? `https://kstage.vercel.app/api/ical/${calendarFeed.token}.ics`
+    : null
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -43,6 +48,7 @@ export default async function AccountPage() {
           <IosInstallHint />
           <PushToggle />
           <NotificationPrefs initial={notificationPrefs} />
+          <CalendarFeed feedUrl={feedUrl} />
         </section>
 
         <ChangePasswordForm />
