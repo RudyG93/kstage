@@ -20,6 +20,7 @@ const ev = (over: Partial<ComebackEvent> = {}): ComebackEvent => ({
   groupId: 'g1',
   groupName: 'aespa',
   title: 'Whiplash',
+  type: 'mv',
   startAt: '2026-06-09T05:00:00Z', // KST 14:00 même jour → day_of par défaut
   createdAt: '2026-06-01T00:00:00Z',
   url: '/mv/aespa-whiplash',
@@ -117,5 +118,51 @@ describe('buildComebackNotifications', () => {
   it('abonné sans follow : aucun message', () => {
     const messages = buildComebackNotifications([sub('u1')], [], [ev()], new Set(), NOW)
     expect(messages).toEqual([])
+  })
+
+  it('prefs : type mv désactivé → pas de push mv, release passe', () => {
+    const disabled = new Map([['u1', new Set(['mv'])]])
+    const messages = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ id: 'e-mv', type: 'mv' }), ev({ id: 'e-rel', type: 'release' })],
+      new Set(),
+      NOW,
+      disabled,
+    )
+    expect(messages.map((m) => m.record.eventId)).toEqual(['e-rel'])
+  })
+
+  it("prefs : la désactivation d'un user n'affecte pas les autres", () => {
+    const disabled = new Map([['u1', new Set(['mv'])]])
+    const messages = buildComebackNotifications(
+      [sub('u1'), sub('u2')],
+      [follow('u1', 'g1'), follow('u2', 'g1')],
+      [ev()],
+      new Set(),
+      NOW,
+      disabled,
+    )
+    expect(messages.map((m) => m.subscription.userId)).toEqual(['u2'])
+  })
+
+  it('prefs : sans map → comportement historique (tout passe)', () => {
+    const withMap = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev()],
+      new Set(),
+      NOW,
+      new Map(),
+    )
+    const without = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev()],
+      new Set(),
+      NOW,
+    )
+    expect(withMap).toEqual(without)
+    expect(without).toHaveLength(1)
   })
 })

@@ -81,6 +81,9 @@ export function buildDigest(
   follows: readonly DigestFollow[],
   events: readonly DigestEvent[],
   edition: DigestEdition = 'daily',
+  // Types désactivés par user (user_notification_settings enabled=false).
+  // Optionnel : sans la map, comportement historique (tout passe).
+  disabledTypes?: ReadonlyMap<string, ReadonlySet<string>>,
 ): DigestMessage[] {
   const groupsByUser = new Map<string, Set<string>>()
   for (const f of follows) {
@@ -95,7 +98,12 @@ export function buildDigest(
   for (const subscription of subscriptions) {
     const followed = groupsByUser.get(subscription.userId)
     if (!followed || followed.size === 0) continue
-    const userEvents = sorted.filter((e) => followed.has(e.groupId))
+    const disabled = disabledTypes?.get(subscription.userId)
+    // Filtre AVANT digestLabels : le compte du titre et l'agrégation music_show
+    // ne voient que les events pertinents. Event sans type → conservé (compat).
+    const userEvents = sorted.filter(
+      (e) => followed.has(e.groupId) && !(e.type && disabled?.has(e.type)),
+    )
     if (userEvents.length === 0) continue
     messages.push({ subscription, payload: buildPayload(userEvents, edition) })
   }

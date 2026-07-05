@@ -135,6 +135,47 @@ describe('buildDigest', () => {
     expect(message.payload.title).toBe('1 upcoming event')
   })
 
+  it('prefs : type désactivé exclu du corps ET du compte', () => {
+    const follows = [{ userId: 'u1', groupId: 'g1' }]
+    const events = [
+      { ...ev('g1', 'Comeback', '2026-05-26T00:00:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Music Bank', '2026-05-27T08:00:00Z', 'aespa'), type: 'music_show' },
+    ]
+    const disabled = new Map([['u1', new Set(['music_show'])]])
+    const [message] = buildDigest([sub('u1')], follows, events, 'daily', disabled)
+    expect(message.payload.title).toBe('1 upcoming event')
+    expect(message.payload.body).toBe('aespa — Comeback')
+  })
+
+  it('prefs : tous les types du user désactivés → aucun message', () => {
+    const events = [{ ...ev('g1', 'Comeback', '2026-05-26T00:00:00Z', 'aespa'), type: 'mv' }]
+    const disabled = new Map([['u1', new Set(['mv'])]])
+    const messages = buildDigest(
+      [sub('u1')],
+      [{ userId: 'u1', groupId: 'g1' }],
+      events,
+      'daily',
+      disabled,
+    )
+    expect(messages).toEqual([])
+  })
+
+  it("prefs : n'affectent pas les autres users ; event sans type conservé", () => {
+    const follows = [
+      { userId: 'u1', groupId: 'g1' },
+      { userId: 'u2', groupId: 'g1' },
+    ]
+    const events = [
+      { ...ev('g1', 'Comeback', '2026-05-26T00:00:00Z', 'aespa'), type: 'mv' },
+      ev('g1', 'Untyped', '2026-05-27T00:00:00Z', 'aespa'), // sans type (compat)
+    ]
+    const disabled = new Map([['u1', new Set(['mv'])]])
+    const messages = buildDigest([sub('u1'), sub('u2')], follows, events, 'daily', disabled)
+    const byUser = new Map(messages.map((m) => [m.subscription.userId, m.payload]))
+    expect(byUser.get('u1')?.title).toBe('1 upcoming event') // l'untyped reste
+    expect(byUser.get('u2')?.title).toBe('2 upcoming events')
+  })
+
   it('only notifies the subscriptions of users with matching events', () => {
     const subscriptions = [sub('u1'), sub('u2')]
     const follows = [
