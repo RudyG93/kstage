@@ -41,7 +41,7 @@ describe('buildDigest', () => {
     expect(messages[0].payload).toEqual({
       title: '1 upcoming event',
       body: 'aespa — New single',
-      url: '/',
+      url: '/calendar',
     })
   })
 

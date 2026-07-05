@@ -71,7 +71,9 @@ function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): D
     edition === 'weekly'
       ? `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`
       : `${n} upcoming event${n > 1 ? 's' : ''}`
-  return { title, body: listed + more, url: '/' }
+  // Deep link : le digest liste des events datés → le calendrier est la
+  // destination utile (la home re-priorise le hero, pas la liste).
+  return { title, body: listed + more, url: '/calendar' }
 }
 
 export function buildDigest(
