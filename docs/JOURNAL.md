@@ -4,6 +4,10 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-05 — Quick wins UX : partage MV + hint install iOS
+
+**Branche** : `feat/ux-quick-wins`. **Quoi** : `ShareButton` ajouté sur `/mv/[slug]` (top-right du player, symétrie du BackButton — pattern ArtistHero) ; `IosInstallHint` monté en fin de colonne centrale de la home connectée (auto-gated Safari iOS hors standalone). **Pourquoi** : deux composants finis qui dormaient — le partage n'existait que sur les fiches artiste, le hint que sur /account. **Vérification** : Playwright réel — clic Share → toast « Link copied » + URL dans le presse-papier ; login E2E en UA iPhone → hint visible sur la home connectée, absent en desktop/landing ; 28/28 E2E. **Décisions** : pas de ShareButton sur les cartes event (root `<Link>`, bouton imbriqué invalide) ; pas de hint sur la landing (funnel signup non dilué). Vérifié au passage : le toast succès des suggestions existait déjà (item backlog clos sans code). **Incident réparé en route** : `NEXT_PUBLIC_SUPABASE_URL` vidée dans `.env.local` (édition du matin, valeur coupée au lieu de copiée) → toutes les pages en 500 en local ; valeur restaurée.
+
 ## 2026-07-05 — Journal de bord versionné
 
 **Branche** : `docs/journal`. **Quoi** : création de ce fichier (seed rétroactif depuis PROJECT.md §9), PROJECT.md §9 raccourci à l'état courant, règle d'entretien ajoutée à CLAUDE.md. **Pourquoi** : demande Rudy — tenir les docs comme un journal de bord ; l'historique daté s'accumulait dans PROJECT.md §9 qui devenait illisible. **Décisions** : une entrée par merge ; l'état courant reste dans PROJECT.md ; les décisions produit cross-session vont aussi dans la memory `project_decisions_ledger`.

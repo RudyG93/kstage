@@ -11,6 +11,7 @@ import { displaySongTitle } from '@/lib/events/title'
 import { formatKst, relativeTime } from '@/lib/events/date'
 import { cn } from '@/lib/utils'
 import { BackButton } from '@/components/back-button'
+import { ShareButton } from '@/components/share-button'
 import { Panel } from '@/components/ui/panel'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
 import { RatingSlider } from '@/components/mv/rating-slider'
@@ -91,6 +92,7 @@ export default async function MvPage({
             </div>
           )}
           <BackButton className="absolute top-3 left-3 z-10" />
+          <ShareButton title={title} className="absolute top-3 right-3 z-10" />
         </div>
 
         <div className="space-y-3 px-3 md:px-0">
