@@ -55,7 +55,15 @@ export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
           </p>
         </div>
         {!feedUrl && (
-          <Button type="button" size="sm" onClick={enable} disabled={pending}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={enable}
+            disabled={pending}
+            // Nom accessible distinct : PushToggle a déjà un bouton « Enable »
+            // dans la même section.
+            aria-label="Enable calendar feed"
+          >
             <CalendarPlus aria-hidden />
             {pending ? 'Enabling…' : 'Enable'}
           </Button>

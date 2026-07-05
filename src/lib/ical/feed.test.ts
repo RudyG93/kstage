@@ -6,6 +6,7 @@ const SITE = 'https://kstage.vercel.app'
 
 const row = (over: Partial<FeedEventRow> & { id: string }): FeedEventRow =>
   ({
+    group_id: `gid-${over.id}`,
     type: 'mv',
     title: 'Whiplash',
     slug: 'whiplash',
@@ -33,6 +34,7 @@ describe('buildCalendarFeed', () => {
     const show = (id: string, name: string) =>
       row({
         id,
+        group_id: `gid-${name.toLowerCase()}`,
         type: 'music_show',
         title: 'Music Bank',
         slug: null,

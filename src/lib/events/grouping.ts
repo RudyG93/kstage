@@ -56,11 +56,41 @@ export type GroupedUpcomingEvent = UpcomingEvent & { lineup?: UpcomingEvent[] }
  * `episode_number` = premier non-null du lineup ; `lineup` absent si singleton
  * (rendu strictement identique à aujourd'hui).
  */
+/**
+ * Dédup préalable : le même (groupe, épisode) peut exister en DOUBLE en DB —
+ * l'enrichissement stage-links change source_url (qui fait partie de la clé
+ * d'idempotence du scraper) → le scrape suivant réinsère la row carrd (bug
+ * data, 14 paires en prod au 2026-07-05, cause racine au BACKLOG). On garde
+ * la row enrichie (href externe = stage vidéo) plutôt que la carrd.
+ */
+function dedupePerGroupEpisode(events: readonly UpcomingEvent[]): UpcomingEvent[] {
+  const seen = new Map<string, number>() // key → index dans out
+  const out: UpcomingEvent[] = []
+  for (const e of events) {
+    if (e.type !== 'music_show') {
+      out.push(e)
+      continue
+    }
+    const key = `${e.group_id}|${e.title}|${e.start_at}`
+    const at = seen.get(key)
+    if (at === undefined) {
+      seen.set(key, out.length)
+      out.push(e)
+      continue
+    }
+    // Doublon : préférer la row au href externe (stage enrichi).
+    if (isExternalHref(eventHref(e)) && !isExternalHref(eventHref(out[at]))) {
+      out[at] = e
+    }
+  }
+  return out
+}
+
 export function groupMusicShowEpisodes(events: readonly UpcomingEvent[]): GroupedUpcomingEvent[] {
   const byEpisode = new Map<string, GroupedUpcomingEvent>()
   const out: GroupedUpcomingEvent[] = []
 
-  for (const e of events) {
+  for (const e of dedupePerGroupEpisode(events)) {
     if (e.type !== 'music_show' || isExternalHref(eventHref(e))) {
       out.push(e)
       continue
