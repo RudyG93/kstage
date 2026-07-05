@@ -36,9 +36,12 @@ export async function generateMetadata({
   if (!event) return { title: 'MV not found · KStage' }
   const group = event.groups
   const title = displaySongTitle(event.title, group?.name)
+  const description = event.description ?? `${group?.name} music video.`
   return {
     title: `${title} — ${group?.name ?? 'KStage'}`,
-    description: event.description ?? `${group?.name} music video.`,
+    description,
+    alternates: { canonical: `/mv/${slug}` },
+    openGraph: { title: `${title} — ${group?.name ?? 'KStage'}`, description },
   }
 }
 

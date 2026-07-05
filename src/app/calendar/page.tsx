@@ -21,7 +21,11 @@ function parseMonth(raw?: string): { year: number; month: number } {
   return { year: y, month: m }
 }
 
-export const metadata = { title: 'Calendar' }
+export const metadata = {
+  title: 'Calendar',
+  description: 'Every k-pop comeback, MV drop, music show and birthday — day by day, in KST.',
+  alternates: { canonical: '/calendar' },
+}
 
 export default async function CalendarPage({
   searchParams,

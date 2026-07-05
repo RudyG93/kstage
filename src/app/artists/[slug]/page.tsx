@@ -15,6 +15,23 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const member = await getMemberBySlug(slug)
+  if (!member) return { title: 'Artist not found · KStage' }
+  const group = member.groups
+  const context = group && !group.is_solo ? ` (${group.name})` : ''
+  return {
+    title: `${member.stage_name} — profile & schedule`,
+    description: `${member.stage_name}${context} — upcoming events, MVs and profile on KStage.`,
+    alternates: { canonical: `/artists/${slug}` },
+    openGraph: {
+      title: `${member.stage_name} — profile & schedule · KStage`,
+      description: `${member.stage_name}${context} on KStage.`,
+    },
+  }
+}
+
 const formatBirthday = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Seoul',

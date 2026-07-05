@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Drops',
   description: 'Browse all k-pop music videos tracked on KStage.',
+  alternates: { canonical: '/mvs' },
 }
 
 const PER_GROUP = 10
