@@ -12,6 +12,12 @@ test.describe('auth golden path', () => {
     'Set E2E_AUTH_EMAIL / E2E_AUTH_PASSWORD (a confirmed Supabase user) to run.',
   )
 
+  // Chromium uniquement : le golden path MUTE l'état du compte test partagé
+  // (follows) et le signOut Supabase est global (révoque toutes les sessions).
+  // Deux projets en parallèle sur le même compte = interférences flaky en CI.
+  // L'UI auth est indépendante du viewport ; mobile garde smoke/search/feedback.
+  test.skip(({ isMobile }) => Boolean(isMobile), 'Golden path sur chromium seul (compte partagé).')
+
   test('sign in, follow, multi-filter, connected home, sign out', async ({ page }) => {
     // Sign in → redirigé vers l'accueil connecté `/` (l'ancienne route `/my`
     // a été retirée ; ce test l'attendait encore mais ne tournait jamais).

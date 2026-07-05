@@ -10,7 +10,10 @@ test.describe('Landing (logged out)', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: /never miss a\s*comeback again/i }),
     ).toBeVisible()
-    await expect(page.getByText(/events tracked live/i)).toBeVisible()
+    // .first() : le badge existe en double dans le DOM (variantes responsive /
+    // duplication marquee) → strict mode violation sinon, surtout en prod où
+    // l'hydratation est assez rapide pour monter le doublon avant l'assertion.
+    await expect(page.getByText(/events tracked live/i).first()).toBeVisible()
     await expect(page.getByRole('link', { name: /create your calendar — free/i })).toBeVisible()
     await expect(page.getByRole('link', { name: /browse the calendar first/i })).toBeVisible()
 
@@ -19,7 +22,8 @@ test.describe('Landing (logged out)', () => {
     await expect(page.getByText(/follow your groups/i).first()).toBeVisible()
 
     // Mur visuel : label « n groups & soloists » (groupes seedés en prod).
-    await expect(page.getByText(/groups & soloists/i)).toBeVisible()
+    // .first() : doublon DOM (variantes responsive), cf. badge live ci-dessus.
+    await expect(page.getByText(/groups & soloists/i).first()).toBeVisible()
   })
 
   test('CTA principal navigue vers /signup, CTA secondaire vers /calendar', async ({ page }) => {

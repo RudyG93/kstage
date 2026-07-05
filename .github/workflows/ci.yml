@@ -61,6 +61,17 @@ jobs:
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
 
+      # E2E contre un build prod : le dev server Turbopack compile chaque route
+      # à la demande pendant que les tests tournent en parallèle → timeouts.
+      # `next start` sert des routes précompilées (boot ~1 s). Step dédié :
+      # un build cassé fait un step rouge lisible (Playwright ignore le stdout
+      # du webServer par défaut).
+      - name: Build (production)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
       - name: Playwright E2E
         run: npm run test:e2e
         env:
