@@ -26,6 +26,7 @@ const show = (
 ) =>
   ({
     id,
+    group_id: `gid-${groupName.toLowerCase()}`,
     type,
     title,
     start_at,
@@ -101,6 +102,22 @@ describe('groupMusicShowEpisodes', () => {
     expect(grouped.find((e) => e.id === 'mb1')?.lineup).toHaveLength(2)
     expect(grouped.find((e) => e.id === 'ink1')?.lineup).toHaveLength(2)
     expect(grouped.find((e) => e.id === 'mv1')?.lineup).toBeUndefined()
+  })
+
+  it('doublon DB par (groupe, épisode) : la row enrichie gagne (bug re-insert carrd)', () => {
+    // Cas prod 2026-07-02 : chaque groupe a une row carrd ET une row stage
+    // YouTube pour le même épisode (l'enrichissement change source_url = clé
+    // d'idempotence → le scrape suivant réinsère la carrd).
+    const events = [
+      show('a-carrd', 'ATEEZ'),
+      show('a-stage', 'ATEEZ', { source_url: 'https://www.youtube.com/watch?v=abc' }),
+      show('b-stage', 'RIIZE', { source_url: 'https://www.youtube.com/watch?v=def' }),
+      show('b-carrd', 'RIIZE'),
+    ]
+    const grouped = groupMusicShowEpisodes(events)
+    // 2 cartes stage individuelles, AUCUNE carte carrd fusionnée résiduelle.
+    expect(grouped.map((e) => e.id).sort()).toEqual(['a-stage', 'b-stage'])
+    expect(grouped.every((e) => !e.lineup)).toBe(true)
   })
 
   it('singleton : pas de champ lineup → rendu identique à aujourd’hui', () => {

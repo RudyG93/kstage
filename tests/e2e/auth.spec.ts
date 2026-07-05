@@ -30,10 +30,14 @@ test.describe('auth golden path', () => {
 
     // Suivre un groupe. Le bouton de suivi des cards est un cœur icon-only :
     // son nom accessible est "Follow" / "Unfollow" (aria-label), pas du texte.
+    // ⚠️ exact:true OBLIGATOIRE : getByRole matche par sous-chaîne par défaut,
+    // donc { name: 'Follow' } matche AUSSI « Unfollow » — le test cliquait le
+    // 1er bouton Unfollow et désabonnait un groupe du compte test à chaque run
+    // (données réelles détruites, découvert le 2026-07-05).
     await page.goto('/groups')
-    const firstFollow = page.getByRole('button', { name: 'Follow' }).first()
+    const firstFollow = page.getByRole('button', { name: 'Follow', exact: true }).first()
     if (await firstFollow.count()) await firstFollow.click()
-    await expect(page.getByRole('button', { name: 'Unfollow' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Unfollow', exact: true }).first()).toBeVisible()
 
     // Filtres de type : chips URL-driven de la page Calendar (Data Desk §7.2 —
     // le TypeFilterVertical de la home a été remplacé par ces chips).
