@@ -9,6 +9,8 @@
 | **Découvrir le projet** (handoff)                       | `KSTAGE_BRIEF.md`                                     | Vivant — mis à jour 2026-06-12                                                     |
 | **Contexte produit & technique** (le « quoi/pourquoi ») | `PROJECT.md` (état courant : §9)                      | Vivant                                                                             |
 | **Roadmap active** (le « quoi maintenant »)             | `BACKLOG.md`                                          | Vivant — réécrit 2026-06-12, source de vérité des priorités                        |
+| **Journal de bord** (le « qu'a-t-on fait, quand »)      | `JOURNAL.md`                                          | Vivant — créé 2026-07-05, une entrée par merge (règle CLAUDE.md § Journal)         |
+| **Risques structurels** (SPOF, free tiers, burn-out)    | `RISKS.md`                                            | Vivant — créé 2026-07-04                                                           |
 | **Constats vérifiés** (le « qu'est-ce qui ne va pas »)  | `AUDIT_PROJET_2026-06-12.md`                          | Référence datée                                                                    |
 | Audit UX / benchmark                                    | `AUDIT_UX_2026-06.md`                                 | Référence datée (2026-06-08) — le backlog §5/§6 est **supersédé** par `BACKLOG.md` |
 | Audit sécurité                                          | `SECURITY_AUDIT.md`                                   | Vivant — corrigé 2026-06-12                                                        |

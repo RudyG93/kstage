@@ -207,71 +207,22 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 ## 9. État actuel
 
-### État au 2026-07-04
+> **L'historique daté vit dans `docs/JOURNAL.md`** (journal de bord, une entrée par lot mergé). Ici : uniquement l'état courant, rafraîchi à chaque changement de phase/chiffres.
 
-**Phase** : refonte visuelle complète **« Data Desk »** livrée (2026-07-02→04, 4 merges sur main, tous déployés) : nouveau système de tokens oklch (thèmes Daylight/Midnight), typo Archivo condensée pour les labels, nav 5 items, home 8 modules (ticker, hero sur le dernier MV, queue, week glance, fresh drops), calendrier, Drops, fiches groupe/MV, `/search` (recherche live multi-termes, ex. « Music Bank aespa »), profil, landing triée par notoriété.
+### État au 2026-07-05
 
-**Data — bascule qualité** : purge de **202 faux MVs** (teasers, behind, sketchs… — cf. `SCRAPING.md §3.13`) → **815 MVs propres** ; gates scraper durcies (blacklist titre étendue + durée ≥ 75 s obligatoire). **Stage links** : les events music_show pointent vers la vidéo YouTube du stage, enrichis chaque jour par le cron (cf. `SCRAPING.md §9`). Popularité = `sources.subscriber_count` (Spotify inutilisable, API dev-mode).
+**Phase** : MVP + V2 beachhead + refonte « Data Desk » livrés ; socle sécurité/rétention 2026-07-04 livré (rate-limits atomiques, CSP enforce, digest hebdo, E2E en CI). Chantiers en cours : regroupement music shows par épisode, quick wins UX, journal de bord. Roadmap : `docs/BACKLOG.md` · risques structurels : `docs/RISKS.md`.
 
-**Nouveau canal user** : widget **Feedback** (table `feedback`, rate-limit 2/24 h, `/admin/feedback`) — canal de signalement des fausses données, critique pour la confiance dans le calendrier.
+**Chiffres prod** : 114 groupes (31 solistes), 112 sourcés, ~826 MVs propres, 21 events futurs, 483 tests unitaires + 14 specs E2E (×2 projets, job CI actif). App : https://kstage.vercel.app/
 
-**Chiffres prod au 2026-07-04** : 114 groupes (31 solistes), 112 sourcés, 815 MVs, 480 tests unitaires + 10 E2E verts. Restes actés : re-scrape kprofiles photos membres (op manuelle, BACKLOG), page interne de visionnage des stages (piste), quick wins UX différés (BACKLOG).
+**Pages live** : `/` (landing déconnectée / home 8 modules connectée), `/calendar`, `/mvs`, `/mv/[slug]` (ratings + comments), `/groups` (+tab solo), `/groups/[slug]`, `/artists/[slug]`, `/search`, `/u/[username]`, `/account`, `/admin/*` (suggestions, feedback, reports, banners).
 
-### État au 2026-06-12
+**Stack livrée** : Next.js 16 (Turbopack) + React 19 + TS strict + Tailwind v4 + shadcn/Base UI ; Supabase `lgewrmrbksgtjmzzebhz` (eu-west-3, free tier, RLS 100 %) ; Vercel Hobby (6 crons quotidiens) ; push Web Push (VAPID confirmées en prod) ; CI GitHub Actions (lint/tsc/vitest/build + e2e gated `E2E_ENABLED`).
 
-**Phase** : MVP complet + V2 communautaire amorcée + première vague rétention livrée (push datés comeback announced/J-1/jour-J, countdowns, onboarding follow-first, empty states, profil-vitrine, slider de notation [0,10]/0.5). Repo nettoyé (branches purgées, `main` seul). **Audit complet du projet réalisé le 2026-06-12** → `docs/AUDIT_PROJET_2026-06-12.md` (constats vérifiés en prod, contre-vérification adversariale).
+**Reste produit (hors code)** : soft launch — pas de date (choix assumé).
 
-**Chiffres prod au 2026-06-12** : 320 events dont **8 à venir** au-delà du jour J (tous kpopofficial) ; 142/173 groupes (82 %) sans aucun event ; 2 comptes, 1 note, 7 commentaires. La donnée, pas le code, est le chantier.
-
-**Direction actée (Rudy, 2026-06-12)** : pas de date de soft launch ; objectif = **V1 assez bonne pour retenir dès le premier utilisateur**. Roadmap réordonnée data-d'abord dans `docs/BACKLOG.md` (P0 data → P1 quick wins → P2 habitude → features communautaires gelées jusqu'à audience réelle).
-
-### Historique — état au 2026-05-29
-
-**Phase** : **MVP complet + post-MVP V2 amorcée** (Phase 4 community + member pages + music shows). L'app est en prod : https://kstage.vercel.app/. Historique de la session 2026-05-29 résumé dans [[session-log-2026-05-29-pr-d-to-ms]] (10 PRs livrés).
-
-**Pages live** : `/`, `/calendar` (Feed-style cards), `/mvs`, `/mv/[slug]` (ratings + comments Reddit-style), `/groups`, `/groups?tab=solo`, `/groups/[slug]` (Members + Former sections), `/artists/[slug]` (avec parcours canonical), `/my`.
-
-**Étape 7 100 % clôturée** : music shows hebdo via `liveshowupdatess.carrd.co` primary + 6 fallbacks officiels par broadcaster (KBS Music Bank, MnetPlus M Countdown, imbc Music Core, SBS Inkigayo, SBS The Show, imbc Show Champion — cf. `docs/SCRAPING.md §9`). Comebacks `kpopofficial` opérationnel (PR #11). Sources auto actives : YouTube (premieres) + kpopofficial (comebacks) + 6 music shows.
-
-**Étape 8 mergée** (PR #12) : suggestions communautaires + modération admin (`/admin/suggestions`, allowlist `ADMIN_EMAILS`). **Étape 9 mergée** (PR #13/#14/#15) : redesign dark, landing, SEO/OpenGraph, Vercel Analytics, PWA icônes brandées, a11y Lighthouse 100. **MVP terminé.**
-
-**Post-MVP — refonte home** (`feat/home-redesign`) : vue connectée passée en layout 3 colonnes (sidebar gauche _My groups_ + filtres par type, centre _Next drop_ + countdown + feed This week/Later, sidebar droite). Blocs _MV of the month_, _Release of the month_ et _Recent activity_ **mockés** isolément dans `src/lib/mocks/home.ts` en attendant le système ratings + articles (V2, cf. §10). Fix au passage : la nav mobile fixe (`SiteNav`) était piégée par le `backdrop-filter` du header (containing block) — header repassé en opaque.
-
-**Phase 4 community** (V2 beachhead) :
-
-- 4.A migration `0009_community.sql` : `events.slug` + `event_ratings` + `comments` + `comment_votes` + RLS.
-- 4.B `/mv/[slug]` : YouTube embed + StarRating /10 + Server Action `rateEvent`.
-- 4.C `feat/comments-tree` (livré 2026-05-29) : commentaires Reddit-style (threads, votes +/-, tri top/new, soft-delete) sur `/mv/[slug]`. Architecture : `tree.ts` pure + 4 Server Actions + 5 client components. Hotfix : split l'embed `profiles(...)` en 2 queries séparées (pas de FK directe `comments → profiles`, cf. [[feedback-postgrest-embed-fk-required]]).
-
-**Member pages canonical** (livré 2026-05-29) :
-
-- 0011 `members.{slug, photo_url, status enum active|former|pre_debut, former_reason}` + page `/artists/[slug]` + sections Members / Former sur `/groups/[slug]`.
-- 0012 `members.canonical_id` self-FK : 1 page par personne (Soojin solo, ALLDAY PROJECT Youngseo). Redirect 308 côté route + bloc Career qui liste les memberships passés.
-- 0013 `groups.is_solo` + tabs Groups/Solo sur `/groups` + GroupCard pointe direct vers `/artists/[slug]` côté tab Solo.
-- Seed photos + real_names via `scripts/roster/seed-photos-realnames.ts` (kpopnet.json CC0) : 349/833 members patchés, real_names 443→791. ALLDAY PROJECT + Soojin solo + 5 ADP membres seedés. BABYMONSTER + ADP autres photos en file (post-freeze kpopnet).
-
-**Auth & UX follow-ups** (livrés 2026-05-29 PM) :
-
-- 0015 trigger Postgres `handle_new_user()` (`SECURITY DEFINER`) qui crée auto une row `profiles` au signup + backfill. Fixe le bug Phase 4.C où les commentaires des users sans profile s'affichaient « unknown ».
-- `/groups/[slug]` redirect 308 vers `/artists/[memberSlug]` quand `groups.is_solo=true`. Résout le slug via `group_id` car la parité `groups.slug = members.slug` ne tient que sur 28/42 solos (14 ont un slug composite type `agustd-agust-d`). Finalise PR-D-3.2.
-
-**Reste produit (hors code)** : **soft launch** (Reddit r/kpop, Twitter) — non encore fait. Backlog post-MVP : `docs/BACKLOG.md`.
-
-**Ops** : les 4 vars VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`) sont **confirmées OK sur Vercel Production** (push opérationnel en prod).
-
-> ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright (qui démarre/arrête le sien).
-
-- ✅ Next.js 16.2.6 + React 19 + TS strict + Tailwind v4 + App Router + shadcn/ui ; déployé Vercel : https://kstage.vercel.app/
-- ✅ Tooling : Prettier, husky, lint-staged, ESLint strict + jsx-a11y, Vitest + Playwright, CI GitHub Actions
-- ✅ **Supabase** `kstage` (ref `lgewrmrbksgtjmzzebhz`, eu-west-3, free tier) : 12+ tables + RLS + seed étendu (173 groupes, 833 members, 42 solos). Scraping opérationnel : YouTube (premieres) + kpopofficial (comebacks) + music shows multi-source.
-- ✅ `.env.local` : Supabase (URL/anon/`SERVICE_ROLE`) + `YOUTUBE_API_KEY` + `CRON_SECRET` + VAPID (générées localement).
-- ⏳ Outillage : `gh` CLI inaccessible depuis bash + MCP GitHub sans accès au repo → PR ouvertes via l'UI web GitHub.
-
-### Appris à l'étape 6
-
-- **Vercel Cron déclenche en GET uniquement** → routes `/api/cron/*` en `GET` (cf. §5). Bug latent corrigé : `scrape-youtube` était POST-only, donc jamais déclenché par le cron.
-- **Next 16 = Turbopack** → `@serwist/next` (webpack) ne s'applique pas. Pour du push pur, un SW à la main suffit ; Serwist reporté à l'étape 9 (cf. §3 Notes PWA).
-- **`pushManager.subscribe` peut throw** (push service indispo, navigation privée, clé absente) → try/catch obligatoire côté UI pour ne pas crasher le composant (afficher un état d'erreur lisible).
+> ⚠️ E2E : ne **jamais** laisser un `npm run dev` ouvert pendant `npm run test:e2e` — Next 16 refuse un 2ᵉ serveur dev, ce qui fait échouer le `webServer` de Playwright.
+> ⏳ Outillage : `gh` CLI inaccessible + MCP GitHub sans accès au repo → opérations GitHub (PRs, variables, secrets) via l'UI web.
 
 ---
 

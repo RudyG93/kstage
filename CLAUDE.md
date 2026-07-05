@@ -85,6 +85,18 @@ Validation : voir `feedback-pre-clear-ritual`, `feedback-real-data-over-fixtures
 
 ---
 
+## Journal de bord (docs vivantes)
+
+Après **chaque merge sur `main`**, dans le même mouvement (pas « plus tard ») :
+
+1. **`docs/JOURNAL.md`** — nouvelle entrée en tête : date, branche/commit, quoi, pourquoi, vérification, décisions prises. C'est l'historique daté du projet.
+2. **`docs/BACKLOG.md`** — cocher/mettre à jour les items touchés (détail de ce qui a été fait + écarts assumés).
+3. **`docs/PROJECT.md §9`** — rafraîchir l'état courant **seulement si** phase/chiffres/pages changent (l'historique ne s'y accumule plus, il va au JOURNAL).
+
+Décisions produit cross-session → aussi dans la memory `project_decisions_ledger`. Pièges scraping → `docs/SCRAPING.md §3`.
+
+---
+
 ## Discipline de scope
 
 - **Rester strict sur le MVP.** Pousser back sur le scope creep.
