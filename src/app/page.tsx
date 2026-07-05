@@ -23,6 +23,7 @@ import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus, getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
+import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
 
@@ -40,15 +41,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   } = await supabase.auth.getUser()
 
   if (!user) {
-    const [groups, previewEvents, eventsCount, sourcesStatus, subscriberCounts] = await Promise.all(
-      [
-        getGroupsCached(),
-        getUpcomingEvents({ limit: 4 }),
-        getEventsCount(),
-        getSourcesStatus(),
-        getGroupSubscriberCounts(),
-      ],
-    )
+    const [groups, previewRaw, eventsCount, sourcesStatus, subscriberCounts] = await Promise.all([
+      getGroupsCached(),
+      // limit 12 puis groupement : un épisode multi-groupes ne doit pas manger
+      // les 4 slots du preview avant de se replier en 1 carte.
+      getUpcomingEvents({ limit: 12 }),
+      getEventsCount(),
+      getSourcesStatus(),
+      getGroupSubscriberCounts(),
+    ])
+    const previewEvents = groupMusicShowEpisodes(previewRaw)
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <Landing
@@ -96,8 +98,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   const ratings = await getRatingsForEvents(freshMvs.map((m) => m.id))
 
   // Hero = prochain VRAI comeback (pas un anniversaire) ; le reste va à la queue.
-  const merged = [...dbEvents, ...anniversaries].sort((a, b) =>
-    a.start_at.localeCompare(b.start_at),
+  // Groupement AVANT le cap de la queue : un épisode à 5 groupes = 1 carte.
+  const merged = groupMusicShowEpisodes(
+    [...dbEvents, ...anniversaries].sort((a, b) => a.start_at.localeCompare(b.start_at)),
   )
   const heroIdx = merged.findIndex((e) => COMEBACK_TYPES.has(e.type))
   const nextDrop = heroIdx >= 0 ? merged[heroIdx] : null
@@ -115,7 +118,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
     heroMvImage = videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null
     heroMvFallback = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null
   }
-  const queueSource = merged.length > 0 ? merged : globalEvents
+  // Le ticker garde les lignes brutes (il déduplique déjà par texte) ; la queue
+  // et la week glance reçoivent la version groupée.
+  const globalGrouped = groupMusicShowEpisodes(globalEvents)
+  const queueSource = merged.length > 0 ? merged : globalGrouped
   const queueEvents = (heroIdx >= 0 ? merged.filter((_, i) => i !== heroIdx) : queueSource).slice(
     0,
     8,
@@ -176,7 +182,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
                 </div>
               </Panel>
             )}
-            <WeekGlance events={merged.length > 0 ? merged : globalEvents} timeZone={timeZone} />
+            <WeekGlance events={merged.length > 0 ? merged : globalGrouped} timeZone={timeZone} />
             <FreshDrops mvs={freshMvs} ratings={ratings} />
             {/* Safari iOS hors standalone uniquement (auto-gated) — fin de scroll,
                 l'user a déjà consommé sa valeur, zéro pollution du premier écran. */}

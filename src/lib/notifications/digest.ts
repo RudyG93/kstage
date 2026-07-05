@@ -18,6 +18,9 @@ export type DigestEvent = {
   title: string
   startAt: string
   groupName?: string | null
+  // Sert à agréger les music shows par épisode dans le payload (optionnel :
+  // les anciens appelants/tests sans type gardent le comportement historique).
+  type?: string | null
 }
 
 export type DigestPayload = { title: string; body: string; url: string }
@@ -26,9 +29,42 @@ export type DigestEdition = 'daily' | 'weekly'
 
 const MAX_LISTED = 3
 
+/**
+ * Labels du corps : un même music show posé sur N groupes (title+startAt
+ * identiques) devient UNE entrée « Music Bank (5 artists) » au lieu de N
+ * lignes redondantes — même logique que groupMusicShowEpisodes à l'affichage.
+ */
+function digestLabels(events: readonly DigestEvent[]): string[] {
+  const labels: string[] = []
+  const episodes = new Map<string, { title: string; names: string[]; index: number }>()
+  for (const e of events) {
+    if (e.type === 'music_show') {
+      const key = `${e.title}|${e.startAt}`
+      const ep = episodes.get(key)
+      if (ep) {
+        ep.names.push(e.groupName ?? '?')
+        continue
+      }
+      episodes.set(key, { title: e.title, names: [e.groupName ?? '?'], index: labels.length })
+      labels.push('') // rempli après, une fois le lineup complet connu
+      continue
+    }
+    labels.push(e.groupName ? `${e.groupName} — ${e.title}` : e.title)
+  }
+  for (const ep of episodes.values()) {
+    labels[ep.index] =
+      ep.names.length === 1
+        ? `${ep.names[0]} — ${ep.title}`
+        : ep.names.length === 2
+          ? `${ep.title} (${ep.names[0]}, ${ep.names[1]})`
+          : `${ep.title} (${ep.names.length} artists)`
+  }
+  return labels
+}
+
 function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): DigestPayload {
-  const n = events.length
-  const labels = events.map((e) => (e.groupName ? `${e.groupName} — ${e.title}` : e.title))
+  const labels = digestLabels(events)
+  const n = labels.length
   const listed = labels.slice(0, MAX_LISTED).join(', ')
   const more = n > MAX_LISTED ? `, +${n - MAX_LISTED} more` : ''
   const title =

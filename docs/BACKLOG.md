@@ -124,7 +124,7 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 
 - **Admin hub** (`/admin`) : grille de liens vers les sous-sections.
 - **Suggestions** : édition admin avant approbation ; édition/suppression par l'auteur (nécessite policies `update`/`delete` own-rows sur `event_suggestions`) ; notif push au contributeur (infra prête).
-- **Music shows — repenser l'affichage** : un Music Bank à 8 groupes = 8 events redondants ; idée « le show comme entrée suivable » (titre = lineup). À cadrer.
+- **Music shows — repenser l'affichage** : ✅ **regroupement par épisode fait 2026-07-05** (1 carte par (show, date) avec lineup, toutes surfaces + digest ; `groupMusicShowEpisodes`, prédicat href-interne — cf. JOURNAL). Reste NON fait de l'idée d'origine : « le show comme entrée suivable » (follow d'un show, page d'épisode) — à cadrer si besoin réel.
 - **Polish home** : groupage temporel (Aujourd'hui/Demain/Cette semaine), cap 10 events/bucket + « voir les N autres », champ agence incohérent (4 groupes seulement) — à re-trier au prochain passage sur la home.
 - ✅ **Community pulse** — vérifié 2026-07-05 : déjà en place depuis mai (modal globale 3 tabs Artist/Event/Fix + toast succès sur les 3 forms, `suggest-event-dialog.tsx`). Un rapport d'agent le disait manquant — contre-vérifié par lecture directe, item clos sans code.
 

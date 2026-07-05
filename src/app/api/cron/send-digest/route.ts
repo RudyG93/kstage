@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     supabase.from('user_follows').select('user_id, group_id'),
     supabase
       .from('events')
-      .select('group_id, title, start_at, groups!inner(name)')
+      .select('group_id, title, start_at, type, groups!inner(name)')
       .gte('start_at', now.toISOString())
       .lt('start_at', until.toISOString())
       .neq('status', 'cancelled'),
@@ -76,6 +76,7 @@ export async function GET(req: Request) {
         title: e.title,
         startAt: e.start_at,
         groupName: e.groups?.name,
+        type: e.type,
       }),
     ),
     edition,
