@@ -10,6 +10,7 @@ import {
   type ComebackSubscription,
 } from '@/lib/notifications/comebacks'
 import { sendPush } from '@/lib/notifications/send'
+import { disabledTypesByUser } from '@/lib/notifications/prefs'
 import { eventHref } from '@/lib/events/href'
 import { displayEventTitle } from '@/lib/events/title'
 
@@ -44,9 +45,14 @@ export async function GET(req: Request) {
   // Superset d'events comeback (mv/release) : fenêtre J-1/jour J (avec marge KST)
   // OU créés dans les dernières 24 h (annoncés). Deux requêtes dédupliquées par id
   // — plus lisible qu'un .or() postgREST croisant deux colonnes.
-  const [subsRes, followsRes, upcomingRes, announcedRes] = await Promise.all([
+  const [subsRes, followsRes, prefsRes, upcomingRes, announcedRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
     supabase.from('user_follows').select('user_id, group_id'),
+    supabase
+      .from('user_notification_settings')
+      .select('user_id, event_type')
+      .eq('enabled', false)
+      .eq('channel', 'push'),
     supabase
       .from('events')
       .select(EVENT_FIELDS)
@@ -63,7 +69,8 @@ export async function GET(req: Request) {
       .gte('start_at', now.toISOString()),
   ])
 
-  const err = subsRes.error ?? followsRes.error ?? upcomingRes.error ?? announcedRes.error
+  const err =
+    subsRes.error ?? followsRes.error ?? prefsRes.error ?? upcomingRes.error ?? announcedRes.error
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
 
   // Dédup par id, puis mapping vers ComebackEvent (url + titre nettoyés ici pour
@@ -76,6 +83,7 @@ export async function GET(req: Request) {
       groupId: e.group_id,
       groupName: e.groups?.name ?? null,
       title: displayEventTitle(e.title, e.groups?.name),
+      type: e.type,
       startAt: e.start_at,
       createdAt: e.created_at,
       url: eventHref(e),
@@ -111,6 +119,7 @@ export async function GET(req: Request) {
     events,
     alreadySent,
     now,
+    disabledTypesByUser(prefsRes.data ?? []),
   )
 
   let sent = 0

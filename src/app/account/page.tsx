@@ -3,7 +3,9 @@ import { AccountForm } from '@/components/account/account-form'
 import { ChangePasswordForm } from '@/components/account/change-password-form'
 import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { PushToggle } from '@/components/notifications/push-toggle'
+import { NotificationPrefs } from '@/components/notifications/notification-prefs'
 import { createClient } from '@/lib/supabase/server'
+import { getNotificationPrefs } from '@/lib/notifications/queries'
 import { getProfile } from '@/lib/profiles/queries'
 
 export const metadata = { title: 'Account settings' }
@@ -15,7 +17,10 @@ export default async function AccountPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const profile = await getProfile(user.id)
+  const [profile, notificationPrefs] = await Promise.all([
+    getProfile(user.id),
+    getNotificationPrefs(),
+  ])
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -37,6 +42,7 @@ export default async function AccountPage() {
           <h2 className="font-heading text-lg font-semibold tracking-tight">Notifications</h2>
           <IosInstallHint />
           <PushToggle />
+          <NotificationPrefs initial={notificationPrefs} />
         </section>
 
         <ChangePasswordForm />

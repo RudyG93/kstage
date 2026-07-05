@@ -25,6 +25,7 @@ export type ComebackEvent = {
   groupId: string
   groupName: string | null
   title: string // déjà nettoyé (displayEventTitle) côté route
+  type: string // mv | release — sert au filtre préférences par user
   startAt: string
   createdAt: string
   url: string // déjà résolu (eventHref) côté route
@@ -90,6 +91,9 @@ export function buildComebackNotifications(
   events: readonly ComebackEvent[],
   alreadySent: ReadonlySet<string>, // clés `userId:eventId:kind`
   now: Date,
+  // Types désactivés par user (user_notification_settings enabled=false).
+  // Optionnel : sans la map, comportement historique (tout passe).
+  disabledTypes?: ReadonlyMap<string, ReadonlySet<string>>,
 ): ComebackMessage[] {
   // user → groupes suivis
   const groupsByUser = new Map<string, Set<string>>()
@@ -103,8 +107,10 @@ export function buildComebackNotifications(
   for (const subscription of subscriptions) {
     const followed = groupsByUser.get(subscription.userId)
     if (!followed || followed.size === 0) continue
+    const disabled = disabledTypes?.get(subscription.userId)
     for (const event of events) {
       if (!followed.has(event.groupId)) continue
+      if (disabled?.has(event.type)) continue
       const kind = resolveKind(event, now)
       if (!kind) continue
       const key = `${subscription.userId}:${event.id}:${kind}`

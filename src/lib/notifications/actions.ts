@@ -43,6 +43,35 @@ export async function savePushSubscription(sub: PushSubscriptionInput) {
   if (error) throw error
 }
 
+// Types exposés dans les préférences (concert/other non exposés : rares,
+// toujours inclus). Whitelist côté serveur — l'input client n'est pas fiable.
+const PREF_TYPES = ['mv', 'release', 'music_show', 'anniversary', 'live'] as const
+export type NotificationPrefType = (typeof PREF_TYPES)[number]
+
+/** Upsert la préférence push d'un type d'event (absence de row = activé). */
+export async function setNotificationPref(eventType: string, enabled: boolean) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  if (!PREF_TYPES.includes(eventType as NotificationPrefType)) {
+    throw new Error('Invalid notification type')
+  }
+
+  const { error } = await supabase.from('user_notification_settings').upsert(
+    {
+      user_id: user.id,
+      event_type: eventType as NotificationPrefType,
+      channel: 'push',
+      enabled,
+    },
+    { onConflict: 'user_id,event_type,channel' },
+  )
+  if (error) throw error
+}
+
 export async function deletePushSubscription(endpoint: string) {
   const supabase = await createClient()
   const {

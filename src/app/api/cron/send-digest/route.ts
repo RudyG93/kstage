@@ -11,6 +11,7 @@ import {
   type DigestSubscription,
 } from '@/lib/notifications/digest'
 import { sendPush } from '@/lib/notifications/send'
+import { disabledTypesByUser } from '@/lib/notifications/prefs'
 
 const DAILY_WINDOW_MS = 48 * 60 * 60 * 1000
 const WEEKLY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
@@ -46,9 +47,14 @@ export async function GET(req: Request) {
     now.getTime() + (edition === 'weekly' ? WEEKLY_WINDOW_MS : DAILY_WINDOW_MS),
   )
 
-  const [subsRes, followsRes, eventsRes] = await Promise.all([
+  const [subsRes, followsRes, prefsRes, eventsRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
     supabase.from('user_follows').select('user_id, group_id'),
+    supabase
+      .from('user_notification_settings')
+      .select('user_id, event_type')
+      .eq('enabled', false)
+      .eq('channel', 'push'),
     supabase
       .from('events')
       .select('group_id, title, start_at, type, groups!inner(name)')
@@ -57,7 +63,7 @@ export async function GET(req: Request) {
       .neq('status', 'cancelled'),
   ])
 
-  const err = subsRes.error ?? followsRes.error ?? eventsRes.error
+  const err = subsRes.error ?? followsRes.error ?? prefsRes.error ?? eventsRes.error
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
 
   const messages = buildDigest(
@@ -80,6 +86,7 @@ export async function GET(req: Request) {
       }),
     ),
     edition,
+    disabledTypesByUser(prefsRes.data ?? []),
   )
 
   let sent = 0
