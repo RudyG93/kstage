@@ -106,7 +106,7 @@
 Idées activables (ordre approximatif valeur/effort) :
 
 1. **Follows illimités visibles** — le cap free=10 existe déjà, il suffit d'un paywall UI. Le plus simple à activer.
-2. **Push personnalisés** — lead-times custom par type d'event (l'infra `user_notification_settings.lead_time_minutes` existe), rappels multiples (J-7 + J-1 + heure H).
+2. **Push personnalisés** — lead-times custom par type d'event (l'infra `user_notification_settings.lead_time_minutes` existe), rappels multiples (J-7 + J-1 + heure H). **Frontière posée 2026-07-05 (R1)** : le on/off par type est livré en free ; ce qui reste premium ici = les lead-times custom + multi-rappels.
 3. **Export calendrier** — flux iCal / sync Google Calendar des events suivis (déclencheur d'abonnement classique des apps calendrier).
 4. **Digest hebdo enrichi** — version email premium avec stats perso, teaser des drops de la semaine (l'infra send-digest existe).
 5. **Stats avancées + Wrapped** — page stats perso approfondie (distribution des notes, streaks, genres) + le Wrapped annuel partageable en premium early-access.
@@ -116,9 +116,16 @@ Idées activables (ordre approximatif valeur/effort) :
 
 Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `protect_profile_privileges` devra autoriser le service role). À cadrer le moment venu.
 
+## Roadmap R (actée 2026-07-05 — rétention/acquisition/monétisation)
+
+- ✅ **R1 Boucle push** — fait 2026-07-05 (opt-in onboarding, deep link digest, préférences par type ; cf. JOURNAL).
+- **R2 SEO programmatique** — sitemap dynamique (~940 pages invisibles aujourd'hui), JSON-LD MusicGroup/VideoObject, metadata manquantes, OG images dynamiques (version marque). En cours.
+- **R3 Export iCal** — feed .ics perso par token (Google/Apple Calendar). Utile à n=1, différenciant, futur déclencheur premium (frontière à poser à l'implémentation : ex. 1 calendrier free / multi-calendriers+filtres premium).
+- **R4 Fond de roulement** — boucle contribution admin (hub `/admin`, édition avant approbation, push contributeur, policies édition/suppression par l'auteur) + **self-host photos membres** (décision 2026-07-05 : script one-shot ~500 photos → bucket public Supabase Storage → update `photo_url` ; élimine le risque hotlinking kprofiles ET remplace le re-scrape fraîcheur) + polish home (Today/Tomorrow, « voir les N autres », agence).
+
 ## Ops manuelles en attente
 
-- **Re-scrape kprofiles des photos membres** (2026-07-03) : les photos datent du seed (aespa notamment) ; kprofiles est fragile → op manuelle ciblée sur les groupes phares via les scripts `scripts/roster/`, pas de cron. La fraîcheur du hero home vient désormais du thumbnail du dernier MV, ce qui réduit l'urgence.
+- ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.
 
 ## Reprises de l'ancien backlog (toujours pertinentes, non re-vérifiées par l'audit)
 
