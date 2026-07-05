@@ -1,8 +1,132 @@
 import { describe, it, expect } from 'vitest'
-import { splitUpcomingByWeek, splitUpcomingByBuckets, capLaterEvents } from './grouping'
+import {
+  splitUpcomingByWeek,
+  splitUpcomingByBuckets,
+  capLaterEvents,
+  groupMusicShowEpisodes,
+  lineupLabel,
+} from './grouping'
 import type { UpcomingEvent } from './queries'
 
 const ev = (id: string, start_at: string) => ({ id, start_at }) as unknown as UpcomingEvent
+
+// Fixture music_show réaliste (paires prod : Music Bank 2026-07-10, 5 groupes,
+// même title/start_at/source carrd — cf. JOURNAL 2026-07-05).
+const show = (
+  id: string,
+  groupName: string,
+  {
+    title = 'Music Bank',
+    start_at = '2026-07-10T08:00:00Z',
+    source_url = 'https://liveshowupdatess.carrd.co/',
+    episode_number = null as number | null,
+    type = 'music_show',
+    slug = null as string | null,
+  } = {},
+) =>
+  ({
+    id,
+    type,
+    title,
+    start_at,
+    source_url,
+    episode_number,
+    slug,
+    groups: { slug: groupName.toLowerCase(), name: groupName },
+  }) as unknown as UpcomingEvent
+
+describe('groupMusicShowEpisodes', () => {
+  it('fusionne un épisode à 5 groupes en 1 carte avec lineup (cas prod 2026-07-10)', () => {
+    const events = ['ATEEZ', 'Hearts2Hearts', 'izna', 'MEOVV', 'RIIZE'].map((g, i) =>
+      show(`e${i}`, g),
+    )
+    const grouped = groupMusicShowEpisodes(events)
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].id).toBe('e0') // représentant = 1re occurrence
+    expect(grouped[0].lineup?.map((e) => e.groups?.name)).toEqual([
+      'ATEEZ',
+      'Hearts2Hearts',
+      'izna',
+      'MEOVV',
+      'RIIZE',
+    ])
+  })
+
+  it('post-enrichissement mixte : les lignes YouTube restent individuelles', () => {
+    const events = [
+      show('a', 'ATEEZ', { source_url: 'https://www.youtube.com/watch?v=abc' }),
+      show('b', 'Hearts2Hearts'),
+      show('c', 'izna', { source_url: 'https://youtu.be/def' }),
+      show('d', 'MEOVV'),
+      show('e', 'RIIZE'),
+    ]
+    const grouped = groupMusicShowEpisodes(events)
+    // 2 individuelles (stages enrichis) + 1 groupée de 3 (carrd redondant).
+    expect(grouped).toHaveLength(3)
+    expect(grouped.find((e) => e.id === 'a')?.lineup).toBeUndefined()
+    expect(grouped.find((e) => e.id === 'c')?.lineup).toBeUndefined()
+    expect(grouped.find((e) => e.id === 'b')?.lineup?.map((e) => e.id)).toEqual(['b', 'd', 'e'])
+  })
+
+  it('episode_number : premier non-null du lineup exposé sur le représentant', () => {
+    const events = [
+      show('a', 'ATEEZ'),
+      show('b', 'RIIZE', { episode_number: 328 }),
+      show('c', 'izna'),
+    ]
+    const [rep] = groupMusicShowEpisodes(events)
+    expect(rep.episode_number).toBe(328)
+  })
+
+  it('pass-through : seuls les music_show fusionnent, tri global intact', () => {
+    const events = [
+      show('mv1', 'aespa', {
+        type: 'mv',
+        title: 'Whiplash',
+        start_at: '2026-07-09T09:00:00Z',
+        slug: 'whiplash',
+      }),
+      show('mb1', 'ATEEZ'),
+      show('mb2', 'RIIZE'),
+      show('anniv', 'ILLIT', {
+        type: 'anniversary',
+        title: 'Debut day',
+        start_at: '2026-07-11T00:00:00Z',
+      }),
+      show('ink1', 'aespa', { title: 'Inkigayo', start_at: '2026-07-12T06:50:00Z' }),
+      show('ink2', 'izna', { title: 'Inkigayo', start_at: '2026-07-12T06:50:00Z' }),
+    ]
+    const grouped = groupMusicShowEpisodes(events)
+    expect(grouped.map((e) => e.id)).toEqual(['mv1', 'mb1', 'anniv', 'ink1'])
+    expect(grouped.find((e) => e.id === 'mb1')?.lineup).toHaveLength(2)
+    expect(grouped.find((e) => e.id === 'ink1')?.lineup).toHaveLength(2)
+    expect(grouped.find((e) => e.id === 'mv1')?.lineup).toBeUndefined()
+  })
+
+  it('singleton : pas de champ lineup → rendu identique à aujourd’hui', () => {
+    const [rep] = groupMusicShowEpisodes([show('solo', 'ATEEZ')])
+    expect(rep.lineup).toBeUndefined()
+    expect(rep.id).toBe('solo')
+  })
+
+  it('liste vide → liste vide', () => {
+    expect(groupMusicShowEpisodes([])).toEqual([])
+  })
+})
+
+describe('lineupLabel', () => {
+  it('1 nom → tel quel', () => {
+    expect(lineupLabel(['ATEEZ'])).toBe('ATEEZ')
+  })
+  it('3 noms → liste complète sans +N', () => {
+    expect(lineupLabel(['ATEEZ', 'RIIZE', 'izna'])).toBe('ATEEZ, RIIZE, izna')
+  })
+  it('5 noms → 3 listés +2', () => {
+    expect(lineupLabel(['ATEEZ', 'RIIZE', 'izna', 'MEOVV', 'Hearts2Hearts'])).toBe(
+      'ATEEZ, RIIZE, izna +2',
+    )
+  })
+})
 
 describe('splitUpcomingByWeek', () => {
   const now = new Date('2026-06-01T00:00:00Z').getTime()

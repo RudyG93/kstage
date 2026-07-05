@@ -72,6 +72,39 @@ describe('buildDigest', () => {
     expect(message.payload.body).toBe('E1, E2, E3, +1 more')
   })
 
+  it('agrège un music show multi-groupes en une entrée (cas prod 5 groupes)', () => {
+    const follows = ['g1', 'g2', 'g3', 'g4', 'g5'].map((groupId) => ({ userId: 'u1', groupId }))
+    const names = ['ATEEZ', 'Hearts2Hearts', 'izna', 'MEOVV', 'RIIZE']
+    const events = names.map((name, i) => ({
+      ...ev(`g${i + 1}`, 'Music Bank', '2026-07-10T08:00:00Z', name),
+      type: 'music_show',
+    }))
+    const [message] = buildDigest([sub('u1')], follows, events)
+    expect(message.payload.title).toBe('1 upcoming event')
+    expect(message.payload.body).toBe('Music Bank (5 artists)')
+  })
+
+  it('agrège à 2 groupes : les noms sont listés', () => {
+    const follows = [
+      { userId: 'u1', groupId: 'g1' },
+      { userId: 'u1', groupId: 'g2' },
+    ]
+    const events = [
+      { ...ev('g1', 'Inkigayo', '2026-07-12T06:50:00Z', 'aespa'), type: 'music_show' },
+      { ...ev('g2', 'Inkigayo', '2026-07-12T06:50:00Z', 'ILLIT'), type: 'music_show' },
+    ]
+    const [message] = buildDigest([sub('u1')], follows, events)
+    expect(message.payload.body).toBe('Inkigayo (aespa, ILLIT)')
+  })
+
+  it('music show singleton : format historique « groupe — titre » conservé', () => {
+    const events = [
+      { ...ev('g1', 'Music Bank', '2026-07-10T08:00:00Z', 'ATEEZ'), type: 'music_show' },
+    ]
+    const [message] = buildDigest([sub('u1')], [{ userId: 'u1', groupId: 'g1' }], events)
+    expect(message.payload.body).toBe('ATEEZ — Music Bank')
+  })
+
   it('weekly edition: titre « Your k-pop week », body inchangé', () => {
     const follows = [{ userId: 'u1', groupId: 'g1' }]
     const events = [

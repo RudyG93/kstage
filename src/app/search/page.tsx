@@ -8,6 +8,7 @@ import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { searchGroups, searchMvs, searchEvents } from '@/lib/search/queries'
+import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
@@ -233,7 +234,7 @@ export default async function SearchPage({
               <Panel>
                 <PanelHeader label="Events" />
                 <div className="divide-y">
-                  {events.map((event) => (
+                  {groupMusicShowEpisodes(events).map((event) => (
                     <QueueRow key={event.id} event={event} showThumb />
                   ))}
                 </div>

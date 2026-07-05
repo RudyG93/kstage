@@ -6,10 +6,10 @@ import { NotifyCta } from './notify-cta'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
-import { formatDDay, formatKst, kstTime24h } from '@/lib/events/date'
+import { formatDDay, formatKst, kstTime24h, localDayKey } from '@/lib/events/date'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
+import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { LocalTime } from '@/components/local-time'
-import type { UpcomingEvent } from '@/lib/events/queries'
 
 // Hero « NEXT UP » : photo du groupe en fond (banner/landscape) + scrim de
 // marque pour la lisibilité, border-left primary, tags GROUP + D-day,
@@ -21,7 +21,7 @@ export function NextDropCard({
   latestMvImage = null,
   latestMvFallback = null,
 }: {
-  event: UpcomingEvent | null
+  event: GroupedUpcomingEvent | null
   isFollowing?: boolean
   isAuthed?: boolean
   // Thumbnail maxres du dernier MV du groupe : le visuel le plus FRAIS
@@ -32,8 +32,12 @@ export function NextDropCard({
 }) {
   if (!event) return null
   const group = event.groups
-  const title = displayEventTitle(event.title, group?.name)
-  const href = eventHref(event)
+  // Épisode groupé (music show multi-groupes) : la ligne méta liste le lineup
+  // et le titre pointe le jour du calendrier (cf. QueueRow, même règle).
+  const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
+  const title = displayEventTitle(event.title, lineup ? undefined : group?.name)
+  const dayKey = lineup ? localDayKey(event.start_at, 'Asia/Seoul') : null
+  const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)
   const hex = group?.color_hex ?? 'var(--primary)'
   // Fond : banner admin > thumbnail du dernier MV (ère en cours) > landscape ;
@@ -100,7 +104,11 @@ export function NextDropCard({
                 </Link>
               </h2>
               <p className="text-muted-foreground mt-0.5 text-[10.5px] font-medium">
-                {group?.name && <span>{group.name} · </span>}
+                {lineup ? (
+                  <span>{lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))} · </span>
+                ) : (
+                  group?.name && <span>{group.name} · </span>
+                )}
                 {dateLabel} · {kstTime24h(event.start_at)} KST ·{' '}
                 <LocalTime iso={event.start_at} withZone={false} fallback="—" /> local
               </p>

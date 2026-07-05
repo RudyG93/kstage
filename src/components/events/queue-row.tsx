@@ -2,12 +2,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
-import { formatDDay, kstTime24h } from '@/lib/events/date'
+import { formatDDay, kstTime24h, localDayKey } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
+import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { faceCrop } from '@/lib/images/cloudinary'
-import type { UpcomingEvent } from '@/lib/events/queries'
 
 // Ligne dense de queue (Data Desk §7.1.4) : border-left couleur type, colonne
 // D-day, tag type, titre + sous-titre, heure KST. Partagée par home, calendar,
@@ -18,7 +18,7 @@ export function QueueRow({
   showThumb = false,
   withCountdown = false,
 }: {
-  event: UpcomingEvent
+  event: GroupedUpcomingEvent
   timeZone?: string
   showThumb?: boolean
   // Countdown inline « in 07:22:14 » (teal) pour les events du soir (§7.2).
@@ -26,7 +26,12 @@ export function QueueRow({
 }) {
   const color = EVENT_TYPE_COLORS[event.type]
   const group = event.groups
-  const href = eventHref(event)
+  // Épisode groupé (music show multi-groupes, cf. groupMusicShowEpisodes) :
+  // le seul « lieu » commun au lineup est le jour dans le calendrier — jamais
+  // la page d'un groupe arbitraire.
+  const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
+  const dayKey = lineup ? localDayKey(event.start_at, timeZone) : null
+  const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)
   const dday = formatDDay(event.start_at, timeZone)
 
@@ -41,7 +46,7 @@ export function QueueRow({
         {dday}
       </span>
       {showThumb &&
-        (group?.image_url ? (
+        (!lineup && group?.image_url ? (
           <Image
             src={faceCrop(group.image_url, 80, 80)}
             alt=""
@@ -56,7 +61,8 @@ export function QueueRow({
             className="gradient-signature flex size-10 shrink-0 items-center justify-center rounded-[7px] text-sm font-bold text-white"
             aria-hidden
           >
-            {group?.name?.[0] ?? '?'}
+            {/* Groupé : initiale du show (une photo de groupe serait arbitraire). */}
+            {lineup ? event.title[0] : (group?.name?.[0] ?? '?')}
           </span>
         ))}
       <span
@@ -67,10 +73,16 @@ export function QueueRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-semibold">
-          {displayEventTitle(event.title, group?.name, event.episode_number)}
+          {displayEventTitle(event.title, lineup ? undefined : group?.name, event.episode_number)}
         </span>
-        {group?.name && (
-          <span className="text-muted-foreground block truncate text-[10px]">{group.name}</span>
+        {lineup ? (
+          <span className="text-muted-foreground block truncate text-[10px]">
+            {lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))}
+          </span>
+        ) : (
+          group?.name && (
+            <span className="text-muted-foreground block truncate text-[10px]">{group.name}</span>
+          )
         )}
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">

@@ -9,6 +9,7 @@ import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey } from '@/lib/events/date'
 import { parseTypesParam } from '@/lib/events/filters'
+import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { createClient } from '@/lib/supabase/server'
 
 function parseMonth(raw?: string): { year: number; month: number } {
@@ -58,8 +59,10 @@ export default async function CalendarPage({
     getEventsForMonth({ year, month, groupSlugs, types }),
     wantAnniversaries ? getAnniversariesForMonth({ year, month, groupSlugs }) : Promise.resolve([]),
   ])
-  const events = [...dbEvents, ...anniversaries].sort((a, b) =>
-    a.start_at.localeCompare(b.start_at),
+  // Groupement music shows par épisode : compteur FilterChips et cellules du
+  // mois comptent des cartes, pas des lignes brutes.
+  const events = groupMusicShowEpisodes(
+    [...dbEvents, ...anniversaries].sort((a, b) => a.start_at.localeCompare(b.start_at)),
   )
 
   return (
