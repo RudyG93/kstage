@@ -7,6 +7,7 @@ import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/event
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
+import { isSyntheticSlot } from '@/lib/events/show-slots'
 import { faceCrop } from '@/lib/images/cloudinary'
 
 // Ligne dense de queue (Data Desk §7.1.4) : border-left couleur type, colonne
@@ -30,7 +31,10 @@ export function QueueRow({
   // le seul « lieu » commun au lineup est le jour dans le calendrier — jamais
   // la page d'un groupe arbitraire.
   const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
-  const dayKey = lineup ? localDayKey(event.start_at, timeZone) : null
+  // Slot synthétique (show-slots.ts) : pas de groupe → son « lieu » est le
+  // jour dans le calendrier, comme un épisode groupé.
+  const slot = isSyntheticSlot(event)
+  const dayKey = lineup || slot ? localDayKey(event.start_at, timeZone) : null
   const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)
   const dday = formatDDay(event.start_at, timeZone)
@@ -61,8 +65,8 @@ export function QueueRow({
             className="gradient-signature flex size-10 shrink-0 items-center justify-center rounded-[7px] text-sm font-bold text-white"
             aria-hidden
           >
-            {/* Groupé : initiale du show (une photo de groupe serait arbitraire). */}
-            {lineup ? event.title[0] : (group?.name?.[0] ?? '?')}
+            {/* Groupé/slot : initiale du show (une photo de groupe serait arbitraire). */}
+            {lineup || slot ? event.title[0] : (group?.name?.[0] ?? '?')}
           </span>
         ))}
       <span
@@ -79,6 +83,8 @@ export function QueueRow({
           <span className="text-muted-foreground block truncate text-[10px]">
             {lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))}
           </span>
+        ) : slot ? (
+          <span className="text-muted-foreground block truncate text-[10px]">Lineup TBA</span>
         ) : (
           group?.name && (
             <span className="text-muted-foreground block truncate text-[10px]">{group.name}</span>

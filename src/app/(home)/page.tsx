@@ -20,6 +20,7 @@ import {
 } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
+import { generateShowSlots } from '@/lib/events/show-slots'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus, getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
@@ -131,6 +132,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   const followCounts = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const tickerItems = buildTickerItems(pickTickerEvents(globalEvents, followCounts, 8))
 
+  // Week glance : complétée par les slots hebdo synthétiques des 6 shows
+  // (P0.8) — dédupliqués contre les épisodes réels GLOBAUX (pas seulement
+  // suivis) : « Lineup TBA » ne doit jamais s'afficher quand le lineup est
+  // déjà connu quelque part.
+  const wantShows = types.length === 0 || types.includes('music_show')
+  const weekBase = merged.length > 0 ? merged : globalGrouped
+  // Fenêtre par défaut du générateur : [maintenant, +7 j).
+  const weekSlots = wantShows ? generateShowSlots({ existing: [...dbEvents, ...globalEvents] }) : []
+  const weekEvents = [...weekBase, ...weekSlots].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
+  )
+
   return (
     <>
       <Ticker items={tickerItems} />
@@ -182,7 +195,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
                 </div>
               </Panel>
             )}
-            <WeekGlance events={merged.length > 0 ? merged : globalGrouped} timeZone={timeZone} />
+            <WeekGlance events={weekEvents} timeZone={timeZone} />
             <FreshDrops mvs={freshMvs} ratings={ratings} />
             {/* Safari iOS hors standalone uniquement (auto-gated) — fin de scroll,
                 l'user a déjà consommé sa valeur, zéro pollution du premier écran. */}
