@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from 'react'
 import Link from 'next/link'
 import { HeartIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { toggleFollow } from '@/lib/follows/actions'
 import { cn } from '@/lib/utils'
@@ -75,7 +76,14 @@ export function FollowButton({
   function onClick() {
     startTransition(async () => {
       setOptimistic(!optimistic)
-      await toggleFollow(groupId, optimistic)
+      try {
+        await toggleFollow(groupId, optimistic)
+      } catch {
+        // useOptimistic se réinitialise seul en fin de transition — sans ce
+        // catch l'échec (réseau, RLS) était totalement silencieux : l'user
+        // croyait que son clic n'avait rien fait.
+        toast.error("Couldn't update follow — please try again.")
+      }
     })
   }
 

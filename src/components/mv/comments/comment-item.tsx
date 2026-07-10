@@ -14,6 +14,7 @@ import { BODY_MAX } from '@/lib/comments/validation'
 import type { CommentEdit } from '@/lib/comments/queries'
 import { relativeTime } from '@/lib/events/date'
 import { Avatar } from '@/components/avatar'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { CommentCompose } from './comment-compose'
@@ -241,25 +242,68 @@ export function CommentItem({
 }
 
 function ReportButton({ commentId }: { commentId: string }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
   const [pending, startTransition] = useTransition()
-  function onReport() {
-    const reason = window.prompt('Why are you reporting this comment? (optional)')
-    if (reason === null) return // annulé
+
+  // Dialog stylé plutôt que window.prompt : plusieurs navigateurs mobiles et
+  // webviews in-app (Instagram/TikTok) ignorent prompt() sans erreur — le
+  // clic « Report » ne produisait alors rien du tout.
+  function submit() {
     startTransition(async () => {
       const res = await reportComment(commentId, reason)
       if ('error' in res) toast.error(res.error)
-      else toast.success('Thanks — this comment has been reported.')
+      else {
+        toast.success('Thanks — this comment has been reported.')
+        setOpen(false)
+        setReason('')
+      }
     })
   }
+
   return (
-    <button
-      type="button"
-      onClick={onReport}
-      disabled={pending}
-      className="text-muted-foreground hover:text-destructive disabled:opacity-50"
-    >
-      Report
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        Report
+      </button>
+      {open && (
+        <Dialog open onOpenChange={(o) => !o && setOpen(false)}>
+          <DialogContent>
+            <DialogTitle>Report this comment</DialogTitle>
+            <label htmlFor={`report-reason-${commentId}`} className="sr-only">
+              Reason (optional)
+            </label>
+            <textarea
+              id={`report-reason-${commentId}`}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Why are you reporting this comment? (optional)"
+              rows={3}
+              maxLength={500}
+              className="border-border bg-secondary focus-visible:ring-ring mt-3 w-full resize-none rounded-md border px-2.5 py-1.5 text-sm outline-none focus-visible:ring-2"
+            />
+            <div className="mt-3 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setOpen(false)}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+              <Button type="button" size="sm" onClick={submit} disabled={pending}>
+                {pending ? 'Reporting…' : 'Report'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   )
 }
 

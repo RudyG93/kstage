@@ -1,9 +1,14 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-// Skeleton global (repli de toutes les routes sans loading.tsx propre) —
-// silhouette Data Desk : panneaux hairline 10px + lignes denses, à la place
-// des blocs arrondis v1.
-export default function Loading() {
+/**
+ * Skeleton de page Data Desk (panneaux hairline + lignes denses). Utilisé par
+ * les loading.tsx des pages LISTES uniquement — jamais au-dessus d'un segment
+ * dynamique qui peut notFound() : un boundary de loading force le streaming du
+ * shell et fige le statut HTTP à 200 avant le lookup → soft-404 (les slugs
+ * inexistants répondaient 200 sur tout le site tant que le loading était à la
+ * racine, audit 2026-07-10).
+ */
+export function PageSkeleton() {
   return (
     <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
