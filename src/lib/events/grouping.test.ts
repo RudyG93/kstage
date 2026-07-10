@@ -19,6 +19,7 @@ const show = (
     title = 'Music Bank',
     start_at = '2026-07-10T08:00:00Z',
     source_url = 'https://liveshowupdatess.carrd.co/',
+    stage_url = null as string | null,
     episode_number = null as number | null,
     type = 'music_show',
     slug = null as string | null,
@@ -31,6 +32,7 @@ const show = (
     title,
     start_at,
     source_url,
+    stage_url,
     episode_number,
     slug,
     groups: { slug: groupName.toLowerCase(), name: groupName },
@@ -53,11 +55,11 @@ describe('groupMusicShowEpisodes', () => {
     ])
   })
 
-  it('post-enrichissement mixte : les lignes YouTube restent individuelles', () => {
+  it('post-enrichissement mixte : les lignes avec stage_url restent individuelles', () => {
     const events = [
-      show('a', 'ATEEZ', { source_url: 'https://www.youtube.com/watch?v=abc' }),
+      show('a', 'ATEEZ', { stage_url: 'https://www.youtube.com/watch?v=abc' }),
       show('b', 'Hearts2Hearts'),
-      show('c', 'izna', { source_url: 'https://youtu.be/def' }),
+      show('c', 'izna', { stage_url: 'https://youtu.be/def' }),
       show('d', 'MEOVV'),
       show('e', 'RIIZE'),
     ]
@@ -104,14 +106,14 @@ describe('groupMusicShowEpisodes', () => {
     expect(grouped.find((e) => e.id === 'mv1')?.lineup).toBeUndefined()
   })
 
-  it('doublon DB par (groupe, épisode) : la row enrichie gagne (bug re-insert carrd)', () => {
-    // Cas prod 2026-07-02 : chaque groupe a une row carrd ET une row stage
-    // YouTube pour le même épisode (l'enrichissement change source_url = clé
-    // d'idempotence → le scrape suivant réinsère la carrd).
+  it('doublon DB par (groupe, épisode) : la row enrichie gagne (défense en profondeur)', () => {
+    // Régression historique (prod 2026-07-02, corrigée par la migration 0039) :
+    // chaque groupe avait une row carrd ET une row enrichie pour le même
+    // épisode. La dédup display-level est conservée en garde-fou.
     const events = [
       show('a-carrd', 'ATEEZ'),
-      show('a-stage', 'ATEEZ', { source_url: 'https://www.youtube.com/watch?v=abc' }),
-      show('b-stage', 'RIIZE', { source_url: 'https://www.youtube.com/watch?v=def' }),
+      show('a-stage', 'ATEEZ', { stage_url: 'https://www.youtube.com/watch?v=abc' }),
+      show('b-stage', 'RIIZE', { stage_url: 'https://www.youtube.com/watch?v=def' }),
       show('b-carrd', 'RIIZE'),
     ]
     const grouped = groupMusicShowEpisodes(events)

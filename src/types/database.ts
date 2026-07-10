@@ -378,6 +378,7 @@ export type Database = {
           slug: string | null
           source_id: string | null
           source_url: string | null
+          stage_url: string | null
           start_at: string
           status: Database["public"]["Enums"]["event_status"]
           title: string
@@ -397,6 +398,7 @@ export type Database = {
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
+          stage_url?: string | null
           start_at: string
           status?: Database["public"]["Enums"]["event_status"]
           title: string
@@ -416,6 +418,7 @@ export type Database = {
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
+          stage_url?: string | null
           start_at?: string
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
