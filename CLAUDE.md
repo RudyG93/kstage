@@ -83,6 +83,7 @@ Validation : voir `feedback-pre-clear-ritual`, `feedback-real-data-over-fixtures
 - **Une branche par feature** : `feat/auth`, `feat/scraping-youtube`, `fix/timezone-bug`…
 - Commits **petits, atomiques**, messages clairs (FR ou EN, mais cohérent).
 - **PR vers `main` même en solo** (force la relecture).
+- **Après chaque merge sur `main` : vérifier le run CI via l'API GitHub** (`curl -s "https://api.github.com/repos/RudyG93/kstage/actions/runs?per_page=1"` → `conclusion: success`). « Vert en local » ne prouve pas la CI : elle est restée rouge du 17/06 au 05/07 (~68 runs, divergence ICU Node 20 vs 22) sans que personne ne s'en aperçoive.
 
 ---
 
