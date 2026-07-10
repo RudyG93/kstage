@@ -209,11 +209,11 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 
 > **L'historique daté vit dans `docs/JOURNAL.md`** (journal de bord, une entrée par lot mergé). Ici : uniquement l'état courant, rafraîchi à chaque changement de phase/chiffres.
 
-### État au 2026-07-05 (soir)
+### État au 2026-07-11 (nuit)
 
-**Phase** : MVP + V2 beachhead + Data Desk + **roadmap R livrée jusqu'à R3** — socle sécurité (rate-limits atomiques, CSP enforce), regroupement music shows par épisode, boucle push complète (opt-in onboarding, préférences par type, deep links), SEO programmatique (sitemap 1403 URLs, JSON-LD, OG dynamiques), **export iCal par token** (`/account` → Calendar feed). CI e2e active et stable (build prod). Prochain : R4 (boucle contribution admin, self-host photos, polish home) + bug racine doublons music_show (`SCRAPING.md §3.14`). Roadmap : `docs/BACKLOG.md` · historique : `docs/JOURNAL.md` · risques : `docs/RISKS.md`.
+**Phase** : MVP + V2 beachhead + Data Desk + roadmap R jusqu'à R3 + **opération « launchable » 2026-07-11** (audit multi-agents 6 dimensions → 8 lots mergés) — CI reverte (bug ICU `hourCycle`, rouge depuis le 17/06 sans que personne ne s'en aperçoive), cause racine doublons music_show soldée (`stage_url`, migration 0040 + index unique), photos membres nettoyées (14 fausses trouvées par l'audit) puis **self-hostées** (492/492 → bucket Storage `member-photos`), fixes UX (dialogs scrollables + X, échecs silencieux toastés, fin du **soft-404 global** — vrais 404), **a11y AA sur le thème par défaut** (`--faint` 5.1:1, ticker pausable, combobox ARIA), cohérence design (rayons tokens, cartes v1 soldées), **slots hebdo synthétiques des 6 shows** (« Lineup TBA », P0.8 tranché) + 4 groupes fantômes remplis (+41 MVs via chaînes labels vérifiées), perf (Promise.all home, ingest batché, policies 0041). Reste : boucle contribution admin (hors périmètre — décision Rudy « focus utilisateur final ») + actions Rudy (E2E_ENABLED + 4 secrets GitHub, sitemap Search Console). Roadmap : `docs/BACKLOG.md` · historique : `docs/JOURNAL.md` · risques : `docs/RISKS.md`.
 
-**Chiffres prod** : 114 groupes (31 solistes), ~826 MVs propres, **515 tests unitaires + 27 E2E** (job CI contre build prod). App : https://kstage.vercel.app/
+**Chiffres prod** : 112 groupes (31 solistes), ~871 MVs propres, **523 tests unitaires + 27 E2E** (job e2e gated `E2E_ENABLED`, variable pas encore posée — action Rudy). App : https://kstage.vercel.app/
 
 **Pages live** : `/` (landing / home 8 modules), `/calendar`, `/mvs`, `/mv/[slug]` (ratings + comments), `/groups` (+tab solo), `/groups/[slug]`, `/artists/[slug]`, `/search`, `/u/[username]`, `/account` (notifs par type + calendar feed), `/admin/*`, `/api/ical/[token]`.
 
