@@ -86,9 +86,14 @@ export function formatKst(iso: string, opts: Intl.DateTimeFormatOptions): string
   return new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', ...opts }).format(new Date(iso))
 }
 
-/** Heure KST en 24 h (« 18:00 ») — la référence k-pop, mise en avant. */
+/**
+ * Heure KST en 24 h (« 18:00 ») — la référence k-pop, mise en avant.
+ * `hourCycle: 'h23'` (pas `hour12: false`) : selon la version ICU, hour12:false
+ * résout en cycle h24 et rend minuit « 24:30 » (Node 20 = la CI rouge du
+ * 17/06 → 05/07 ; idem vieux navigateurs). h23 garantit « 00:30 » partout.
+ */
 export function kstTime24h(iso: string): string {
-  return formatKst(iso, { hour: '2-digit', minute: '2-digit', hour12: false })
+  return formatKst(iso, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 }
 
 /**
