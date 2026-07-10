@@ -79,7 +79,7 @@ export function HeaderSearch() {
 
   return (
     <div ref={rootRef} className="relative w-full">
-      <div className="bg-secondary focus-within:border-primary/50 focus-within:ring-primary/15 flex h-[33px] items-center gap-2 rounded-[8px] border px-3 transition-shadow focus-within:ring-2">
+      <div className="bg-secondary focus-within:border-primary/50 focus-within:ring-primary/15 flex h-[33px] items-center gap-2 rounded-md border px-3 transition-shadow focus-within:ring-2">
         <SearchIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden />
         <input
           type="search"
@@ -127,7 +127,7 @@ export function HeaderSearch() {
           // tabIndex -1 : focusable programmatiquement (exigence du rôle) ;
           // le focus réel circule sur les options (roving focus).
           tabIndex={-1}
-          className="bg-card absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-[10px] border shadow-lg"
+          className="bg-card absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-lg border shadow-lg"
           onKeyDown={(e) => {
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Escape') return
             e.preventDefault()
@@ -166,12 +166,12 @@ export function HeaderSearch() {
                       width={24}
                       height={24}
                       unoptimized
-                      className="size-6 shrink-0 rounded-[6px] object-cover"
+                      className="size-6 shrink-0 rounded-sm object-cover"
                       aria-hidden
                     />
                   ) : (
                     <span
-                      className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-[6px] text-[10px] font-bold text-white"
+                      className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white"
                       aria-hidden
                     >
                       {g.name[0]}

@@ -56,10 +56,7 @@ export function LikeButton({
       aria-pressed={optimistic.liked}
       aria-label={optimistic.liked ? 'Unlike' : 'Like'}
     >
-      <HeartIcon
-        className={cn('size-4', optimistic.liked && 'fill-red-500 text-red-500')}
-        aria-hidden
-      />
+      <HeartIcon className={cn('size-4', optimistic.liked && 'fill-live text-live')} aria-hidden />
       {optimistic.count > 0 ? optimistic.count : ''}
     </Button>
   )

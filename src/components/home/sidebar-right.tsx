@@ -68,7 +68,7 @@ export async function SidebarRight() {
       <CommentsRealtime />
 
       {/* Recent comebacks — au-dessus de Recent discussions (§7.1) */}
-      <section className="bg-card rounded-[10px] border p-4">
+      <section className="bg-card rounded-lg border p-4">
         <div className="mb-3">
           <SectionLabel>Recent comebacks</SectionLabel>
         </div>
@@ -127,7 +127,7 @@ export async function SidebarRight() {
           dépend de l'audience (règle de gel) → affichée seulement avec assez de
           matière. */}
       {discussions.length >= DISCUSSIONS_MIN && (
-        <section className="bg-card rounded-[10px] border p-4">
+        <section className="bg-card rounded-lg border p-4">
           <div className="mb-3">
             <SectionLabel>Recent discussions</SectionLabel>
           </div>

@@ -58,7 +58,7 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
               est le SEUL encodage du type sur cette carte. Le hex de marque
               reste sur la barre/dégradé décoratifs. */}
           <span
-            className="label-data-inline rounded-[6px] px-1.5 py-0.5 text-[10px]"
+            className="label-data-inline rounded-sm px-1.5 py-0.5 text-[10px]"
             style={{
               color: EVENT_TYPE_COLORS[event.type],
               backgroundColor: eventTypeTint(EVENT_TYPE_COLORS[event.type]),

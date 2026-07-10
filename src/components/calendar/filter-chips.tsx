@@ -46,7 +46,7 @@ export function FilterChips({ eventCount, isAuthed }: { eventCount: number; isAu
     })
 
   const chipBase =
-    'label-data-inline inline-flex shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+    'label-data-inline inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
 
   return (
     <div className="space-y-2">

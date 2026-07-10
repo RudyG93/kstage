@@ -5,7 +5,7 @@ import { faceCrop } from '@/lib/images/cloudinary'
 import type { MemberSummary } from '@/lib/members/queries'
 
 /**
- * Carte membre 84px du rail (§7.6.5) : portrait rounded-[12px] (fallback
+ * Carte membre 84px du rail (§7.6.5) : portrait rounded-xl (fallback
  * gradient couleur groupe + initiale), nom, position. Bias = ring dorée + ★.
  *
  * Volontairement non navigable : la page membre `/artists/[slug]` est quasi-vide
@@ -28,7 +28,7 @@ export function MemberCard({
     <div className={cn('block', isDimmed && 'opacity-70')}>
       <div
         className={cn(
-          'bg-muted relative aspect-square w-full overflow-hidden rounded-[12px]',
+          'bg-muted relative aspect-square w-full overflow-hidden rounded-xl',
           isBias && 'ring-amber ring-2',
         )}
       >

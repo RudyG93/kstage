@@ -55,7 +55,7 @@ export function AuthMenu({
       <DropdownMenuContent
         align="end"
         sideOffset={6}
-        className="bg-card min-w-48 rounded-[10px] border p-1 shadow-lg"
+        className="bg-card min-w-48 rounded-lg border p-1 shadow-lg"
       >
         {username && (
           <div className="border-b px-2.5 pt-1.5 pb-2">

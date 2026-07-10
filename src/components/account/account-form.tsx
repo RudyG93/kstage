@@ -64,7 +64,7 @@ export function AccountForm({
   }
 
   return (
-    <div className="bg-card border-border shadow-soft space-y-6 rounded-2xl border p-6">
+    <div className="bg-card space-y-6 rounded-lg border p-6">
       <div className="flex items-center gap-4">
         <Avatar
           email={email}
@@ -114,13 +114,13 @@ export function AccountForm({
             type="email"
             value={email}
             disabled
-            className={`${inputClass} opacity-60`}
+            className={`${inputClass} opacity-50`}
           />
         </div>
 
         {usernameError && <ErrorBanner>{usernameError}</ErrorBanner>}
         {ok && (
-          <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">
+          <p role="status" className="text-teal text-sm">
             Username saved.
           </p>
         )}

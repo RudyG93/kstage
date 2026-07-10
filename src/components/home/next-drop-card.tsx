@@ -75,11 +75,11 @@ export function NextDropCard({
                 alt={group.name}
                 width={62}
                 height={62}
-                className="size-[62px] shrink-0 rounded-[10px] object-cover"
+                className="size-[62px] shrink-0 rounded-lg object-cover"
               />
             ) : (
               <div
-                className="gradient-signature flex size-[62px] shrink-0 items-center justify-center rounded-[10px] text-xl font-bold text-white"
+                className="gradient-signature flex size-[62px] shrink-0 items-center justify-center rounded-lg text-xl font-bold text-white"
                 aria-hidden
               >
                 {group?.name?.[0] ?? '?'}

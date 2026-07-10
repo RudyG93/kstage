@@ -113,7 +113,7 @@ export function FollowButton({
         className={cn(iconClass, className)}
       >
         <HeartIcon
-          className={cn(heartSize, optimistic ? 'fill-red-500 text-red-500' : 'text-white')}
+          className={cn(heartSize, optimistic ? 'fill-live text-live' : 'text-white')}
           aria-hidden
         />
       </button>

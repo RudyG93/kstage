@@ -7,7 +7,7 @@ export function SortToggle({ slug, sort }: { slug: string; sort: SortMode }) {
   return (
     <nav
       aria-label="Sort comments"
-      className="bg-secondary inline-flex gap-0.5 rounded-[8px] border p-0.5"
+      className="bg-secondary inline-flex gap-0.5 rounded-md border p-0.5"
     >
       <SortLink slug={slug} target="top" current={sort}>
         Top
@@ -39,7 +39,7 @@ function SortLink({
       aria-current={isActive ? 'page' : undefined}
       scroll={false}
       className={cn(
-        'label-data-inline focus-visible:ring-ring/50 rounded-[6px] px-2.5 py-1 text-[9px] outline-none focus-visible:ring-2',
+        'label-data-inline focus-visible:ring-ring/50 rounded-sm px-2.5 py-1 text-[9px] outline-none focus-visible:ring-2',
         isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
       )}
     >

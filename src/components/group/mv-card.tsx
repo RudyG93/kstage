@@ -40,7 +40,7 @@ export function MvCard({
       href={`/mv/${mv.slug}`}
       draggable={false}
       className={cn(
-        'group bg-card focus-visible:ring-primary/40 block rounded-[10px] border p-[7px] transition-colors focus-visible:ring-2 focus-visible:outline-none',
+        'group bg-card focus-visible:ring-primary/40 block rounded-lg border p-[7px] transition-colors focus-visible:ring-2 focus-visible:outline-none',
         showRateChip && unrated ? 'border-primary/45 border-dashed' : 'hover:border-border',
       )}
     >
@@ -90,7 +90,7 @@ export function MvCard({
             {showRateChip && (
               <span
                 className={cn(
-                  'label-data-inline ml-auto rounded-[6px] px-2 py-1 text-[8.5px]',
+                  'label-data-inline ml-auto rounded-sm px-2 py-1 text-[8.5px]',
                   unrated
                     ? 'bg-primary text-primary-foreground'
                     : 'border-primary/50 text-primary border',

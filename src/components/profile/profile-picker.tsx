@@ -60,7 +60,7 @@ export function ProfilePicker({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-card border-border shadow-soft hover:bg-muted/40 flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-colors"
+        className="bg-card hover:bg-muted/40 flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-colors"
       >
         {value ? (
           <>

@@ -40,7 +40,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
         onClick={() => setOpen(true)}
         className={
           triggerClassName ??
-          'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex cursor-pointer items-center gap-1 rounded-[6px] px-2 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2'
+          'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2'
         }
       >
         <MessageSquarePlus className="size-3.5" aria-hidden />
@@ -61,7 +61,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
                 aria-checked={kind === k}
                 onClick={() => setKind(k)}
                 className={cn(
-                  'label-data-inline cursor-pointer rounded-[6px] px-3 py-1.5 text-[9px] transition-colors',
+                  'label-data-inline cursor-pointer rounded-sm px-3 py-1.5 text-[9px] transition-colors',
                   kind === k
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-muted-foreground hover:text-foreground',
@@ -82,7 +82,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
                 ? 'What went wrong? Where, and what did you expect?'
                 : 'What would make KStage better for you?'
             }
-            className="bg-secondary focus-visible:ring-primary/50 w-full resize-y rounded-[10px] border px-3 py-2 text-sm outline-none focus-visible:ring-2"
+            className="bg-secondary focus-visible:ring-primary/50 w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-2"
           />
           <div className="flex items-center justify-between text-xs">
             <span
@@ -97,7 +97,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
             <button
               type="submit"
               disabled={pending || chars < 10 || chars > BODY_MAX}
-              className="label-data-inline bg-primary text-primary-foreground focus-visible:ring-ring/50 rounded-[6px] px-3.5 py-2 text-[9px] outline-none focus-visible:ring-2 disabled:opacity-40"
+              className="label-data-inline bg-primary text-primary-foreground focus-visible:ring-ring/50 rounded-sm px-3.5 py-2 text-[9px] outline-none focus-visible:ring-2 disabled:opacity-50"
             >
               {pending ? 'Sending…' : 'Send'}
             </button>

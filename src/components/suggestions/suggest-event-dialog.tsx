@@ -34,7 +34,7 @@ export function SuggestEventDialog({
         className={
           // Discret (retour Rudy 2026-07-03) : ghost, petit, en périphérie.
           triggerClassName ??
-          'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[9px] transition-colors outline-none focus-visible:ring-2'
+          'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-[9px] transition-colors outline-none focus-visible:ring-2'
         }
       >
         <Plus className="size-3.5" aria-hidden />
