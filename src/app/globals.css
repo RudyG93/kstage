@@ -152,7 +152,10 @@
   --amber: oklch(0.769 0.138 78.7); /* (#e3a83c) */
   --rose: oklch(0.668 0.176 3); /* (#e85d8a) */
   --live: oklch(0.669 0.219 20.9); /* LIVE NOW (#ff4757) */
-  --faint: oklch(0.514 0.03 266); /* micro-labels (#5f6779) */
+  /* micro-labels (#7e8699) — AA vérifié : 5.10:1 sur --card, 5.33:1 sur
+     --background (l'ancien 0.514/#5f6779 plafonnait à 3.3:1 : nav mobile,
+     en-têtes calendrier et stats illisibles en thème sombre par défaut). */
+  --faint: oklch(0.62 0.03 266);
 
   --chart-1: oklch(0.648 0.192 280.6);
   --chart-2: oklch(0.779 0.142 171.6);
