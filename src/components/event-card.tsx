@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
-import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
 import { formatKst } from '@/lib/events/date'
@@ -52,9 +52,17 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
       <div className="min-w-0 flex-1 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">{group?.name}</span>
+          {/* Label de type sur les tokens sémantiques calibrés contraste
+              (comme QueueRow/TypeBadge) — le hex de marque du groupe pouvait
+              être pastel (ILLIT #F5C6D6 ≈ 1.4:1 sur tint clair) et le label
+              est le SEUL encodage du type sur cette carte. Le hex de marque
+              reste sur la barre/dégradé décoratifs. */}
           <span
             className="label-data-inline rounded-[6px] px-1.5 py-0.5 text-[10px]"
-            style={{ color, backgroundColor: `${color}1f` }}
+            style={{
+              color: EVENT_TYPE_COLORS[event.type],
+              backgroundColor: eventTypeTint(EVENT_TYPE_COLORS[event.type]),
+            }}
           >
             {EVENT_TYPE_LABELS[event.type]}
           </span>

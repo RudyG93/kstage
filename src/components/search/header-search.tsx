@@ -99,13 +99,34 @@ export function HeaderSearch() {
           }}
           placeholder="Groups, MVs, events…"
           aria-label="Search"
+          // Pattern combobox WAI-ARIA : sans ces attributs un lecteur d'écran
+          // n'apprend jamais qu'un popup de résultats s'est ouvert (4.1.2).
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="header-search-listbox"
+          aria-autocomplete="list"
           className="placeholder:text-faint w-full bg-transparent text-xs outline-none [&::-webkit-search-cancel-button]:hidden"
         />
       </div>
 
+      {/* Annonce du nombre de résultats (4.1.3) — la mise à jour async du
+          dropdown est silencieuse pour un lecteur d'écran sans live region. */}
+      <div aria-live="polite" className="sr-only">
+        {open &&
+          results &&
+          (hasResults
+            ? `${results.groups.length + results.mvs.length} results available`
+            : 'No results')}
+      </div>
+
       {open && (
-        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- délégation clavier ; les cibles focusables sont les liens enfants
         <div
+          id="header-search-listbox"
+          role="listbox"
+          aria-label="Search results"
+          // tabIndex -1 : focusable programmatiquement (exigence du rôle) ;
+          // le focus réel circule sur les options (roving focus).
+          tabIndex={-1}
           className="bg-card absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-[10px] border shadow-lg"
           onKeyDown={(e) => {
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Escape') return
@@ -133,6 +154,8 @@ export function HeaderSearch() {
                   key={g.slug}
                   href={`/groups/${g.slug}`}
                   data-search-result
+                  role="option"
+                  aria-selected={false}
                   onClick={closeAndReset}
                   className="hover:bg-secondary/60 flex items-center gap-2.5 px-3 py-2 transition-colors"
                 >
@@ -165,6 +188,8 @@ export function HeaderSearch() {
                   key={m.slug ?? i}
                   href={m.slug ? `/mv/${m.slug}` : '/mvs'}
                   data-search-result
+                  role="option"
+                  aria-selected={false}
                   onClick={closeAndReset}
                   className="hover:bg-secondary/60 flex items-center gap-2.5 border-t px-3 py-2 transition-colors"
                 >
@@ -190,6 +215,8 @@ export function HeaderSearch() {
               <button
                 type="button"
                 data-search-result
+                role="option"
+                aria-selected={false}
                 onClick={submit}
                 className="label-data-inline text-primary hover:bg-secondary/60 w-full border-t px-3 py-2 text-left text-[9px] transition-colors"
               >

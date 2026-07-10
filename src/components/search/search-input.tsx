@@ -35,7 +35,9 @@ export function SearchInput() {
   }
 
   return (
-    <div className="border-primary/50 ring-primary/12 bg-secondary flex h-10 items-center gap-2 rounded-[10px] border px-3 ring-[3px]">
+    // Ring porté par focus-within (comme header-search), pas statique : un
+    // ring permanent rend le focus clavier invisible (WCAG 2.4.7).
+    <div className="focus-within:border-primary/50 focus-within:ring-primary/15 bg-secondary flex h-10 items-center gap-2 rounded-[10px] border px-3 transition-shadow focus-within:ring-2">
       <SearchIcon className="text-muted-foreground size-4 shrink-0" aria-hidden />
       <input
         ref={inputRef}
