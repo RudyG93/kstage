@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 // les modules d'écran (§7).
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <section className={cn('bg-card overflow-hidden rounded-[10px] border', className)}>
+    <section className={cn('bg-card overflow-hidden rounded-lg border', className)}>
       {children}
     </section>
   )

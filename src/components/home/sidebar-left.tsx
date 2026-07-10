@@ -56,7 +56,7 @@ export async function SidebarLeft({
   return (
     <div className="space-y-6 lg:sticky lg:top-20">
       {showFilters && groupFilter && (
-        <section className="bg-card rounded-[10px] border p-4">
+        <section className="bg-card rounded-lg border p-4">
           <div className="mb-3">
             <span className="label-data">Filters</span>
           </div>
@@ -66,7 +66,7 @@ export async function SidebarLeft({
         </section>
       )}
 
-      <section className="bg-card rounded-[10px] border p-4">
+      <section className="bg-card rounded-lg border p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="label-data">My groups</span>
           <Link href="/groups" className="text-muted-foreground hover:text-foreground text-xs">

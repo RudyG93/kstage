@@ -110,11 +110,11 @@ export default async function MvPage({
         {/* Player full-bleed sur mobile + back flottant (§7.7.1). */}
         <div className="relative">
           {videoId ? (
-            <div className="overflow-hidden md:rounded-[10px] [&_iframe]:!rounded-none md:[&_iframe]:!rounded-[10px]">
+            <div className="overflow-hidden md:rounded-lg [&_iframe]:!rounded-none md:[&_iframe]:!rounded-lg">
               <YouTubeEmbed videoId={videoId} title={title} />
             </div>
           ) : (
-            <div className="bg-muted text-muted-foreground flex aspect-video w-full items-center justify-center text-sm md:rounded-[10px]">
+            <div className="bg-muted text-muted-foreground flex aspect-video w-full items-center justify-center text-sm md:rounded-lg">
               Video unavailable
             </div>
           )}

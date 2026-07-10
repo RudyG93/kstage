@@ -36,7 +36,7 @@ export function SiteNav({ variant }: { variant: 'header' | 'bottom' }) {
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'label-data-inline rounded-[10px] px-3 py-2 text-[10px] transition-colors',
+                'label-data-inline rounded-lg px-3 py-2 text-[10px] transition-colors',
                 active
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground hover:text-foreground',

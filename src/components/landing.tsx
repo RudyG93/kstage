@@ -128,7 +128,7 @@ export function Landing({
                 key={g.id}
                 href={`/groups/${g.slug}`}
                 aria-label={g.name}
-                className="focus-visible:ring-ring/50 group relative aspect-square overflow-hidden rounded-[10px] outline-none focus-visible:ring-2"
+                className="focus-visible:ring-ring/50 group relative aspect-square overflow-hidden rounded-lg outline-none focus-visible:ring-2"
               >
                 <Image
                   src={faceCrop(g.image_url!, 400, 400)}
@@ -154,7 +154,7 @@ export function Landing({
             {remaining > 0 && (
               <Link
                 href="/groups"
-                className="bg-secondary hover:bg-muted focus-visible:ring-ring/50 flex aspect-square items-center justify-center rounded-[10px] border outline-none focus-visible:ring-2"
+                className="bg-secondary hover:bg-muted focus-visible:ring-ring/50 flex aspect-square items-center justify-center rounded-lg border outline-none focus-visible:ring-2"
               >
                 <span className="tabular text-muted-foreground text-lg font-bold">
                   +{remaining}
@@ -191,7 +191,7 @@ export function Landing({
       <section className="relative space-y-3">
         <Link
           href="/signup"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-[10px] text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
         >
           Create your calendar — free
           <ArrowRight className="size-4" aria-hidden />

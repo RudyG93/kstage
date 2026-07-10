@@ -115,7 +115,7 @@ export default async function GroupsPage({
             <div className="flex items-center gap-2">
               <nav
                 aria-label="Filter by kind"
-                className="bg-secondary inline-flex gap-0.5 rounded-[8px] border p-0.5"
+                className="bg-secondary inline-flex gap-0.5 rounded-md border p-0.5"
               >
                 <SegmentLink href={buildHref('groups', activeSort)} active={activeTab === 'groups'}>
                   Groups
@@ -171,7 +171,7 @@ function SegmentLink({
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'label-data-inline focus-visible:ring-ring/50 rounded-[6px] px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2',
+        'label-data-inline focus-visible:ring-ring/50 rounded-sm px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2',
         active ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
       )}
     >

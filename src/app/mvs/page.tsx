@@ -127,7 +127,7 @@ export default async function MvsPage({
                     href={s === 'new' ? '/mvs' : '/mvs?sort=top'}
                     aria-current={sort === s ? 'true' : undefined}
                     className={cn(
-                      'label-data-inline rounded-[6px] px-2 py-1 text-[9px] transition-colors',
+                      'label-data-inline rounded-sm px-2 py-1 text-[9px] transition-colors',
                       sort === s
                         ? 'bg-foreground text-background'
                         : 'bg-secondary text-muted-foreground hover:text-foreground',

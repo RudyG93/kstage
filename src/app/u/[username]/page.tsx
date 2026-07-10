@@ -189,11 +189,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         width={50}
                         height={28}
                         unoptimized
-                        className="h-7 w-[50px] shrink-0 rounded-[6px] object-cover"
+                        className="h-7 w-[50px] shrink-0 rounded-sm object-cover"
                         aria-hidden
                       />
                     ) : (
-                      <span className="bg-muted h-7 w-[50px] shrink-0 rounded-[6px]" aria-hidden />
+                      <span className="bg-muted h-7 w-[50px] shrink-0 rounded-sm" aria-hidden />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold">

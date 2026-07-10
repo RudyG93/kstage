@@ -130,7 +130,7 @@ export default async function RootLayout({
                   href="/"
                   className="flex shrink-0 items-center gap-1.5 transition-opacity hover:opacity-80"
                 >
-                  <span className="bg-primary text-primary-foreground font-heading flex size-[27px] items-center justify-center rounded-[8px] text-[14px] font-extrabold">
+                  <span className="bg-primary text-primary-foreground font-heading flex size-[27px] items-center justify-center rounded-md text-[14px] font-extrabold">
                     K
                   </span>
                   <span className="label-data-inline text-[12px] tracking-[0.22em]">Stage</span>
@@ -145,7 +145,7 @@ export default async function RootLayout({
                 </div>
                 <Link
                   href="/search"
-                  className="bg-secondary text-muted-foreground hover:text-foreground flex h-[33px] w-full min-w-0 items-center gap-2 rounded-[8px] border px-3 text-xs transition-colors md:hidden"
+                  className="bg-secondary text-muted-foreground hover:text-foreground flex h-[33px] w-full min-w-0 items-center gap-2 rounded-md border px-3 text-xs transition-colors md:hidden"
                 >
                   <SearchIcon className="size-3.5 shrink-0" />
                   <span className="truncate">Groups, MVs, events…</span>

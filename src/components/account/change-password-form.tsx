@@ -27,7 +27,7 @@ export function ChangePasswordForm() {
   const ok = state !== null && 'ok' in state
 
   return (
-    <div className="bg-card border-border shadow-soft space-y-6 rounded-2xl border p-6">
+    <div className="bg-card space-y-6 rounded-lg border p-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Password</h2>
         <p className="text-muted-foreground text-sm">
@@ -86,7 +86,7 @@ export function ChangePasswordForm() {
 
         {error && <ErrorBanner>{error}</ErrorBanner>}
         {ok && (
-          <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">
+          <p role="status" className="text-teal text-sm">
             Password updated.
           </p>
         )}

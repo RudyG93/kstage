@@ -63,7 +63,7 @@ export function WeekGlance({
               aria-pressed={isSelected}
               aria-label={`${day.weekday} ${day.dayNum}, ${day.count} event${day.count === 1 ? '' : 's'}`}
               className={cn(
-                'focus-visible:ring-ring/50 flex flex-col items-center rounded-[8px] border px-0 pt-1.5 pb-2 transition-colors outline-none focus-visible:ring-2',
+                'focus-visible:ring-ring/50 flex flex-col items-center rounded-md border px-0 pt-1.5 pb-2 transition-colors outline-none focus-visible:ring-2',
                 day.isToday
                   ? 'bg-primary/10 border-primary/55'
                   : 'bg-secondary hover:border-border border-transparent',

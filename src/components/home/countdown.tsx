@@ -62,7 +62,7 @@ export function Countdown({
       {cells.map((c) => (
         <div
           key={c.label}
-          className="bg-background/60 flex w-[49px] flex-col items-center rounded-[8px] border py-1.5"
+          className="bg-background/60 flex w-[49px] flex-col items-center rounded-md border py-1.5"
         >
           <span
             className={cn(

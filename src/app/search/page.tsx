@@ -72,7 +72,7 @@ export default async function SearchPage({
               href={segHref(s)}
               aria-current={seg === s ? 'true' : undefined}
               className={cn(
-                'label-data-inline rounded-[6px] px-2.5 py-1.5 text-[9px] transition-colors',
+                'label-data-inline rounded-sm px-2.5 py-1.5 text-[9px] transition-colors',
                 seg === s
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground',
@@ -112,12 +112,12 @@ export default async function SearchPage({
                         width={46}
                         height={46}
                         unoptimized
-                        className="size-[46px] shrink-0 rounded-[10px] object-cover"
+                        className="size-[46px] shrink-0 rounded-lg object-cover"
                         aria-hidden
                       />
                     ) : (
                       <span
-                        className="gradient-signature flex size-[46px] shrink-0 items-center justify-center rounded-[10px] text-lg font-bold text-white"
+                        className="gradient-signature flex size-[46px] shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white"
                         aria-hidden
                       >
                         {topResult.name[0]}
@@ -204,11 +204,11 @@ export default async function SearchPage({
                             width={56}
                             height={32}
                             unoptimized
-                            className="h-8 w-14 shrink-0 rounded-[6px] object-cover"
+                            className="h-8 w-14 shrink-0 rounded-sm object-cover"
                             aria-hidden
                           />
                         ) : (
-                          <span className="bg-muted h-8 w-14 shrink-0 rounded-[6px]" aria-hidden />
+                          <span className="bg-muted h-8 w-14 shrink-0 rounded-sm" aria-hidden />
                         )}
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs font-semibold">

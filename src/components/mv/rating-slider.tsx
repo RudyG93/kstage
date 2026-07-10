@@ -93,7 +93,7 @@ export function RatingSlider({ eventId, slug, initialScore, isAuthed }: Props) {
           type="button"
           onClick={save}
           disabled={pending || !dirty}
-          className="label-data-inline bg-primary text-primary-foreground focus-visible:ring-ring/50 rounded-[6px] px-3 py-1.5 text-[9px] transition-opacity outline-none focus-visible:ring-2 disabled:opacity-40"
+          className="label-data-inline bg-primary text-primary-foreground focus-visible:ring-ring/50 rounded-sm px-3 py-1.5 text-[9px] transition-opacity outline-none focus-visible:ring-2 disabled:opacity-40"
         >
           {pending ? 'Saving…' : savedScore !== null && !dirty ? 'Saved' : 'Save'}
         </button>

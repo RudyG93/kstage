@@ -96,13 +96,13 @@ export function CalendarMonth({
   }
 
   const arrowClass =
-    'hover:bg-muted focus-visible:ring-ring/50 inline-flex size-7 items-center justify-center rounded-[6px] outline-none focus-visible:ring-2'
+    'hover:bg-muted focus-visible:ring-ring/50 inline-flex size-7 items-center justify-center rounded-sm outline-none focus-visible:ring-2'
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Calendar</h1>
-        <div className="bg-secondary flex items-center gap-0.5 rounded-[8px] border p-0.5">
+        <div className="bg-secondary flex items-center gap-0.5 rounded-md border p-0.5">
           <Link href={monthHref(prev.y, prev.m)} aria-label="Previous month" className={arrowClass}>
             <ChevronLeftIcon className="size-[13px]" />
           </Link>
@@ -182,7 +182,7 @@ export function CalendarMonth({
       </Panel>
 
       {listedKeys.length === 0 ? (
-        <div className="text-muted-foreground rounded-[10px] border border-dashed px-6 py-12 text-center text-sm">
+        <div className="text-muted-foreground rounded-lg border border-dashed px-6 py-12 text-center text-sm">
           No events this month.
         </div>
       ) : (
@@ -195,7 +195,7 @@ export function CalendarMonth({
                   <span className="label-data">{dayTitle(key)}</span>
                   <span className="label-data-inline text-faint text-[9px]">0 events</span>
                 </div>
-                <div className="text-muted-foreground rounded-[10px] border border-dashed px-6 py-8 text-center text-sm">
+                <div className="text-muted-foreground rounded-lg border border-dashed px-6 py-8 text-center text-sm">
                   No events this day.
                 </div>
               </div>

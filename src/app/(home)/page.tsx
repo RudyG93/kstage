@@ -145,7 +145,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
             {followedIds.size === 0 && (
               <Link
                 href="/groups"
-                className="border-primary/40 bg-primary/8 hover:bg-primary/12 flex items-center justify-between gap-3 rounded-[10px] border border-dashed px-3.5 py-3 transition-colors"
+                className="border-primary/40 bg-primary/8 hover:bg-primary/12 flex items-center justify-between gap-3 rounded-lg border border-dashed px-3.5 py-3 transition-colors"
               >
                 <span>
                   <span className="block text-sm font-semibold">

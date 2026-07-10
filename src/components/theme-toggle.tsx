@@ -22,7 +22,7 @@ export function ThemeToggle() {
     >
       <span
         className={cn(
-          'bg-primary absolute top-0.5 left-0.5 flex size-5 items-center justify-center rounded-full text-white shadow-sm transition-transform duration-300',
+          'bg-primary text-primary-foreground absolute top-0.5 left-0.5 flex size-5 items-center justify-center rounded-full shadow-sm transition-transform duration-300',
           isDark ? 'translate-x-6' : 'translate-x-0',
         )}
         aria-hidden

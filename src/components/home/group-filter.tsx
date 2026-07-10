@@ -92,7 +92,7 @@ export function GroupFilter({
                   type="button"
                   onClick={() => toggle(g.slug)}
                   aria-pressed={checked}
-                  className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-[6px] px-1.5 py-1.5 text-left text-xs"
+                  className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-xs"
                 >
                   <span
                     className={cn(
@@ -116,7 +116,7 @@ export function GroupFilter({
         <button
           type="button"
           onClick={() => writeUrl('', 'push')}
-          className="label-data-inline text-muted-foreground hover:text-foreground flex-1 cursor-pointer rounded-[6px] px-2 py-1.5 text-[9px]"
+          className="label-data-inline text-muted-foreground hover:text-foreground flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-[9px]"
         >
           Reset
         </button>
@@ -124,7 +124,7 @@ export function GroupFilter({
           <button
             type="button"
             onClick={() => writeUrl(followedSlugs.join(','), 'push')}
-            className="label-data-inline bg-primary text-primary-foreground hover:bg-primary/90 flex-1 cursor-pointer rounded-[6px] px-2 py-1.5 text-[9px]"
+            className="label-data-inline bg-primary text-primary-foreground hover:bg-primary/90 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-[9px]"
           >
             My groups
           </button>
