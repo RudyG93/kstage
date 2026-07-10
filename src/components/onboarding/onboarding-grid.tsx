@@ -35,7 +35,15 @@ export function OnboardingGrid({ groups }: { groups: G[] }) {
   function go(follow: boolean) {
     startTransition(async () => {
       if (follow && selected.size > 0) {
-        await followMany([...selected])
+        try {
+          await followMany([...selected])
+        } catch {
+          // Un throw non-catché dans startTransition remonte à l'error
+          // boundary — écran d'erreur plein au moment le plus critique du
+          // funnel (juste après signup). L'user garde sa sélection et réessaie.
+          toast.error("Couldn't save your follows — please try again.")
+          return
+        }
         // Cap de la promesse : confirmer que le calendrier est prêt (audit UX
         // 2026-07-04, sinon l'arrivée sur la home semble sortie de nulle part).
         toast.success(

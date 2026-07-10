@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { setNotificationPref } from '@/lib/notifications/actions'
+import { getExistingSubscription } from '@/lib/notifications/subscribe'
 
 const PREF_ROWS = [
   { type: 'mv', label: 'MV drops', hint: 'New music videos from your groups' },
@@ -22,6 +23,23 @@ export function NotificationPrefs({ initial }: { initial: Record<string, boolean
   const [prefs, setPrefs] = useState<Record<string, boolean>>(initial)
   const [pendingType, setPendingType] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+  // null = état inconnu (avant le check async) → toggles actifs par défaut,
+  // pas de flash « désactivé » pour les abonnés.
+  const [subscribed, setSubscribed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void getExistingSubscription().then((sub) => {
+      if (!cancelled) setSubscribed(Boolean(sub))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Sans abonnement push, ces 5 toggles n'ont aucun effet — les manipuler
+  // donnait l'impression que « rien ne marche » (audit 2026-07-10).
+  const inert = subscribed === false
 
   function toggle(type: string) {
     const next = !(prefs[type] ?? true)
@@ -46,8 +64,14 @@ export function NotificationPrefs({ initial }: { initial: Record<string, boolean
         <p className="text-muted-foreground text-sm">
           Applies to your daily & weekly digests and comeback alerts.
         </p>
+        {inert && (
+          <p className="text-muted-foreground text-xs">
+            Enable push notifications above first — these preferences take effect once notifications
+            are on.
+          </p>
+        )}
       </div>
-      <div className="divide-y border-t">
+      <div className={inert ? 'divide-y border-t opacity-50' : 'divide-y border-t'}>
         {PREF_ROWS.map(({ type, label, hint }) => {
           const on = prefs[type] ?? true
           return (
@@ -61,7 +85,7 @@ export function NotificationPrefs({ initial }: { initial: Record<string, boolean
                 variant={on ? 'default' : 'secondary'}
                 size="sm"
                 onClick={() => toggle(type)}
-                disabled={pendingType === type}
+                disabled={pendingType === type || inert}
                 aria-pressed={on}
                 aria-label={`${label} notifications ${on ? 'on' : 'off'}`}
                 className="w-14 shrink-0"

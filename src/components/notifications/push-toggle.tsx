@@ -63,9 +63,12 @@ export function PushToggle() {
     <div className="rounded-lg border p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-0.5">
-          <p className="text-sm font-medium">Daily notifications</p>
+          {/* « Push notifications », pas « Daily » : le système couvre digest
+              quotidien + hebdo + alertes comeback — le copy sous-vendait le
+              hook de rétention au moment de l'opt-in (audit 2026-07-10). */}
+          <p className="text-sm font-medium">Push notifications</p>
           <p className="text-muted-foreground text-sm">
-            Get a daily push with your upcoming events.
+            Daily & weekly digests of your upcoming events, plus comeback alerts.
           </p>
         </div>
         {supported ? (
@@ -84,14 +87,17 @@ export function PushToggle() {
           <span className="text-muted-foreground text-sm">Not supported</span>
         )}
       </div>
+      {/* role=alert : ces retours arrivent après une action async sans
+          déplacement de focus — sans live region, un lecteur d'écran n'entend
+          jamais l'échec (WCAG 4.1.3). */}
       {denied && !enabled && (
-        <p className="text-muted-foreground mt-3 text-xs">
+        <p role="alert" className="text-muted-foreground mt-3 text-xs">
           Notifications are blocked in your browser settings. Re-enable them for this site to turn
-          on daily reminders.
+          on push reminders.
         </p>
       )}
       {failed && (
-        <p className="text-destructive mt-3 text-xs">
+        <p role="alert" className="text-destructive mt-3 text-xs">
           Couldn&apos;t update notifications. Please try again.
         </p>
       )}

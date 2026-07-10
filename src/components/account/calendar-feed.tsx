@@ -25,6 +25,14 @@ export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
   }
 
   function regenerate() {
+    // Irréversible pour les calendriers déjà abonnés (l'ancien token meurt,
+    // la sync s'arrête sans erreur visible côté Google/Apple) → confirmation.
+    if (
+      !window.confirm(
+        'Reset the feed URL? Calendars subscribed to the old URL will stop syncing until you re-subscribe with the new one.',
+      )
+    )
+      return
     startTransition(async () => {
       try {
         await regenerateCalendarFeedToken()
