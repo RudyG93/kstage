@@ -148,7 +148,7 @@ export async function searchMvs(q: string, limit = 6) {
 export type SearchMv = Awaited<ReturnType<typeof searchMvs>>[number]
 
 const EVENT_SELECT =
-  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, stage_url, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 export async function searchEvents(q: string, limit = 6) {
   const needle = sanitizeIlike(q)

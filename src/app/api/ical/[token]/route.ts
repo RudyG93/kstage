@@ -50,7 +50,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
       supabase
         .from('events')
         .select(
-          'id, group_id, slug, title, type, start_at, end_at, status, episode_number, source_url, created_at, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)',
+          'id, group_id, slug, title, type, start_at, end_at, status, episode_number, source_url, stage_url, created_at, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)',
         )
         .in('group_id', groupIds)
         .gte('start_at', since)

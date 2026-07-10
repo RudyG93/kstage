@@ -92,12 +92,15 @@ export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupR
  * un event par groupe matché, tous avec la même source_url ; un re-scrape ne
  * duplique pas. Ne touche pas `last_scraped_at` (responsabilité de l'appelant).
  *
- * `opts.crossSourceDedupeDays` (P0.7) : évite les doublons calendrier quand deux
- * sources annoncent le même comeback. Avant d'insérer, on skippe s'il existe
- * déjà une release pour ce groupe à ±N jours provenant d'une **autre** source
- * (`source_id` différent). La 2ᵉ source ne fait alors que combler les trous de
- * la primaire, sans dupliquer. N'affecte pas les entrées multiples d'une même
- * source (le filtre porte sur `source_id`, pas `source_url`).
+ * `opts.crossSourceDedupeDays` (P0.7, élargi 2026-07-11) : évite les doublons
+ * calendrier quand le même comeback est annoncé deux fois — par une autre
+ * source OU par la même source sous deux URLs différentes (kpopofficial poste
+ * une entrée placeholder « Comeback with Full Album in July » puis l'entrée
+ * album finalisée : 2 source_url distincts, même groupe à ±1 j — doublon réel
+ * fromis_9 du 2026-07-08, cf. SCRAPING.md §3.15). Avant d'insérer, on skippe
+ * s'il existe déjà une release pour ce groupe à ±N jours, peu importe la
+ * source. Tradeoff assumé : deux vraies releases distinctes d'un même groupe
+ * à < N jours seraient fusionnées (rare, déjà accepté cross-source).
  */
 export async function ingestComebacks(
   entries: readonly ParsedComeback[],
@@ -135,7 +138,8 @@ export async function ingestComebacks(
           .select('id')
           .eq('group_id', group.id)
           .eq('type', 'release')
-          .neq('source_id', sourceId)
+          // Pas de .neq('source_id') : la fenêtre couvre aussi les entrées de
+          // la MÊME source sous une autre URL (placeholder vs album finalisé).
           .gte('start_at', lo)
           .lte('start_at', hi)
           .limit(1)

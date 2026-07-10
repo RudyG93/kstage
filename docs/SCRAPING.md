@@ -240,15 +240,28 @@ select a.title, b.title from mv a join mv b
 
 **Vérification** : SQL zéro pattern restant + 13 fixtures de titres réels prod dans `is-official-mv.test.ts` / `group-match.test.ts`. Post-purge : 815 MVs propres.
 
-### 3.14 — Doublons music_show : l'enrichissement mute la clé d'idempotence (découvert 2026-07-05, cause racine OUVERTE)
+### 3.14 — Doublons music_show : l'enrichissement mute la clé d'idempotence (découvert 2026-07-05, **CORRIGÉ 2026-07-11, migration 0040**)
 
-**Symptôme** : le même (groupe, épisode) existe en **double** en DB — une row carrd + une row stage YouTube (14 paires en prod au 2026-07-05). Visible sur les jours passés du calendrier et dans le feed iCal (épisode fusionné + stages individuels pour le même show).
+**Symptôme** : le même (groupe, épisode) existait en **double** en DB — une row carrd + une row stage YouTube (14 paires au 2026-07-05, 16 rows au 07-10, le bug grandissait à chaque cycle enrichissement→scrape).
 
-**Cause** : la clé d'idempotence du scraper est `unique (group_id, type, start_at, source_url)` et le cron `enrich-stage-links` **UPDATE `source_url`** (carrd → stage YouTube). Au scrape carrd suivant, la row enrichie ne matche plus la clé → réinsertion de la row carrd → doublon. Règle générale : **jamais de colonne mutable dans une clé d'idempotence.**
+**Cause** : la clé d'idempotence du scraper est `unique (group_id, type, start_at, source_url)` et le cron `enrich-stage-links` **UPDATE `source_url`** (carrd → stage YouTube). Au scrape carrd suivant, la row enrichie ne matchait plus la clé → réinsertion de la row carrd → doublon. Règle générale : **jamais de colonne mutable dans une clé d'idempotence.**
 
-**Mitigation livrée** : dédup display-level dans `groupMusicShowEpisodes` (`src/lib/events/grouping.ts`) — par (group_id, title, start_at), la row enrichie gagne. Corrige l'app ET le feed iCal.
+**Fix racine (2026-07-11, migration `0040_events_stage_url.sql`)** :
 
-**Fix racine (BACKLOG 🐛, à faire au prochain passage scraper)** : colonne dédiée `stage_url` pour l'enrichissement (source_url redevient stable), OU dédup applicative par (group_id, type, start_at) avant insert. + purge one-shot des paires existantes (garder la row enrichie).
+- Colonne dédiée `events.stage_url` : l'enrichissement écrit là, `source_url` est redevenu immuable. `eventHref` route les music_show sur `stage_url` (le grouping/iCal/digest en dérivent via `eventHref`, zéro autre changement).
+- Data-fix : 32 rows enrichies migrées (stage → stage_url, carrd restauré), 16 rows doublons purgées (row la plus ancienne = enrichie conservée ; 0 référence FK, vérifié).
+- **Index unique partiel** `events_music_show_group_start_key (group_id, start_at) where type='music_show'` : garantie dure, l'insert du scraper loggue et skippe en cas de violation.
+- Piège d'exécution : la purge doit précéder la restauration de `source_url` dans la même migration, sinon la contrainte unique 4-tuple explose (constaté au 1er apply, transaction rollbackée).
+
+La dédup display-level de `groupMusicShowEpisodes` est **conservée en défense en profondeur**.
+
+### 3.15 — Doublon same-source kpopofficial : placeholder puis album finalisé sous 2 URLs (découvert 2026-07-10, corrigé 2026-07-11)
+
+**Symptôme** : le même comeback apparaît 2× au calendrier futur — ex. fromis_9 « Comeback with Full Album in July 21 » (`/album/fromis-9-comeback/`, inséré le 07-06) puis « 2nd Album – Glow ME » (`/album/fromis-9-glow-me/`, inséré le 07-08). Même source, même groupe, ±1 jour. Cas identique tripleS au 2026-06-01.
+
+**Cause** : l'idempotence d'`ingestComebacks` est par `(source_url, group_id)`, et la dédup ±3 j (P0.7) excluait explicitement la même source (`.neq('source_id', …)`) — elle ne visait que le cross-source. kpopofficial publie une entrée d'annonce (placeholder) puis une entrée album distincte : 2 `source_url` → les deux passent.
+
+**Fix** : le `.neq('source_id')` est retiré — la fenêtre ±3 j par `(group_id, type='release')` couvre toute source, y compris la même. Tradeoff assumé : deux vraies releases d'un même groupe à < 3 j seraient fusionnées (rare ; déjà accepté cross-source). Purge one-shot des 2 cas connus dans la migration 0040.
 
 ---
 

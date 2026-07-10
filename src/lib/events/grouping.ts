@@ -57,11 +57,11 @@ export type GroupedUpcomingEvent = UpcomingEvent & { lineup?: UpcomingEvent[] }
  * (rendu strictement identique à aujourd'hui).
  */
 /**
- * Dédup préalable : le même (groupe, épisode) peut exister en DOUBLE en DB —
- * l'enrichissement stage-links change source_url (qui fait partie de la clé
- * d'idempotence du scraper) → le scrape suivant réinsère la row carrd (bug
- * data, 14 paires en prod au 2026-07-05, cause racine au BACKLOG). On garde
- * la row enrichie (href externe = stage vidéo) plutôt que la carrd.
+ * Dédup préalable, conservée en défense en profondeur : la cause racine des
+ * doublons DB (l'enrichissement stage-links mutait source_url, partie de la
+ * clé d'idempotence du scraper) est corrigée depuis la migration 0039
+ * (colonne `stage_url` dédiée + purge des paires) — cf. SCRAPING.md §3.14.
+ * Si un doublon réapparaissait, on garde la row enrichie (href externe).
  */
 function dedupePerGroupEpisode(events: readonly UpcomingEvent[]): UpcomingEvent[] {
   const seen = new Map<string, number>() // key → index dans out

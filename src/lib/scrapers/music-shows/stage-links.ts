@@ -14,9 +14,12 @@ type SupabaseClient = ReturnType<typeof createClient<Database>>
 
 // Enrichissement « stage links » (demande Rudy 2026-07-03) : après diffusion,
 // les chaînes officielles des diffuseurs postent la vidéo du passage de chaque
-// groupe. On remplace le source_url carrd des events music_show par l'URL de
-// cette vidéo → `eventHref` route alors le bandeau vers YouTube (règle
-// existante : music_show → YouTube si source_url est YouTube, jamais le carrd).
+// groupe. On écrit l'URL de cette vidéo dans `stage_url` (colonne dédiée,
+// migration 0039) → `eventHref` route alors le bandeau vers YouTube.
+// ⚠️ Ne JAMAIS écrire dans `source_url` : il fait partie de la clé
+// d'idempotence du scraper (group_id, type, start_at, source_url) — le muter
+// faisait réinsérer une row doublon à chaque re-scrape (SCRAPING.md §3.14,
+// 14 paires en prod avant le fix).
 //
 // Chaînes VÉRIFIÉES via channels.list/forHandle le 2026-07-03 (règle : jamais
 // de handle deviné — cf. reference_youtube_handle_verification) :
@@ -122,13 +125,12 @@ export async function enrichStageLinks(
   const now = new Date().toISOString()
   const { data: pending } = await supabase
     .from('events')
-    .select('id, title, start_at, source_url, groups!inner(name)')
+    .select('id, title, start_at, stage_url, groups!inner(name)')
     .eq('type', 'music_show')
     .gte('start_at', since)
     .lte('start_at', now)
-    // « pas encore enrichi » = URL non-YouTube OU null. NOT ILIKE seul exclut
-    // les NULL (sémantique SQL) → le .or couvre les deux cas.
-    .or('source_url.is.null,source_url.not.ilike.%youtube.com%')
+    // « pas encore enrichi » = stage_url absent (source_url n'est plus touché).
+    .is('stage_url', null)
     .order('start_at', { ascending: false })
 
   const result: StageLinkResult = { scanned: 0, linked: 0, units: 0, byShow: {} }
@@ -211,7 +213,7 @@ export async function enrichStageLinks(
       const { error } = await supabase
         .from('events')
         .update({
-          source_url: `https://www.youtube.com/watch?v=${hit.videoId}`,
+          stage_url: `https://www.youtube.com/watch?v=${hit.videoId}`,
           image_url: hit.thumbnailUrl,
         })
         .eq('id', event.id)
