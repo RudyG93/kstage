@@ -113,58 +113,109 @@ export async function ingestComebacks(
   let inserted = 0
   let skipped = 0
 
+  // Matching pur d'abord : une ligne candidate par (entrée, groupe matché).
+  const candidates: { cb: ParsedComeback; group: GroupRef }[] = []
   for (const cb of entries) {
     for (const group of matchGroups(cb.artist, groups)) {
       matched++
+      candidates.push({ cb, group })
+    }
+  }
+  if (candidates.length === 0) return { matched, inserted, skipped }
 
-      const { data: existing } = await supabase
+  // Batching (2026-07-11) : l'ancienne boucle faisait 1-2 allers-retours
+  // Supabase PAR candidat (wikipedia parse ~200 entrées → centaines de
+  // requêtes séquentielles par run, falaise de timeout à mesure que la
+  // couverture grandit). Deux pré-fetch groupés + décision en mémoire +
+  // insert par paquets — même pattern que le pipeline YouTube (§2).
+  const urls = [...new Set(candidates.map((c) => c.cb.sourceUrl))]
+  const groupIds = [...new Set(candidates.map((c) => c.group.id))]
+
+  // 1) Idempotence (source_url, group_id) — sans filtre de type, comme l'eq
+  //    unitaire d'origine.
+  const { data: existingRows } = await supabase
+    .from('events')
+    .select('source_url, group_id')
+    .in('source_url', urls)
+    .in('group_id', groupIds)
+  const existing = new Set((existingRows ?? []).map((r) => `${r.source_url}|${r.group_id}`))
+
+  // 2) Fenêtre near-dup : toutes les releases des groupes concernés dans
+  //    l'enveloppe [min-N j, max+N j] des candidats, indexées par groupe.
+  const nearByGroup = new Map<string, number[]>()
+  if (opts.crossSourceDedupeDays) {
+    const ms = opts.crossSourceDedupeDays * 86_400_000
+    const times = candidates.map((c) => Date.parse(c.cb.startAt)).filter(Number.isFinite)
+    if (times.length > 0) {
+      const lo = new Date(Math.min(...times) - ms).toISOString()
+      const hi = new Date(Math.max(...times) + ms).toISOString()
+      const { data: nearRows } = await supabase
         .from('events')
-        .select('id')
-        .eq('source_url', cb.sourceUrl)
-        .eq('group_id', group.id)
-        .maybeSingle()
+        .select('group_id, start_at')
+        .eq('type', 'release')
+        // Pas de filtre source : la fenêtre couvre aussi les entrées de la
+        // MÊME source sous une autre URL (placeholder vs album finalisé,
+        // SCRAPING.md §3.15).
+        .in('group_id', groupIds)
+        .gte('start_at', lo)
+        .lte('start_at', hi)
+      for (const r of nearRows ?? []) {
+        const list = nearByGroup.get(r.group_id) ?? []
+        list.push(Date.parse(r.start_at))
+        nearByGroup.set(r.group_id, list)
+      }
+    }
+  }
 
-      if (existing) {
+  // Décision en mémoire. Les candidats retenus alimentent les sets au fil de
+  // l'eau : l'intra-run se dédup comme le faisait la boucle séquentielle
+  // (le 2ᵉ passage voyait l'insert du 1ᵉʳ en DB).
+  type EventInsert = Database['public']['Tables']['events']['Insert']
+  const rows: EventInsert[] = []
+  for (const { cb, group } of candidates) {
+    if (existing.has(`${cb.sourceUrl}|${group.id}`)) {
+      skipped++
+      continue
+    }
+    if (opts.crossSourceDedupeDays) {
+      const ms = opts.crossSourceDedupeDays * 86_400_000
+      const t = Date.parse(cb.startAt)
+      const nears = nearByGroup.get(group.id) ?? []
+      if (nears.some((n) => Math.abs(n - t) <= ms)) {
         skipped++
         continue
       }
+      nears.push(t)
+      nearByGroup.set(group.id, nears)
+    }
+    existing.add(`${cb.sourceUrl}|${group.id}`)
+    // Taxonomie (2026-05-27) : MV = clip (scraper YouTube), Release = sortie
+    // datée d'album/single. Une annonce de comeback est une release datée.
+    rows.push({
+      group_id: group.id,
+      source_id: sourceId,
+      source_url: cb.sourceUrl,
+      type: 'release',
+      title: cb.title,
+      start_at: cb.startAt,
+      status: cb.status,
+      image_url: cb.imageUrl,
+    })
+  }
 
-      if (opts.crossSourceDedupeDays) {
-        const ms = opts.crossSourceDedupeDays * 86_400_000
-        const lo = new Date(Date.parse(cb.startAt) - ms).toISOString()
-        const hi = new Date(Date.parse(cb.startAt) + ms).toISOString()
-        const { data: near } = await supabase
-          .from('events')
-          .select('id')
-          .eq('group_id', group.id)
-          .eq('type', 'release')
-          // Pas de .neq('source_id') : la fenêtre couvre aussi les entrées de
-          // la MÊME source sous une autre URL (placeholder vs album finalisé).
-          .gte('start_at', lo)
-          .lte('start_at', hi)
-          .limit(1)
-          .maybeSingle()
-        if (near) {
-          skipped++
-          continue
-        }
-      }
-
-      // Taxonomie (2026-05-27) : MV = clip (scraper YouTube), Release = sortie
-      // datée d'album/single. Une annonce de comeback est une release datée.
-      const { error } = await supabase.from('events').insert({
-        group_id: group.id,
-        source_id: sourceId,
-        source_url: cb.sourceUrl,
-        type: 'release',
-        title: cb.title,
-        start_at: cb.startAt,
-        status: cb.status,
-        image_url: cb.imageUrl,
-      })
-
-      if (error) {
-        console.error(`Insert failed for ${cb.sourceUrl}:`, error.message)
+  // Insert par paquets ; en cas d'échec d'un paquet, repli ligne à ligne pour
+  // garder la granularité d'erreur de l'ancienne boucle.
+  for (let i = 0; i < rows.length; i += 100) {
+    const batch = rows.slice(i, i + 100)
+    const { error } = await supabase.from('events').insert(batch)
+    if (!error) {
+      inserted += batch.length
+      continue
+    }
+    for (const row of batch) {
+      const { error: rowError } = await supabase.from('events').insert(row)
+      if (rowError) {
+        console.error(`Insert failed for ${row.source_url}:`, rowError.message)
         skipped++
       } else {
         inserted++

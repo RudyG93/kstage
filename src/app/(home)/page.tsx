@@ -69,15 +69,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   const types = parseTypesParam(sp.type)
   const wantAnniversaries = types.length === 0 || types.includes('anniversary')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('timezone, tier')
-    .eq('id', user.id)
-    .single()
+  // Indépendants (les deux ne dépendent que de user.id) : en parallèle plutôt
+  // que 2 allers-retours séquentiels sur la page connectée la plus chargée.
+  const [{ data: profile }, followedIds] = await Promise.all([
+    supabase.from('profiles').select('timezone, tier').eq('id', user.id).single(),
+    getFollowedGroupIds(),
+  ])
   const timeZone = profile?.timezone ?? 'Asia/Seoul'
   const tier = profile?.tier ?? 'free'
-
-  const followedIds = await getFollowedGroupIds()
   const ids = [...followedIds]
   const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
     await Promise.all([
