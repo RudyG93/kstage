@@ -16,16 +16,20 @@ export function Panel({ className, children }: { className?: string; children: R
 export function PanelHeader({
   label,
   action,
+  right,
   className,
 }: {
   label: ReactNode
   action?: { label: string; href: string }
+  /** Slot libre à droite (segmented control…) — exclusif avec `action`. */
+  right?: ReactNode
   className?: string
 }) {
   return (
     <div className={cn('flex items-center justify-between border-b px-3 py-2', className)}>
       <span className="label-data">{label}</span>
-      {action && (
+      {right}
+      {!right && action && (
         <Link
           href={action.href}
           className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"

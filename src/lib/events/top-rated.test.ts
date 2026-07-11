@@ -1,55 +1,64 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateWindow, computeRankDeltas, type RatingRow } from './top-rated'
+import { bucketByReleaseWindow, type RatedEventAgg } from './top-rated'
 import { bucketScores } from './rating-distribution'
 
-const row = (event_id: string, score: number, created_at: string): RatingRow => ({
-  event_id,
-  score,
-  created_at,
+// Sémantique 2026-07-11 : les périodes fenêtrent la date de SORTIE du MV
+// (start_at), pas la date de pose des notes. Fixtures calquées sur l'état
+// prod du 2026-07-11 (5 MVs notés, 1 vote chacun).
+const NOW = Date.parse('2026-07-11T12:00:00Z')
+const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString()
+
+const agg = (id: string, avg: number, releasedDaysAgo: number, count = 1): RatedEventAgg => ({
+  eventId: id,
+  avg,
+  count,
+  releaseAt: daysAgo(releasedDaysAgo),
+  title: id,
+  slug: id,
+  groupName: 'g',
 })
 
-describe('aggregateWindow', () => {
-  it('averages scores per event inside the window and applies the min-count threshold', () => {
-    const rows = [
-      row('a', 8, '2026-07-01T00:00:00Z'),
-      row('a', 9, '2026-07-02T00:00:00Z'),
-      row('b', 10, '2026-07-01T12:00:00Z'), // 1 seul vote → sous le seuil
-      row('a', 5, '2026-06-20T00:00:00Z'), // hors fenêtre
-    ]
-    const out = aggregateWindow(rows, '2026-06-28T00:00:00Z', '2026-07-05T00:00:00Z', 2)
-    expect(out).toEqual([{ eventId: 'a', avg: 8.5, count: 2 }])
+describe('bucketByReleaseWindow', () => {
+  // ≈ prod : LEMONADE Remix (40 j, 8.5), QWER (656 j, 8.5), Mono (165 j, 5.0),
+  // Crow (27 j, 7.0), Do your dance (26 j, 8.0).
+  const PROD = [
+    agg('lemonade', 8.5, 40),
+    agg('qwer', 8.5, 656),
+    agg('mono', 5.0, 165),
+    agg('crow', 7.0, 27),
+    agg('dance', 8.0, 26),
+  ]
+
+  it('month = sortis ≤ 30 j, year exclut le 656 j, alltime = tout', () => {
+    const b = bucketByReleaseWindow(PROD, NOW)
+    expect(b.month.map((i) => i.eventId)).toEqual(['dance', 'crow'])
+    expect(b.year.map((i) => i.eventId)).toEqual(['lemonade', 'dance', 'crow', 'mono'])
+    expect(b.alltime.map((i) => i.eventId)).toEqual(['lemonade', 'qwer', 'dance', 'crow', 'mono'])
   })
 
-  it('sorts by average desc, then count desc', () => {
-    const rows = [
-      row('a', 8, '2026-07-01T00:00:00Z'),
-      row('a', 8, '2026-07-01T01:00:00Z'),
-      row('b', 9, '2026-07-01T02:00:00Z'),
-      row('b', 9, '2026-07-01T03:00:00Z'),
-      row('c', 8, '2026-07-01T04:00:00Z'),
-      row('c', 8, '2026-07-01T05:00:00Z'),
-      row('c', 8, '2026-07-01T06:00:00Z'),
-    ]
-    const out = aggregateWindow(rows, '2026-07-01T00:00:00Z', '2026-07-02T00:00:00Z', 2)
-    expect(out.map((e) => e.eventId)).toEqual(['b', 'c', 'a'])
-  })
-})
-
-describe('computeRankDeltas', () => {
-  const e = (eventId: string): { eventId: string; avg: number; count: number } => ({
-    eventId,
-    avg: 8,
-    count: 3,
+  it('tri : moyenne desc, puis nb de votes, puis id (déterministe)', () => {
+    const b = bucketByReleaseWindow([agg('a', 8, 5), agg('b', 8, 5, 3), agg('c', 9, 5)], NOW)
+    expect(b.month.map((i) => i.eventId)).toEqual(['c', 'b', 'a'])
   })
 
-  it('labels climbs, drops, holds and entries', () => {
-    const current = [e('a'), e('b'), e('c'), e('d')]
-    const previous = [e('b'), e('a'), e('c')]
-    const deltas = computeRankDeltas(current, previous)
-    expect(deltas.get('a')).toEqual({ kind: 'up', n: 1 })
-    expect(deltas.get('b')).toEqual({ kind: 'down', n: 1 })
-    expect(deltas.get('c')).toEqual({ kind: 'same', n: 0 })
-    expect(deltas.get('d')).toEqual({ kind: 'new', n: 0 })
+  it('badge New pour les sorties < 7 j, — sinon', () => {
+    const b = bucketByReleaseWindow([agg('fresh', 8, 2), agg('old', 9, 20)], NOW)
+    expect(b.month.find((i) => i.eventId === 'fresh')?.delta.kind).toBe('new')
+    expect(b.month.find((i) => i.eventId === 'old')?.delta.kind).toBe('same')
+  })
+
+  it('respecte limit et minCount', () => {
+    const many = Array.from({ length: 8 }, (_, i) => agg(`e${i}`, 5 + i * 0.1, 3))
+    expect(bucketByReleaseWindow(many, NOW, 5).month).toHaveLength(5)
+    const b = bucketByReleaseWindow([agg('solo', 8, 3, 1)], NOW, 5, 2)
+    expect(b.alltime).toHaveLength(0)
+  })
+
+  it('fenêtres vides → tableaux vides (pas de throw)', () => {
+    const b = bucketByReleaseWindow([agg('vieux', 8, 400)], NOW)
+    expect(b.month).toEqual([])
+    expect(b.year).toEqual([])
+    expect(b.alltime.map((i) => i.eventId)).toEqual(['vieux'])
   })
 })
 
