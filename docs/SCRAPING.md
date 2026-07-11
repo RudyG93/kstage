@@ -255,6 +255,22 @@ select a.title, b.title from mv a join mv b
 
 La dédup display-level de `groupMusicShowEpisodes` est **conservée en défense en profondeur**.
 
+### 3.16 — Music shows : interview liée comme stage, typo de lineup, fantômes de lineup révisé (corrigés 2026-07-11)
+
+Trois défauts distincts trouvés sur le SEUL épisode M Countdown EP.936 (09/07) :
+
+1. **Stage-link = interview** : « '컴백 인터뷰' i-dle … EP.936 | Mnet 방송 » scorait +3 (EP+방송 et « | ») → liée comme stage. Fix : malus -5 dans `rankStageCandidates` sur 인터뷰/interview/비하인드/behind/메이킹/making/리액션/reaction/백스테이지/셀프캠/직캠/fancam/TMI/소감 — un vrai passage n'en porte aucun.
+2. **Typo source → groupe manqué** : le carrd écrivait « Heart2Hearts » (Hearts2Hearts a raté l'épisode). Fix : `matchGroup` tolère 1 édition (`withinOneEdit`, group-match.ts) sur les clés normalisées ≥ 8 chars — jamais sur les noms courts (izna, i-dle). Et `unmatched_sample` est désormais PAR SHOW (le cap global de 20 masquait ce raté).
+3. **Fantômes de lineup révisé** : 5 rows Music Bank 10/07 créées le 04/07 puis retirées du lineup final — jamais diffusées, jamais nettoyées. Fix : le cron **réconcilie** les épisodes FUTURS (lineup ≥ 3 entrées) en supprimant les rows carrd des groupes absents du lineup ; jamais sur le passé.
+
+### 3.17 — DERIVATIVE_RE sur titre+description : la tracklist tue le MV (découvert et corrigé 2026-07-11)
+
+**Symptôme** : « Hearts2Hearts 'Lemon Tang' MV » (SMTOWN, 22/06) silencieusement absent malgré une source seedée et scrapée chaque jour.
+
+**Cause** : `detectEventType` appliquait l'early-reject dérivés à `titre + description` — et la piste 05 de l'album s'appelle « Secret Recipe » : `\brecipe\b` (ajouté contre les vidéos de cuisine) matchait la TRACKLIST de la description → 'other' → skip **sans log**.
+
+**Fix** : le gate dérivés passe sur le **titre seul** — même principe que l'attribution §3.10 (la convention k-pop met la nature du contenu dans le titre ; les descriptions sont du bruit : tracklists, liens teaser). `isOfficialMvTitle` re-filtre déjà les dérivés en aval. Re-backfill global des 159 sources lancé après le fix pour récupérer les MVs perdus. Règle générale : **tout gate négatif se joue sur le titre, jamais sur la description.**
+
 ### 3.15 — Doublon same-source kpopofficial : placeholder puis album finalisé sous 2 URLs (découvert 2026-07-10, corrigé 2026-07-11)
 
 **Symptôme** : le même comeback apparaît 2× au calendrier futur — ex. fromis_9 « Comeback with Full Album in July 21 » (`/album/fromis-9-comeback/`, inséré le 07-06) puis « 2nd Album – Glow ME » (`/album/fromis-9-glow-me/`, inséré le 07-08). Même source, même groupe, ±1 jour. Cas identique tripleS au 2026-06-01.

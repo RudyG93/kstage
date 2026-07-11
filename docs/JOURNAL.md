@@ -4,6 +4,19 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-11 (après-midi) — Round 2 : commentaires Reddit, Top Rated périodes, Trending, hero frais, scrapers fiabilisés
+
+**6 demandes Rudy, 6 branches mergées** (investigations multi-agents + diagnostics SQL prod d'abord) :
+
+1. **`fix/music-show-accuracy`** — l'épisode M Countdown EP.936 (09/07) a révélé 3 défauts : stage-link = interview (« '컴백 인터뷰' … » scorait +3 → malus -5 sur interview/behind/making/fancam…), Hearts2Hearts manquant (typo carrd « Heart2Hearts » → fuzzy matching 1 édition sur clés ≥ 8 chars), 5 rows fantômes Music Bank 10/07 (lineup révisé jamais réconcilié → le cron réconcilie désormais les épisodes futurs). Data corrigée et **vérifiée par oembed** : i-dle → vrai stage « Crow », H2H EP.936 créé → « Lemon Tang ». Cf. `SCRAPING.md §3.16`.
+2. **`fix/mv-derivative-title-only`** — le MV « Lemon Tang » (SMTOWN) était silencieusement rejeté : la piste 05 de l'album s'appelle « Secret Recipe » et `\brecipe\b` matchait la tracklist en DESCRIPTION. Gate dérivés → titre seul ; re-backfill global des 159 sources lancé. izna avait 0 MV (source seedée le 17/06 > sortie METRONOME 08/06, backfill jamais lancé) → comblé. Cf. `§3.17`.
+3. **`fix/group-hero-freshness`** — la page groupe était la seule surface à servir `image_landscape` (fanart TheAudioDB 2021, jamais rafraîchi — le « aespa daté » de Rudy) : le hero prend désormais le thumbnail du dernier MV `main` (hqdefault, toujours servie) avant le landscape. 52 groupes concernés.
+4. **`feat/trending-signal`** — Trending /groups : score du moment (imminence event 45 j ×3 + récence sortie 30 j ×2, follows en départage), sous-titre uniforme (« Comeback · D-3 » / « MV out · 3d ago »), lien « All » (self-link) retiré. Lib pure + 6 tests.
+5. **`feat/top-rated-periods`** — Top Rated Month/Year/All-time avec la BONNE sémantique (MVs SORTIS dans la fenêtre — l'ancienne fenêtrait la date de pose des notes : périodes indiscernables). Week abandonnée (structurellement vide). Segmented control client préchargé, badge « New » < 7 j, deltas retirés (sans objet). 7 tests.
+6. **`feat/comments-reddit-polish`** — permalinks par commentaire (ancre + timestamp cliquable + flash :target), rail de repli à TOUS les niveaux, auto-repli score ≤ -3, cap d'indentation depth 6. Volume prod (14 comments) → zéro changement DB.
+
+**Constat couverture scraping** (demande « tous les artistes sont-ils cherchés ? ») : 112/112 groupes ont une source YouTube, 0 source périmée, crons quotidiens verts — l'infra est saine ; l'impression « peu de MVs » = cadence réelle (~14 MVs sortis/30 j sur le roster) AMPLIFIÉE par le bug §3.17 (MVs perdus) et les solos de membres (YEONJUN, KIHYUN, HAN… — leurs MVs ne portent pas le nom du groupe, limitation connue).
+
 ## 2026-07-11 — Perf/ingénierie : Promise.all home, policies feedback, comeback-ingest batché
 
 **Branche** : `fix/eng-batch` (6d48af5). **Quoi** : profile+follows de la home en `Promise.all` ; migration 0041 (policies `feedback` recréées avec `(select auth.uid())` — les 0036/0037 avaient réintroduit le pattern initplan nu) ; `ingestComebacks` dé-N+1 (2 pré-fetch batchés + décision mémoire + insert par paquets de 100 avec repli ligne-à-ligne — l'ancienne boucle faisait 1-2 requêtes séquentielles PAR candidat, ~200 entrées wikipedia/run). **Vérification** : advisors re-runés — `auth_rls_initplan` à 0, reste = baseline INFO ; 523 tests verts. Le run scraper du lendemain confirme le comportement batché (scrape_log).
