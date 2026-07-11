@@ -17,6 +17,7 @@ import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { formatDDay } from '@/lib/events/date'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { JsonLd } from '@/components/seo/json-ld'
 import { createClient } from '@/lib/supabase/server'
@@ -89,8 +90,16 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     biasMemberId = viewerProfile?.bias_member_id ?? null
   }
 
+  // Hero : le thumbnail du DERNIER MV principal passe AVANT image_landscape —
+  // les fanarts TheAudioDB sont des seeds figés (aespa servait un visuel 2021,
+  // reproche Rudy 2026-07-11) alors que le dernier MV est l'ère en cours. Même
+  // logique que le hero home (next-drop-card). hqdefault : servie pour TOUTE
+  // vidéo (maxres 404 sur certaines), suffisante en object-cover.
+  const latestMainMv = mvs.find((m) => m.mv_kind === 'main') ?? mvs[0]
+  const latestMvId = latestMainMv ? extractYouTubeId(latestMainMv.source_url) : null
   const bannerSrc =
     group.banner_url ??
+    (latestMvId ? `https://i.ytimg.com/vi/${latestMvId}/hqdefault.jpg` : null) ??
     group.image_landscape ??
     (group.image_url ? faceCrop(group.image_url, 1600, 500) : null)
 
