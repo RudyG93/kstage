@@ -15,7 +15,7 @@
 5. **`feat/top-rated-periods`** — Top Rated Month/Year/All-time avec la BONNE sémantique (MVs SORTIS dans la fenêtre — l'ancienne fenêtrait la date de pose des notes : périodes indiscernables). Week abandonnée (structurellement vide). Segmented control client préchargé, badge « New » < 7 j, deltas retirés (sans objet). 7 tests.
 6. **`feat/comments-reddit-polish`** — permalinks par commentaire (ancre + timestamp cliquable + flash :target), rail de repli à TOUS les niveaux, auto-repli score ≤ -3, cap d'indentation depth 6. Volume prod (14 comments) → zéro changement DB.
 
-**Constat couverture scraping** (demande « tous les artistes sont-ils cherchés ? ») : 112/112 groupes ont une source YouTube, 0 source périmée, crons quotidiens verts — l'infra est saine ; l'impression « peu de MVs » = cadence réelle (~14 MVs sortis/30 j sur le roster) AMPLIFIÉE par le bug §3.17 (MVs perdus) et les solos de membres (YEONJUN, KIHYUN, HAN… — leurs MVs ne portent pas le nom du groupe, limitation connue).
+**Constat couverture scraping** (demande « tous les artistes sont-ils cherchés ? ») : 112/112 groupes ont une source YouTube, 0 source périmée, crons quotidiens verts — l'infra est saine ; l'impression « peu de MVs » = cadence réelle (~14 MVs sortis/30 j sur le roster) AMPLIFIÉE par le bug §3.17 (MVs perdus) et les solos de membres (YEONJUN, KIHYUN, HAN… — leurs MVs ne portent pas le nom du groupe, limitation connue). **Re-backfill global post-fix : +76 MVs récupérés (871 → 949), 1 811 units, 0 sur-attribution vérifiée.**
 
 ## 2026-07-11 — Perf/ingénierie : Promise.all home, policies feedback, comeback-ingest batché
 
