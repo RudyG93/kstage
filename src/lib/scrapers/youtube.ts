@@ -99,11 +99,16 @@ export function normalizeMvTitle(title: string): string {
 }
 
 export function detectEventType(title: string, description: string): EventType {
-  const text = `${title} ${description}`
-  // Early-reject derivatives : ils peuvent contenir "MV", "Album", etc. sans
-  // pour autant représenter l'event réel — on les renvoie tous en 'other'.
-  if (DERIVATIVE_RE.test(text)) return 'other'
+  // Early-reject derivatives sur le TITRE SEUL (fix 2026-07-11) : la
+  // convention k-pop met la nature du contenu dans le titre (« …MV Teaser »,
+  // « …Dance Practice ») ; les DESCRIPTIONS, elles, sont pleines de bruit —
+  // tracklists et liens de l'ère. Faux négatif réel : le MV « Hearts2Hearts
+  // 'Lemon Tang' MV » (SMTOWN, 2026-06-22) était rejeté 'other' parce que la
+  // piste 05 de l'album s'appelle « Secret Recipe » (\brecipe\b, ajouté contre
+  // les vidéos de cuisine). Même principe que l'attribution §3.10 (titre seul).
+  if (DERIVATIVE_RE.test(title)) return 'other'
 
+  const text = `${title} ${description}`
   const lower = text.toLowerCase()
   // MV (clip) en premier : un titre de clip peut aussi mentionner l'album.
   if (/\bmv\b|\bm\/v\b|music video|official video/.test(lower)) return 'mv'
