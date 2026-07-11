@@ -33,6 +33,12 @@ interface Props {
 }
 
 const REPLY_LIMIT = 5
+// Auto-repli des commentaires très négatifs (modèle Reddit) — ré-ouvrables
+// d'un clic via la ligne compacte.
+const AUTO_COLLAPSE_SCORE = -3
+// Au-delà, on cesse d'indenter (plus de rail) : le padding cumulé écraserait
+// le mobile. Le fil continue à plat.
+const MAX_INDENT_DEPTH = 6
 
 export function CommentItem({
   node,
@@ -46,7 +52,7 @@ export function CommentItem({
   const authorScore = ratingsByUser[node.user_id]
   const [showReply, setShowReply] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(node.score <= AUTO_COLLAPSE_SCORE)
   const [showAllReplies, setShowAllReplies] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const isOwn = viewerId === node.user_id
@@ -62,7 +68,11 @@ export function CommentItem({
   // Repli style Reddit : replié → ligne compacte cliquable pour ré-ouvrir.
   if (collapsed) {
     return (
-      <article aria-label={`Comment by ${author}`}>
+      <article
+        id={`comment-${node.id}`}
+        className="scroll-mt-20"
+        aria-label={`Comment by ${author}`}
+      >
         <button
           type="button"
           onClick={() => setCollapsed(false)}
@@ -81,22 +91,28 @@ export function CommentItem({
               </span>
             </>
           )}
+          {node.score <= AUTO_COLLAPSE_SCORE && (
+            <span className="text-faint italic">· low score</span>
+          )}
         </button>
       </article>
     )
   }
 
+  // Rail sur TOUS les niveaux (modèle Reddit) : ligne de thread cliquable qui
+  // replie CE commentaire (et son sous-arbre) — feuilles incluses, ce qui
+  // aligne aussi tous les frères sur la même colonne. Masqué au-delà de
+  // MAX_INDENT_DEPTH : le fil continue à plat plutôt que d'écraser le mobile.
+  const showRail = depth < MAX_INDENT_DEPTH
+
   return (
-    <article aria-label={`Comment by ${author}`}>
-      <div className={childCount > 0 ? 'flex gap-2' : undefined}>
-        {/* Rail vertical cliquable : replie CE commentaire et son sous-arbre
-            (modèle Reddit). Présent uniquement quand il y a des réponses — la
-            racine incluse. */}
-        {childCount > 0 && (
+    <article id={`comment-${node.id}`} className="scroll-mt-20" aria-label={`Comment by ${author}`}>
+      <div className={showRail ? 'flex gap-2' : undefined}>
+        {showRail && (
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            aria-label="Collapse thread"
+            aria-label="Collapse comment"
             className="group/rail flex w-3 shrink-0 cursor-pointer justify-center"
           >
             <span
@@ -130,7 +146,15 @@ export function CommentItem({
               </span>
             )}
             <span aria-hidden>·</span>
-            <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
+            {/* Permalink (modèle Reddit) : le timestamp pointe l'ancre du
+                commentaire — copiable/partageable, highlight via :target. */}
+            <Link
+              href={`#comment-${node.id}`}
+              className="hover:text-foreground hover:underline"
+              title="Link to this comment"
+            >
+              <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
+            </Link>
             {isEdited && (
               <>
                 <span aria-hidden>·</span>
