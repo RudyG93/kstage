@@ -10,7 +10,7 @@ import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
 // la copie locale ASCII-only les ratait (DRY, audit 2026-07-03).
-import { normalize } from '@/lib/scrapers/group-match'
+import { normalize, withinOneEdit } from '@/lib/scrapers/group-match'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 
@@ -33,6 +33,16 @@ function matchGroup(artistName: string, groups: readonly GroupRef[]): GroupRef |
   }
   const aliasSlug = GROUP_ALIASES[key]
   if (aliasSlug) return groups.find((g) => g.slug === aliasSlug) ?? null
+  // Tolérance typo (1 édition) pour les noms LONGS uniquement : le carrd a
+  // écrit « Heart2Hearts » pour Hearts2Hearts (raté réel, M Countdown EP.936
+  // du 2026-07-09 — le groupe a manqué l'épisode). Seuil 8 chars normalisés :
+  // jamais de fuzzy sur les noms courts (izna/i-dle/aoa → collisions).
+  if (key.length >= 8) {
+    for (const g of groups) {
+      const n = normalize(g.name)
+      if (n.length >= 8 && withinOneEdit(key, n)) return g
+    }
+  }
   return null
 }
 
@@ -76,9 +86,11 @@ export async function GET(req: Request) {
   const unmatched: string[] = []
   const byShow: Record<string, { matched: number; created: number; skipped: number }> = {}
 
+  let reconciled = 0
   for (const lineup of aggregateResult.lineups) {
     const showStats = (byShow[lineup.show] ??= { matched: 0, created: 0, skipped: 0 })
     const showLabel = SHOW_DISPLAY_NAME[lineup.show]
+    const matchedIds: string[] = []
 
     for (const artistRaw of lineup.artistsRaw) {
       const canonical = extractCanonicalName(artistRaw)
@@ -90,6 +102,7 @@ export async function GET(req: Request) {
       }
       matchedTotal++
       showStats.matched++
+      matchedIds.push(group.id)
 
       const { data: existing } = await supabase
         .from('events')
@@ -121,6 +134,38 @@ export async function GET(req: Request) {
       }
       created++
       showStats.created++
+    }
+
+    // Réconciliation (2026-07-11) : le carrd révise ses lineups jusqu'au jour
+    // J — 5 rows fantômes réelles sur Music Bank 10/07 (groupes retirés du
+    // lineup final, jamais nettoyés, jamais stage-linkés). Pour un épisode
+    // FUTUR fetché avec un lineup substantiel, on supprime les rows carrd des
+    // groupes absents. Garde-fous : jamais sur le passé (l'histoire diffusée
+    // ne se réécrit pas), jamais sur lineup maigre (< 3 entrées = édition
+    // partielle en cours), et le fuzzy-match amont évite qu'une typo source
+    // fasse passer un groupe présent pour absent.
+    if (
+      matchedIds.length > 0 &&
+      lineup.artistsRaw.length >= 3 &&
+      Date.parse(lineup.startAtIso) > Date.now()
+    ) {
+      const { data: stale } = await supabase
+        .from('events')
+        .select('id')
+        .eq('type', 'music_show')
+        .eq('source_url', SOURCE_URL)
+        .eq('title', showLabel)
+        .eq('start_at', lineup.startAtIso)
+        .not('group_id', 'in', `(${matchedIds.join(',')})`)
+      if (stale && stale.length > 0) {
+        const staleIds = stale.map((s) => s.id)
+        // Les notifications déjà envoyées référencent l'event (FK) : on les
+        // détache d'abord — le rappel est parti, l'event n'a plus lieu.
+        await supabase.from('event_notifications').delete().in('event_id', staleIds)
+        const { error: delErr } = await supabase.from('events').delete().in('id', staleIds)
+        if (!delErr) reconciled += staleIds.length
+        else console.error(`music-shows reconcile failed: ${delErr.message}`)
+      }
     }
   }
 
@@ -160,8 +205,17 @@ export async function GET(req: Request) {
     lineups_fetched: aggregateResult.lineups.length,
     matched_total: matchedTotal,
     created,
+    reconciled,
     unmatched_count: unmatched.length,
-    unmatched_sample: unmatched.slice(0, 20),
+    // Échantillon PAR SHOW (8 max chacun) : le cap global de 20 masquait les
+    // unmatched des derniers shows (le raté Heart2Hearts était invisible).
+    unmatched_sample: Object.values(
+      unmatched.reduce<Record<string, string[]>>((acc, u) => {
+        const show = u.split('/', 1)[0]
+        ;(acc[show] ??= []).push(u)
+        return acc
+      }, {}),
+    ).flatMap((list) => list.slice(0, 8)),
     by_show: byShow,
     stage_links: stageLinks,
   }

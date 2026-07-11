@@ -112,3 +112,38 @@ describe('rankStageCandidates', () => {
     expect(rankStageCandidates(uploads, 'aespa', 'music-bank', AIR)[0]?.videoId).toBe('late1234567')
   })
 })
+
+describe('rankStageCandidates — contenus non-stage (2026-07-11)', () => {
+  const AIR_MCD = '2026-07-09T09:00:00Z'
+  it("rejette l'interview de comeback (faux positif réel EP.936) et garde le vrai stage", () => {
+    const uploads = [
+      upload({
+        videoId: 'interview01',
+        title: "'컴백 인터뷰' i-dle (아이들) #엠카운트다운 EP.936 | Mnet 260709 방송",
+        publishedAt: '2026-07-09T11:00:00Z',
+      }),
+      upload({
+        videoId: 'realstage01',
+        title: "'Good Thing' i-dle (아이들) #엠카운트다운 EP.936 | Mnet 260709 방송",
+        publishedAt: '2026-07-09T11:05:00Z',
+      }),
+    ]
+    const ranked = rankStageCandidates(uploads, 'i-dle', 'm-countdown', AIR_MCD)
+    expect(ranked.map((u) => u.videoId)).toEqual(['realstage01'])
+  })
+  it('rejette behind/fancam/making même avec marqueurs de diffusion', () => {
+    for (const title of [
+      '[BEHIND] i-dle 비하인드 #엠카운트다운 EP.936 | Mnet 방송',
+      'i-dle 직캠 (fancam) #엠카운트다운 EP.936 방송',
+      'i-dle MAKING FILM #엠카운트다운 EP.936 방송',
+    ]) {
+      const ranked = rankStageCandidates(
+        [upload({ videoId: 'x9999999999', title, publishedAt: '2026-07-09T11:00:00Z' })],
+        'i-dle',
+        'm-countdown',
+        AIR_MCD,
+      )
+      expect(ranked).toHaveLength(0)
+    }
+  })
+})

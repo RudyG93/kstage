@@ -99,6 +99,17 @@ export function rankStageCandidates(
     if (otherGroupNames.some((other) => other !== groupName && matchesGroup(u.title, other)))
       score -= 3
     if (/#shorts/i.test(u.title)) score -= 5
+    // Contenus NON-stage des mêmes chaînes : interview, making, behind,
+    // fancam/selfcam, réaction… Faux positif réel du 2026-07-09 : « '컴백
+    // 인터뷰' i-dle #엠카운트다운 EP.936 | Mnet 방송 » scorait +3 (EP+방송 et
+    // « | ») et a été lié comme stage. Un vrai passage ne porte aucun de ces
+    // marqueurs ; -5 les élimine quel que soit le reste du titre.
+    if (
+      /인터뷰|interview|비하인드|behind|메이킹|making|리액션|reaction|백스테이지|backstage|셀프캠|self\s?-?cam|직캠|fan\s?-?cam|\btmi\b|소감/i.test(
+        u.title,
+      )
+    )
+      score -= 5
     if (score < MIN_STAGE_SCORE) continue
     scored.push({ upload: u, score, published })
   }
