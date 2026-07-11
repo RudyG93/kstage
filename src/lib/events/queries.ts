@@ -128,7 +128,7 @@ export async function getRecentComebacks(limit = 3) {
 }
 
 const MV_SELECT =
-  'id, slug, title, type, start_at, source_url, image_url, groups!inner(slug, name, color_hex, image_url)'
+  'id, slug, title, type, start_at, source_url, image_url, mv_kind, groups!inner(slug, name, color_hex, image_url)'
 
 /**
  * Tous les MVs d'un groupe (passés inclus), pour la section "Music videos"
