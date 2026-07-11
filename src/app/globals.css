@@ -242,6 +242,29 @@
       animation: none;
     }
   }
+  /* Permalink de commentaire (#comment-<id>) : flash de surbrillance à
+     l'arrivée sur l'ancre (le timestamp est le lien, modèle Reddit). */
+  [id^='comment-']:target {
+    animation: comment-target 2.4s ease-out;
+    border-radius: var(--radius-md);
+  }
+  @keyframes comment-target {
+    0%,
+    35% {
+      background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 14%, transparent);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [id^='comment-']:target {
+      animation: none;
+      background-color: color-mix(in oklab, var(--primary) 10%, transparent);
+    }
+  }
   /* Label de section « Data Desk » — remplace le font-mono uppercase v1.
      Usage : <span class="label-data">NEXT UP — YOUR GROUPS</span> */
   .label-data {
