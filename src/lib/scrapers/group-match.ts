@@ -25,6 +25,33 @@ export function stripHashtags(s: string): string {
 }
 
 /**
+ * Distance d'édition ≤ 1 (une insertion, suppression ou substitution).
+ * Sert la tolérance typo du matching des lineups music shows : le carrd a
+ * écrit « Heart2Hearts » pour Hearts2Hearts (M Countdown EP.936, 2026-07-09)
+ * → le groupe a manqué l'épisode. À réserver aux clés normalisées LONGUES
+ * (≥ 8 chars) — les noms courts collisionnent (izna/i-dle…).
+ */
+export function withinOneEdit(a: string, b: string): boolean {
+  if (a === b) return true
+  const [s, l] = a.length <= b.length ? [a, b] : [b, a]
+  if (l.length - s.length > 1) return false
+  let i = 0
+  let j = 0
+  let edits = 0
+  while (i < s.length && j < l.length) {
+    if (s[i] === l[j]) {
+      i++
+      j++
+      continue
+    }
+    if (++edits > 1) return false
+    if (s.length === l.length) i++ // substitution
+    j++ // insertion dans le plus long
+  }
+  return edits + (l.length - j) + (s.length - i) <= 1
+}
+
+/**
  * Vérifie qu'un texte (titre vidéo) mentionne le groupe ciblé.
  * Comparaison après normalisation, donc tolérante aux variantes typographiques
  * courantes : "AESPA", "aespa", "(G)I-DLE", "BABYMONSTER (베이비몬스터)"...

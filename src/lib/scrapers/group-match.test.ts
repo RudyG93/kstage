@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalize, matchesGroup } from './group-match'
+import { normalize, matchesGroup, withinOneEdit } from './group-match'
 
 describe('normalize', () => {
   it('lowercase + strip ponctuation/espaces', () => {
@@ -94,5 +94,19 @@ describe('repli hashtag exact (chaînes officielles qui titrent en hashtag)', ()
     expect(
       matchesGroup("유아유(UAU) 'GENE' MV #유아유 #UAU #Dreamcatcher_UAU", 'Dreamcatcher'),
     ).toBe(false)
+  })
+})
+
+describe('withinOneEdit', () => {
+  it('typo réelle du carrd : Heart2Hearts ↔ Hearts2Hearts (1 insertion)', () => {
+    expect(withinOneEdit('heart2hearts', 'hearts2hearts')).toBe(true)
+  })
+  it('égalité et substitution unique', () => {
+    expect(withinOneEdit('babymonster', 'babymonster')).toBe(true)
+    expect(withinOneEdit('babymonster', 'babymonstar')).toBe(true)
+  })
+  it('rejette au-delà d’une édition', () => {
+    expect(withinOneEdit('hearts2hearts', 'heart2heart')).toBe(false)
+    expect(withinOneEdit('ateez', 'aespa')).toBe(false)
   })
 })
