@@ -249,3 +249,17 @@ describe('parseIsoDuration (gate durée, audit prod 2026-07-03)', () => {
     expect(parseIsoDuration('PT2M55S')! >= MIN_MV_DURATION_SEC).toBe(true) // vrai MV
   })
 })
+
+describe('detectEventType — dérivés sur le titre seul (fix 2026-07-11)', () => {
+  it("n'écarte pas un MV dont la DESCRIPTION contient un terme dérivé (tracklist)", () => {
+    // Faux négatif réel : Lemon Tang (SMTOWN) — la piste 05 s'appelle
+    // « Secret Recipe » et \brecipe\b rejetait tout le MV en 'other'.
+    const desc =
+      'Hearts2Hearts\' 2nd mini album "Lemon Tang" is out!\n[Tracklist]\n01 Lemon Tang\n05 Secret Recipe\n06 RUDE!'
+    expect(detectEventType("Hearts2Hearts 하츠투하츠 'Lemon Tang' MV", desc)).toBe('mv')
+  })
+  it('écarte toujours les dérivés titrés comme tels', () => {
+    expect(detectEventType("Hearts2Hearts 'Lemon Tang' MV Teaser", '')).toBe('other')
+    expect(detectEventType("aespa 'Whiplash' Dance Practice", '')).toBe('other')
+  })
+})
