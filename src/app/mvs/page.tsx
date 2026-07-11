@@ -7,7 +7,7 @@ import { MvChart } from '@/components/mv/mv-chart'
 import { MvScrollRow } from '@/components/mv/mv-scroll-row'
 import { getAllMvs, type MvEvent } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
-import { getTopRatedThisWeek } from '@/lib/events/top-rated'
+import { getTopRatedByPeriods } from '@/lib/events/top-rated'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getGroups } from '@/lib/groups/queries'
 import { createClient } from '@/lib/supabase/server'
@@ -50,7 +50,7 @@ export default async function MvsPage({
     getAllMvs({ limit: 30 }),
     getGroups(),
     supabase.rpc('group_follow_counts'),
-    getTopRatedThisWeek(5),
+    getTopRatedByPeriods(5),
   ])
 
   // 1 rail par groupe suivi (ordre = MV le plus récent), 10 MV max chacun.
@@ -114,7 +114,7 @@ export default async function MvsPage({
             </section>
           )}
 
-          <MvChart items={topRated.items} scope={topRated.scope} />
+          <MvChart periods={topRated} />
 
           <section className="space-y-2">
             <div className="flex items-center justify-between">

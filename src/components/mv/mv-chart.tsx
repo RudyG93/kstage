@@ -1,7 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { cn } from '@/lib/utils'
-import type { TopRatedItem } from '@/lib/events/top-rated'
+import type { TopRatedItem, TopRatedPeriod } from '@/lib/events/top-rated'
 
 function DeltaBadge({ delta }: { delta: TopRatedItem['delta'] }) {
   if (delta.kind === 'new')
@@ -21,50 +24,96 @@ function DeltaBadge({ delta }: { delta: TopRatedItem['delta'] }) {
   )
 }
 
-// TOP RATED — THIS WEEK (§7.4.2) : rang (n°1 amber), barre de score 64×4px
-// gradient primary→teal, delta de rang. Server component.
-export function MvChart({ items, scope }: { items: TopRatedItem[]; scope: 'week' | 'alltime' }) {
-  if (items.length === 0) return null
+const PERIODS: { key: TopRatedPeriod; label: string; empty: string }[] = [
+  { key: 'month', label: 'Month', empty: 'No rated drops released this month yet.' },
+  { key: 'year', label: 'Year', empty: 'No rated drops released this year yet.' },
+  { key: 'alltime', label: 'All', empty: 'No rated drops yet.' },
+]
+
+// TOP RATED (§7.4.2, périodes 2026-07-11) : rang (n°1 amber), barre de score
+// 64×4px gradient primary→teal, badge « New » pour les sorties < 7 j.
+// Client : les 3 périodes sont préchargées côté serveur (le volume de notes
+// est minuscule), la bascule est instantanée — pas de searchParams, le widget
+// reste découplé du tri « Latest drops » de la page.
+export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedItem[]> }) {
+  // Défaut : Month dès qu'il porte un vrai chart (≥ 3 entrées), sinon All-time
+  // — un chart d'1 item fait vide, un chart vide fait cassé.
+  const [active, setActive] = useState<TopRatedPeriod>(
+    periods.month.length >= 3 ? 'month' : 'alltime',
+  )
+  // Rien noté du tout → pas de panneau (un sélecteur sans données ferait faux).
+  if (periods.alltime.length === 0) return null
+  const items = periods[active]
+  const emptyLabel = PERIODS.find((p) => p.key === active)!.empty
+
   return (
     <Panel>
-      {/* Pas d'action : le chart vit sur /mvs — un lien « All MVs » vers la
-          même page était un self-link mort (retour Rudy 2026-07-03). */}
-      <PanelHeader label={scope === 'week' ? 'Top rated — this week' : 'Top rated — all time'} />
-      <ol>
-        {items.map((item, i) => (
-          <li key={item.eventId} className="border-b last:border-b-0">
-            <Link
-              href={item.slug ? `/mv/${item.slug}` : '/mvs'}
-              className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-2 transition-colors"
-            >
-              <span
+      <PanelHeader
+        label="Top rated"
+        right={
+          <div
+            role="group"
+            aria-label="Top rated period"
+            className="bg-secondary inline-flex gap-0.5 rounded-md border p-0.5"
+          >
+            {PERIODS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActive(key)}
+                aria-pressed={active === key}
                 className={cn(
-                  'tabular w-5 shrink-0 text-[13px] font-bold',
-                  i === 0 ? 'text-amber' : 'text-muted-foreground',
+                  'label-data-inline rounded-sm px-2 py-1 text-[9px] transition-colors',
+                  active === key
+                    ? 'bg-foreground text-background'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {i + 1}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-semibold">{item.title}</span>
-                <span className="text-muted-foreground block truncate text-[10px]">
-                  {item.groupName} · {item.count} rating{item.count === 1 ? '' : 's'}
-                </span>
-              </span>
-              <span className="bg-foreground/8 h-[4px] w-16 shrink-0 overflow-hidden rounded-full">
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {items.length === 0 ? (
+        <p className="text-muted-foreground px-3 py-6 text-center text-sm">{emptyLabel}</p>
+      ) : (
+        <ol>
+          {items.map((item, i) => (
+            <li key={item.eventId} className="border-b last:border-b-0">
+              <Link
+                href={item.slug ? `/mv/${item.slug}` : '/mvs'}
+                className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-2 transition-colors"
+              >
                 <span
-                  className="gradient-signature block h-full rounded-full"
-                  style={{ width: `${item.avg * 10}%` }}
-                />
-              </span>
-              <span className="tabular w-8 shrink-0 text-right text-[12.5px] font-bold">
-                {item.avg.toFixed(1)}
-              </span>
-              <DeltaBadge delta={item.delta} />
-            </Link>
-          </li>
-        ))}
-      </ol>
+                  className={cn(
+                    'tabular w-5 shrink-0 text-[13px] font-bold',
+                    i === 0 ? 'text-amber' : 'text-muted-foreground',
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-semibold">{item.title}</span>
+                  <span className="text-muted-foreground block truncate text-[10px]">
+                    {item.groupName} · {item.count} rating{item.count === 1 ? '' : 's'}
+                  </span>
+                </span>
+                <span className="bg-foreground/8 h-[4px] w-16 shrink-0 overflow-hidden rounded-full">
+                  <span
+                    className="gradient-signature block h-full rounded-full"
+                    style={{ width: `${item.avg * 10}%` }}
+                  />
+                </span>
+                <span className="tabular w-8 shrink-0 text-right text-[12.5px] font-bold">
+                  {item.avg.toFixed(1)}
+                </span>
+                <DeltaBadge delta={item.delta} />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </Panel>
   )
 }
