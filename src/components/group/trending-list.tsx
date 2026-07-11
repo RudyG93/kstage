@@ -3,20 +3,22 @@ import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { formatDDay } from '@/lib/events/date'
 import { cn, compactNumber } from '@/lib/utils'
 import type { GroupSummary } from '@/lib/groups/queries'
-import type { NextEventInfo } from '@/components/group-card'
 
 export interface TrendingEntry {
   group: GroupSummary
   follows: number
   isFollowing: boolean
-  nextEvent: NextEventInfo | null
+  /** Pourquoi le groupe est « du moment » — résolu côté serveur (uniforme). */
+  reason: string
 }
 
-// TRENDING (§7.5.2) : rang, vignette 32px, contexte (prochain event ou agence),
-// compteur de follows ABSOLU (pas d'historique → pas de « ▲n », écart assumé).
+// TRENDING (refonte 2026-07-11) : classé par signal DU MOMENT (imminence d'un
+// event + récence d'une sortie — cf. page), plus par follows cumulés. Chaque
+// ligne porte sa raison en sous-titre ; les follows restent en info
+// secondaire. Le lien « All » (qui re-triait la même page) est retiré : sur
+// ~80 groupes, le top 5 EST la liste trending.
 export function TrendingList({
   entries,
   isAuthed,
@@ -27,9 +29,9 @@ export function TrendingList({
   if (entries.length === 0) return null
   return (
     <Panel>
-      <PanelHeader label="Trending" action={{ label: 'All', href: '/groups?sort=pop_desc' }} />
+      <PanelHeader label="Trending" />
       <ol>
-        {entries.map(({ group, follows, isFollowing, nextEvent }, i) => (
+        {entries.map(({ group, follows, isFollowing, reason }, i) => (
           <li key={group.id} className="relative border-b last:border-b-0">
             <Link
               href={`/groups/${group.slug}`}
@@ -63,11 +65,7 @@ export function TrendingList({
               )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-semibold">{group.name}</span>
-                <span className="text-muted-foreground block truncate text-[10px]">
-                  {nextEvent
-                    ? `${nextEvent.title} · ${formatDDay(nextEvent.start_at, 'Asia/Seoul')}`
-                    : (group.fandom_name ?? '—')}
-                </span>
+                <span className="text-muted-foreground block truncate text-[10px]">{reason}</span>
               </span>
               <span className="tabular text-teal shrink-0 text-[10px] font-semibold">
                 {compactNumber(follows)} follow{follows === 1 ? '' : 's'}

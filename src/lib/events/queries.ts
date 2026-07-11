@@ -201,6 +201,35 @@ export async function getNextEventForGroups(
   return out
 }
 
+/**
+ * Dernière sortie RÉCENTE (mv main ou release ≤ `days` jours) par groupe —
+ * signal « recency » du panneau Trending (2026-07-11). Un fetch, réduction TS.
+ */
+export async function getRecentReleasesForGroups(
+  groupIds: string[],
+  days = 30,
+): Promise<Map<string, { type: EventType; start_at: string; title: string }>> {
+  const out = new Map<string, { type: EventType; start_at: string; title: string }>()
+  if (groupIds.length === 0) return out
+  const supabase = await createClient()
+  const since = new Date(Date.now() - days * 86_400_000).toISOString()
+  const { data, error } = await supabase
+    .from('events')
+    .select('group_id, type, start_at, title')
+    .in('group_id', groupIds)
+    .in('type', ['mv', 'release'])
+    .or(isMainOrNonMv)
+    .gte('start_at', since)
+    .lte('start_at', new Date().toISOString())
+    .order('start_at', { ascending: false })
+  if (error) throw error
+  for (const e of data ?? []) {
+    if (!e.group_id || out.has(e.group_id)) continue
+    out.set(e.group_id, { type: e.type, start_at: e.start_at, title: e.title })
+  }
+  return out
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]

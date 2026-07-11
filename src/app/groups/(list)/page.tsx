@@ -6,8 +6,9 @@ import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupSort } from '@/components/home/group-sort'
 import { TrendingList, type TrendingEntry } from '@/components/group/trending-list'
 import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
-import { getNextEventForGroups } from '@/lib/events/queries'
+import { getNextEventForGroups, getRecentReleasesForGroups } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { pickTrending } from '@/lib/groups/trending'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 
@@ -78,14 +79,21 @@ export default async function GroupsPage({
     }
   })
 
-  // Ligne statut des tuiles (prochain event) : groupes suivis + top trending.
   const followedItems = sorted.filter((g) => followedIds.has(g.id))
-  const trendingCandidates = [...items]
-    .sort((a, b) => popOf(b.id) - popOf(a.id) || a.name.localeCompare(b.name))
-    .slice(0, 5)
-  const nextEvents = await getNextEventForGroups([
-    ...new Set([...followedItems.map((g) => g.id), ...trendingCandidates.map((g) => g.id)]),
+
+  // Trending = signal DU MOMENT (reproche Rudy 2026-07-11 : le tri par follows
+  // cumulés n'est pas du trending). Score = imminence d'un event futur
+  // (horizon 45 j, poids 3) + récence d'une sortie (fenêtre 30 j, poids 2) ;
+  // les follows ne servent plus que de départage. Un fetch .in() global pour
+  // les deux signaux (81 groupes, coût négligeable) — sert aussi la ligne
+  // statut des tuiles.
+  const allIds = items.map((g) => g.id)
+  const [nextEvents, recentReleases] = await Promise.all([
+    getNextEventForGroups([...new Set([...followedItems.map((g) => g.id), ...allIds])]),
+    getRecentReleasesForGroups(allIds, 30),
   ])
+
+  const trending = pickTrending(items, nextEvents, recentReleases, popOf, 5)
 
   const toGridItem = (item: (typeof sorted)[number]) => ({
     group: item,
@@ -95,11 +103,11 @@ export default async function GroupsPage({
     nextEvent: nextEvents.get(item.id) ?? null,
   })
 
-  const trendingEntries: TrendingEntry[] = trendingCandidates.map((g) => ({
-    group: g,
-    follows: popOf(g.id),
-    isFollowing: followedIds.has(g.id),
-    nextEvent: nextEvents.get(g.id) ?? null,
+  const trendingEntries: TrendingEntry[] = trending.map(({ item, reason }) => ({
+    group: item,
+    follows: popOf(item.id),
+    isFollowing: followedIds.has(item.id),
+    reason,
   }))
 
   return (
