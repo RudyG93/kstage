@@ -39,28 +39,28 @@ test.describe('auth golden path', () => {
     if (await firstFollow.count()) await firstFollow.click()
     await expect(page.getByRole('button', { name: 'Unfollow', exact: true }).first()).toBeVisible()
 
-    // Filtres de type : chips URL-driven de la page Calendar (Data Desk §7.2 —
-    // le TypeFilterVertical de la home a été remplacé par ces chips).
+    // Filtres de type : chips CLIENT de la page Calendar (refonte 2026-07-12 —
+    // plus d'URL-driven : boutons aria-pressed, bascule instantanée, l'URL ne
+    // porte plus les filtres).
     await page.goto('/calendar')
 
-    // 1er filtre : "MV" → URL contient `type=mv`.
-    const mvChip = page.getByRole('link', { name: 'MV', exact: true })
+    // 1er filtre : "MV" → chip pressée, URL inchangée (pas de ?type=).
+    const mvChip = page.getByRole('button', { name: 'MV', exact: true })
     await mvChip.scrollIntoViewIfNeeded()
     await mvChip.click()
-    await expect(page).toHaveURL(/[?&]type=mv(?:[,&]|$)/)
-    await expect(mvChip).toHaveAttribute('aria-current', 'true')
+    await expect(mvChip).toHaveAttribute('aria-pressed', 'true')
+    await expect(page).not.toHaveURL(/[?&]type=/)
 
-    // 2e filtre : "Release" → URL CSV `type=mv,release` (insertion order ;
-    // URLSearchParams encode la virgule en %2C).
-    const releaseChip = page.getByRole('link', { name: 'Release', exact: true })
+    // 2e filtre : "Release" s'ajoute (multi-toggle).
+    const releaseChip = page.getByRole('button', { name: 'Release', exact: true })
     await releaseChip.click()
-    await expect(page).toHaveURL(/[?&]type=mv(?:%2C|,)release(?:[,&]|$)/)
-    await expect(releaseChip).toHaveAttribute('aria-current', 'true')
+    await expect(releaseChip).toHaveAttribute('aria-pressed', 'true')
+    await expect(mvChip).toHaveAttribute('aria-pressed', 'true')
 
-    // Re-click MV → URL ne contient plus que `release`.
+    // Re-click MV → seul Release reste actif.
     await mvChip.click()
-    await expect(page).toHaveURL(/[?&]type=release(?:[,&]|$)/)
-    await expect(mvChip).not.toHaveAttribute('aria-current', 'true')
+    await expect(mvChip).toHaveAttribute('aria-pressed', 'false')
+    await expect(releaseChip).toHaveAttribute('aria-pressed', 'true')
 
     // La home connectée affiche la sidebar "My groups" (preuve d'état connecté
     // + au moins un groupe suivi → l'empty-state a disparu).
