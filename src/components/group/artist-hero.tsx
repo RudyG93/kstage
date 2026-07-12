@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { BackButton } from '@/components/back-button'
-import { ShareButton } from '@/components/share-button'
 
 // Bannière Data Desk 210px (§7.6.1) : image (fallback gradient color_hex 150deg
 // + monogramme géant), boutons back/share flottants, tags + nom 30/800 + méta,
@@ -61,7 +60,6 @@ export function ArtistHero({
         aria-hidden
       />
       <BackButton className="absolute top-3 left-3 z-10" />
-      <ShareButton title={name} className="absolute top-3 right-3 z-10" />
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3">
         <div className="min-w-0">
           {tags && <div className="flex flex-wrap items-center gap-1.5">{tags}</div>}
