@@ -137,6 +137,7 @@ export default async function MvPage({
             </div>
             <LikeButton
               eventId={event.id}
+              slug={slug}
               initialLiked={like.liked}
               count={like.count}
               isAuthed={isAuthed}
