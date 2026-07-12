@@ -1,6 +1,8 @@
-// Helpers Spotify Web API (client-credentials, server-only) pour rafraîchir les
-// images d'artistes (§10). Mêmes endpoints que scripts/roster/seed-artist-links.ts,
-// version minimale réutilisable côté route cron.
+// Helpers Spotify Web API (client-credentials, server-only) pour les images
+// d'artistes. R4-B (2026-07-13) : accès PAR ID uniquement, via links->>'spotify'
+// seedé. La recherche par nom est SUPPRIMÉE : son repli aveugle `items[0]`
+// écrivait n'importe quel homonyme (WEi → « Weird Al » Yankovic, vérifié en
+// prod), et le cron hebdo re-corrompait toute réparation manuelle.
 
 const norm = (s: string) =>
   s
@@ -25,43 +27,58 @@ export async function spotifyToken(): Promise<string | null> {
   return ((await res.json()) as { access_token?: string }).access_token ?? null
 }
 
-export interface SpotifyArtist {
+/** ID artiste depuis une URL open.spotify.com/artist/<id> (groups.links). */
+export function parseSpotifyArtistId(url: string | null | undefined): string | null {
+  if (!url) return null
+  const m = /artist\/([A-Za-z0-9]+)/.exec(url)
+  return m ? m[1] : null
+}
+
+export interface SpotifyArtistById {
+  name: string
+  /** Image canonique la plus grande (set officiel 640/320/160, carré). */
   image: string | null
+  /** Null en app dev-mode (restriction 2026, cf. reference_spotify_api_restrictions). */
   followers: number | null
 }
 
-/**
- * Artiste Spotify pour `name` (match exact prioritaire) : image la plus grande
- * + nombre de followers. Un seul search couvre les deux usages (image §10 +
- * followers §4.3) pour ne pas doubler la conso de quota.
- */
-export async function spotifyArtist(name: string, token: string): Promise<SpotifyArtist> {
-  const res = await fetch(
-    `https://api.spotify.com/v1/search?type=artist&limit=5&q=${encodeURIComponent(name)}`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!res.ok) return { image: null, followers: null }
-  const items =
-    (
-      (await res.json()) as {
-        artists?: {
-          items?: {
-            name: string
-            images?: { url: string; width: number }[]
-            followers?: { total: number }
-          }[]
-        }
-      }
-    ).artists?.items ?? []
-  const exact = items.find((a) => a?.name && norm(a.name) === norm(name))
-  const a = exact ?? items[0]
+/** Artiste par ID — jamais d'ambiguïté d'homonyme, images carrées canoniques. */
+export async function spotifyArtistById(
+  id: string,
+  token: string,
+): Promise<SpotifyArtistById | null> {
+  const res = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  const a = (await res.json()) as {
+    name?: string
+    images?: { url: string; width: number }[]
+    followers?: { total: number }
+  }
+  if (!a?.name) return null
   return {
-    image: (a?.images ?? []).slice().sort((x, y) => y.width - x.width)[0]?.url ?? null,
-    followers: a?.followers?.total ?? null,
+    name: a.name,
+    image: (a.images ?? []).slice().sort((x, y) => y.width - x.width)[0]?.url ?? null,
+    followers: a.followers?.total ?? null,
   }
 }
 
-/** Image d'artiste la plus grande pour `name` (match exact prioritaire), ou null. */
-export async function spotifyArtistImage(name: string, token: string): Promise<string | null> {
-  return (await spotifyArtist(name, token)).image
+// Noms Spotify officiels qui ne contiennent pas le nom DB (seul cas connu :
+// TXT ↔ TOMORROW X TOGETHER). Clés/valeurs en forme normalisée.
+const NAME_ALIASES: Record<string, string> = {
+  txt: 'tomorrowxtogether',
+}
+
+/**
+ * Garde de cohérence entre le nom en DB et le nom renvoyé par Spotify : un
+ * lien mal seedé (TXT → artiste « T.X.T. ») ne doit JAMAIS écrire d'image.
+ * Match: égalité normalisée, inclusion dans un sens ou l'autre, ou alias.
+ */
+export function spotifyNameMatches(groupName: string, artistName: string): boolean {
+  const g = norm(groupName)
+  const s = norm(artistName)
+  if (!g || !s) return false
+  if (g === s || g.includes(s) || s.includes(g)) return true
+  return NAME_ALIASES[g] === s
 }

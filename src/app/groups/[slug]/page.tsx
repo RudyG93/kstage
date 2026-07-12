@@ -17,8 +17,7 @@ import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { formatDDay } from '@/lib/events/date'
-import { extractYouTubeId } from '@/lib/events/youtube-id'
-import { faceCrop } from '@/lib/images/cloudinary'
+import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { createClient } from '@/lib/supabase/server'
 
@@ -90,18 +89,10 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     biasMemberId = viewerProfile?.bias_member_id ?? null
   }
 
-  // Hero : le thumbnail du DERNIER MV principal passe AVANT image_landscape —
-  // les fanarts TheAudioDB sont des seeds figés (aespa servait un visuel 2021,
-  // reproche Rudy 2026-07-11) alors que le dernier MV est l'ère en cours. Même
-  // logique que le hero home (next-drop-card). hqdefault : servie pour TOUTE
-  // vidéo (maxres 404 sur certaines), suffisante en object-cover.
-  const latestMainMv = mvs.find((m) => m.mv_kind === 'main') ?? mvs[0]
-  const latestMvId = latestMainMv ? extractYouTubeId(latestMainMv.source_url) : null
-  const bannerSrc =
-    group.banner_url ??
-    (latestMvId ? `https://i.ytimg.com/vi/${latestMvId}/hqdefault.jpg` : null) ??
-    group.image_landscape ??
-    (group.image_url ? faceCrop(group.image_url, 1600, 500) : null)
+  // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
+  // par les labels à chaque ère) remplace le hqdefault 480px flou du dernier
+  // MV et les fanarts TheAudioDB figés.
+  const bannerSrc = groupBannerSrc(group)
 
   const links = group.links as Record<string, string> | null
   const followers = (countRows ?? []).find((r) => r.group_id === group.id)?.follows ?? 0
@@ -148,6 +139,11 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
               <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
                 Group
               </span>
+              {group.disbanded_on && (
+                <span className="label-data-inline bg-page/50 text-muted-foreground rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                  Disbanded {new Date(group.disbanded_on).getUTCFullYear()}
+                </span>
+              )}
               {nextComeback && (
                 <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
                   Comeback {formatDDay(nextComeback.start_at, 'Asia/Seoul')}
@@ -174,8 +170,9 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
             links={links}
           />
 
-          {/* Ordre Members > Upcoming > MVs (retour Rudy 2026-07-12) : les
-              visages d'abord, l'agenda ensuite, le catalogue en fond de page. */}
+          {/* Ordre Members > Former > Upcoming > MVs (retours Rudy 2026-07-12
+              et 13) : les visages d'abord — anciens membres juste sous les
+              actuels, pas relégués en fond de page. */}
           {activeMembers.length > 0 && (
             <section className="space-y-2">
               <span className="label-data">Members — {activeMembers.length}</span>
@@ -184,6 +181,13 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
                 groupColorHex={group.color_hex}
                 biasMemberId={biasMemberId}
               />
+            </section>
+          )}
+
+          {inactiveMembers.length > 0 && (
+            <section className="space-y-2">
+              <span className="label-data">Former & pre-debut</span>
+              <MembersGrid members={inactiveMembers} groupColorHex={group.color_hex} />
             </section>
           )}
 
@@ -241,13 +245,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
                   <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} />
                 ))}
               </div>
-            </section>
-          )}
-
-          {inactiveMembers.length > 0 && (
-            <section className="space-y-2">
-              <span className="label-data">Former & pre-debut</span>
-              <MembersGrid members={inactiveMembers} groupColorHex={group.color_hex} />
             </section>
           )}
 
