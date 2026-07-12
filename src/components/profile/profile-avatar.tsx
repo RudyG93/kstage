@@ -49,7 +49,7 @@ export function ProfileAvatar({
         email={email ?? undefined}
         username={username ?? undefined}
         avatarUrl={current}
-        size={112}
+        size={64}
       />
       <span className="absolute inset-0 flex items-center justify-center rounded-full text-xs font-medium text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
         {pending ? 'Saving…' : 'Change'}

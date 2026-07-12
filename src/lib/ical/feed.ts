@@ -43,7 +43,12 @@ export function buildCalendarFeed(input: {
   for (const e of groupMusicShowEpisodes(input.events)) {
     const row = e as FeedEventRow
     const lineup = e.lineup && e.lineup.length >= 2 ? e.lineup : null
-    const title = displayEventTitle(e.title, lineup ? undefined : e.groups?.name, e.episode_number)
+    const title = displayEventTitle(
+      e.title,
+      lineup ? undefined : e.groups?.name,
+      e.episode_number,
+      e.type,
+    )
     // UID d'un épisode fusionné : la clé de fusion (title|start), PAS l'id du
     // représentant — il churnerait avec les follows de l'user.
     const uid = lineup

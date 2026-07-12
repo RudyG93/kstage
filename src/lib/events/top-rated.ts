@@ -23,6 +23,7 @@ export interface TopRatedItem {
   title: string
   slug: string | null
   groupName: string | null
+  groupImage: string | null
 }
 
 export interface RatedEventAgg {
@@ -33,6 +34,7 @@ export interface RatedEventAgg {
   title: string
   slug: string | null
   groupName: string | null
+  groupImage: string | null
 }
 
 const DAY_MS = 86_400_000
@@ -84,7 +86,9 @@ export async function getTopRatedByPeriods(
   const supabase = await createClient()
   const { data } = await supabase
     .from('event_ratings')
-    .select('event_id, score, events!inner(id, title, slug, start_at, type, groups!inner(name))')
+    .select(
+      'event_id, score, events!inner(id, title, slug, start_at, type, groups!inner(name, image_url))',
+    )
     .in('events.type', ['mv', 'release'])
 
   const byEvent = new Map<string, RatedEventAgg & { sum: number }>()
@@ -100,6 +104,7 @@ export async function getTopRatedByPeriods(
       title: e.title,
       slug: e.slug,
       groupName: e.groups?.name ?? null,
+      groupImage: e.groups?.image_url ?? null,
     }
     agg.sum += r.score
     agg.count += 1

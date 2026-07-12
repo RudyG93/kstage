@@ -101,3 +101,42 @@ describe('displaySongTitle', () => {
     expect(displaySongTitle('aespa - Hot Mess Official MV', 'aespa')).toBe('Hot Mess')
   })
 })
+
+describe('displayEventTitle — releases kpopofficial (fix 2026-07-12)', () => {
+  it('prend le segment après le dernier en-dash (cas réel Crow)', () => {
+    expect(
+      displayEventTitle('i-dle Pre-release Single – Crow (2026)', 'i-dle', null, 'release'),
+    ).toBe('Crow')
+    expect(
+      displayEventTitle('i-dle 9th Mini Album – We made (2026)', 'i-dle', null, 'release'),
+    ).toBe('We made')
+    expect(
+      displayEventTitle(
+        'aespa 1st Japan Mini Album – KISS N TELL (2026)',
+        'aespa',
+        null,
+        'release',
+      ),
+    ).toBe('KISS N TELL')
+  })
+  it('titres sans en-dash intacts (année strippée)', () => {
+    expect(displayEventTitle('Mark on Me', '&TEAM', null, 'release')).toBe('Mark on Me')
+    // Descripteur sans nom de sortie : on garde tel quel (rien à extraire).
+    expect(displayEventTitle('NCT 127 7th Full Album (2026)', 'NCT 127', null, 'release')).toBe(
+      'NCT 127 7th Full Album',
+    )
+  })
+  it('multi en-dash : dernier segment (cas KARD NOWHERE)', () => {
+    expect(
+      displayEventTitle(
+        'KARD 1st Album – Where To Now? (Part.2) : NOWHERE (2026)',
+        'KARD',
+        null,
+        'release',
+      ),
+    ).toBe('Where To Now? (Part 2) : NOWHERE')
+  })
+  it('hors release : comportement inchangé', () => {
+    expect(displayEventTitle('ATEEZ Album - Golden Hour', 'ATEEZ', null, 'mv')).toBe('Golden Hour')
+  })
+})

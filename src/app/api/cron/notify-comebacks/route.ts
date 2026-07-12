@@ -82,7 +82,7 @@ export async function GET(req: Request) {
       id: e.id,
       groupId: e.group_id,
       groupName: e.groups?.name ?? null,
-      title: displayEventTitle(e.title, e.groups?.name),
+      title: displayEventTitle(e.title, e.groups?.name, null, e.type),
       type: e.type,
       startAt: e.start_at,
       createdAt: e.created_at,

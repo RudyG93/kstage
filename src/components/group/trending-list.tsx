@@ -76,7 +76,7 @@ export function TrendingList({
                 groupId={group.id}
                 initialFollowing={isFollowing}
                 isAuthed={isAuthed}
-                iconOnly
+                subtle
               />
             </div>
           </li>

@@ -16,6 +16,7 @@ export function FollowButton({
   iconOnly = false,
   large = false,
   pill = false,
+  subtle = false,
 }: {
   groupId: string
   initialFollowing: boolean
@@ -28,6 +29,10 @@ export function FollowButton({
   // Variante pilule Data Desk (bannière groupe §7.6.1) : FOLLOW = encre pleine,
   // FOLLOWING = outline rose + cœur rempli.
   pill?: boolean
+  // Variante discrète pour les LIGNES DE LISTE (Trending…) : cœur nu, petit,
+  // sans fond — le rond noir iconOnly est pensé pour les overlays sur image
+  // et jurait sur une liste (retour Rudy 2026-07-12).
+  subtle?: boolean
 }) {
   const [optimistic, setOptimistic] = useOptimistic(initialFollowing)
   const [pending, startTransition] = useTransition()
@@ -47,12 +52,22 @@ export function FollowButton({
   )
   const heartSize = large ? 'size-6' : 'size-5'
 
+  const subtleClass =
+    'flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/50 outline-none'
+
   if (!isAuthed) {
     if (pill) {
       return (
         <Link href="/login" className={cn(pillClass, className)}>
           <HeartIcon className="size-3" aria-hidden />
           Follow
+        </Link>
+      )
+    }
+    if (subtle) {
+      return (
+        <Link href="/login" aria-label="Follow" className={cn(subtleClass, className)}>
+          <HeartIcon className="text-muted-foreground size-3.5" aria-hidden />
         </Link>
       )
     }
@@ -98,6 +113,27 @@ export function FollowButton({
       >
         <HeartIcon className={cn('size-3', optimistic && 'fill-current')} aria-hidden />
         {optimistic ? 'Following' : 'Follow'}
+      </button>
+    )
+  }
+
+  if (subtle) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        aria-pressed={optimistic}
+        aria-label={optimistic ? 'Unfollow' : 'Follow'}
+        className={cn(subtleClass, className)}
+      >
+        <HeartIcon
+          className={cn(
+            'size-3.5',
+            optimistic ? 'fill-live text-live' : 'text-muted-foreground hover:text-foreground',
+          )}
+          aria-hidden
+        />
       </button>
     )
   }

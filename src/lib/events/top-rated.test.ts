@@ -16,6 +16,7 @@ const agg = (id: string, avg: number, releasedDaysAgo: number, count = 1): Rated
   title: id,
   slug: id,
   groupName: 'g',
+  groupImage: null,
 })
 
 describe('bucketByReleaseWindow', () => {

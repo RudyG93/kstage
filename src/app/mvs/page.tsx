@@ -144,7 +144,7 @@ export default async function MvsPage({
               <ul className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {sortedLatest.map((mv) => (
                   <li key={mv.id}>
-                    <MvCard mv={mv} rating={ratings.get(mv.id)} showRateChip />
+                    <MvCard mv={mv} rating={ratings.get(mv.id)} />
                   </li>
                 ))}
               </ul>

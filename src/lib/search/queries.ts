@@ -47,21 +47,31 @@ export function resolveGroupTokens(
 
 const GROUP_SELECT = 'id, slug, name, agency, image_url, color_hex, is_solo'
 
+// Alias de graphies courantes que la normalisation seule ne couvre pas
+// ((G)I-DLE → « gidle » ≠ « idle »). Aligné sur GROUP_ALIASES du scraping.
+const SEARCH_ALIASES: Record<string, string> = { gidle: 'idle' }
+
 export async function searchGroups(q: string, limit = 5) {
-  const needle = sanitizeIlike(q)
+  const needle = q.trim()
   if (!needle) return []
   const supabase = await createClient()
+  // Matching NORMALISÉ en TS, pas un ilike brut : « idle » doit trouver
+  // « i-dle » (le tiret cassait le LIKE — retour Rudy 2026-07-12). Même
+  // pattern que resolveGroupTokens ; ~112 rows, coût négligeable.
   const [{ data }, subs] = await Promise.all([
-    supabase
-      .from('groups')
-      .select(GROUP_SELECT)
-      .ilike('name', `%${needle}%`)
-      .limit(limit * 3),
+    supabase.from('groups').select(GROUP_SELECT),
     getGroupSubscriberCounts(),
   ])
+  const norm = normalize(needle)
+  if (!norm) return []
+  const target = SEARCH_ALIASES[norm] ?? norm
+  const rows = (data ?? []).filter((g) => {
+    const n = normalize(g.name)
+    return n.includes(norm) || n.includes(target) || normalize(g.slug).includes(target)
+  })
   // Tri par notoriété (subs YouTube max par groupe) plutôt qu'alphabétique :
   // « les plus connus d'abord » (retour Rudy 2026-07-03).
-  return (data ?? []).sort((a, b) => (subs.get(b.id) ?? 0) - (subs.get(a.id) ?? 0)).slice(0, limit)
+  return rows.sort((a, b) => (subs.get(b.id) ?? 0) - (subs.get(a.id) ?? 0)).slice(0, limit)
 }
 
 export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]

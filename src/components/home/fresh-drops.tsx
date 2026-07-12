@@ -17,12 +17,7 @@ export function FreshDrops({
       <PanelHeader label="Fresh drops — rate them" action={{ label: 'All drops', href: '/mvs' }} />
       <div className="grid grid-cols-2 gap-[9px] p-3">
         {mvs.map((mv) => (
-          <MvCard
-            key={mv.id}
-            mv={mv}
-            rating={ratings.get(mv.id) ?? { avg: 0, count: 0 }}
-            showRateChip
-          />
+          <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id) ?? { avg: 0, count: 0 }} />
         ))}
       </div>
     </Panel>
