@@ -41,8 +41,11 @@ async function main() {
         if (!matchesGroup(t, g.name)) continue
         if (!/\bmv\b|\bm\/v\b|music video/i.test(t)) continue
         if (/teaser|behind|reaction|cover|dance practice|live|fancam|직캠|리액션/i.test(t)) continue
-        const c = byChannel.get(it.snippet.channelId) ?? {
-          title: it.snippet.channelTitle,
+        // Annotation explicite : sans elle, le littéral de repli infère
+        // `hits: never[]` (le `??` n'est pas contextualisé par le générique
+        // de la Map) → `next build` rouge (typecheck global, scripts inclus).
+        const c: { title: string; hits: string[] } = byChannel.get(it.snippet.channelId) ?? {
+          title: String(it.snippet.channelTitle),
           hits: [],
         }
         if (!c.hits.includes(t)) c.hits.push(t)
