@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from 'react'
 import Link from 'next/link'
 import { HeartIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { toggleLike } from '@/lib/events/like-actions'
 import { cn } from '@/lib/utils'
@@ -10,11 +11,13 @@ import { cn } from '@/lib/utils'
 // Like binaire d'un MV (distinct du vote 1-10). Optimistic sur l'état + le compteur.
 export function LikeButton({
   eventId,
+  slug,
   initialLiked,
   count,
   isAuthed,
 }: {
   eventId: string
+  slug: string
   initialLiked: boolean
   count: number
   isAuthed: boolean
@@ -42,7 +45,13 @@ export function LikeButton({
         liked: !optimistic.liked,
         count: optimistic.count + (optimistic.liked ? -1 : 1),
       })
-      await toggleLike(eventId, optimistic.liked)
+      try {
+        await toggleLike(eventId, optimistic.liked, slug)
+      } catch {
+        // Un throw non catché dans la transition envoyait l'error boundary
+        // plein écran (« something went wrong ») — retour Rudy 2026-07-12.
+        toast.error("Couldn't update like — please try again.")
+      }
     })
   }
 
