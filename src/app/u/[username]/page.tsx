@@ -85,9 +85,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   return (
     <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
-        {/* Identité (§7.8.2) : avatar 64 ring primary, @user, fan since, EDIT. */}
+        {/* Identité (§7.8.2) : avatar 64 ring primary, @user, fan since, EDIT.
+            `flex` sur le wrapper : sans lui l'avatar (inline) laissait un
+            interstice de baseline → ring décentré (retour Rudy 2026-07-12).
+            Taille unifiée 64 owner/visiteur (l'owner rendait 112 dans un ring
+            calibré 64). */}
         <header className="flex items-center gap-4">
-          <div className="ring-primary shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-[var(--page)]">
+          <div className="ring-primary flex shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-[var(--page)]">
             {isOwner ? (
               <ProfileAvatar
                 email={user?.email ?? null}
@@ -146,8 +150,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             rated={stats.rated}
             avg={userRatings.avg}
             likes={stats.liked}
-            ultGroup={favorite?.name ?? null}
-            bias={bias?.stage_name ?? null}
           />
         )}
 
@@ -246,18 +248,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <Panel>
             <PanelHeader label="Settings" />
             <div className="divide-y">
-              <Link
-                href="/account"
-                className="hover:bg-secondary/60 flex min-h-[44px] items-center justify-between gap-3 px-3 py-2 transition-colors"
-              >
-                <span>
-                  <span className="block text-xs font-semibold">Push notifications</span>
-                  <span className="text-muted-foreground block text-[10px]">
-                    Comebacks: announced + day-of, in your timezone
-                  </span>
-                </span>
-                <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
-              </Link>
               <div className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2">
                 <span>
                   <span className="block text-xs font-semibold">Theme</span>
@@ -272,9 +262,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 className="hover:bg-secondary/60 flex min-h-[44px] items-center justify-between gap-3 px-3 py-2 transition-colors"
               >
                 <span>
-                  <span className="block text-xs font-semibold">Account</span>
+                  <span className="block text-xs font-semibold">Account & notifications</span>
                   <span className="text-muted-foreground block text-[10px]">
-                    Email, username, avatar, password
+                    Email, username, avatar, password, push preferences
                   </span>
                 </span>
                 <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />

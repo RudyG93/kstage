@@ -1,23 +1,19 @@
-import { Star } from 'lucide-react'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { cn } from '@/lib/utils'
 
-// Bloc stats du profil : panneau sobre (4 stats + ligne ult/bias). Remplace
-// l'ancienne « fan card » gradient/partage (retirée à la demande de Rudy).
+// Bloc stats du profil : panneau sobre, 4 stats. La ligne texte « Ult group …
+// · bias … » a été retirée (2026-07-12, retour Rudy) : les pickers Favorite/
+// Bias juste en dessous montrent déjà ces infos visuellement.
 export function ProfileStats({
   following,
   rated,
   avg,
   likes,
-  ultGroup,
-  bias,
 }: {
   following: number
   rated: number
   avg: number | null
   likes: number
-  ultGroup: string | null
-  bias: string | null
 }) {
   return (
     <Panel>
@@ -28,22 +24,6 @@ export function ProfileStats({
         <Stat label="Avg" value={avg !== null ? avg.toFixed(1) : '—'} accent="text-amber" />
         <Stat label="Likes" value={String(likes)} accent="text-rose" />
       </div>
-      {(ultGroup || bias) && (
-        <p className="text-muted-foreground flex items-center gap-1 border-t px-3 py-2.5 text-xs">
-          {ultGroup && (
-            <span>
-              Ult group <span className="text-foreground font-semibold">{ultGroup}</span>
-            </span>
-          )}
-          {ultGroup && bias && <span aria-hidden> · </span>}
-          {bias && (
-            <span className="inline-flex items-center gap-1">
-              bias <span className="text-foreground font-semibold">{bias}</span>
-              <Star className="fill-amber text-amber size-3" aria-hidden />
-            </span>
-          )}
-        </p>
-      )}
     </Panel>
   )
 }
