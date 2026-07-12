@@ -7,7 +7,7 @@ import { FollowButton } from '@/components/follow-button'
 import { QueueRow } from '@/components/events/queue-row'
 import { ArtistHero } from '@/components/group/artist-hero'
 import { StatsStrip } from '@/components/group/stats-strip'
-import { MvScrollRow } from '@/components/mv/mv-scroll-row'
+import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
 import { SuggestEventDialog } from '@/components/suggestions/suggest-event-dialog'
 import { getGroupBySlug } from '@/lib/groups/queries'
@@ -174,11 +174,37 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
             links={links}
           />
 
+          {/* Ordre Members > Upcoming > MVs (retour Rudy 2026-07-12) : les
+              visages d'abord, l'agenda ensuite, le catalogue en fond de page. */}
+          {activeMembers.length > 0 && (
+            <section className="space-y-2">
+              <span className="label-data">Members — {activeMembers.length}</span>
+              <MembersGrid
+                members={activeMembers}
+                groupColorHex={group.color_hex}
+                biasMemberId={biasMemberId}
+              />
+            </section>
+          )}
+
           {/* Events */}
           <Panel>
             <PanelHeader
               label={`Upcoming — ${group.name}`}
-              action={{ label: 'Calendar', href: `/calendar?group=${slug}` }}
+              // Contribute intégré au header du panneau (avant : perdu dans un
+              // footer sous les events) — ghost discret, cohérent Data Desk.
+              right={
+                user ? (
+                  <SuggestEventDialog groups={[{ id: group.id, name: group.name }]} />
+                ) : (
+                  <Link
+                    href="/login"
+                    className="label-data-inline text-muted-foreground hover:text-foreground text-[9.5px] transition-colors"
+                  >
+                    + Contribute
+                  </Link>
+                )
+              }
             />
             {events.length === 0 ? (
               <div className="p-3">
@@ -195,34 +221,29 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
                 ))}
               </div>
             )}
-            {user && (
-              <div className="flex justify-end border-t px-3 py-2">
-                <SuggestEventDialog groups={[{ id: group.id, name: group.name }]} />
-              </div>
-            )}
+            <div className="flex justify-end border-t px-3 py-2">
+              <Link
+                href={`/calendar?group=${slug}`}
+                className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
+              >
+                Calendar →
+              </Link>
+            </div>
           </Panel>
 
-          {/* MVs */}
+          {/* MVs : grille complète (fin du rail horizontal + « See more » —
+              la place existe, autant tout montrer ; retour Rudy 2026-07-12). */}
           {mvs.length > 0 && (
             <section className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="label-data">MVs — {mvs.length}</span>
+              <span className="label-data">MVs — {mvs.length}</span>
+              <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
+                {mvs.map((mv) => (
+                  <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} />
+                ))}
               </div>
-              <MvScrollRow title={`${group.name} MVs`} href={`/mvs`} mvs={mvs} ratings={ratings} />
             </section>
           )}
 
-          {/* Membres */}
-          {activeMembers.length > 0 && (
-            <section className="space-y-2">
-              <span className="label-data">Members — {activeMembers.length}</span>
-              <MembersGrid
-                members={activeMembers}
-                groupColorHex={group.color_hex}
-                biasMemberId={biasMemberId}
-              />
-            </section>
-          )}
           {inactiveMembers.length > 0 && (
             <section className="space-y-2">
               <span className="label-data">Former & pre-debut</span>

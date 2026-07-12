@@ -77,7 +77,7 @@ export async function getMembersForGroup(groupId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('members')
-    .select('id, slug, stage_name, photo_url, status, position')
+    .select('id, slug, stage_name, photo_url, status, position, birthday')
     .eq('group_id', groupId)
     .order('stage_name', { ascending: true })
   if (error) throw error
@@ -85,6 +85,23 @@ export async function getMembersForGroup(groupId: string) {
 }
 
 export type MemberSummary = Awaited<ReturnType<typeof getMembersForGroup>>[number]
+
+/**
+ * Âge entier depuis une date de naissance ISO — sous-titre des cartes membres
+ * quand `position` est vide (le « — » ne disait rien, retour Rudy 2026-07-12).
+ * `nowMs` injectable pour les tests (et Date.now() reste hors des composants,
+ * lint react purity).
+ */
+export function ageFromBirthday(
+  birthday: string | null,
+  nowMs: number = Date.now(),
+): number | null {
+  if (!birthday) return null
+  const ms = Date.parse(birthday)
+  if (!Number.isFinite(ms)) return null
+  const age = Math.floor((nowMs - ms) / (365.25 * 86_400_000))
+  return age >= 0 && age < 100 ? age : null
+}
 
 /**
  * Liste tous les membres canoniques cliquables (un par artiste) — pour le picker
