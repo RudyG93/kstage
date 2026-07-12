@@ -255,6 +255,18 @@ select a.title, b.title from mv a join mv b
 
 La dédup display-level de `groupMusicShowEpisodes` est **conservée en défense en profondeur**.
 
+### 3.18 — Time-shift carrd : l'heure d'un épisode révisée crée un doublon (découvert et corrigé 2026-07-12)
+
+**Symptôme** : « tous les music shows du 11/07 doublés » (Rudy) — Music Core 954 affiché deux fois, avec le même lineup.
+
+**Cause** : le carrd a changé l'heure de l'épisode (« 3:15pm » → « 3:20pm ») entre deux scrapes. L'idempotence du cron ET les clés de fusion d'affichage étaient sur `start_at` EXACT → une 2ᵉ row par groupe (15:20) à côté de la 15:15, invisibles pour l'index unique `(group_id, start_at)` comme pour la réconciliation (tous keyés start_at).
+
+**Fix** : **un show n'a jamais deux épisodes le même jour** — tout passe au jour KST :
+
+- cron : l'existence est cherchée dans les bornes du jour KST (`kstDayBounds`) ; time-shift → **UPDATE** de start_at/episode ; rows surnuméraires du même jour → purge (self-heal, compteur `updated`) ; la réconciliation balaye le jour entier ;
+- affichage : `groupMusicShowEpisodes`/dédup fusionnent par `title|kstDayKey` (plus par instant exact).
+  Purge one-shot des 3 rows 15:15 (notifs détachées). Un seul cas dans tout l'historique.
+
 ### 3.16 — Music shows : interview liée comme stage, typo de lineup, fantômes de lineup révisé (corrigés 2026-07-11)
 
 Trois défauts distincts trouvés sur le SEUL épisode M Countdown EP.936 (09/07) :

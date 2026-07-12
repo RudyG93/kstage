@@ -284,3 +284,19 @@ describe('splitUpcomingByBuckets — fuseau utilisateur (§1.3)', () => {
     )
   })
 })
+
+describe('time-shift carrd (fix 2026-07-12)', () => {
+  it('même épisode à deux heures du même jour KST → une seule carte', () => {
+    // Cas prod réel : Music Core 954 du 11/07, carrd passé de 15:15 à 15:20 KST
+    // → 2 rows par groupe. La fusion par jour KST n'en montre qu'une.
+    const events = [
+      show('a-1515', 'i-dle', { title: 'Music Core', start_at: '2026-07-11T06:15:00Z' }),
+      show('a-1520', 'i-dle', { title: 'Music Core', start_at: '2026-07-11T06:20:00Z' }),
+      show('b-1515', 'BABYMONSTER', { title: 'Music Core', start_at: '2026-07-11T06:15:00Z' }),
+      show('b-1520', 'BABYMONSTER', { title: 'Music Core', start_at: '2026-07-11T06:20:00Z' }),
+    ]
+    const grouped = groupMusicShowEpisodes(events)
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].lineup).toHaveLength(2) // un par groupe, pas quatre
+  })
+})

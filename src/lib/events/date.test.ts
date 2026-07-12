@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getKstMonthRange,
   kstDayKey,
+  kstDayBounds,
   groupEventsByKstDay,
   formatEventDate,
   formatKst,
@@ -120,5 +121,17 @@ describe('relativeTime', () => {
     expect(relativeTime('2026-06-15T12:00:00Z', now)).toBe('2w ago')
     expect(relativeTime('2026-03-04T12:00:00Z', now)).toBe('4mo ago')
     expect(relativeTime('2024-07-04T12:00:00Z', now)).toBe('2y ago')
+  })
+})
+
+describe('kstDayBounds', () => {
+  it('encadre le jour KST contenant l’instant (UTC [from, to))', () => {
+    // 06:15Z le 11/07 = 15:15 KST → jour KST 2026-07-11 = [10/07 15:00Z, 11/07 15:00Z)
+    expect(kstDayBounds('2026-07-11T06:15:00Z')).toEqual({
+      from: '2026-07-10T15:00:00.000Z',
+      to: '2026-07-11T15:00:00.000Z',
+    })
+    // 16:00Z = déjà le lendemain en KST
+    expect(kstDayBounds('2026-07-11T16:00:00Z').from).toBe('2026-07-11T15:00:00.000Z')
   })
 })

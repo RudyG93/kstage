@@ -1,4 +1,4 @@
-import { localDayKey } from './date'
+import { kstDayKey, localDayKey } from './date'
 import { eventHref, isExternalHref } from './href'
 import type { UpcomingEvent } from './queries'
 
@@ -71,7 +71,9 @@ function dedupePerGroupEpisode(events: readonly UpcomingEvent[]): UpcomingEvent[
       out.push(e)
       continue
     }
-    const key = `${e.group_id}|${e.title}|${e.start_at}`
+    // Jour KST, pas start_at exact (fix 2026-07-12) : un time-shift du carrd
+    // (15:15 → 15:20 le 11/07) faisait deux « épisodes » du même show.
+    const key = `${e.group_id}|${e.title}|${kstDayKey(e.start_at)}`
     const at = seen.get(key)
     if (at === undefined) {
       seen.set(key, out.length)
@@ -95,7 +97,7 @@ export function groupMusicShowEpisodes(events: readonly UpcomingEvent[]): Groupe
       out.push(e)
       continue
     }
-    const key = `${e.title}|${e.start_at}`
+    const key = `${e.title}|${kstDayKey(e.start_at)}`
     const existing = byEpisode.get(key)
     if (!existing) {
       const rep: GroupedUpcomingEvent = { ...e, lineup: [e] }

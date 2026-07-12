@@ -11,6 +11,7 @@ import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
 // la copie locale ASCII-only les ratait (DRY, audit 2026-07-03).
 import { normalize, withinOneEdit } from '@/lib/scrapers/group-match'
+import { kstDayBounds } from '@/lib/events/date'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 
@@ -84,11 +85,14 @@ export async function GET(req: Request) {
   let created = 0
   let matchedTotal = 0
   const unmatched: string[] = []
-  const byShow: Record<string, { matched: number; created: number; skipped: number }> = {}
+  const byShow: Record<
+    string,
+    { matched: number; created: number; skipped: number; updated: number }
+  > = {}
 
   let reconciled = 0
   for (const lineup of aggregateResult.lineups) {
-    const showStats = (byShow[lineup.show] ??= { matched: 0, created: 0, skipped: 0 })
+    const showStats = (byShow[lineup.show] ??= { matched: 0, created: 0, skipped: 0, updated: 0 })
     const showLabel = SHOW_DISPLAY_NAME[lineup.show]
     const matchedIds: string[] = []
 
@@ -104,16 +108,50 @@ export async function GET(req: Request) {
       showStats.matched++
       matchedIds.push(group.id)
 
-      const { data: existing } = await supabase
+      // Idempotence par JOUR KST, plus par start_at exact (fix 2026-07-12) :
+      // le carrd révise parfois l'heure d'un épisode (« 3:15pm » → « 3:20pm »
+      // le 11/07) — l'égalité stricte créait alors une 2ᵉ row par groupe que
+      // ni l'index unique ni la réconciliation (keyés start_at) ne voyaient.
+      // Un show n'a jamais deux épisodes le même jour : la row du jour est LA
+      // row de l'épisode → time-shift = UPDATE, surplus historique = purge.
+      const { from: dayFrom, to: dayTo } = kstDayBounds(lineup.startAtIso)
+      const { data: existingRows } = await supabase
         .from('events')
-        .select('id')
+        .select('id, start_at')
         .eq('group_id', group.id)
         .eq('type', 'music_show')
-        .eq('start_at', lineup.startAtIso)
+        .eq('title', showLabel)
         .eq('source_url', SOURCE_URL)
-        .maybeSingle()
-      if (existing) {
+        .gte('start_at', dayFrom)
+        .lt('start_at', dayTo)
+        .order('created_at', { ascending: true })
+      const sameDay = existingRows ?? []
+      const exact = sameDay.find(
+        (r) => new Date(r.start_at).getTime() === Date.parse(lineup.startAtIso),
+      )
+      const surplus = sameDay.filter((r) => r !== (exact ?? sameDay[0]))
+
+      if (surplus.length > 0) {
+        // Self-heal : détacher les notifs envoyées puis supprimer les rows
+        // à l'ancienne heure (le rappel est parti, l'épisode n'a qu'une heure).
+        const ids = surplus.map((r) => r.id)
+        await supabase.from('event_notifications').delete().in('event_id', ids)
+        const { error: delErr } = await supabase.from('events').delete().in('id', ids)
+        if (!delErr) reconciled += ids.length
+      }
+
+      if (exact) {
         showStats.skipped++
+        continue
+      }
+      if (sameDay.length > 0) {
+        // Time-shift : même épisode, nouvelle heure → update de la row du jour.
+        const { error: updErr } = await supabase
+          .from('events')
+          .update({ start_at: lineup.startAtIso, episode_number: lineup.episodeNumber })
+          .eq('id', sameDay[0].id)
+        if (updErr) console.error(`music-shows time-shift update failed: ${updErr.message}`)
+        else showStats.updated++
         continue
       }
 
@@ -149,13 +187,17 @@ export async function GET(req: Request) {
       lineup.artistsRaw.length >= 3 &&
       Date.parse(lineup.startAtIso) > Date.now()
     ) {
+      // Fenêtre = jour KST (pas start_at exact) : un time-shift du carrd ne
+      // doit pas soustraire les rows à l'ancienne heure à la réconciliation.
+      const { from: dayFrom, to: dayTo } = kstDayBounds(lineup.startAtIso)
       const { data: stale } = await supabase
         .from('events')
         .select('id')
         .eq('type', 'music_show')
         .eq('source_url', SOURCE_URL)
         .eq('title', showLabel)
-        .eq('start_at', lineup.startAtIso)
+        .gte('start_at', dayFrom)
+        .lt('start_at', dayTo)
         .not('group_id', 'in', `(${matchedIds.join(',')})`)
       if (stale && stale.length > 0) {
         const staleIds = stale.map((s) => s.id)
