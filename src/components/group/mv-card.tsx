@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { Play, Star } from 'lucide-react'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { cn } from '@/lib/utils'
 import type { MvEvent } from '@/lib/events/queries'
 
 const yearMonth = (iso: string) =>
@@ -17,32 +16,21 @@ export type Rating = { avg: number; count: number }
 
 /**
  * Card MV Data Desk (§7.1.6) : panneau hairline, thumbnail 16:9 rounded-[7px],
- * play 26px, ligne note (étoile amber + score + count) + chip RATE.
- * 0 note → bordure dashed primary + « Be the first to rate » (état actionnable).
+ * play 26px, ligne note (étoile amber + score + count).
+ * Le chip « RATE » et la bordure dashed « unrated » ont été retirés
+ * (2026-07-12, retour Rudy : vignettes uniformes, pas de CTA qui prend
+ * l'utilisateur par la main — la page MV porte déjà la notation).
  */
-export function MvCard({
-  mv,
-  rating,
-  showRateChip = false,
-}: {
-  mv: MvEvent
-  rating?: Rating
-  // Chip RATE à droite de la ligne note (grilles FRESH/LATEST DROPS).
-  showRateChip?: boolean
-}) {
+export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
   const videoId = extractYouTubeId(mv.source_url)
   const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : mv.image_url
   const group = mv.groups
-  const unrated = rating !== undefined && rating.count === 0
 
   return (
     <Link
       href={`/mv/${mv.slug}`}
       draggable={false}
-      className={cn(
-        'group bg-card focus-visible:ring-primary/40 block rounded-lg border p-[7px] transition-colors focus-visible:ring-2 focus-visible:outline-none',
-        showRateChip && unrated ? 'border-primary/45 border-dashed' : 'hover:border-border',
-      )}
+      className="group bg-card focus-visible:ring-primary/40 hover:border-border block rounded-lg border p-[7px] transition-colors focus-visible:ring-2 focus-visible:outline-none"
     >
       <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-[7px]">
         {thumb ? (
@@ -87,18 +75,6 @@ export function MvCard({
         {rating !== undefined && (
           <div className="mt-1.5 flex items-center gap-1">
             <RatingLabel r={rating} />
-            {showRateChip && (
-              <span
-                className={cn(
-                  'label-data-inline ml-auto rounded-sm px-2 py-1 text-[8.5px]',
-                  unrated
-                    ? 'bg-primary text-primary-foreground'
-                    : 'border-primary/50 text-primary border',
-                )}
-              >
-                Rate
-              </span>
-            )}
           </div>
         )}
       </div>
