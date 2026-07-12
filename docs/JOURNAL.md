@@ -4,6 +4,23 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-12 — Round 3 : 18 retours Rudy — bugs, calendrier client, pages revues, catalogues profonds
+
+**11 branches/commits mergés** (plan approuvé, lots A→N) :
+
+1. **Doublons time-shift** (`fix/music-show-timeshift`) : le carrd a révisé l'heure du Music Core 954 (15:15→15:20 KST) → 2 rows/groupe. Idempotence + réconciliation + fusion d'affichage passées au **jour KST** (`kstDayBounds`, self-heal avec compteur `updated`), purge one-shot. `SCRAPING.md §3.18`.
+2. **Like MV réparé** (`fix/mv-like`) : l'action ne revalidait aucun chemin → cache périmé → ré-insert → 23505 → error boundary. `revalidatePath` + insert idempotent + toast. Reproduit et vérifié au compte e2e.
+3. **Quick-wins UI** (`feat/r3-ui-quickwins`, 5 commits) : vignettes MV sans chip « Rate » ni bordure dashed ; Top Rated avec avatar de groupe et sans tiret ; cœur Trending en variante `subtle` ; profil (stats sans redondance ult/bias, ring avatar recentré 64/64, Settings fusionnés) ; recherche normalisée (« idle » → i-dle) ; « Single - Crow » → « Crow » (extraction après le dernier en-dash, 7 surfaces, tests sur variantes réelles).
+4. **Pages artiste/groupe** (`feat/r3-artist-pages`) : ordre Members > Upcoming > MVs, grille MV complète 2/3/4 col (fin du rail + « See more »), Contribute au header du panneau, âge des membres à la place du « — », noms en line-clamp-2, bannières solo alignées (Jennie servait un fanart 2018).
+5. **Page MV** (`feat/r3-mv-page`) : étoiles retirées, ShareButton supprimé partout, avatar groupe au header + « More from {group} ».
+6. **Commentaires repliés** (`feat/r3-comments-collapsed`) : racine + meilleure réponse, le reste sur « Show N replies ».
+7. **Calendrier 100 % client** (`feat/r3-calendar-client`) : CalendarFilterProvider — le mois entier chargé une fois, groupes/types filtrés en mémoire (bascule instantanée), URL réduite à `?month` (+ deep-link `?group` conservé), doublon de scope supprimé. Golden path E2E mis à jour (chips = boutons aria-pressed).
+8. **Notifications** (`feat/r3-notifications`) : badge Android monochrome dédié, `tag`+`renotify` (digest remplace digest, rappels d'un comeback se remplacent), titre quotidien « Today in k-pop: N events », body en « · ».
+9. **Data** (`feat/r3-data-catalogs` + exécutions) : photos solistes ← image Spotify (31, re-self-hostées) — kprofiles est lui-même figé (aespa = photos 2020 vérifiées sur la page live), donc pas de re-scrape membres de groupes ; **14 chaînes labels/officielles découvertes par recherche de MVs réels** (BIGBANG, cube_ptg, FNC, Stone Music, Official fromis_9, BRANDNEW, BLACKPINK, izna 2M…) → backfill profond **+121 MVs (949 → 1 070, 0 sur-attribution)** : FTISLAND 3→29, G-Dragon 3→15, fromis_9 2→9, Dreamcatcher 2→9.
+10. **Hotfix build** (30157ad) : le script discover inférait `never[]` → `next build` rouge sur le merge R3-B (run #274), réparé en 10 min (#275 vert). Leçon : build complet avant merge d'un lot qui ajoute un script.
+
+**Vérifications** : 544 tests unitaires + 27/28 E2E CI-mode verts ; prod re-testée (calendrier client actif, « Everyone » disparu, bannière Jennie = thumbnail dernier MV, Share absent, fromis_9 = 9 MVs). **Limites documentées** : BTS reste à 3 MVs (catalogue trop profond dans HYBE LABELS pour la pagination uploads ; levier futur = mode search.list ciblé) ; TRI.BE introuvable par recherche ; classiques 1theK partiels. ⚠️ Le job e2e GitHub est toujours « skipped » malgré l'action de Rudy — vérifier que `E2E_ENABLED=true` est bien une **Variable** (pas un Secret).
+
 ## 2026-07-11 (après-midi) — Round 2 : commentaires Reddit, Top Rated périodes, Trending, hero frais, scrapers fiabilisés
 
 **6 demandes Rudy, 6 branches mergées** (investigations multi-agents + diagnostics SQL prod d'abord) :
