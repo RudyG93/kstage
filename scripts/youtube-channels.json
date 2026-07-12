@@ -349,6 +349,14 @@
       {
         "name": "fromis_9 · HYBE LABELS",
         "url": "https://www.youtube.com/@HYBELABELS"
+      },
+      {
+        "name": "fromis_9 — Official fromis_9 (ère Pledis)",
+        "url": "https://www.youtube.com/@officialfromis9"
+      },
+      {
+        "name": "fromis_9 — Stone Music (ère 2018)",
+        "url": "https://www.youtube.com/@officialstonemusic"
       }
     ]
   },
@@ -389,6 +397,10 @@
       {
         "name": "Rosé · ROSÉ",
         "url": "https://www.youtube.com/@roses_are_rosie"
+      },
+      {
+        "name": "Rosé — BLACKPINK",
+        "url": "https://www.youtube.com/@blackpink"
       }
     ]
   },
@@ -598,6 +610,10 @@
       {
         "name": "FTISLAND · FNC Entertainment",
         "url": "https://www.youtube.com/@thefncofficial"
+      },
+      {
+        "name": "FTISLAND — officielle",
+        "url": "https://www.youtube.com/@ftisland"
       }
     ]
   },
@@ -696,6 +712,10 @@
       {
         "name": "Dreamcatcher · Dreamcatcher",
         "url": "https://www.youtube.com/@dreamcatcherofficial"
+      },
+      {
+        "name": "Dreamcatcher — Company",
+        "url": "https://www.youtube.com/@dreamcatcher_company"
       }
     ]
   },
@@ -718,6 +738,10 @@
       {
         "name": "BTOB · BTOB",
         "url": "https://www.youtube.com/@officialbtob"
+      },
+      {
+        "name": "BTOB — United CUBE",
+        "url": "https://www.youtube.com/@theunitedcube"
       }
     ]
   },
@@ -875,6 +899,10 @@
       {
         "name": "izna · izna",
         "url": "https://www.youtube.com/channel/UCfbYNlxgLuKJXQZEhkMmaCQ"
+      },
+      {
+        "name": "izna — officielle 2M",
+        "url": "https://www.youtube.com/@izna_offcl"
       }
     ]
   },
@@ -929,6 +957,14 @@
       {
         "name": "AILEE · AILEEOFFICIAL",
         "url": "https://www.youtube.com/@aileeofficial"
+      },
+      {
+        "name": "AILEE — aileemusic",
+        "url": "https://www.youtube.com/@aileemusic"
+      },
+      {
+        "name": "AILEE — THE L1VE",
+        "url": "https://www.youtube.com/@thel1ve"
       }
     ]
   },
@@ -947,6 +983,10 @@
       {
         "name": "AB6IX · AB6IX",
         "url": "https://www.youtube.com/@AB6IX"
+      },
+      {
+        "name": "AB6IX — BRANDNEW MUSIC",
+        "url": "https://www.youtube.com/@brandnewmusic_official"
       }
     ]
   },
@@ -987,6 +1027,10 @@
       {
         "name": "N.Flying · N.Flying",
         "url": "https://www.youtube.com/@NFlyingofficial"
+      },
+      {
+        "name": "N.Flying — FNC",
+        "url": "https://www.youtube.com/@thefncofficial"
       }
     ]
   },
@@ -1005,6 +1049,10 @@
       {
         "name": "VERIVERY · VERIVERY",
         "url": "https://www.youtube.com/@VERIVERY"
+      },
+      {
+        "name": "VERIVERY — Stone Music",
+        "url": "https://www.youtube.com/@officialstonemusic"
       }
     ]
   },
@@ -1072,6 +1120,10 @@
       {
         "name": "PENTAGON · PENTAGON",
         "url": "https://www.youtube.com/@cube_ptg"
+      },
+      {
+        "name": "PENTAGON — United CUBE",
+        "url": "https://www.youtube.com/@theunitedcube"
       }
     ]
   },
@@ -1180,6 +1232,10 @@
       {
         "name": "G-Dragon · OfficialGDRAGON",
         "url": "https://www.youtube.com/@xxxibgdrgn"
+      },
+      {
+        "name": "G-Dragon — BIGBANG",
+        "url": "https://www.youtube.com/@bigbang"
       }
     ]
   }
