@@ -47,6 +47,20 @@ export function kstDayKey(iso: string): string {
   return localDayKey(iso, 'Asia/Seoul')
 }
 
+/**
+ * Bornes UTC [from, to) du jour KST contenant l'instant donné. Sert les
+ * requêtes « même épisode ce jour-là » du scraper music shows (l'idempotence
+ * par jour KST — le carrd révise parfois l'heure d'un épisode).
+ */
+export function kstDayBounds(iso: string): { from: string; to: string } {
+  const day = kstDayKey(iso) // YYYY-MM-DD en KST
+  const fromMs = Date.parse(`${day}T00:00:00+09:00`)
+  return {
+    from: new Date(fromMs).toISOString(),
+    to: new Date(fromMs + 24 * 60 * 60 * 1000).toISOString(),
+  }
+}
+
 /** Regroupe des events par jour dans un fuseau IANA donné. */
 export function groupEventsByDay<T extends { start_at: string }>(
   events: readonly T[],
