@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 type ServiceClient = ReturnType<typeof createClient<Database>>
 
 export type PushTarget = { endpoint: string; p256dh: string; auth: string }
-export type PushPayload = { title: string; body: string; url: string }
+export type PushPayload = { title: string; body: string; url: string; tag?: string }
 
 /**
  * Envoie un push web et nettoie l'abonnement mort. Le caller doit avoir appelé

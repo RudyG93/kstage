@@ -9,12 +9,19 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'KStage', body: event.data.text() }
   }
-  const { title = 'KStage', body = '', url = '/' } = payload
+  const { title = 'KStage', body = '', url = '/', tag } = payload
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      // Badge Android = silhouette MONOCHROME dédiée (le PNG couleur était
+      // aplati en pâté gris dans la barre de statut).
+      badge: '/icons/badge-96.png',
+      // tag : les notifs de même famille se REMPLACENT au lieu de s'empiler
+      // (digest du jour, rappels successifs d'un même comeback) ; renotify
+      // garde le buzz sur la mise à jour.
+      ...(tag ? { tag, renotify: true } : {}),
+      timestamp: Date.now(),
       data: { url },
     }),
   )

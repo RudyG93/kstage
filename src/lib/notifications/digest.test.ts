@@ -39,7 +39,8 @@ describe('buildDigest', () => {
     expect(messages).toHaveLength(1)
     expect(messages[0].subscription.userId).toBe('u1')
     expect(messages[0].payload).toEqual({
-      title: '1 upcoming event',
+      title: 'Today in k-pop: 1 event',
+      tag: 'digest',
       body: 'aespa — New single',
       url: '/calendar',
     })
@@ -55,8 +56,8 @@ describe('buildDigest', () => {
       ev('g1', 'Comeback', '2026-05-26T09:00:00Z', 'aespa'),
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('2 upcoming events')
-    expect(message.payload.body).toBe('aespa — Comeback, ILLIT — Music show')
+    expect(message.payload.title).toBe('Today in k-pop: 2 events')
+    expect(message.payload.body).toBe('aespa — Comeback · ILLIT — Music show')
   })
 
   it('caps the listed events at 3 and counts the rest', () => {
@@ -68,8 +69,8 @@ describe('buildDigest', () => {
       ev('g1', 'E4', '2026-05-26T04:00:00Z'),
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('4 upcoming events')
-    expect(message.payload.body).toBe('E1, E2, E3, +1 more')
+    expect(message.payload.title).toBe('Today in k-pop: 4 events')
+    expect(message.payload.body).toBe('E1 · E2 · E3 · +1 more')
   })
 
   it('agrège un music show multi-groupes en une entrée (cas prod 5 groupes)', () => {
@@ -80,7 +81,7 @@ describe('buildDigest', () => {
       type: 'music_show',
     }))
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('1 upcoming event')
+    expect(message.payload.title).toBe('Today in k-pop: 1 event')
     expect(message.payload.body).toBe('Music Bank (5 artists)')
   })
 
@@ -113,7 +114,7 @@ describe('buildDigest', () => {
     ]
     const [message] = buildDigest([sub('u1')], follows, events, 'weekly')
     expect(message.payload.title).toBe('Your k-pop week: 2 events')
-    expect(message.payload.body).toBe('aespa — Comeback, aespa — Music show')
+    expect(message.payload.body).toBe('aespa — Comeback · aespa — Music show')
   })
 
   it('weekly edition: singulier à 1 event', () => {
@@ -132,7 +133,7 @@ describe('buildDigest', () => {
       [{ userId: 'u1', groupId: 'g1' }],
       [ev('g1', 'Comeback', '2026-05-26T00:00:00Z')],
     )
-    expect(message.payload.title).toBe('1 upcoming event')
+    expect(message.payload.title).toBe('Today in k-pop: 1 event')
   })
 
   it('prefs : type désactivé exclu du corps ET du compte', () => {
@@ -143,7 +144,7 @@ describe('buildDigest', () => {
     ]
     const disabled = new Map([['u1', new Set(['music_show'])]])
     const [message] = buildDigest([sub('u1')], follows, events, 'daily', disabled)
-    expect(message.payload.title).toBe('1 upcoming event')
+    expect(message.payload.title).toBe('Today in k-pop: 1 event')
     expect(message.payload.body).toBe('aespa — Comeback')
   })
 
@@ -172,8 +173,8 @@ describe('buildDigest', () => {
     const disabled = new Map([['u1', new Set(['mv'])]])
     const messages = buildDigest([sub('u1'), sub('u2')], follows, events, 'daily', disabled)
     const byUser = new Map(messages.map((m) => [m.subscription.userId, m.payload]))
-    expect(byUser.get('u1')?.title).toBe('1 upcoming event') // l'untyped reste
-    expect(byUser.get('u2')?.title).toBe('2 upcoming events')
+    expect(byUser.get('u1')?.title).toBe('Today in k-pop: 1 event') // l'untyped reste
+    expect(byUser.get('u2')?.title).toBe('Today in k-pop: 2 events')
   })
 
   it('only notifies the subscriptions of users with matching events', () => {

@@ -11,7 +11,17 @@ const targets = [
   { size: 192, out: 'public/icons/icon-192.png' },
   { size: 512, out: 'public/icons/icon-512.png' },
   { size: 180, out: 'src/app/apple-icon.png' },
+  // Badge Android : SILHOUETTE monochrome (blanc sur transparent) — un badge
+  // couleur est aplati en gris illisible dans la barre de statut.
+  { size: 96, out: 'public/icons/badge-96.png', badge: true },
 ]
+
+const badgeMarkup = (
+  size,
+) => `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M34 24 V76" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="round" />
+  <path d="M70 24 L42 50 L72 76" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+</svg>`
 
 const markup = (
   size,
@@ -27,10 +37,10 @@ const markup = (
   <path d="M70 24 L42 50 L72 76" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
 </svg>`
 
-for (const { size, out } of targets) {
+for (const { size, out, badge } of targets) {
   const file = path.resolve(out)
   await mkdir(path.dirname(file), { recursive: true })
-  await sharp(Buffer.from(markup(size)))
+  await sharp(Buffer.from((badge ? badgeMarkup : markup)(size)))
     .png()
     .toFile(file)
   console.log(`✓ ${out}`)

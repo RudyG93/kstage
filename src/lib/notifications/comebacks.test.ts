@@ -41,6 +41,7 @@ describe('buildComebackNotifications', () => {
     expect(m.record.kind).toBe('day_of')
     expect(m.payload).toEqual({
       title: '🔥 Today: aespa — Whiplash',
+      tag: 'comeback-e1',
       body: 'Out today — go check it out',
       url: '/mv/aespa-whiplash',
     })

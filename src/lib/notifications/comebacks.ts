@@ -33,7 +33,7 @@ export type ComebackEvent = {
 
 export type NotificationKind = 'announced' | 'day_before' | 'day_of'
 
-export type ComebackPayload = { title: string; body: string; url: string }
+export type ComebackPayload = { title: string; body: string; url: string; tag?: string }
 export type ComebackRecord = { userId: string; eventId: string; kind: NotificationKind }
 export type ComebackMessage = {
   subscription: ComebackSubscription
@@ -82,7 +82,9 @@ function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPay
       : kind === 'day_before'
         ? 'Dropping tomorrow'
         : 'New comeback announced'
-  return { title, body, url: event.url }
+  // tag par event : les rappels successifs du même comeback (annonce → J-1 →
+  // jour J) se REMPLACENT dans le tiroir au lieu de s'empiler.
+  return { title, body, url: event.url, tag: `comeback-${event.id}` }
 }
 
 export function buildComebackNotifications(
