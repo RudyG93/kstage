@@ -38,7 +38,7 @@ export default async function OpengraphImage({ params }: { params: Promise<{ slu
       .maybeSingle()
     if (next) {
       const when = formatKst(next.start_at, { month: 'short', day: 'numeric' })
-      nextLine = `Next: ${displayEventTitle(next.title, group.name)} — ${when} KST`
+      nextLine = `Next: ${displayEventTitle(next.title, group.name, null, next.type)} — ${when} KST`
     }
   }
 

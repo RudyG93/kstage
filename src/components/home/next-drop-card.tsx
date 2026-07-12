@@ -35,7 +35,7 @@ export function NextDropCard({
   // Épisode groupé (music show multi-groupes) : la ligne méta liste le lineup
   // et le titre pointe le jour du calendrier (cf. QueueRow, même règle).
   const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
-  const title = displayEventTitle(event.title, lineup ? undefined : group?.name)
+  const title = displayEventTitle(event.title, lineup ? undefined : group?.name, null, event.type)
   const dayKey = lineup ? localDayKey(event.start_at, 'Asia/Seoul') : null
   const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)

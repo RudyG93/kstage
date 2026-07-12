@@ -77,7 +77,12 @@ export function QueueRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-semibold">
-          {displayEventTitle(event.title, lineup ? undefined : group?.name, event.episode_number)}
+          {displayEventTitle(
+            event.title,
+            lineup ? undefined : group?.name,
+            event.episode_number,
+            event.type,
+          )}
         </span>
         {lineup ? (
           <span className="text-muted-foreground block truncate text-[10px]">

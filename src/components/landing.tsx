@@ -101,7 +101,7 @@ export function Landing({
             <div className="space-y-3 p-3.5">
               <div>
                 <p className="text-sm font-semibold">
-                  {displayEventTitle(nextDrop.title, nextDrop.groups?.name)}
+                  {displayEventTitle(nextDrop.title, nextDrop.groups?.name, null, nextDrop.type)}
                 </p>
                 <p className="text-muted-foreground text-[10.5px]">{nextDrop.groups?.name}</p>
               </div>

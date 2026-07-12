@@ -77,7 +77,7 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
           )}
         </div>
         <p className="text-muted-foreground mt-1 line-clamp-2 text-[13px]">
-          {displayEventTitle(event.title, group?.name, event.episode_number)}
+          {displayEventTitle(event.title, group?.name, event.episode_number, event.type)}
         </p>
       </div>
 

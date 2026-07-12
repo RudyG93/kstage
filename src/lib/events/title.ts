@@ -1,15 +1,32 @@
 // Normalise un titre d'event scrapé pour l'affichage :
-//  1. retire le préfixe groupe (ex. "ATEEZ Album - Golden Hour" → "Golden Hour"),
-//  2. supprime l'année trailing entre parenthèses ("(2026)"),
-//  3. normalise "Part.5" → "Part 5" (les uploads YouTube collent souvent un point).
+//  1. releases kpopofficial : le titre stocké est « <Artiste> <Descripteur
+//     d'édition> – <Nom> (<Année>) » — le nom réel est TOUJOURS après le
+//     dernier en/em-dash. L'ancienne heuristique `(?:\s+\w+)*` butait sur les
+//     descripteurs à tiret interne (« Pre-release Single ») → « release
+//     Single - Crow » (retour Rudy 2026-07-12). On prend le segment après le
+//     dernier – / — s'il est non vide (« Mark on Me » et « NCT 127 7th Full
+//     Album » n'ont pas d'en-dash → intacts).
+//  2. autres types : retire le préfixe groupe (ex. "ATEEZ - Golden Hour"),
+//  3. supprime l'année trailing entre parenthèses ("(2026)"),
+//  4. normalise "Part.5" → "Part 5" (les uploads YouTube collent souvent un point).
 // Le nom du groupe est déjà affiché à gauche/au-dessus → inutile de le répéter.
 export function displayEventTitle(
   title: string,
   groupName?: string | null,
   episodeNumber?: number | null,
+  type?: string | null,
 ): string {
   let t = title
-  if (groupName) {
+  const dashSegment =
+    type === 'release'
+      ? title
+          .split(/\s+[–—]\s+/)
+          .at(-1)
+          ?.trim()
+      : undefined
+  if (dashSegment && dashSegment !== title && dashSegment.replace(/\s*\(\d{4}\)\s*$/, '').trim()) {
+    t = dashSegment
+  } else if (groupName) {
     const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     // Séparateurs supportés : em-dash (—), en-dash (–), hyphen (-), colon (:).
     // kpopofficial utilise en-dash, YouTube/MV utilisent souvent em-dash ou hyphen.
