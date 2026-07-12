@@ -1,16 +1,14 @@
-import { CalendarMonth } from '@/components/calendar-month'
-import { FilterChips } from '@/components/calendar/filter-chips'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupFilter } from '@/components/home/group-filter'
+import { FilterChips } from '@/components/calendar/filter-chips'
+import { CalendarFilterProvider, CalendarEvents } from '@/components/calendar/calendar-filters'
 import { getEventsForMonth } from '@/lib/events/queries'
 import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
 import { generateShowSlots } from '@/lib/events/show-slots'
 import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey, getKstMonthRange } from '@/lib/events/date'
-import { parseTypesParam } from '@/lib/events/filters'
-import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { createClient } from '@/lib/supabase/server'
 
 function parseMonth(raw?: string): { year: number; month: number } {
@@ -28,16 +26,17 @@ export const metadata = {
   alternates: { canonical: '/calendar' },
 }
 
+// Filtrage 100 % CLIENT (2026-07-12, retour Rudy « chaque coche = navigation
+// lente ») : le serveur charge le mois ENTIER non filtré (events + anniv +
+// slots, ~50-130 rows) ; groupes/types se filtrent en mémoire dans
+// CalendarFilterProvider. L'URL ne porte plus que ?month (+ ?day deep-link).
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; group?: string; type?: string; scope?: string }>
+  searchParams: Promise<{ month?: string; day?: string; group?: string }>
 }) {
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
-  const explicitSlugs = sp.group ? sp.group.split(',').filter(Boolean) : undefined
-  const types = parseTypesParam(sp.type)
-  const wantAnniversaries = types.length === 0 || types.includes('anniversary')
 
   const supabase = await createClient()
   const {
@@ -53,57 +52,48 @@ export default async function CalendarPage({
     tier = profile?.tier ?? 'free'
   }
 
-  const [groups, followedIds] = await Promise.all([getGroups(), getFollowedGroupIds()])
-  const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
-  // Portée MY GROUPS (§7.2) : restreint aux groupes suivis quand aucun filtre
-  // de groupe explicite n'est posé.
-  const groupSlugs =
-    explicitSlugs ?? (sp.scope === 'mine' && followedSlugs.length > 0 ? followedSlugs : undefined)
-
-  const [dbEvents, anniversaries] = await Promise.all([
-    getEventsForMonth({ year, month, groupSlugs, types }),
-    wantAnniversaries ? getAnniversariesForMonth({ year, month, groupSlugs }) : Promise.resolve([]),
+  const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
+    getGroups(),
+    getFollowedGroupIds(),
+    getEventsForMonth({ year, month }),
+    getAnniversariesForMonth({ year, month }),
   ])
-  // Slots hebdo synthétiques (P0.8) : la grille des 6 shows est fixe et connue,
-  // les lineups n'arrivent que la veille — sans ça le mois futur paraît vide.
-  // Global uniquement (un slot n'a pas de groupe → hors filtres de groupes),
-  // jamais dans le passé, remplacé par les épisodes réels dès qu'ils existent.
-  const wantShows = types.length === 0 || types.includes('music_show')
+  const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
+
+  // Slots hebdo synthétiques (P0.8) : générés globalement — le provider les
+  // masque dès qu'un filtre de groupes est actif (un slot n'a pas de groupe).
   const { startISO, endISO } = getKstMonthRange(year, month)
-  const showSlots =
-    wantShows && !groupSlugs
-      ? generateShowSlots({ fromIso: startISO, toIso: endISO, existing: dbEvents })
-      : []
-  // Groupement music shows par épisode : compteur FilterChips et cellules du
-  // mois comptent des cartes, pas des lignes brutes.
-  const events = groupMusicShowEpisodes(
-    [...dbEvents, ...anniversaries, ...showSlots].sort((a, b) =>
-      a.start_at.localeCompare(b.start_at),
-    ),
+  const showSlots = generateShowSlots({ fromIso: startISO, toIso: endISO, existing: dbEvents })
+
+  const events = [...dbEvents, ...anniversaries, ...showSlots].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
   )
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft
-            tier={tier}
-            groupFilter={
-              <GroupFilter
-                groups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
-                followedSlugs={followedSlugs}
-              />
-            }
-          />
-        </aside>
-        <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
-          <FilterChips eventCount={events.length} isAuthed={Boolean(user)} />
-          <CalendarMonth year={year} month={month} events={events} />
+    <CalendarFilterProvider
+      events={events}
+      followedSlugs={followedSlugs}
+      initialSlugs={sp.group ? sp.group.split(',').filter(Boolean) : undefined}
+    >
+      <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
+            <SidebarLeft
+              tier={tier}
+              groupFilter={
+                <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
+              }
+            />
+          </aside>
+          <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
+            <FilterChips />
+            <CalendarEvents year={year} month={month} />
+          </div>
+          <aside className="order-3 shrink-0 lg:w-80">
+            <SidebarRight />
+          </aside>
         </div>
-        <aside className="order-3 shrink-0 lg:w-80">
-          <SidebarRight />
-        </aside>
       </div>
-    </div>
+    </CalendarFilterProvider>
   )
 }
