@@ -33,6 +33,11 @@ interface Props {
 }
 
 const REPLY_LIMIT = 5
+// À l'arrivée, les fils sont REPLIÉS (retour Rudy 2026-07-12 : dérouler tout
+// l'arbre fait lourd) : une racine montre sa MEILLEURE réponse (children déjà
+// triés top-first par sortTree), le reste derrière « Show N replies » ; les
+// niveaux plus profonds n'en montrent aucune.
+const REPLY_PREVIEW_ROOT = 1
 // Auto-repli des commentaires très négatifs (modèle Reddit) — ré-ouvrables
 // d'un clic via la ligne compacte.
 const AUTO_COLLAPSE_SCORE = -3
@@ -54,6 +59,7 @@ export function CommentItem({
   const [showEdit, setShowEdit] = useState(false)
   const [collapsed, setCollapsed] = useState(node.score <= AUTO_COLLAPSE_SCORE)
   const [showAllReplies, setShowAllReplies] = useState(false)
+  const [repliesOpen, setRepliesOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const isOwn = viewerId === node.user_id
   const isDeleted = Boolean(node.deleted_at)
@@ -63,7 +69,10 @@ export function CommentItem({
   const author = username ?? 'unknown'
 
   const childCount = node.children.length
-  const visibleChildren = showAllReplies ? node.children : node.children.slice(0, REPLY_LIMIT)
+  const replyPreview = depth === 0 ? REPLY_PREVIEW_ROOT : 0
+  const visibleChildren = showAllReplies
+    ? node.children
+    : node.children.slice(0, repliesOpen ? REPLY_LIMIT : replyPreview)
 
   // Repli style Reddit : replié → ligne compacte cliquable pour ré-ouvrir.
   if (collapsed) {
@@ -239,7 +248,17 @@ export function CommentItem({
                   ratingsByUser={ratingsByUser}
                 />
               ))}
-              {!showAllReplies && childCount > REPLY_LIMIT && (
+              {!repliesOpen && childCount > replyPreview && (
+                <button
+                  type="button"
+                  onClick={() => setRepliesOpen(true)}
+                  className="text-primary text-xs hover:underline"
+                >
+                  Show {childCount - replyPreview} repl
+                  {childCount - replyPreview === 1 ? 'y' : 'ies'}
+                </button>
+              )}
+              {repliesOpen && !showAllReplies && childCount > REPLY_LIMIT && (
                 <button
                   type="button"
                   onClick={() => setShowAllReplies(true)}
