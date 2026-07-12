@@ -12,6 +12,7 @@ import { getCareerPath, getMemberBySlug, getMemberSlugById } from '@/lib/members
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
 
@@ -134,8 +135,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     ])
     const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
     const heroSrc = member.photo_url ?? group.image_url
+    // Bannière alignée sur la page groupe (retour Rudy 2026-07-12 : Jennie
+    // servait un fanart TheAudioDB de 2018) : thumbnail du dernier MV
+    // principal AVANT image_landscape ; repli final = photo membre/Spotify.
+    const latestMainMv = mvs.find((m) => m.mv_kind === 'main') ?? mvs[0]
+    const latestMvId = latestMainMv ? extractYouTubeId(latestMainMv.source_url) : null
     const bannerSrc =
-      group.banner_url ?? group.image_landscape ?? (heroSrc ? faceCrop(heroSrc, 1600, 500) : null)
+      group.banner_url ??
+      (latestMvId ? `https://i.ytimg.com/vi/${latestMvId}/hqdefault.jpg` : null) ??
+      group.image_landscape ??
+      (heroSrc ? faceCrop(heroSrc, 1600, 500) : null)
 
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">

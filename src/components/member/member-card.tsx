@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { faceCrop } from '@/lib/images/cloudinary'
-import type { MemberSummary } from '@/lib/members/queries'
+import { ageFromBirthday, type MemberSummary } from '@/lib/members/queries'
 
 /**
  * Carte membre 84px du rail (§7.6.5) : portrait rounded-xl (fallback
@@ -21,6 +21,7 @@ export function MemberCard({
   isBias?: boolean
 }) {
   const initial = member.stage_name.slice(0, 1).toUpperCase()
+  const age = ageFromBirthday(member.birthday)
   const color = groupColorHex ?? '#888'
   const isDimmed = member.status !== 'active'
 
@@ -64,14 +65,20 @@ export function MemberCard({
         )}
       </div>
       <div className="mt-1 px-0.5">
-        <p className="truncate text-[11px] leading-snug font-semibold">{member.stage_name}</p>
-        <p className="label-data-inline text-faint truncate text-[8px]">
-          {member.status === 'active'
-            ? (member.position ?? '—')
-            : member.status === 'former'
-              ? 'Former'
-              : 'Pre-debut'}
-        </p>
+        {/* line-clamp-2 : les noms longs (Jang Wonyoung) ne sont plus tronqués
+            sur une carte de 84px (retour Rudy 2026-07-12). */}
+        <p className="line-clamp-2 text-[11px] leading-snug font-semibold">{member.stage_name}</p>
+        {/* Sous-titre : position, sinon ÂGE (le « — » ne disait rien), sinon
+            rien du tout. */}
+        {(member.status !== 'active' || member.position || age !== null) && (
+          <p className="label-data-inline text-faint truncate text-[8px]">
+            {member.status === 'active'
+              ? (member.position ?? `${age} yrs`)
+              : member.status === 'former'
+                ? 'Former'
+                : 'Pre-debut'}
+          </p>
+        )}
       </div>
     </div>
   )
