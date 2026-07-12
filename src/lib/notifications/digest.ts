@@ -23,7 +23,7 @@ export type DigestEvent = {
   type?: string | null
 }
 
-export type DigestPayload = { title: string; body: string; url: string }
+export type DigestPayload = { title: string; body: string; url: string; tag?: string }
 export type DigestMessage = { subscription: DigestSubscription; payload: DigestPayload }
 export type DigestEdition = 'daily' | 'weekly'
 
@@ -65,15 +65,19 @@ function digestLabels(events: readonly DigestEvent[]): string[] {
 function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): DigestPayload {
   const labels = digestLabels(events)
   const n = labels.length
-  const listed = labels.slice(0, MAX_LISTED).join(', ')
-  const more = n > MAX_LISTED ? `, +${n - MAX_LISTED} more` : ''
+  // « · » : plus lisible que la virgule dans le body système (retour Rudy
+  // 2026-07-12, audit notifs).
+  const listed = labels.slice(0, MAX_LISTED).join(' · ')
+  const more = n > MAX_LISTED ? ` · +${n - MAX_LISTED} more` : ''
+  // Titre quotidien parlant (« 3 upcoming events » était sec et sans marque).
   const title =
     edition === 'weekly'
       ? `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`
-      : `${n} upcoming event${n > 1 ? 's' : ''}`
+      : `Today in k-pop: ${n} event${n > 1 ? 's' : ''}`
   // Deep link : le digest liste des events datés → le calendrier est la
   // destination utile (la home re-priorise le hero, pas la liste).
-  return { title, body: listed + more, url: '/calendar' }
+  // tag : le digest du jour REMPLACE celui d'hier au lieu de s'empiler.
+  return { title, body: listed + more, url: '/calendar', tag: 'digest' }
 }
 
 export function buildDigest(
