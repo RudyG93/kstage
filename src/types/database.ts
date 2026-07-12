@@ -483,9 +483,11 @@ export type Database = {
         Row: {
           agency: string | null
           banner_url: string | null
+          banner_yt_url: string | null
           color_hex: string | null
           created_at: string
           debut_date: string | null
+          disbanded_on: string | null
           fandom_name: string | null
           id: string
           image_landscape: string | null
@@ -499,9 +501,11 @@ export type Database = {
         Insert: {
           agency?: string | null
           banner_url?: string | null
+          banner_yt_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
+          disbanded_on?: string | null
           fandom_name?: string | null
           id?: string
           image_landscape?: string | null
@@ -515,9 +519,11 @@ export type Database = {
         Update: {
           agency?: string | null
           banner_url?: string | null
+          banner_yt_url?: string | null
           color_hex?: string | null
           created_at?: string
           debut_date?: string | null
+          disbanded_on?: string | null
           fandom_name?: string | null
           id?: string
           image_landscape?: string | null
@@ -538,6 +544,8 @@ export type Database = {
           former_reason: string | null
           group_id: string
           id: string
+          photo_checked_at: string | null
+          photo_source_key: string | null
           photo_url: string | null
           position: string | null
           real_name: string | null
@@ -552,6 +560,8 @@ export type Database = {
           former_reason?: string | null
           group_id: string
           id?: string
+          photo_checked_at?: string | null
+          photo_source_key?: string | null
           photo_url?: string | null
           position?: string | null
           real_name?: string | null
@@ -566,6 +576,8 @@ export type Database = {
           former_reason?: string | null
           group_id?: string
           id?: string
+          photo_checked_at?: string | null
+          photo_source_key?: string | null
           photo_url?: string | null
           position?: string | null
           real_name?: string | null
