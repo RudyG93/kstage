@@ -1,15 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
+import { faceCrop } from '@/lib/images/cloudinary'
 import { cn } from '@/lib/utils'
 import type { TopRatedItem, TopRatedPeriod } from '@/lib/events/top-rated'
 
 function DeltaBadge({ delta }: { delta: TopRatedItem['delta'] }) {
   if (delta.kind === 'new')
     return <span className="label-data-inline text-amber w-7 text-right text-[9px]">New</span>
-  if (delta.kind === 'same') return <span className="text-faint w-7 text-right text-[10px]">—</span>
+  // « same » ne rend rien (retour Rudy 2026-07-12 : le tiret ne disait rien) —
+  // seul « New » (sortie < 7 j) porte un signal.
+  if (delta.kind === 'same') return null
   const up = delta.kind === 'up'
   return (
     <span
@@ -93,6 +97,24 @@ export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedI
                 >
                   {i + 1}
                 </span>
+                {item.groupImage ? (
+                  <Image
+                    src={faceCrop(item.groupImage, 48, 48)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    unoptimized
+                    className="size-6 shrink-0 rounded-sm object-cover"
+                    aria-hidden
+                  />
+                ) : (
+                  <span
+                    className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white"
+                    aria-hidden
+                  >
+                    {item.groupName?.[0] ?? '?'}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-semibold">{item.title}</span>
                   <span className="text-muted-foreground block truncate text-[10px]">
