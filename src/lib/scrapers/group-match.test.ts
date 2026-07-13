@@ -6,6 +6,12 @@ describe('normalize', () => {
     expect(normalize('aespa - Whiplash (Official M/V)')).toBe('aespawhiplashofficialmv')
   })
 
+  it('plie les accents — é précomposé et é décomposé donnent la même clé (APT., 2026-07-13)', () => {
+    // La chaîne de ROSÉ titre avec un é DÉCOMPOSÉ (e + U+0301, style macOS).
+    expect(normalize('Rosé')).toBe('rose')
+    expect(normalize('Rosé')).toBe('rose')
+  })
+
   it('garde les caractères Unicode (hangul)', () => {
     expect(normalize('에스파')).toBe('에스파')
   })
