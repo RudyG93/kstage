@@ -219,7 +219,7 @@ export default async function MvPage({
             isAuthed={isAuthed}
             viewerId={viewerId}
             roots={commentRoots}
-            sort={sort}
+            initialSort={sort}
             ratingsByUser={rating.scoreByUser}
           />
         </div>
