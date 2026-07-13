@@ -183,7 +183,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           )}
 
           <section className="space-y-3">
-            <h2 className="text-sm font-medium">Upcoming events</h2>
+            {/* Lien Calendar au niveau du titre (R5) — pas de ligne en plus. */}
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-medium">Upcoming events</h2>
+              <Link
+                href={`/calendar?group=${group.slug}`}
+                className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
+              >
+                Calendar →
+              </Link>
+            </div>
             <EventList
               events={events}
               scrollAfter={5}
@@ -195,14 +204,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
                 />
               }
             />
-            {events.length >= 20 && (
-              <Link
-                href={`/calendar?group=${group.slug}`}
-                className="text-muted-foreground hover:text-foreground inline-block text-xs underline underline-offset-4"
-              >
-                See all on calendar
-              </Link>
-            )}
           </section>
 
           {mvs.length > 0 && (

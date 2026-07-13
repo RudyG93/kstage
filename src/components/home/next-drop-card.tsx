@@ -109,8 +109,9 @@ export function NextDropCard({
                 ) : (
                   group?.name && <span>{group.name} · </span>
                 )}
-                {dateLabel} · {kstTime24h(event.start_at)} KST ·{' '}
-                <LocalTime iso={event.start_at} withZone={false} fallback="—" /> local
+                {/* Heure locale en avant (R5), KST en référence derrière. */}
+                {dateLabel} · <LocalTime iso={event.start_at} withZone={false} fallback="—" /> local
+                · {kstTime24h(event.start_at)} KST
               </p>
             </div>
           </div>
