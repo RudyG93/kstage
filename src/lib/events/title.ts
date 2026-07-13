@@ -10,6 +10,8 @@
 //  3. supprime l'année trailing entre parenthèses ("(2026)"),
 //  4. normalise "Part.5" → "Part 5" (les uploads YouTube collent souvent un point).
 // Le nom du groupe est déjà affiché à gauche/au-dessus → inutile de le répéter.
+import { matchesGroup } from '@/lib/scrapers/group-match'
+
 export function displayEventTitle(
   title: string,
   groupName?: string | null,
@@ -74,16 +76,46 @@ const TRAILING_MV_RE =
  * cards, page article), continuer d'utiliser `displayEventTitle`.
  */
 export function displaySongTitle(title: string, groupName?: string | null): string {
-  const m = title.match(/[‘](.+)[’]/) || title.match(/'(.+)'/) || title.match(/"(.+)"/)
+  const m =
+    title.match(/[‘](.+)[’]/) ||
+    title.match(/[“](.+)[”]/) || // doubles courbes (JYP : « ITZY “LOCO” M/V »)
+    title.match(/'(.+)'/) ||
+    title.match(/"(.+)"/) ||
+    // Paires MIXTES (« ‘Friday Night' » — curly ouvrante, straight fermante,
+    // vu sur NAVILLERA, R6) : en dernier recours, n'importe quelle ouvrante
+    // avec n'importe quelle fermante.
+    title.match(/[‘'"“’](.+)[’'"”]/) // ’ ouvrant : THE BOYZ « ’Nectar’ »
   if (m) return m[1].trim()
 
   let t = displayEventTitle(title, groupName)
+  // Tags de tête « [MV] », « [Let's Play MCND] », « (MV) »… (conventions
+  // Starship/WM/labels, 168 titres en prod au balayage R6).
+  t = t.replace(/^(?:\[[^\]]*\]\s*|\((?:MV|M\/V|Music Video)\)\s*)+/i, '')
   if (groupName) {
     const escaped = groupName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     // Strip `${groupName} ` ou `${groupName} (...) ` en début, case-insensitive.
     // La paire de parens optionnelle couvre les nom hangul/japonais : "ILLIT
     // (아일릿) Magnetic" → "Magnetic" ; "aespa (에스파) WDA" → "WDA".
     t = t.replace(new RegExp(`^${escaped}\\s*(?:\\([^)]+\\)\\s*)?`, 'i'), '')
+    // « 하이라이트(Highlight) - Song » / « (ONF)_Song » : le nom coréen
+    // d'abord échappe au strip ci-dessus — si la partie GAUCHE du premier
+    // séparateur porte le nom du groupe, la chanson est à droite. Le `_`
+    // (convention WM/Starship) se passe d'espaces ; jamais le `-` nu (il
+    // couperait « i-dle »).
+    const sep = /\s+[-–—_|]\s+|\s*_\s*/.exec(t)
+    if (sep && matchesGroup(t.slice(0, sep.index), groupName)) {
+      t = t.slice(sep.index + sep[0].length)
+    }
   }
-  return t.replace(TRAILING_MV_RE, '').trim()
+  // Séparateur orphelin en tête après retrait du groupe (« – ECHO M/V » sur
+  // EPEX(이펙스) – ECHO : le strip du groupe ne consommait pas le tiret, R6).
+  const stripped = t
+    .replace(TRAILING_MV_RE, '')
+    .replace(/^[\s—–\-:·|]+/, '')
+    .trim()
+  if (stripped) return stripped
+  // Sur-strip : chez DSP la CHANSON est entre crochets (« KARD - [밤밤(Bomb
+  // Bomb)] M/V ») — si tout a été mangé, c'est elle qu'il fallait garder.
+  const bracket = /\[([^\]]+)\]/.exec(title)
+  return bracket ? bracket[1].trim() : stripped
 }

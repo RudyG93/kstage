@@ -140,3 +140,31 @@ describe('displayEventTitle — releases kpopofficial (fix 2026-07-12)', () => {
     expect(displayEventTitle('ATEEZ Album - Golden Hour', 'ATEEZ', null, 'mv')).toBe('Golden Hour')
   })
 })
+
+describe('displaySongTitle — classes du balayage R6 (168 titres prod mal rendus)', () => {
+  it('tiret orphelin après strip du groupe (EPEX en-dash sans quotes)', () => {
+    expect(displaySongTitle('EPEX(이펙스) – ECHO M/V', 'EPEX')).toBe('ECHO')
+  })
+  it('quotes mixtes curly-ouvrante / straight-fermante (NAVILLERA)', () => {
+    expect(
+      displaySongTitle("NAVILLERA(나빌레라) - ‘Friday Night' Official Music Video", 'NAVILLERA'),
+    ).toBe('Friday Night')
+  })
+  it('tag [MV] + nom coréen en premier (Starship/Highlight)', () => {
+    expect(
+      displaySongTitle('[MV] 하이라이트(Highlight) - CALLING YOU Smile ver.', 'Highlight'),
+    ).toBe('CALLING YOU Smile ver.')
+  })
+  it('tag (MV) + underscore sans espaces (WM/ONF)', () => {
+    expect(displaySongTitle('(MV)온앤오프 (ONF)_Your Song', 'ONF')).toBe('Your Song')
+  })
+  it('doubles courbes JYP (ITZY)', () => {
+    expect(displaySongTitle('ITZY “LOCO” M/V @ITZY', 'ITZY')).toBe('LOCO')
+  })
+  it("chanson entre crochets DSP (KARD) — pas d'over-strip vers vide", () => {
+    expect(displaySongTitle('KARD - [밤밤(Bomb Bomb)] M/V', 'KARD')).toBe('밤밤(Bomb Bomb)')
+  })
+  it('’ courbe fermante utilisée en ouvrante (THE BOYZ)', () => {
+    expect(displaySongTitle('THE BOYZ(더보이즈) ’Nectar’ MV', 'THE BOYZ')).toBe('Nectar')
+  })
+})
