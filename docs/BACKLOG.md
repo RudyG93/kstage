@@ -124,6 +124,15 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 - ✅ **Doublons music_show en DB (cause racine)** — fait 2026-07-11 (migration 0040, cf. `SCRAPING.md §3.14`) : colonne dédiée `events.stage_url` (l'enrichissement n'écrit plus jamais dans source_url), 32 rows migrées, 16 doublons purgés (0 réf FK), **index unique partiel** `(group_id, start_at) where music_show` en garantie dure. Bonus : dédup same-source d'`ingestComebacks` (placeholder kpopofficial vs album finalisé, `§3.15`) + purge fromis_9/tripleS.
 - **R4 Fond de roulement** — ✅ **self-host photos membres** fait 2026-07-11 (`clean-member-photos.ts` + `selfhost-member-photos.ts` : 14 photos FAUSSES nettoyées d'abord — graphiques calendrier kprofiles, photos du mauvais membre —, puis 492/492 rapatriées dans le bucket `member-photos`, 42 NULL sur fallback initiale). **Reste** : boucle contribution admin (hub `/admin`, édition avant approbation, push contributeur, policies édition/suppression par l'auteur — hors périmètre de l'opération 2026-07-11, décision Rudy « focus utilisateur final ») + polish home (Today/Tomorrow, « voir les N autres », agence).
 
+## Restes du round 4 (2026-07-13)
+
+- **KARD — dissolution annoncée le 2026-07-06** (dernier album 28/07, tournée d'adieu) : poser `groups.disbanded_on` quand la dissolution sera effective. BM/J.Seph ajoutés quand même (encore actifs).
+- **Membres décédés** (Jonghyun/SHINee 2017, Moonbin/ASTRO 2023) : absents de la DB et l'enum `member_status` ne peut pas les représenter dignement. Proposition : valeur `deceased` + rendu « In memoriam » (jamais « Former ») — décision produit Rudy.
+- **Photos membres fandom — mapping des titres** : 172/534 résolues au premier passage (titre « Stage Name (group) ») ; améliorer les candidats de titres (variantes de casse/désambiguïsation) pour les 362 restantes. La rotation quotidienne retente.
+- **Debuts — file de revue** : 94 candidats `pending` sur `/admin/debuts` (gate de notabilité non franchi). Un coup d'œil de temps en temps suffit ; les 5 groupes créés sans chaîne YT vérifiée n'auront pas de MVs tant qu'une source n'est pas posée.
+- **The Show (fallback SBS)** : board 64513 muet depuis nov. 2025, relance « SBS LiFE THE SHOW » le 14/07 — vérifier après le 14/07 si le post ep 394 apparaît, sinon relocaliser le board dans `sources/sbs-the-show.ts`.
+- **Ères sous ancien nom** (BEAST→Highlight) et **solos de membres** (YEONJUN, KIHYUN — MVs sans nom du groupe dans le titre) : classes de MVs encore non couvertes par l'ingestion (documentées §3.19).
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.

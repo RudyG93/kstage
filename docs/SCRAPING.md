@@ -255,6 +255,20 @@ select a.title, b.title from mv a join mv b
 
 La dédup display-level de `groupMusicShowEpisodes` est **conservée en défense en profondeur**.
 
+### 3.19 — Backfill « profond » fantôme : max-pages=12 par défaut + quota silencieux (découvert et corrigé 2026-07-13)
+
+**Symptôme** : BTS = 3 MVs, LE SSERAFIM = 4, 31 groupes pré-2024 sous 6 MVs — après DEUX « re-backfills globaux » censés être exhaustifs.
+
+**Trois causes empilées** (aucune n'était le matcher, vérifié sain) :
+
+1. `scripts/backfill-youtube.ts` avait `max-pages=12` **par défaut** (~600 vidéos/chaîne). L'horizon DB collait exactement à cette fenêtre (WEi : plus vieux MV = le ~600ᵉ upload). Le run « --max-pages=100 » du 12/07 ne ciblait que les 14 nouvelles chaînes via `--slugs`.
+2. `--new` filtre `last_scraped_at IS NULL` → **0 source** dès que le cron quotidien est passé (il pose last_scraped_at partout). Un run profond ne doit JAMAIS utiliser `--new`.
+3. Un 403 quota en plein run tronquait la couverture **en silence** (aucune trace : les scripts manuels n'écrivaient pas dans scrape_log).
+
+**Fausse piste consignée le 12/07** : « catalogue BTS trop profond dans HYBE LABELS pour la pagination uploads » — FAUX. HYBE LABELS = 3 375 vidéos = 68 pages, paginées intégralement jusqu'à 2008 en vérification. Aucune chaîne du roster ne dépasse le cap API de 20 000 items.
+
+**Fixes** : `--max-pages=0` = illimité ; `--budget=<units>` (défaut 9000) avec arrêt propre + liste de reprise `--slugs=…` ; **cache de pages par uploadsPlaylistId** partagé entre sources du run (HYBE ×12 sources, SMTOWN ×10 → −40 % d'units) ; ligne scrape_log `youtube_backfill` par run. **Run complet du 13/07 : 173 sources, 3 720 units (un seul jour de quota), +1 155 MVs (1 070 → 2 225), 0 sur-attribution.** Restes légitimes : Soojin (3 clips réels), TRI.BE (chaîne introuvable), FIFTY FIFTY (catalogue court) ; ères sous ancien nom (BEAST→Highlight) et solos de membres = classes distinctes, hors scope.
+
 ### 3.18 — Time-shift carrd : l'heure d'un épisode révisée crée un doublon (découvert et corrigé 2026-07-12)
 
 **Symptôme** : « tous les music shows du 11/07 doublés » (Rudy) — Music Core 954 affiché deux fois, avec le même lineup.
@@ -604,3 +618,33 @@ Le **futur** du calendrier (releases datées annoncées) reposait à 100 % sur `
 - **Reddit r/kpop** (wiki/JSON/threads) : 403 anti-bot partout, même via Jina → `dead`.
 - **kpopschedule.com/upcoming** : vivant + structuré mais **JS-only** (nécessite Jina/headless) et faible volume (6 entrées) → `viable` mais non retenu (dépendance lourde pour peu de gain ; à reconsidérer si besoin d'une 3ᵉ source).
 - **MusicBrainz** : surtout des releases _passées_, peu de futur annoncé fiable.
+
+## 11. Debuts automatiques — kpop.fandom + gate de notabilité (R4-I, 2026-07-13)
+
+### Architecture
+
+Étage 3 du cron `scrape-comebacks` (zéro cron supplémentaire, Hobby-safe) — `src/lib/scrapers/debuts/` :
+
+1. **Détection** : `Category:{YYYY}_debuts` sur kpop.fandom (MediaWiki `api.php`, aucun anti-bot sur l'API contrairement aux pages HTML — un 403 remonte en `blocked`, jamais silencieux). Diff contre `debut_candidates` (idempotence par `fandom_pageid`), ≤ 12 parses/run. Rollover : dès novembre, N+1 surveillé aussi.
+2. **Parse infobox** : nom, date de debut (« August 5, 2026 » → ISO), label, membres (wikilinks `current`), handles SNS (`{{YouTube@|…}}`, `{{Instagram|…}}`), image (résolue via `imageinfo`, self-hostée bucket `group-photos`).
+3. **Gate d'auto-création** : date concrète **ET** notabilité ≥ 1 — présent dans « Debuting groups »/« Solo debuts » de la page Wikipedia annuelle (wikitext), **OU** chaîne YouTube vérifiée `forHandle` (1 unit) ≥ 10k subs, **OU** label déjà en `groups.agency`. Sinon → `pending`, revue `/admin/debuts` (Create/Dismiss). Protège le page-pruning acté : les projets nugu ne créent pas de pages vides.
+4. **Création** : groupe + lineup (membres actifs) + **source `youtube_api` vérifiée** (channel_id posé → le cron scrape-youtube ingère les MVs tout seul dès le lendemain) + event `release` « {name} debut » (idempotent par (source_url fandom, group_id)). Pages pré-debut : badge « Pre-debut » + `noindex`.
+
+### Premier drain (2026-07-13)
+
+Catégorie 2026 = 133 pages. Résultat : **38 créés** (33 avec chaîne vérifiée ; AEN, ALPHA DRIVE ONE 754k subs, AND2BLE, NCT JNJM, VAYONN — qui était dans les unmatched music shows…), **94 pending**, 1 dismissed, 0 erreur. En régime établi : 0-2 nouvelles pages/jour.
+
+### Pièges
+
+- Les chemins HTML de fandom (`/wiki/...`, robots.txt) sont derrière un challenge Cloudflare — seul `api.php` passe. Si `blocked` apparaît dans scrape_log (`fandom_debuts`) depuis Vercel : re-router l'étage vers GitHub Actions (scheduler secondaire, pattern CRON_SECRET).
+- La catégorie mélange groupes, membres et chansons → seules les pages avec infobox musicale sont retenues (le reste part en `dismissed / no-infobox`).
+
+## 12. Images fraîches — Spotify by-ID, bannières YT, photos fandom (R4-B, 2026-07-13)
+
+`src/lib/images/refresh.ts` (cron quotidien `refresh-images` + runner local `scripts/refresh-images-once.ts`) :
+
+1. `groups.image_url` ← Spotify **par ID** (`links->>'spotify'`), jamais par nom : le repli `items[0]` du search a écrit « Weird Al » Yankovic sur WEi et le cron hebdo re-corrompait chaque lundi. Garde de nom (égalité/inclusion normalisée + alias `txt→tomorrowxtogether`) : mismatch = lien mal seedé → loggé, **rien écrit** (TXT pointait un faux artiste « T.X.T. »).
+2. `groups.banner_yt_url` ← `channels.list part=brandingSettings` de la chaîne **exclusive** au groupe (jamais une chaîne label partagée), URL + `=w2560` (2560×1440 réel ; l'URL nue = 512×288). 100/112 servis, 3 units/jour. Chaîne de rendu : `banner_url` (crop admin) ?? `banner_yt_url` ?? `faceCrop(image_url)` — helper unique `groupBannerSrc()`.
+3. `members.photo_url` ← kpop.fandom `prop=pageimages&piprop=original`, titre « {Stage Name} ({group name}) », batch 50/requête, rotation ~100 membres/jour. Clé de changement = `cb=` de l'URL (re-download seulement si ça bouge), self-host bucket `member-photos` + `?v=cb` (upsert même chemin = CDN sinon périmé). Premier passage : 172/534 à l'ère courante ; 362 titres non résolus (mapping à améliorer — la rotation retente).
+
+Deezer et TheAudioDB **supprimés** du cron : par-nom (même classe d'erreur que Weird Al) et fanarts 2018-2021 (les visuels datés reprochés 3 rounds de suite). `image_landscape` n'est plus dans aucune chaîne de rendu.
