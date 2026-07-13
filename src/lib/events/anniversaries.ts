@@ -16,11 +16,40 @@ interface AnnivGroup {
   image_landscape: string | null
   banner_url: string | null
   debut_date: string | null
+  is_solo: boolean
 }
 interface AnnivMember {
   group_id: string
   stage_name: string
   birthday: string | null
+}
+
+const normName = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]/g, '')
+
+// Un soliste est presque toujours 2 rows `members` : membre de son groupe ET
+// membre de son propre groupe solo (Hwasa/MAMAMOO + solo Hwasa, Lisa/BLACKPINK
+// + solo Lisa…). Même personne → un seul anniversaire (retour Rudy R8). Dédup
+// par (nom normalisé + birthday), en PRÉFÉRANT la row du groupe non-solo
+// (« Hwasa — 30 » est plus parlant que le « 30 » nu du groupe solo).
+function dedupePersons(members: AnnivMember[], groupById: Map<string, AnnivGroup>): AnnivMember[] {
+  const best = new Map<string, AnnivMember>()
+  for (const m of members) {
+    if (!m.birthday) continue
+    const g = groupById.get(m.group_id)
+    if (!g) continue
+    const key = `${normName(m.stage_name)}|${m.birthday}`
+    const cur = best.get(key)
+    if (!cur) {
+      best.set(key, m)
+    } else if (groupById.get(cur.group_id)?.is_solo && !g.is_solo) {
+      best.set(key, m)
+    }
+  }
+  return [...best.values()]
 }
 
 function parseMonthDay(dateStr: string): { month: number; day: number } | null {
@@ -92,13 +121,12 @@ export function generateAnniversaries(
   // Note : les "Debut anniversary" ne sont volontairement plus générés (peu
   // d'intérêt côté commu k-pop). On garde `groups.debut_date` en DB pour des
   // stats futures, mais on ne pollue plus le flux d'events avec ça.
-  for (const m of members) {
-    const g = groupById.get(m.group_id)
-    if (!g || !m.birthday) continue
-    const md = parseMonthDay(m.birthday)
+  for (const m of dedupePersons(members, groupById)) {
+    const g = groupById.get(m.group_id)!
+    const md = parseMonthDay(m.birthday!)
     if (!md) continue
     const occ = nextOccurrence(md, today)
-    const birthYear = yearOf(m.birthday)
+    const birthYear = yearOf(m.birthday!)
     const age = birthYear ? occ.y - birthYear : null
     push(g, occ, `anniv-bday-${m.group_id}-${m.stage_name}`, annivTitle(m.stage_name, g.name, age))
   }
@@ -115,7 +143,9 @@ export async function getUpcomingAnniversaries(
   const [{ data: groups }, { data: members }] = await Promise.all([
     supabase
       .from('groups')
-      .select('id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date')
+      .select(
+        'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
+      )
       .in('id', groupIds),
     supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
   ])
@@ -165,7 +195,9 @@ export async function getAnniversariesForMonth({
   const supabase = await createClient()
   let gq = supabase
     .from('groups')
-    .select('id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date')
+    .select(
+      'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
+    )
   if (groupSlugs && groupSlugs.length > 0) gq = gq.in('slug', groupSlugs)
   const { data: groups } = await gq
   const gids = (groups ?? []).map((g) => g.id)
@@ -178,12 +210,15 @@ export async function getAnniversariesForMonth({
 
   const groupById = new Map((groups ?? []).map((g) => [g.id, g]))
   const out: UpcomingEvent[] = []
-  for (const m of members ?? []) {
-    const g = groupById.get(m.group_id)
-    if (!g || !m.birthday) continue
-    const md = parseMonthDay(m.birthday)
+  // Dédup soliste/membre (cf. generateAnniversaries) : une personne = un anniv.
+  for (const m of dedupePersons(
+    (members ?? []) as AnnivMember[],
+    groupById as Map<string, AnnivGroup>,
+  )) {
+    const g = groupById.get(m.group_id)!
+    const md = parseMonthDay(m.birthday!)
     if (!md || md.month !== month) continue
-    const birthYear = yearOf(m.birthday)
+    const birthYear = yearOf(m.birthday!)
     const age = birthYear ? year - birthYear : null
     out.push({
       id: `anniv-bday-${m.group_id}-${m.stage_name}-${year}`,

@@ -60,7 +60,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
         .limit(500),
       supabase
         .from('groups')
-        .select('id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date')
+        .select(
+          'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
+        )
         .in('id', groupIds),
       supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
     ])

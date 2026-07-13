@@ -74,6 +74,28 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['showcase', /\bshowcase\b/i],
   ['music show', /\b(inkigayo|music bank|music core|show champion|m ?countdown|the show)\b/i],
   ['practice video', /\bpractice video\b/i],
+  // Contenu / vlog sur la chaîne officielle qui porte « MV » dans le titre
+  // (retour Rudy R8, ARTMS). Balayage prod : ces règles ne touchent AUCUN vrai
+  // MV (l'emoji brut était trop large — cassait « ROSÉ … F1® » et « TXT
+  // 'LO$ER=LO♡ER' » — donc écarté).
+  // « … | EN JP CN | … » = liste de sous-titres d'une vidéo de contenu (ARTMS,
+  // tripleS talks), jamais un MV officiel.
+  ['content subtitles', /\ben\s+jp\s+cn\b/i],
+  // « MV Shoot » = tournage du clip en anglais (behind : BANGTAN BOMB, T:TIME,
+  // EN-TER key…) — complète le coréen 촬영.
+  ['mv shoot', /\bmv shoot\b/i],
+  // « [Let's Play …] » = série variété/contenu interactif (MCND) — pas le clip.
+  ["let's play", /\blet'?s play\b/i],
+  // « … MV Time » = série de contenu (DAILY:DIRECTION « DD MV TIME »).
+  ['mv time', /\bmv ?time\b/i],
+  // « 메이크업 » = vlog maquillage (Apink-log).
+  ['makeup vlog', /메이크업/],
+  // « Funniest MV » = compilation humoristique (TRI.BE).
+  ['funniest', /\bfunniest\b/i],
+  // Posts « anniversaire de vues » : 돌파 = franchi, 달성 = atteint, 공약 =
+  // promesse-défi. Marqueurs d'événement, jamais un titre de chanson (« EXO-SC
+  // 10억뷰 (1 Billion Views) » — chanson — n'a AUCUN de ces mots → épargné).
+  ['view milestone', /돌파|달성|공약/],
 ].map(([term, re]) => ({ term: term as string, re: re as RegExp }))
 
 export interface OfficialMvCheck {

@@ -11,6 +11,7 @@ const group = (over: Partial<Parameters<typeof generateAnniversaries>[0][number]
   image_landscape: null,
   banner_url: null,
   debut_date: null,
+  is_solo: false,
   ...over,
 })
 
@@ -63,5 +64,23 @@ describe('generateAnniversaries', () => {
     expect(res).toHaveLength(1)
     expect(kstDayKey(res[0].start_at)).toBe('2027-01-05')
     expect(res[0].title).toBe('Karina — 27')
+  })
+
+  it('dédup soliste+membre (Hwasa) : un seul anniv, version groupe préférée (R8)', () => {
+    const res = generateAnniversaries(
+      [
+        group({ id: 'mmm', slug: 'mamamoo', name: 'MAMAMOO', is_solo: false }),
+        group({ id: 'hw', slug: 'hwasa', name: 'Hwasa', is_solo: true }),
+      ],
+      [
+        { group_id: 'mmm', stage_name: 'Hwasa', birthday: '1995-07-23' },
+        { group_id: 'hw', stage_name: 'Hwasa', birthday: '1995-07-23' },
+      ],
+      { todayKey: '2026-07-01', days: 60 },
+    )
+    expect(res).toHaveLength(1)
+    // Row du groupe non-solo gardée → « Hwasa — 31 » (pas le « 31 » nu du solo).
+    expect(res[0].title).toBe('Hwasa — 31')
+    expect(res[0].groups.slug).toBe('mamamoo')
   })
 })
