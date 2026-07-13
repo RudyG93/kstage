@@ -176,3 +176,31 @@ export function splitUpcomingByBuckets(
   }
   return buckets
 }
+
+/**
+ * Regroupe les events d'un même groupe côte à côte dans la liste d'un jour
+ * (retour Rudy R6 : deux sorties Young Posse le même jour doivent se suivre).
+ * L'ordre chronologique fixe la position d'ANCRAGE (premier event du groupe) ;
+ * ses autres events du jour remontent juste après. Stable pour le reste.
+ */
+export function clusterByGroup<
+  T extends { group_id?: string | null; groups?: { name: string } | null },
+>(events: readonly T[]): T[] {
+  const keyOf = (e: T) => e.group_id ?? e.groups?.name ?? null
+  const out: T[] = []
+  const done = new Set<number>()
+  for (let i = 0; i < events.length; i++) {
+    if (done.has(i)) continue
+    out.push(events[i])
+    done.add(i)
+    const key = keyOf(events[i])
+    if (key == null) continue
+    for (let j = i + 1; j < events.length; j++) {
+      if (!done.has(j) && keyOf(events[j]) === key) {
+        out.push(events[j])
+        done.add(j)
+      }
+    }
+  }
+  return out
+}

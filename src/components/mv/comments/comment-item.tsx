@@ -120,10 +120,12 @@ export function CommentItem({
   const hasTail = previewTail || limitTail
   // Coude arrondi tronc → item ; le tronc (w-px) déborde de 12px (gap
   // space-y-3) pour relier les items entre eux, sauf après le dernier.
+  // muted-foreground/35 plutôt que border : net dans les deux thèmes sans
+  // épaissir (retour Rudy R6 « trop épais, trop peu visible »).
   const elbow = (
     <span
       aria-hidden
-      className="border-border pointer-events-none absolute top-0 -left-4 h-2.5 w-3.5 rounded-bl-[10px] border-b border-l"
+      className="border-muted-foreground/35 pointer-events-none absolute top-0 -left-4 h-2.5 w-3.5 rounded-bl-[10px] border-b border-l"
     />
   )
 
@@ -249,7 +251,7 @@ export function CommentItem({
                 type="button"
                 onClick={() => setCollapsed(true)}
                 aria-label="Collapse thread"
-                className="hover:bg-foreground/5 focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
+                className="hover:bg-foreground/[0.03] focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
               />
             )}
             <div className="space-y-3">
@@ -261,7 +263,7 @@ export function CommentItem({
                       {!(i === visibleChildren.length - 1 && !hasTail) && (
                         <span
                           aria-hidden
-                          className="bg-border pointer-events-none absolute top-0 -bottom-3 -left-4 w-px"
+                          className="bg-muted-foreground/35 pointer-events-none absolute top-0 -bottom-3 -left-4 w-px"
                         />
                       )}
                     </>
