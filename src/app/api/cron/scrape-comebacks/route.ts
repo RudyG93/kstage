@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { scrapeComebacks } from '@/lib/scrapers/kpopofficial'
 import { scrapeWikipediaReleases } from '@/lib/scrapers/wikipedia-releases'
+import { ingestDebuts } from '@/lib/scrapers/debuts/ingest'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
@@ -103,10 +104,42 @@ export async function GET(req: Request) {
     }
   }
 
-  // Le cron échoue (500, visible dans Vercel Crons) uniquement si la primaire est
-  // inexploitable. Wikipedia est un filet : son état vit dans scrape_log.
-  if (primaryStatus === 'error') {
-    return NextResponse.json({ ok: false, kpopResult, wikiResult }, { status: 500 })
+  // --- Étage 3 : auto-découverte des debuts (R4-I) — optionnel, best-effort.
+  // Détecte les nouveaux groupes sur kpop.fandom, auto-crée ceux qui passent
+  // le gate (date concrète + notabilité), met le reste en revue /admin/debuts.
+  let debutResult: unknown = null
+  {
+    const startedDebuts = new Date().toISOString()
+    try {
+      const result = await ingestDebuts(supabase, { youtubeKey: process.env.YOUTUBE_API_KEY })
+      debutResult = result
+      await logScrapeRun(supabase, {
+        source: 'fandom_debuts',
+        status: result.blocked ? 'partial' : result.errors.length > 0 ? 'partial' : 'ok',
+        startedAt: startedDebuts,
+        errorMsg: result.blocked
+          ? 'fandom api.php 403 — re-router (GitHub Actions ?) si persistant'
+          : result.errors.length > 0
+            ? result.errors.slice(0, 3).join(' ; ')
+            : null,
+        details: { ...result },
+      })
+    } catch (err) {
+      debutResult = { error: String(err) }
+      await logScrapeRun(supabase, {
+        source: 'fandom_debuts',
+        status: 'error',
+        startedAt: startedDebuts,
+        errorMsg: String(err),
+      })
+    }
   }
-  return NextResponse.json({ ok: true, primaryStatus, kpopResult, wikiResult })
+
+  // Le cron échoue (500, visible dans Vercel Crons) uniquement si la primaire est
+  // inexploitable. Wikipedia et les debuts sont des filets : leur état vit dans
+  // scrape_log.
+  if (primaryStatus === 'error') {
+    return NextResponse.json({ ok: false, kpopResult, wikiResult, debutResult }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true, primaryStatus, kpopResult, wikiResult, debutResult })
 }

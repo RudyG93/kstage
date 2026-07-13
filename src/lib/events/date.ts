@@ -13,6 +13,11 @@ export function getKstMonthRange(year: number, month: number) {
   return { startISO, endISO }
 }
 
+/** Date ISO strictement future ? (nowMs injectable — purity lint des RSC.) */
+export function isFutureDate(iso: string | null | undefined, nowMs = Date.now()): boolean {
+  return !!iso && Date.parse(iso) > nowMs
+}
+
 /**
  * Convertit une horloge KST (heure de Séoul, UTC+9 sans DST) en UTC ISO.
  * @param monthIndex 0-11

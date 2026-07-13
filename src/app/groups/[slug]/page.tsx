@@ -15,7 +15,7 @@ import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
-import { formatDDay } from '@/lib/events/date'
+import { formatDDay, isFutureDate } from '@/lib/events/date'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { createClient } from '@/lib/supabase/server'
@@ -35,6 +35,9 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/groups/${slug}` },
     openGraph: { title: `${title} · KStage`, description, url: `/groups/${slug}` },
+    // Pré-debut (R4-I) : page atteignable (calendrier/follow) mais hors index
+    // tant que le groupe n'a pas de contenu — cohérent avec le page-pruning.
+    ...(isFutureDate(group.debut_date) ? { robots: { index: false, follow: true } } : {}),
   }
 }
 
@@ -138,6 +141,11 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
               <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
                 Group
               </span>
+              {isFutureDate(group.debut_date) && (
+                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                  Pre-debut
+                </span>
+              )}
               {group.disbanded_on && (
                 <span className="label-data-inline bg-page/50 text-muted-foreground rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
                   Disbanded {new Date(group.disbanded_on).getUTCFullYear()}

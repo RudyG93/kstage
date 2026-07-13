@@ -479,6 +479,47 @@ export type Database = {
         }
         Relationships: []
       }
+      debut_candidates: {
+        Row: {
+          decided_at: string | null
+          detected_at: string
+          fandom_pageid: number
+          group_id: string | null
+          id: string
+          page_title: string
+          payload: Json | null
+          status: string
+        }
+        Insert: {
+          decided_at?: string | null
+          detected_at?: string
+          fandom_pageid: number
+          group_id?: string | null
+          id?: string
+          page_title: string
+          payload?: Json | null
+          status?: string
+        }
+        Update: {
+          decided_at?: string | null
+          detected_at?: string
+          fandom_pageid?: number
+          group_id?: string | null
+          id?: string
+          page_title?: string
+          payload?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debut_candidates_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           agency: string | null
