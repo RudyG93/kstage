@@ -133,6 +133,11 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 - **The Show (fallback SBS)** : board 64513 muet depuis nov. 2025, relance « SBS LiFE THE SHOW » le 14/07 — vérifier après le 14/07 si le post ep 394 apparaît, sinon relocaliser le board dans `sources/sbs-the-show.ts`.
 - **Ères sous ancien nom** (BEAST→Highlight) et **solos de membres** (YEONJUN, KIHYUN — MVs sans nom du groupe dans le titre) : classes de MVs encore non couvertes par l'ingestion (documentées §3.19).
 
+## Prévention découverte de chaînes (R7, 2026-07-13)
+
+- **MVs sur chaîne d'agence** : les groupes debut auto-créés sont seedés avec leur seule chaîne perso — or les labels hébergent souvent les MVs (VAYONN→iNKODE corrigé + 6 autres). **À terme** : découverte périodique de chaînes pour tout groupe à catalogue fin (<3 MVs, debut_date récent) via `scripts/discover-mv-channels.ts`, seed auto des chaînes vérifiées (garde title-match). Pour l'instant : manuel quand signalé.
+- **Cas non résolus** (documentés) : CHASER (nom trop générique, aucune chaîne fiable au discover) ; SUCTION (MVs seulement sur 1theK dont la playlist uploads dépasse le cap API 20k — impaginables) ; MiiWAN (idole virtuelle, pas de chaîne officielle claire) ; AEN (pré-debut, 0 MV normal jusqu'au 05/08).
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.

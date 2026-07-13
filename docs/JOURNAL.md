@@ -4,6 +4,17 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-13 (soir, R7) — Round 7 : MVs sur chaîne d'agence (VAYONN), carte MV revert, fil commentaires, fix trending
+
+**3 retours Rudy + 1 bug latent trouvé — 3 commits mergés (`feat/r7-polish`) + data** :
+
+1. **MVs sur la chaîne de l'AGENCE (classe systémique)** : VAYONN avait 0 MV car ses clips sont sur la chaîne iNKODE, pas sa chaîne perso (seedée au debut). Découverte (discover-mv-channels.ts sur 33 groupes fins) → schéma confirmé : les groupes debut sont créés avec leur seule chaîne perso alors que les labels hébergent les MVs. **7 chaînes agence seedées** (title-match = 0 sur-attribution, comme HYBE/SMTOWN) : VAYONN+KEYVITUP→iNKODE (UCTItOHr70Tq_GAOACSGawPw), ChaDongHyeop→woolliment, dodree→JYP, LNGSHOT→MORE VISION, PJX→Charon, UNCHILD→High Up. **+18 MVs** (VAYONN 0→2, KEYVITUP 0→3, LNGSHOT 0→8…), total **2 297, 0 sur-attribution vérifiée**. Cas particuliers documentés (BACKLOG) : AEN pré-debut (0 MV normal), CHASER (pas de chaîne fiable, nom trop générique), SUCTION (1theK-only, playlist > cap API 20k), MiiWAN (idole virtuelle).
+2. **Carte MV drops** : le format « JUN 14 '26 » du R6 rejeté ET il tronquait toujours le nom de groupe. Retour au **mois-année** (« Jun 2026 », KST, sans jour ni apostrophe) sur une ligne qui **passe à la ligne** au lieu de tronquer (line-clamp-2, plus de truncate) — vérifié browser : « DAILY:DIRECTION · Jul 2026 » garde nom + date entiers. Même format Top Rated.
+3. **Fil commentaires (3e itération, capture Reddit)** : le `[−]` à côté de chaque avatar retiré — le **trait vertical cliquable** (aligné sous l'avatar parent, x=10px vérifié) gère le repli. **Halo de fond au survol supprimé** (zone cliquable 16px transparente, le fil s'éclaire subtilement via group-hover). Replié : chevron discret au lieu de « [+] ». Vérifié browser (clic → repli OK, alignement avatar/trait = 10px des deux côtés).
+4. **Bug latent trouvé** (le build R7 l'a révélé via un test flaky) : `trendingReason` ne passait pas le `now` reçu à `formatDDay` → le label D-day retombait sur l'heure réelle et affichait « D+1 » sur un event FUTUR quand l'horloge serveur passait minuit KST. now threadé.
+
+**Vérifications** : 556 tests + build verts ; browser (carte MV wrap, fil commentaires repli + alignement) ; SQL (0 sur-attribution, VAYONN=2, LNGSHOT=8). **Prévention (BACKLOG)** : la découverte de chaîne agence devrait être périodique pour les catalogues fins/debuts — pour l'instant fait manuellement quand signalé.
+
 ## 2026-07-13 (soir) — Round 6 : photos cohérentes par ère, 168 titres réparés, dates nettes, clustering calendrier
 
 **6 retours Rudy — 4 commits mergés (`feat/r6-polish`)** :
