@@ -113,6 +113,34 @@ describe('rankStageCandidates', () => {
   })
 })
 
+describe('rankStageCandidates — format SBS sans nom de show (2026-07-13)', () => {
+  // Inkigayo 12/07 : les 3 stages existaient sur @sbskpop mais le titre ne
+  // porte plus « Inkigayo » — « Song - Group | SBS 260712 방송 ». Le marqueur
+  // accepte désormais « SBS <YYMMDD> 방송 ».
+  const AIR_INKI = '2026-07-12T06:10:00Z'
+  it('matche le nouveau format « | SBS YYMMDD 방송 »', () => {
+    const uploads = [
+      upload({
+        videoId: 'inki1234567',
+        title: 'Gimme Dat Love - i-dle (아이들) | SBS 260712 방송',
+        publishedAt: '2026-07-12T10:00:00Z',
+      }),
+    ]
+    const ranked = rankStageCandidates(uploads, 'i-dle', 'inkigayo', AIR_INKI)
+    expect(ranked.map((u) => u.videoId)).toEqual(['inki1234567'])
+  })
+  it('ne matche pas la FullCam 4K (score 0, pas un stage broadcast)', () => {
+    const uploads = [
+      upload({
+        videoId: 'full1234567',
+        title: "[안방1열 풀캠4K] 아이들 'Gimme Dat Love' (i-dle FullCam) @SBS Inkigayo 260712",
+        publishedAt: '2026-07-12T11:00:00Z',
+      }),
+    ]
+    expect(rankStageCandidates(uploads, 'i-dle', 'inkigayo', AIR_INKI)).toEqual([])
+  })
+})
+
 describe('rankStageCandidates — contenus non-stage (2026-07-11)', () => {
   const AIR_MCD = '2026-07-09T09:00:00Z'
   it("rejette l'interview de comeback (faux positif réel EP.936) et garde le vrai stage", () => {
