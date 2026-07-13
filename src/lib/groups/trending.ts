@@ -39,7 +39,10 @@ export function trendingReason(
   nowMs: number = Date.now(),
 ): string {
   if (next && (Date.parse(next.start_at) - nowMs) / 86_400_000 <= IMMINENCE_DAYS) {
-    const dday = formatDDay(next.start_at, 'Asia/Seoul')
+    // Threader nowMs jusqu'à formatDDay (bug R7) : sans lui il retombait sur
+    // l'heure réelle → « D+1 » sur un event futur quand l'horloge serveur
+    // dépassait minuit KST (label incohérent avec le score, et test flaky).
+    const dday = formatDDay(next.start_at, 'Asia/Seoul', new Date(nowMs).toISOString())
     return next.type === 'music_show' ? `Music show · ${dday}` : `Comeback · ${dday}`
   }
   if (recent) {
