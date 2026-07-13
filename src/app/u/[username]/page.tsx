@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronRight, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { GroupCard } from '@/components/group-card'
 import { MvsGrid } from '@/components/group/mvs-grid'
@@ -10,7 +10,6 @@ import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfilePicker, type PickerItem } from '@/components/profile/profile-picker'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { PushBell } from '@/components/notifications/push-bell'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
@@ -243,35 +242,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           )}
         </section>
 
-        {/* Raccourcis réglages (§7.8.5). */}
-        {isOwner && (
-          <Panel>
-            <PanelHeader label="Settings" />
-            <div className="divide-y">
-              <div className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2">
-                <span>
-                  <span className="block text-xs font-semibold">Theme</span>
-                  <span className="text-muted-foreground block text-[10px]">
-                    Midnight — Daylight available
-                  </span>
-                </span>
-                <ThemeToggle />
-              </div>
-              <Link
-                href="/account"
-                className="hover:bg-secondary/60 flex min-h-[44px] items-center justify-between gap-3 px-3 py-2 transition-colors"
-              >
-                <span>
-                  <span className="block text-xs font-semibold">Account & notifications</span>
-                  <span className="text-muted-foreground block text-[10px]">
-                    Email, username, avatar, password, push preferences
-                  </span>
-                </span>
-                <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
-              </Link>
-            </div>
-          </Panel>
-        )}
+        {/* Bloc Settings supprimé (R4-G) : l'écrou du header de page mène à
+            /account et le toggle thème vit dans le header du site (mobile
+            inclus depuis R4-G). */}
       </div>
     </div>
   )

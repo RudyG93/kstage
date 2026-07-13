@@ -152,9 +152,9 @@ export default async function RootLayout({
                 </Link>
               </div>
               <div className="flex items-center gap-2">
-                <div className="hidden md:block">
-                  <ThemeToggle />
-                </div>
+                {/* Visible aussi en mobile depuis R4-G : le bloc Settings du
+                    profil (ex-seul accès mobile au thème) est supprimé. */}
+                <ThemeToggle />
                 {user && (
                   <Link
                     href="/account"
