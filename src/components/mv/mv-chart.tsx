@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displaySongTitle } from '@/lib/events/title'
-import { shortDateYear } from '@/lib/events/date'
+import { monthYear } from '@/lib/events/date'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { cn } from '@/lib/utils'
 import type { TopRatedItem, TopRatedPeriod } from '@/lib/events/top-rated'
@@ -123,9 +123,10 @@ export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedI
                   <span className="block truncate text-xs font-semibold">
                     {displaySongTitle(item.title, item.groupName)}
                   </span>
-                  {/* Date de sortie plutôt que le nb de ratings (retour Rudy R6). */}
+                  {/* Date de sortie plutôt que le nb de ratings (R6), format
+                      mois-année sans apostrophe (R7). */}
                   <span className="text-muted-foreground block truncate text-[10px]">
-                    {item.groupName} · {shortDateYear(item.releaseAt)}
+                    {item.groupName} · {monthYear(item.releaseAt, 'Asia/Seoul')}
                   </span>
                 </span>
                 <span className="bg-foreground/8 h-[4px] w-16 shrink-0 overflow-hidden rounded-full">

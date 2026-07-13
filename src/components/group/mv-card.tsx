@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Play, Star } from 'lucide-react'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { shortDateYear } from '@/lib/events/date'
+import { monthYear } from '@/lib/events/date'
 import type { MvEvent } from '@/lib/events/queries'
 
 export type Rating = { avg: number; count: number }
@@ -63,11 +63,11 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
         <p className="line-clamp-2 text-[11.5px] leading-snug font-semibold">
           {displaySongTitle(mv.title, group?.name)}
         </p>
-        {/* Nom truncate à gauche, date complète shrink-0 à droite : un nom de
-            groupe long (DAILY:DIRECTION) ne tronque plus jamais la date (R6). */}
-        <p className="label-data-inline text-muted-foreground mt-0.5 flex items-baseline justify-between gap-1 text-[9px]">
-          <span className="min-w-0 truncate">{group?.name}</span>
-          <span className="tabular shrink-0">{shortDateYear(mv.start_at)}</span>
+        {/* Une seule ligne « Groupe · Mois Année » qui PASSE À LA LIGNE au lieu
+            de tronquer (R7) : un nom long (DAILY:DIRECTION) garde son nom entier
+            ET sa date, jamais coupés. Mois-année sans jour ni apostrophe. */}
+        <p className="label-data-inline text-muted-foreground mt-0.5 line-clamp-2 text-[9px]">
+          {group?.name} · {monthYear(mv.start_at, 'Asia/Seoul')}
         </p>
         {rating !== undefined && (
           <div className="mt-1.5 flex items-center gap-1">
