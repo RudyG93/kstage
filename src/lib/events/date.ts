@@ -141,6 +141,12 @@ export function shortDate(iso: string, timeZone = 'Asia/Seoul'): string {
     .toUpperCase()
 }
 
+/** « JUN 14 '26 » — date compacte AVEC année (Top Rated, cartes MV). */
+export function shortDateYear(iso: string, timeZone = 'Asia/Seoul'): string {
+  const yy = new Intl.DateTimeFormat('en-US', { year: '2-digit', timeZone }).format(new Date(iso))
+  return `${shortDate(iso, timeZone)} '${yy}`
+}
+
 /** « Mar 2026 » — mois + année (profil « Fan since »). */
 export function monthYear(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {

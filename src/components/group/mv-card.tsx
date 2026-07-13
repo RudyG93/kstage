@@ -3,14 +3,8 @@ import Link from 'next/link'
 import { Play, Star } from 'lucide-react'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
+import { shortDateYear } from '@/lib/events/date'
 import type { MvEvent } from '@/lib/events/queries'
-
-const yearMonth = (iso: string) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: 'short',
-  }).format(new Date(iso))
 
 export type Rating = { avg: number; count: number }
 
@@ -69,8 +63,11 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
         <p className="line-clamp-2 text-[11.5px] leading-snug font-semibold">
           {displaySongTitle(mv.title, group?.name)}
         </p>
-        <p className="label-data-inline text-muted-foreground mt-0.5 truncate text-[9px]">
-          {group?.name} · {yearMonth(mv.start_at)}
+        {/* Nom truncate à gauche, date complète shrink-0 à droite : un nom de
+            groupe long (DAILY:DIRECTION) ne tronque plus jamais la date (R6). */}
+        <p className="label-data-inline text-muted-foreground mt-0.5 flex items-baseline justify-between gap-1 text-[9px]">
+          <span className="min-w-0 truncate">{group?.name}</span>
+          <span className="tabular shrink-0">{shortDateYear(mv.start_at)}</span>
         </p>
         {rating !== undefined && (
           <div className="mt-1.5 flex items-center gap-1">
