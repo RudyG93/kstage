@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   deleteComment,
@@ -86,9 +87,12 @@ export function CommentItem({
           type="button"
           onClick={() => setCollapsed(false)}
           aria-expanded={false}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-xs"
+          aria-label={`Expand comment by ${author}`}
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-xs"
         >
-          <span className="tabular">[+]</span>
+          {/* Chevron discret (R7) : seule commande d'expansion quand le trait
+              est masqué (comment replié) — plus de « [+] » entre crochets. */}
+          <ChevronRight className="text-faint size-3.5 shrink-0" aria-hidden />
           <span className="text-foreground font-medium">{author}</span>
           <span aria-hidden>·</span>
           <span className="tabular-nums">{node.score} pts</span>
@@ -118,30 +122,22 @@ export function CommentItem({
   const previewTail = childCount > 0 && !repliesOpen && childCount > replyPreview
   const limitTail = childCount > 0 && repliesOpen && !showAllReplies && childCount > REPLY_LIMIT
   const hasTail = previewTail || limitTail
-  // Coude arrondi tronc → item ; le tronc (w-px) déborde de 12px (gap
-  // space-y-3) pour relier les items entre eux, sauf après le dernier.
-  // muted-foreground/35 plutôt que border : net dans les deux thèmes sans
-  // épaissir (retour Rudy R6 « trop épais, trop peu visible »).
+  // Coude arrondi reliant le tronc vertical (x=10px, sous l'avatar parent) à
+  // l'avatar de chaque réponse. `group-hover/thread` : tout le fil s'éclaire
+  // légèrement quand on survole la zone (le halo de fond a été retiré, R7).
   const elbow = (
     <span
       aria-hidden
-      className="border-muted-foreground/35 pointer-events-none absolute top-0 -left-4 h-2.5 w-3.5 rounded-bl-[10px] border-b border-l"
+      className="border-muted-foreground/30 group-hover/thread:border-muted-foreground/55 pointer-events-none absolute top-0 -left-[10px] h-3 w-2.5 rounded-bl-[8px] border-b border-l transition-colors"
     />
   )
 
   return (
     <article id={`comment-${node.id}`} className="scroll-mt-20" aria-label={`Comment by ${author}`}>
       <div className="min-w-0 space-y-1.5">
+        {/* Plus de [−] ici (R7) : le repli passe par le trait vertical cliquable
+            du bloc réponses, pour ne pas encombrer chaque en-tête. */}
         <header className="text-muted-foreground flex items-center gap-2 text-xs">
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            aria-expanded={true}
-            aria-label="Collapse comment"
-            className="text-faint hover:text-foreground tabular focus-visible:ring-ring/50 cursor-pointer rounded px-0.5 outline-none focus-visible:ring-2"
-          >
-            [−]
-          </button>
           {username ? (
             <Link
               href={`/u/${username}`}
@@ -245,13 +241,16 @@ export function CommentItem({
         )}
 
         {childCount > 0 && (
-          <div className={showThread ? 'relative pt-1 pl-6' : 'pt-1'}>
+          <div className={showThread ? 'group/thread relative pt-1 pl-5' : 'pt-1'}>
             {showThread && (
+              // Zone cliquable = le trait (hit area 16px), SANS fond au survol
+              // (retour Rudy R7 : « le halo est trop gros »). Le clic replie ce
+              // commentaire ; le survol éclaire le fil via group/thread.
               <button
                 type="button"
                 onClick={() => setCollapsed(true)}
                 aria-label="Collapse thread"
-                className="hover:bg-foreground/[0.03] focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
+                className="focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
               />
             )}
             <div className="space-y-3">
@@ -263,7 +262,7 @@ export function CommentItem({
                       {!(i === visibleChildren.length - 1 && !hasTail) && (
                         <span
                           aria-hidden
-                          className="bg-muted-foreground/35 pointer-events-none absolute top-0 -bottom-3 -left-4 w-px"
+                          className="bg-muted-foreground/30 group-hover/thread:bg-muted-foreground/55 pointer-events-none absolute top-0 -bottom-3 -left-[10px] w-px transition-colors"
                         />
                       )}
                     </>
