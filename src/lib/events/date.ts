@@ -141,18 +141,13 @@ export function shortDate(iso: string, timeZone = 'Asia/Seoul'): string {
     .toUpperCase()
 }
 
-/** « JUN 14 '26 » — date compacte AVEC année (Top Rated, cartes MV). */
-export function shortDateYear(iso: string, timeZone = 'Asia/Seoul'): string {
-  const yy = new Intl.DateTimeFormat('en-US', { year: '2-digit', timeZone }).format(new Date(iso))
-  return `${shortDate(iso, timeZone)} '${yy}`
-}
-
-/** « Mar 2026 » — mois + année (profil « Fan since »). */
-export function monthYear(iso: string): string {
+/** « Mar 2026 » — mois + année (profil « Fan since » en UTC ; cartes MV / Top
+ * Rated en KST — retour Rudy R7 : mois-année, pas de jour ni d'apostrophe). */
+export function monthYear(iso: string, timeZone = 'UTC'): string {
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
-    timeZone: 'UTC',
+    timeZone,
   }).format(new Date(iso))
 }
 
