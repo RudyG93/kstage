@@ -129,6 +129,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   >
                     Feedback
                   </Link>
+                  <Link
+                    href="/admin/debuts"
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  >
+                    Debuts
+                  </Link>
                 </>
               )}
               <PushBell />
