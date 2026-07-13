@@ -15,6 +15,13 @@ describe('isOfficialMvTitle', () => {
     // Soliste format occidental : « Official Video » sans « music ».
     'JENNIE - like JENNIE (Official Video)',
     'LISA - ROCKSTAR (Official Music Video)',
+    // R8 : vrais MVs à NE PAS attraper par les nouvelles règles.
+    // « 10억뷰 » est le NOM de la chanson (억뷰 seul, sans 돌파/달성) → garde.
+    "EXO-SC 세훈&찬열 '10억뷰 (1 Billion Views) (Feat. MOON)' MV",
+    // ♡ (dans le nom de chanson) — l'ancienne piste « emoji brut » l'aurait cassé.
+    "TXT (투모로우바이투게더) 'LO$ER=LO♡ER' Official MV",
+    // ® (F1® The Movie) — idem.
+    'ROSÉ - Messy (From F1® The Movie) [Official Music Video]',
   ]
   const notOfficial: [string, string][] = [
     ["aespa 'Whiplash' MV Teaser", 'blacklist:teaser'],
@@ -58,6 +65,18 @@ describe('isOfficialMvTitle', () => {
     ['Shooting Star MV Sketch #3 #Kep1er #케플러', 'blacklist:mv sketch'],
     // « Shorts M/V » = format vertical court (BIBI).
     ['비비 (BIBI) - 종말의 사과나무 (Apocalypse) Shorts M/V #bibi', 'blacklist:shorts'],
+    // ---- R8 : contenu/vlog sur chaîne officielle avec « MV » (ARTMS…). ----
+    ['MV 속 Club Icarus 서울에 실존! 🪽✨ | EN JP CN | ARTMS', 'blacklist:content subtitles'],
+    [
+      'Virtual Angel MV를 n회차 시청해야하는 이유! | EN JP CN | ARTMS',
+      'blacklist:content subtitles',
+    ],
+    ["[BANGTAN BOMB] Dance Battle during 'IDOL' MV shoot - BTS", 'blacklist:mv shoot'],
+    ["[Let's Play MCND] MCND - Hey You M/V", "blacklist:let's play"],
+    ['🎬DD MV TIME🤷‍♂️ #DAILYDIRECTION #DD', 'blacklist:mv time'],
+    ["TRI.BE(트라이비) 'RUB-A-DUM' MV 1,000만뷰 돌파🎉🎉", 'blacklist:view milestone'],
+    ['(SUB) Apink-log | 은지 | MV메이크업💄', 'blacklist:makeup vlog'],
+    ['TRI.BE - Papa Noel Funniest MV ⛄', 'blacklist:funniest'],
     // Déclinaisons non-clip (Dreamcatcher, Highlight).
     ["Dreamcatcher(드림캐쳐) 'JUSTICE' Dance Video (MV ver.)", 'blacklist:dance video'],
     ['[MV] 하이라이트(Highlight) - 불어온다 (NOT THE END) Lip ver.', 'blacklist:lip version'],
