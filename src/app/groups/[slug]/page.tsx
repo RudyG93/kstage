@@ -9,7 +9,6 @@ import { ArtistHero } from '@/components/group/artist-hero'
 import { StatsStrip } from '@/components/group/stats-strip'
 import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
-import { SuggestEventDialog } from '@/components/suggestions/suggest-event-dialog'
 import { getGroupBySlug } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
@@ -193,23 +192,9 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
 
           {/* Events */}
           <Panel>
-            <PanelHeader
-              label={`Upcoming — ${group.name}`}
-              // Contribute intégré au header du panneau (avant : perdu dans un
-              // footer sous les events) — ghost discret, cohérent Data Desk.
-              right={
-                user ? (
-                  <SuggestEventDialog groups={[{ id: group.id, name: group.name }]} />
-                ) : (
-                  <Link
-                    href="/login"
-                    className="label-data-inline text-muted-foreground hover:text-foreground text-[9.5px] transition-colors"
-                  >
-                    + Contribute
-                  </Link>
-                )
-              }
-            />
+            {/* Contribute retiré (R4-E) : signaler une donnée manquante passe
+                par le widget Feedback du footer (catégorie Data). */}
+            <PanelHeader label={`Upcoming — ${group.name}`} />
             {events.length === 0 ? (
               <div className="p-3">
                 <EmptyState

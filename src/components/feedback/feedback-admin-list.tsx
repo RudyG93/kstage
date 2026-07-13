@@ -28,7 +28,7 @@ export function FeedbackAdminList({ items }: { items: FeedbackRow[] }) {
             <div className="space-y-2 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="label-data-inline bg-secondary rounded-sm px-1.5 py-0.5 text-[9px]">
-                  {f.kind === 'bug' ? '🐛 Bug' : '💡 Idea'}
+                  {f.kind === 'bug' ? '🐛 Bug' : f.kind === 'data' ? '📊 Data' : '💡 Idea'}
                 </span>
                 <span className="text-xs font-semibold">{f.username ?? 'unknown'}</span>
                 {f.page && <span className="tabular text-faint text-[10px]">{f.page}</span>}
