@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-13 (soir) — Round 6 : photos cohérentes par ère, 168 titres réparés, dates nettes, clustering calendrier
+
+**6 retours Rudy — 4 commits mergés (`feat/r6-polish`)** :
+
+1. **Photos membres — 3 causes empilées derrière « Ningning en retard »** : ① la réponse MediaWiki est PAGINÉE dès que categories/pageimages débordent (sans suivre `continue` + `pilimit=max`, des pages arrivent SANS image — Ningning tombait après la coupure) ; ② le qualificatif « (groupe) » n'existe sur fandom qu'en cas de collision de noms → candidat nom NU (accepté seulement si les catégories de la page confirment le groupe — une rookie sans page ne peut pas hériter d'une homonyme) ; ③ romanisations divergentes (« Ahn Yujin » vs page « An Yujin ») → candidat « dernier mot (groupe) » via les redirections. **+259 photos d'ère courante au total (523/620 sourcées fandom)** ; aespa homogène (Kiss N Tell ×4), IVE homogène (Lucid Dream ×6).
+2. **Titres — balayage de classe** : le « - Friday Night » signalé n'était que le sommet — script de balayage sur les **2 279 titres MV prod → 168 mal rendus**, 6 classes corrigées (tiret orphelin EPEX, quotes mixtes ‘…' NAVILLERA, doubles courbes “…” JYP/ITZY, ’ ouvrante THE BOYZ, tags [MV]/(MV) + coréen d'abord + `_` sans espaces Starship/WM, chanson entre crochets DSP/KARD). **Re-balayage final : 0/2 279.** 7 tests de régression. Leçon : l'outil de balayage (rejouer le renderer sur TOUTE la donnée prod) attrape en 30 s ce que des retours au compte-goutte mettraient des semaines à couvrir.
+3. **Top Rated** : date de sortie (« JUN 14 '26 ») à la place du nombre de ratings. **Carte MV** : nom de groupe truncate à gauche, date complète `shrink-0` à droite — DAILY:DIRECTION ne tronque plus jamais la date (helper `shortDateYear`).
+4. **Calendrier** : `clusterByGroup` — chronologie conservée mais deux events du même groupe le même jour se suivent (ancrage au premier). 2 tests.
+5. **Fil commentaires** : ligne/coudes en `muted-foreground/35` (1px net dans les deux thèmes — « trop épais, trop peu visible » venait du contraste, pas de l'épaisseur), bande de repli quasi invisible au hover.
+
+**Vérifications** : 556 tests + build verts ; SQL prod (aespa/IVE homogènes, photo_source_key) ; balayage titres 0 défaut.
+
 ## 2026-07-13 (après-midi) — Round 5 : accents Unicode, stages SBS, nommage court, UI vivante, crons Paris
 
 **10 retours Rudy — 5 commits mergés (`feat/r5-polish`)** :
