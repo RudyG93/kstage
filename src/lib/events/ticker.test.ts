@@ -14,10 +14,10 @@ const ev = (over: Partial<Parameters<typeof buildTickerItems>[0][number]> = {}) 
 })
 
 describe('buildTickerItems', () => {
-  it('renders an upcoming comeback as GROUP COMEBACK D-n with the type color', () => {
+  it('renders an upcoming comeback with the song name (R5): GROUP · SONG D-n', () => {
     const [item] = buildTickerItems([ev()], { nowIso: now })
     expect(item).toEqual({
-      text: 'AESPA COMEBACK D-2',
+      text: 'AESPA · WHIPLASH D-2',
       live: false,
       color: EVENT_TYPE_COLORS.mv,
     })

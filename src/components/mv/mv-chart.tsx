@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
+import { displaySongTitle } from '@/lib/events/title'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { cn } from '@/lib/utils'
 import type { TopRatedItem, TopRatedPeriod } from '@/lib/events/top-rated'
@@ -116,7 +117,11 @@ export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedI
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-semibold">{item.title}</span>
+                  {/* Nommage court unifié (R5) : la chanson seule, comme
+                      Recent comebacks — plus de « Groupe 'X' Official MV ». */}
+                  <span className="block truncate text-xs font-semibold">
+                    {displaySongTitle(item.title, item.groupName)}
+                  </span>
                   <span className="text-muted-foreground block truncate text-[10px]">
                     {item.groupName} · {item.count} rating{item.count === 1 ? '' : 's'}
                   </span>

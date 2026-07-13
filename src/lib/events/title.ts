@@ -16,6 +16,13 @@ export function displayEventTitle(
   episodeNumber?: number | null,
   type?: string | null,
 ): string {
+  // MVs (R5, 2026-07-13) : même nommage court partout — le nom de la chanson
+  // seul (« Crow »), sans « Groupe 'X' Official MV ». displaySongTitle
+  // rappelle displayEventTitle SANS type → pas de récursion.
+  if (type === 'mv') {
+    const song = displaySongTitle(title, groupName)
+    if (song) return song
+  }
   let t = title
   const dashSegment =
     type === 'release'
