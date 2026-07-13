@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/scrape-youtube",
-      "schedule": "0 3 * * *"
+      "schedule": "0 10 * * *"
     },
     {
       "path": "/api/cron/scrape-comebacks",
@@ -14,11 +14,11 @@
     },
     {
       "path": "/api/cron/send-digest",
-      "schedule": "0 8 * * *"
+      "schedule": "45 5 * * *"
     },
     {
       "path": "/api/cron/notify-comebacks",
-      "schedule": "0 9 * * *"
+      "schedule": "30 8 * * *"
     },
     {
       "path": "/api/cron/refresh-images",

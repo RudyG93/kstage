@@ -201,8 +201,12 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           {/* Events */}
           <Panel>
             {/* Contribute retiré (R4-E) : signaler une donnée manquante passe
-                par le widget Feedback du footer (catégorie Data). */}
-            <PanelHeader label={`Upcoming — ${group.name}`} />
+                par le widget Feedback du footer (catégorie Data). Lien
+                Calendar au niveau du header (R5) — plus de ligne footer. */}
+            <PanelHeader
+              label={`Upcoming — ${group.name}`}
+              action={{ label: 'Calendar', href: `/calendar?group=${slug}` }}
+            />
             {events.length === 0 ? (
               <div className="p-3">
                 <EmptyState
@@ -218,14 +222,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
                 ))}
               </div>
             )}
-            <div className="flex justify-end border-t px-3 py-2">
-              <Link
-                href={`/calendar?group=${slug}`}
-                className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
-              >
-                Calendar →
-              </Link>
-            </div>
           </Panel>
 
           {/* MVs : grille complète (fin du rail horizontal + « See more » —

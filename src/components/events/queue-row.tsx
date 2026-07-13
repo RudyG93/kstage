@@ -8,7 +8,9 @@ import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { isSyntheticSlot } from '@/lib/events/show-slots'
+import { SHOW_ICON_BY_TITLE } from '@/lib/scrapers/music-shows/types'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { LocalTime } from '@/components/local-time'
 
 // Ligne dense de queue (Data Desk §7.1.4) : border-left couleur type, colonne
 // D-day, tag type, titre + sous-titre, heure KST. Partagée par home, calendar,
@@ -60,12 +62,24 @@ export function QueueRow({
             className="size-10 shrink-0 rounded-[7px] object-cover"
             aria-hidden
           />
+        ) : (lineup || slot) && SHOW_ICON_BY_TITLE[event.title] ? (
+          // Épisode/slot de music show : avatar de la chaîne officielle du
+          // diffuseur (R5) — plus parlant que l'initiale.
+          <Image
+            src={SHOW_ICON_BY_TITLE[event.title]}
+            alt=""
+            width={40}
+            height={40}
+            unoptimized
+            className="size-10 shrink-0 rounded-[7px] object-cover"
+            aria-hidden
+          />
         ) : (
           <span
             className="gradient-signature flex size-10 shrink-0 items-center justify-center rounded-[7px] text-sm font-bold text-white"
             aria-hidden
           >
-            {/* Groupé/slot : initiale du show (une photo de groupe serait arbitraire). */}
+            {/* Groupé/slot sans icône connue : initiale du show. */}
             {lineup || slot ? event.title[0] : (group?.name?.[0] ?? '?')}
           </span>
         ))}
@@ -97,11 +111,16 @@ export function QueueRow({
         )}
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">
+        {/* Heure LOCALE en avant (R5), KST en référence dessous — aligné sur
+            event-card (décision « heure locale en avant »). */}
         <span className="tabular text-muted-foreground flex items-center gap-1 text-[10px]">
-          {kstTime24h(event.start_at)} KST
+          <LocalTime iso={event.start_at} withZone={false} fallback="—" />
           {/* La ligne ouvre YouTube dans un nouvel onglet (stage d'un music
               show) : l'user doit le voir avant de cliquer (audit UX 2026-07-04). */}
           {external && <ExternalLink className="text-faint size-3" aria-label="Opens YouTube" />}
+        </span>
+        <span className="tabular text-muted-foreground/70 text-[10px]">
+          {kstTime24h(event.start_at)} KST
         </span>
         {withCountdown && dday === 'D-DAY' && (
           <Countdown targetIso={event.start_at} variant="inline" />

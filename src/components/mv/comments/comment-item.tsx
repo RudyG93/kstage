@@ -108,155 +108,163 @@ export function CommentItem({
     )
   }
 
-  // Fil sur TOUS les niveaux (modèle Reddit) : ligne 1px couleur border —
-  // discrète, elle ne « recouvre » plus le commentaire (retour Rudy
-  // 2026-07-13) — toujours cliquable pleine hauteur (hit area w-4) pour
-  // replier CE commentaire et son sous-arbre. Un coude arrondi relie la
-  // ligne à chaque réponse (voir le conteneur enfants). Masqué au-delà de
-  // MAX_INDENT_DEPTH : le fil continue à plat plutôt que d'écraser le mobile.
-  const showRail = depth < MAX_INDENT_DEPTH
+  // Fil Reddit v2 (R5, capture fournie par Rudy) : plus AUCUN rail pleine
+  // hauteur le long du commentaire. Les connecteurs vivent dans le conteneur
+  // des réponses : un tronc vertical sous le [−] du parent qui S'ARRÊTE au
+  // coude arrondi 90° du dernier item (réponse ou bouton « Show N replies »).
+  // Le tronc reste cliquable (repli du sous-arbre) via une bande invisible ;
+  // le [−] du header couvre le clavier. Au-delà de MAX_INDENT_DEPTH : à plat.
+  const showThread = depth < MAX_INDENT_DEPTH
+  const previewTail = childCount > 0 && !repliesOpen && childCount > replyPreview
+  const limitTail = childCount > 0 && repliesOpen && !showAllReplies && childCount > REPLY_LIMIT
+  const hasTail = previewTail || limitTail
+  // Coude arrondi tronc → item ; le tronc (w-px) déborde de 12px (gap
+  // space-y-3) pour relier les items entre eux, sauf après le dernier.
+  const elbow = (
+    <span
+      aria-hidden
+      className="border-border pointer-events-none absolute top-0 -left-4 h-2.5 w-3.5 rounded-bl-[10px] border-b border-l"
+    />
+  )
 
   return (
     <article id={`comment-${node.id}`} className="scroll-mt-20" aria-label={`Comment by ${author}`}>
-      <div className={showRail ? 'flex gap-2' : undefined}>
-        {showRail && (
+      <div className="min-w-0 space-y-1.5">
+        <header className="text-muted-foreground flex items-center gap-2 text-xs">
           <button
             type="button"
             onClick={() => setCollapsed(true)}
+            aria-expanded={true}
             aria-label="Collapse comment"
-            className="group/rail focus-visible:ring-ring/50 flex w-4 shrink-0 cursor-pointer justify-center rounded outline-none focus-visible:ring-2"
+            className="text-faint hover:text-foreground tabular focus-visible:ring-ring/50 cursor-pointer rounded px-0.5 outline-none focus-visible:ring-2"
           >
-            <span
-              className="bg-border group-hover/rail:bg-foreground/40 w-px transition-colors"
-              aria-hidden
-            />
+            [−]
           </button>
-        )}
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <header className="text-muted-foreground flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => setCollapsed(true)}
-              aria-expanded={true}
-              aria-label="Collapse comment"
-              className="text-faint hover:text-foreground tabular focus-visible:ring-ring/50 cursor-pointer rounded px-0.5 outline-none focus-visible:ring-2"
-            >
-              [−]
-            </button>
-            {username ? (
-              <Link
-                href={`/u/${username}`}
-                className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
-              >
-                <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
-                {author}
-              </Link>
-            ) : (
-              <span className="text-foreground flex items-center gap-1.5 font-medium">
-                <Avatar username={author} avatarUrl={null} size={20} />
-                {author}
-              </span>
-            )}
-            {authorScore !== undefined && !isDeleted && (
-              <span
-                className="tabular bg-amber/15 text-amber rounded-[4px] px-1 py-0.5 text-[10px] font-bold"
-                title={`Rated this drop ${authorScore}/10`}
-              >
-                {authorScore}
-              </span>
-            )}
-            <span aria-hidden>·</span>
-            {/* Permalink (modèle Reddit) : le timestamp pointe l'ancre du
-                commentaire — copiable/partageable, highlight via :target. */}
+          {username ? (
             <Link
-              href={`#comment-${node.id}`}
-              className="hover:text-foreground hover:underline"
-              title="Link to this comment"
+              href={`/u/${username}`}
+              className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
             >
-              <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
+              <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
+              {author}
             </Link>
-            {isEdited && (
-              <>
-                <span aria-hidden>·</span>
-                <button
-                  type="button"
-                  onClick={() => setHistoryOpen(true)}
-                  className="italic hover:underline"
-                >
-                  edited
-                </button>
-              </>
-            )}
-          </header>
-
-          {isDeleted ? (
-            <p className="text-muted-foreground text-sm italic">[deleted]</p>
-          ) : showEdit ? (
-            <EditForm node={node} slug={slug} onDone={() => setShowEdit(false)} />
           ) : (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
+            <span className="text-foreground flex items-center gap-1.5 font-medium">
+              <Avatar username={author} avatarUrl={null} size={20} />
+              {author}
+            </span>
           )}
+          {authorScore !== undefined && !isDeleted && (
+            <span
+              className="tabular bg-amber/15 text-amber rounded-[4px] px-1 py-0.5 text-[10px] font-bold"
+              title={`Rated this drop ${authorScore}/10`}
+            >
+              {authorScore}
+            </span>
+          )}
+          <span aria-hidden>·</span>
+          {/* Permalink (modèle Reddit) : le timestamp pointe l'ancre du
+                commentaire — copiable/partageable, highlight via :target. */}
+          <Link
+            href={`#comment-${node.id}`}
+            className="hover:text-foreground hover:underline"
+            title="Link to this comment"
+          >
+            <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
+          </Link>
+          {isEdited && (
+            <>
+              <span aria-hidden>·</span>
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(true)}
+                className="italic hover:underline"
+              >
+                edited
+              </button>
+            </>
+          )}
+        </header>
 
-          {!isDeleted && !showEdit && (
-            <div className="flex items-center gap-3 text-xs">
-              <VoteButtons
-                commentId={node.id}
-                slug={slug}
-                initialScore={node.score}
-                initialUserVote={node.userVote}
-                isAuthed={isAuthed}
-              />
-              {isAuthed && (
+        {isDeleted ? (
+          <p className="text-muted-foreground text-sm italic">[deleted]</p>
+        ) : showEdit ? (
+          <EditForm node={node} slug={slug} onDone={() => setShowEdit(false)} />
+        ) : (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
+        )}
+
+        {!isDeleted && !showEdit && (
+          <div className="flex items-center gap-3 text-xs">
+            <VoteButtons
+              commentId={node.id}
+              slug={slug}
+              initialScore={node.score}
+              initialUserVote={node.userVote}
+              isAuthed={isAuthed}
+            />
+            {isAuthed && (
+              <button
+                type="button"
+                onClick={() => setShowReply((v) => !v)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {showReply ? 'Cancel' : 'Reply'}
+              </button>
+            )}
+            {isOwn ? (
+              <>
                 <button
                   type="button"
-                  onClick={() => setShowReply((v) => !v)}
+                  onClick={() => setShowEdit(true)}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  {showReply ? 'Cancel' : 'Reply'}
+                  Edit
                 </button>
-              )}
-              {isOwn ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowEdit(true)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    Edit
-                  </button>
-                  <DeleteButton commentId={node.id} slug={slug} />
-                </>
-              ) : (
-                isAuthed && <ReportButton commentId={node.id} />
-              )}
-            </div>
-          )}
+                <DeleteButton commentId={node.id} slug={slug} />
+              </>
+            ) : (
+              isAuthed && <ReportButton commentId={node.id} />
+            )}
+          </div>
+        )}
 
-          {showReply && (
-            <div className="pt-2">
-              <CommentCompose
-                eventId={eventId}
-                slug={slug}
-                parentId={node.id}
-                focusOnMount
-                onCancel={() => setShowReply(false)}
-                placeholder={`Reply to ${author}…`}
+        {showReply && (
+          <div className="pt-2">
+            <CommentCompose
+              eventId={eventId}
+              slug={slug}
+              parentId={node.id}
+              focusOnMount
+              onCancel={() => setShowReply(false)}
+              placeholder={`Reply to ${author}…`}
+            />
+          </div>
+        )}
+
+        {childCount > 0 && (
+          <div className={showThread ? 'relative pt-1 pl-6' : 'pt-1'}>
+            {showThread && (
+              <button
+                type="button"
+                onClick={() => setCollapsed(true)}
+                aria-label="Collapse thread"
+                className="hover:bg-foreground/5 focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
               />
-            </div>
-          )}
-
-          {childCount > 0 && (
-            <div className="space-y-3 pt-1">
-              {visibleChildren.map((child) => (
+            )}
+            <div className="space-y-3">
+              {visibleChildren.map((child, i) => (
                 <div key={child.id} className="relative">
-                  {/* Coude Reddit : quart de cercle reliant le fil vertical du
-                      parent (colonne w-4 + gap-2 → centre à -16px) à la
-                      réponse. Décoratif — le clic reste sur le fil/[−]. */}
-                  {showRail && (
-                    <span
-                      aria-hidden
-                      className="border-border absolute top-0 -left-4 h-2.5 w-3 rounded-bl-[10px] border-b border-l"
-                    />
+                  {showThread && (
+                    <>
+                      {elbow}
+                      {!(i === visibleChildren.length - 1 && !hasTail) && (
+                        <span
+                          aria-hidden
+                          className="bg-border pointer-events-none absolute top-0 -bottom-3 -left-4 w-px"
+                        />
+                      )}
+                    </>
                   )}
                   <CommentItem
                     node={child}
@@ -269,29 +277,35 @@ export function CommentItem({
                   />
                 </div>
               ))}
-              {!repliesOpen && childCount > replyPreview && (
-                <button
-                  type="button"
-                  onClick={() => setRepliesOpen(true)}
-                  className="text-primary text-xs hover:underline"
-                >
-                  Show {childCount - replyPreview} repl
-                  {childCount - replyPreview === 1 ? 'y' : 'ies'}
-                </button>
+              {previewTail && (
+                <div className="relative">
+                  {showThread && elbow}
+                  <button
+                    type="button"
+                    onClick={() => setRepliesOpen(true)}
+                    className="text-primary text-xs hover:underline"
+                  >
+                    Show {childCount - replyPreview} repl
+                    {childCount - replyPreview === 1 ? 'y' : 'ies'}
+                  </button>
+                </div>
               )}
-              {repliesOpen && !showAllReplies && childCount > REPLY_LIMIT && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllReplies(true)}
-                  className="text-primary text-xs hover:underline"
-                >
-                  Show {childCount - REPLY_LIMIT} more repl
-                  {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
-                </button>
+              {limitTail && (
+                <div className="relative">
+                  {showThread && elbow}
+                  <button
+                    type="button"
+                    onClick={() => setShowAllReplies(true)}
+                    className="text-primary text-xs hover:underline"
+                  >
+                    Show {childCount - REPLY_LIMIT} more repl
+                    {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+                  </button>
+                </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {historyOpen && (

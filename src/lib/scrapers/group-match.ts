@@ -1,9 +1,22 @@
-// Normalisation Unicode-aware : lowercase + retire tout ce qui n'est ni lettre
-// ni chiffre (ponctuation, espaces, tirets, parenthèses…). Garde les caractères
-// non-ASCII (hangul, kana) — utile pour matcher des descriptions YouTube qui
-// citent le groupe en coréen ("에스파 'Whiplash' MV").
+// Normalisation Unicode-aware : lowercase + PLIAGE D'ACCENTS (NFD puis retrait
+// des marques combinantes) + retire tout ce qui n'est ni lettre ni chiffre.
+// Garde les caractères non-ASCII (hangul, kana) — utile pour matcher des
+// descriptions YouTube qui citent le groupe en coréen ("에스파 'Whiplash' MV").
+//
+// Pliage d'accents (2026-07-13) : la chaîne de ROSÉ titre « ROSÉ … »
+// (é DÉCOMPOSÉ, typique des uploads macOS) alors que la DB stocke « Rosé »
+// (é précomposé). L'ancien normalize gardait le é (\p{L}) d'un côté et
+// strippait l'accent combinant (\p{M}) de l'autre → 'rosé' ⊄ 'rose…' → APT.
+// silencieusement jamais ingéré. NFD + strip \p{M} aligne les deux formes
+// ('rose' des deux côtés) ; le hangul décompose en jamo identiquement des
+// deux côtés, donc inchangé.
 export function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .normalize('NFC') // recompose le hangul (jamo → syllabes) après le strip
+    .replace(/[^\p{L}\p{N}]+/gu, '')
 }
 
 // Crédits de featuring entre parenthèses/crochets : « (feat. j-hope of BTS) »,

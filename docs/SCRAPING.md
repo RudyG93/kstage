@@ -528,6 +528,17 @@ Helper partagé pour les 2-level SBS : `src/lib/scrapers/music-shows/sources/sbs
 
 Vercel cron `/api/cron/scrape-music-shows` daily 13:00 UTC = 22:00 KST. Catche les lineups posted night-before (weekday) + 2-3 jours en avance (weekend).
 
+**Horaires des 6 crons — logique complète (retunés R5, 2026-07-13, référence Paris été = UTC+2)** :
+
+| Cron               | UTC   | Pourquoi cette heure                                                                                                                                                                                                                                                                                            |
+| ------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| scrape-comebacks   | 03:30 | Nuit calme ; comebacks = futur (fraîcheur peu sensible) ; alimente digest/notify du matin. Étage debuts fandom indifférent à l'heure.                                                                                                                                                                           |
+| refresh-images     | 04:00 | Nuit calme ; 3 units YouTube seulement (peu importe le quota).                                                                                                                                                                                                                                                  |
+| send-digest        | 05:45 | = 07:45 Paris : le récap du jour au petit-déjeuner, AVANT les music shows de l'après-midi KST (15-18h KST = 08-11h Paris). Avant : 10:00 Paris, trop tard.                                                                                                                                                      |
+| notify-comebacks   | 08:30 | = 10:30 Paris : rappel ~30 min AVANT le créneau de sortie dominant (18:00 KST = 11:00 Paris). Avant : il partait à 11:00 pile, en même temps que la sortie.                                                                                                                                                     |
+| scrape-youtube     | 10:00 | = 19:00 KST : 1 h après le créneau de sortie 18:00 KST → un MV du jour est en base le jour même (avant : 03:00 UTC = 12:00 KST, il attendait 18 h). Aussi APRÈS le reset quota (07:00 UTC = minuit PT) → journée fraîche. Les premieres programmées sont captées en avance de toute façon (scheduledStartTime). |
+| scrape-music-shows | 13:00 | = 22:00 KST : après la publication « night before » du carrd, et les stages du jour (diffusés 15-18h KST) sont déjà uploadés → liés le soir même.                                                                                                                                                               |
+
 Idempotence via unique constraint `events (group_id, type, start_at, source_url)`. `source_url` = URL primary carrd même quand un fallback a fourni les données — la stabilité de la clé prime sur la traçabilité.
 
 ### Stage links — enrichissement YouTube des events music_show (livré 2026-07-03)

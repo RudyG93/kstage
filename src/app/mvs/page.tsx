@@ -5,8 +5,8 @@ import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { HeroBackdrop } from '@/components/home/hero-backdrop'
 import { Panel, PanelHeader } from '@/components/ui/panel'
-import { MvCard } from '@/components/group/mv-card'
 import { MvChart } from '@/components/mv/mv-chart'
+import { DropsGrid } from '@/components/mv/drops-grid'
 import { getAllMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getTopRatedByPeriods } from '@/lib/events/top-rated'
@@ -15,7 +15,6 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { formatKst } from '@/lib/events/date'
 import { createClient } from '@/lib/supabase/server'
-import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Drops',
@@ -53,40 +52,28 @@ export default async function MvsPage({
     tier = profile?.tier ?? 'free'
   }
 
+  // Les DEUX jeux (All + Following) partent au client : les pills filtrent en
+  // mémoire (R5) au lieu d'une navigation ?feed=&sort= qui re-rendait la page.
   const [latest, followingMvs, topRated] = await Promise.all([
     getAllMvs({ limit: 31 }),
-    feed === 'following'
+    followedIds.size > 0
       ? getAllMvs({ groupIds: [...followedIds], limit: 30 })
       : Promise.resolve([]),
     getTopRatedByPeriods(5),
   ])
 
   const hero = latest[0] ?? null
-  const gridSource = feed === 'following' ? followingMvs : latest.filter((m) => m.id !== hero?.id)
+  const allGrid = latest.filter((m) => m.id !== hero?.id)
   const ratings = await getRatingsForEvents([
     ...(hero ? [hero.id] : []),
-    ...gridSource.map((m) => m.id),
+    ...allGrid.map((m) => m.id),
+    ...followingMvs.map((m) => m.id),
   ])
-  const sortedGrid =
-    sort === 'top'
-      ? [...gridSource].sort(
-          (a, b) => (ratings.get(b.id)?.avg ?? -1) - (ratings.get(a.id)?.avg ?? -1),
-        )
-      : gridSource
+  const ratingsRecord = Object.fromEntries(ratings)
 
   const heroGroup = hero?.groups ?? null
   const heroVideoId = hero ? extractYouTubeId(hero.source_url) : null
   const heroRating = hero ? ratings.get(hero.id) : undefined
-  const feedHref = (f: 'all' | 'following') =>
-    `/mvs?${new URLSearchParams({ ...(sort === 'top' ? { sort: 'top' } : {}), ...(f === 'following' ? { feed: 'following' } : {}) }).toString()}`.replace(
-      /\?$/,
-      '',
-    )
-  const sortHref = (s: 'new' | 'top') =>
-    `/mvs?${new URLSearchParams({ ...(s === 'top' ? { sort: 'top' } : {}), ...(feed === 'following' ? { feed: 'following' } : {}) }).toString()}`.replace(
-      /\?$/,
-      '',
-    )
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
@@ -153,65 +140,14 @@ export default async function MvsPage({
 
           <MvChart periods={topRated} />
 
-          <section className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1">
-                <span className="label-data">Latest drops</span>
-                {followedIds.size > 0 && (
-                  <div className="ml-2 flex items-center gap-1">
-                    {(['all', 'following'] as const).map((f) => (
-                      <Link
-                        key={f}
-                        href={feedHref(f)}
-                        aria-current={feed === f ? 'true' : undefined}
-                        className={cn(
-                          'label-data-inline rounded-sm px-2 py-1 text-[9px] transition-colors',
-                          feed === f
-                            ? 'bg-foreground text-background'
-                            : 'bg-secondary text-muted-foreground hover:text-foreground',
-                        )}
-                      >
-                        {f === 'all' ? 'All' : 'Following'}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="label-data-inline text-faint text-[9px]">Sort:</span>
-                {(['new', 'top'] as const).map((s) => (
-                  <Link
-                    key={s}
-                    href={sortHref(s)}
-                    aria-current={sort === s ? 'true' : undefined}
-                    className={cn(
-                      'label-data-inline rounded-sm px-2 py-1 text-[9px] transition-colors',
-                      sort === s
-                        ? 'bg-foreground text-background'
-                        : 'bg-secondary text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {s}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            {sortedGrid.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {feed === 'following'
-                  ? 'No music videos from your groups yet.'
-                  : 'No music videos tracked yet.'}
-              </p>
-            ) : (
-              <ul className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {sortedGrid.map((mv) => (
-                  <li key={mv.id}>
-                    <MvCard mv={mv} rating={ratings.get(mv.id)} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <DropsGrid
+            all={allGrid}
+            following={followingMvs}
+            ratings={ratingsRecord}
+            hasFollows={followedIds.size > 0}
+            initialFeed={feed}
+            initialSort={sort}
+          />
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">

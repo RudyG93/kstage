@@ -220,7 +220,7 @@ export async function refreshMemberPhotos(
   const batchSize = opts.batch ?? 100
   const { data: members, error } = await supabase
     .from('members')
-    .select('id, stage_name, photo_url, photo_source_key, groups!inner(name, slug)')
+    .select('id, stage_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)')
     .order('photo_checked_at', { ascending: true, nullsFirst: true })
     .limit(batchSize)
   if (error) throw new Error(`members select: ${error.message}`)
@@ -235,18 +235,30 @@ export async function refreshMemberPhotos(
   const now = new Date().toISOString()
 
   // Titre fandom conventionnel : « Stage Name (nom du groupe) » — vérifié sur
-  // « Karina (aespa) », « Soyeon (i-dle) ». Les misses gardent leur photo
-  // actuelle (self-host kprofiles) et sortent de la rotation jusqu'au tour
-  // suivant.
-  type Target = NonNullable<typeof members>[number] & { fandomTitle: string }
+  // « Karina (aespa) », « Soyeon (i-dle) ». MediaWiki est SENSIBLE À LA CASSE
+  // après la 1re lettre (« NingNing » ≠ page « Ningning » → 362 misses au
+  // premier passage, classe repérée par Rudy sur aespa) : on demande aussi la
+  // variante Title-case. Les misses gardent leur photo actuelle (self-host
+  // kprofiles) et sortent de la rotation jusqu'au tour suivant.
+  const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+  type Target = NonNullable<typeof members>[number] & { fandomTitles: string[] }
   const targets: Target[] = (members ?? []).map((m) => ({
     ...m,
-    fandomTitle: `${m.stage_name} (${m.groups.name})`,
+    fandomTitles: [
+      ...new Set(
+        m.groups.is_solo
+          ? // Soliste : la page fandom est le nom nu (« ROSÉ », « Jennie ») —
+            // le qualificateur « (Jennie (Jennie)) » n'existe pas.
+            [m.stage_name, titleCase(m.stage_name)]
+          : [`${m.stage_name} (${m.groups.name})`, `${titleCase(m.stage_name)} (${m.groups.name})`],
+      ),
+    ],
   }))
 
-  for (let i = 0; i < targets.length; i += 50) {
-    const batch = targets.slice(i, i + 50)
-    const titles = batch.map((t) => t.fandomTitle).join('|')
+  // 25 membres/appel : jusqu'à 2 titres chacun, sous la limite API de 50.
+  for (let i = 0; i < targets.length; i += 25) {
+    const batch = targets.slice(i, i + 25)
+    const titles = batch.flatMap((t) => t.fandomTitles).join('|')
     let data: FandomQueryResponse | null = null
     try {
       const res = await fetch(
@@ -284,7 +296,9 @@ export async function refreshMemberPhotos(
 
     for (const m of batch) {
       summary.checked++
-      const source = sourceByTitle.get(finalTitle(m.fandomTitle))
+      const source = m.fandomTitles
+        .map((t) => sourceByTitle.get(finalTitle(t)))
+        .find((s): s is string => !!s)
       if (!source) {
         summary.misses++
         await supabase.from('members').update({ photo_checked_at: now }).eq('id', m.id)

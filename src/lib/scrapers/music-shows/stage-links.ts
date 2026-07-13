@@ -34,16 +34,19 @@ export const STAGE_CHANNELS: Record<ShowId, string> = {
   'the-show': 'https://www.youtube.com/@thekpop',
 }
 
-// Le titre d'une vidéo de passage porte toujours le nom du show (EN ou KR).
-// Garde contre les autres contenus des mêmes chaînes (variety, interviews
-// d'autres émissions).
+// Le titre d'une vidéo de passage porte le nom du show (EN ou KR) — SAUF le
+// nouveau format SBS (constaté 2026-07-13) : « Song - Group | SBS 260712 방송 »
+// sans « Inkigayo » nulle part. On accepte donc aussi « SBS <YYMMDD> 방송 » :
+// la fenêtre ±[12h, 4j] autour de la diffusion et le match du groupe font le
+// reste (l'Inkigayo du 12/07 est resté pending à cause de ça — les 3 stages
+// existaient sur @sbskpop, tous rejetés avant scoring).
 export const STAGE_TITLE_MARKERS: Record<ShowId, RegExp> = {
   'music-bank': /music ?bank|뮤직뱅크/i,
   'music-core': /music ?core|음악중심|쇼! 음악중심/i,
-  inkigayo: /inkigayo|인기가요/i,
+  inkigayo: /inkigayo|인기가요|sbs\s*\d{6}\s*방송/i,
   'm-countdown': /m ?countdown|엠카운트다운/i,
   'show-champion': /show ?champion|쇼챔피언/i,
-  'the-show': /the ?show|더쇼/i,
+  'the-show': /the ?show|더쇼|sbs\s*\d{6}\s*방송/i,
 }
 
 const DISPLAY_TO_ID = new Map<string, ShowId>(SHOW_DESCRIPTORS.map((s) => [s.displayName, s.id]))

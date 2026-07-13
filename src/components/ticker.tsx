@@ -18,28 +18,38 @@ export function Ticker({ items }: { items: TickerItem[] }) {
   if (items.length === 0) return null
 
   // La boucle translateX(0→−50%) n'est propre que si une copie couvre au moins
-  // la largeur du viewport : on répète la liste de base jusqu'à ≥ 8 entrées.
-  // Avec < 3 items uniques, une bande défilante serait répétitive → statique.
+  // la largeur du viewport : on répète la SÉQUENCE complète jusqu'à ≥ 8 entrées,
+  // avec un séparateur ◆ à chaque couture (y compris le point de boucle — plus
+  // de « reset » perceptible au milieu, retour Rudy R5). Avec < 3 items
+  // uniques, une bande défilante serait répétitive → statique.
   const animate = items.length >= 3
-  const base: TickerItem[] = []
-  while (base.length < 8) base.push(...items)
+  const repeats = animate ? Math.max(2, Math.ceil(8 / items.length)) : 1
 
   const row = (ariaHidden: boolean) => (
     <div
       className="flex shrink-0 items-center gap-7 pr-7"
       {...(ariaHidden ? { 'aria-hidden': true } : {})}
     >
-      {(ariaHidden || animate ? base : items).map((item, i) => (
-        <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-          <span
-            className={cn(
-              'size-[5px] shrink-0 rounded-full',
-              item.live ? 'bg-live animate-live-pulse' : 'animate-upcoming-pulse',
-            )}
-            style={item.live ? undefined : { backgroundColor: item.color }}
-            aria-hidden
-          />
-          <span className="label-data text-foreground/80">{item.text}</span>
+      {Array.from({ length: repeats }, (_, r) => (
+        <span key={r} className="flex items-center gap-7">
+          {items.map((item, i) => (
+            <span key={i} className="flex items-center gap-2 whitespace-nowrap">
+              <span
+                className={cn(
+                  'size-[5px] shrink-0 rounded-full',
+                  item.live ? 'bg-live animate-live-pulse' : 'animate-upcoming-pulse',
+                )}
+                style={item.live ? undefined : { backgroundColor: item.color }}
+                aria-hidden
+              />
+              <span className="label-data text-foreground/80">{item.text}</span>
+            </span>
+          ))}
+          {animate && (
+            <span className="text-primary shrink-0 text-[7px]" aria-hidden>
+              ◆
+            </span>
+          )}
         </span>
       ))}
     </div>

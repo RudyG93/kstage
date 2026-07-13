@@ -2,6 +2,7 @@
 
 import { formatDDay, kstTime24h, localDayKey } from './date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from './labels'
+import { displayEventTitle } from './title'
 import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
@@ -55,8 +56,12 @@ export function buildTickerItems(
         color,
       })
     } else if (e.type === 'mv' || e.type === 'release') {
+      // Le nom de la release/du MV quand on l'a (retour Rudy R5) :
+      // « AESPA · RICH MAN D-11 » plutôt qu'un « COMEBACK » générique.
+      const song = displayEventTitle(e.title, e.groups?.name, null, e.type).toUpperCase()
+      const what = song && song !== group ? `· ${song}` : 'COMEBACK'
       push({
-        text: `${group ?? 'COMEBACK'} COMEBACK ${formatDDay(e.start_at, 'Asia/Seoul', nowIso)}`,
+        text: `${group ?? 'COMEBACK'} ${what} ${formatDDay(e.start_at, 'Asia/Seoul', nowIso)}`,
         live: false,
         color,
       })

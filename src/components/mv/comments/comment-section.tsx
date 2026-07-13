@@ -1,9 +1,14 @@
+'use client'
+
+// Client depuis R5 : le tri Top/New se fait en mémoire (sortTree pur) au lieu
+// d'une navigation ?sort= qui re-rendait la page entière.
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CommentCompose } from './comment-compose'
 import { CommentItem } from './comment-item'
 import { SortToggle } from './sort-toggle'
-import { countVisible, type CommentNode, type SortMode } from '@/lib/comments/tree'
+import { countVisible, sortTree, type CommentNode, type SortMode } from '@/lib/comments/tree'
 
 interface Props {
   eventId: string
@@ -11,7 +16,7 @@ interface Props {
   isAuthed: boolean
   viewerId: string | null
   roots: CommentNode[]
-  sort: SortMode
+  initialSort: SortMode
   // Note posée par chaque auteur sur CET event → badge amber (§7.7.4).
   ratingsByUser?: Record<string, number>
 }
@@ -22,27 +27,34 @@ export function CommentSection({
   isAuthed,
   viewerId,
   roots,
-  sort,
+  initialSort,
   ratingsByUser = {},
 }: Props) {
-  const count = countVisible(roots)
+  const [sort, setSort] = useState<SortMode>(initialSort)
+  // Le serveur livre l'arbre déjà trié selon initialSort → premier rendu
+  // identique (pas de mismatch d'hydratation) ; on ne re-trie qu'au toggle.
+  const sorted = useMemo(
+    () => (sort === initialSort ? roots : sortTree(roots, sort)),
+    [roots, sort, initialSort],
+  )
+  const count = countVisible(sorted)
   return (
     <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <h2 id="comments-heading" className="label-data">
           Discussion — {count}
         </h2>
-        <SortToggle slug={slug} sort={sort} />
+        <SortToggle sort={sort} onChange={setSort} />
       </div>
 
-      {roots.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyState
           title="No comments yet"
           description="Be the first to share what you think about this release."
         />
       ) : (
         <div className="space-y-4">
-          {roots.map((node) => (
+          {sorted.map((node) => (
             <CommentItem
               key={node.id}
               node={node}
