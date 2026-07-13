@@ -6,7 +6,11 @@ import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
 import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
 import { enrichStageLinks } from '@/lib/scrapers/music-shows/stage-links'
-import { SHOW_DESCRIPTORS, type ShowId } from '@/lib/scrapers/music-shows/types'
+import {
+  SHOW_DESCRIPTORS,
+  type ShowDescriptor,
+  type ShowId,
+} from '@/lib/scrapers/music-shows/types'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
 // la copie locale ASCII-only les ratait (DRY, audit 2026-07-03).
@@ -51,6 +55,27 @@ const SHOW_DISPLAY_NAME: Record<ShowId, string> = Object.fromEntries(
   SHOW_DESCRIPTORS.map((s) => [s.id, s.displayName]),
 ) as Record<ShowId, string>
 
+// Prochaine occurrence UTC du slot hebdo KST d'un show (fenêtre 8 jours =
+// couvre tout weekday, y compris « aujourd'hui plus tard dans la journée »).
+function nextSlotUtcIso(desc: ShowDescriptor, nowMs: number): string {
+  const kstNow = new Date(nowMs + 9 * 3600_000)
+  for (let d = 0; d < 8; d++) {
+    const kst = new Date(
+      Date.UTC(
+        kstNow.getUTCFullYear(),
+        kstNow.getUTCMonth(),
+        kstNow.getUTCDate() + d,
+        desc.slot.hour,
+        desc.slot.minute,
+      ),
+    )
+    if (kst.getUTCDay() !== desc.slot.weekday) continue
+    const utcMs = kst.getTime() - 9 * 3600_000
+    if (utcMs >= nowMs) return new Date(utcMs).toISOString()
+  }
+  return new Date(nowMs).toISOString()
+}
+
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -78,6 +103,23 @@ export async function GET(req: Request) {
     slug: g.slug,
     name: g.name,
   }))
+  const groupById = new Map(groupRefs.map((g) => [g.id, g]))
+
+  // Solos de membres (R4-D) : « KIHYUN (MONSTA X) », « YEONJUN »… étaient
+  // silencieusement unmatched alors que leur groupe est en base — en semaine
+  // creuse il ne restait presque rien à afficher. Un stage_name ACTIF et sans
+  // homonyme inter-groupes mappe vers son groupe (null = ambigu, on s'abstient).
+  const { data: memberRows } = await supabase
+    .from('members')
+    .select('stage_name, group_id, status')
+    .eq('status', 'active')
+  const memberGroupByName = new Map<string, string | null>()
+  for (const m of memberRows ?? []) {
+    const key = normalize(m.stage_name)
+    if (!key) continue
+    const cur = memberGroupByName.get(key)
+    memberGroupByName.set(key, cur === undefined || cur === m.group_id ? m.group_id : null)
+  }
 
   const startedAt = new Date().toISOString()
   const aggregateResult = await aggregateLineups()
@@ -99,7 +141,18 @@ export async function GET(req: Request) {
     for (const artistRaw of lineup.artistsRaw) {
       const canonical = extractCanonicalName(artistRaw)
       if (!canonical) continue
-      const group = matchGroup(canonical, groupRefs)
+      let group = matchGroup(canonical, groupRefs)
+      if (!group) {
+        // « MEMBRE (GROUPE) » : l'intérieur des parens porte le groupe.
+        const inner = /\(([^)]+)\)\s*$/.exec(canonical)?.[1]
+        if (inner) group = matchGroup(inner, groupRefs)
+      }
+      if (!group) {
+        // Solo d'un membre sans mention du groupe (YEONJUN → TXT).
+        const bare = normalize(canonical.replace(/\s*\([^)]*\)\s*$/, ''))
+        const viaMember = memberGroupByName.get(bare)
+        if (viaMember) group = groupById.get(viaMember) ?? null
+      }
       if (!group) {
         unmatched.push(`${lineup.show}/${canonical}`)
         continue
@@ -226,11 +279,36 @@ export async function GET(req: Request) {
     }
   }
 
+  // Alerte J-1 (R4-D) : un show qui diffuse dans < 36 h doit avoir soit un
+  // lineup fetché ce run, soit une row en base pour ce jour KST. Sinon la
+  // chaîne source de CE show est périmée — signal qui manquait quand le carrd
+  // a servi « inkigayo matched:0 » 4 jours de suite avec un status global ok.
+  const fetchedShows = new Set(aggregateResult.lineups.map((l) => l.show))
+  const staleAlerts: string[] = []
+  for (const desc of SHOW_DESCRIPTORS) {
+    const slotIso = nextSlotUtcIso(desc, Date.now())
+    if (Date.parse(slotIso) - Date.now() > 36 * 60 * 60 * 1000) continue
+    if (fetchedShows.has(desc.id)) continue
+    const { from: dayFrom, to: dayTo } = kstDayBounds(slotIso)
+    const { count } = await supabase
+      .from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('type', 'music_show')
+      .eq('title', desc.displayName)
+      .gte('start_at', dayFrom)
+      .lt('start_at', dayTo)
+    if (!count) staleAlerts.push(desc.displayName)
+  }
+
   // P0.3 observabilité (SCRAPING.md §6) : statut explicite + ligne scrape_log,
   // 500 si primary ET les 6 fallbacks n'ont rien donné (avant : 200 {ok:true}
   // avec lineups_fetched:0, et last_scraped_at rafraîchi quand même).
   const status =
-    aggregateResult.lineups.length === 0 ? 'error' : aggregateResult.primaryOk ? 'ok' : 'partial'
+    aggregateResult.lineups.length === 0
+      ? 'error'
+      : aggregateResult.primaryOk && staleAlerts.length === 0
+        ? 'ok'
+        : 'partial'
 
   // last_scraped_at = dernier run ayant réellement récolté des lineups.
   if (status !== 'error') {
@@ -259,6 +337,7 @@ export async function GET(req: Request) {
       }, {}),
     ).flatMap((list) => list.slice(0, 8)),
     by_show: byShow,
+    stale_alerts: staleAlerts,
     stage_links: stageLinks,
   }
 
@@ -272,7 +351,14 @@ export async function GET(req: Request) {
             .map((e) => `${e.source}: ${e.error}`)
             .join(' ; ')}`
         : status === 'partial'
-          ? `primary KO, fallbacks used: ${[...new Set(aggregateResult.fallbacksUsed.map((f) => f.source))].join(', ')}`
+          ? [
+              staleAlerts.length > 0 ? `J-1 sans lineup: ${staleAlerts.join(', ')}` : null,
+              !aggregateResult.primaryOk
+                ? `primary KO, fallbacks used: ${[...new Set(aggregateResult.fallbacksUsed.map((f) => f.source))].join(', ')}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' ; ')
           : null,
     details: summary,
   })

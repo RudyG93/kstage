@@ -4,13 +4,16 @@
  *
  * Stratégie :
  *   1. Tente la source primary. Récupère les shows couverts.
- *   2. Pour chaque fallback qui couvre un show MANQUANT du résultat primary,
- *      tente le fetch. Catch les erreurs réseau pour ne pas faire échouer
- *      l'aggrégation globale.
- *   3. Concatène et renvoie.
+ *   2. Pour chaque fallback qui couvre un show MANQUANT ou MAIGRE
+ *      (< MIN_LINEUP artistes — section carrd en cours d'édition ou périmée,
+ *      R4-D 2026-07-13) du résultat primary, tente le fetch. Catch les
+ *      erreurs réseau pour ne pas faire échouer l'aggrégation globale.
+ *   3. Concatène et renvoie (un lineup fallback plus riche remplace le
+ *      lineup maigre du même show/jour).
  *
- * → Tant que carrd marche, on consomme 1 fetch. Si le fan oublie un show ou
- *   que le carrd tombe, les broadcasters officiels prennent le relais.
+ * → Tant que carrd marche, on consomme 1 fetch. Si le fan oublie un show,
+ *   publie une section incomplète, ou que le carrd tombe, les broadcasters
+ *   officiels prennent le relais.
  */
 
 import { kbsMusicBankSource } from './sources/kbs-music-bank'
@@ -65,11 +68,15 @@ export async function aggregateLineups(now: Date = new Date()): Promise<Aggregat
     errors.push({ source: PRIMARY_SOURCE.label, error: primaryRes.error })
   }
 
-  const covered = new Set<ShowId>(lineups.map((l) => l.show))
+  // Un show est BIEN couvert si au moins un de ses lineups a MIN_LINEUP
+  // artistes — en dessous, c'est une section en cours d'édition (le carrd a
+  // servi « inkigayo matched:0 » 4 jours de suite en juillet avec status ok).
+  const MIN_LINEUP = 3
+  const wellCovered = (show: ShowId) =>
+    lineups.some((l) => l.show === show && l.artistsRaw.length >= MIN_LINEUP)
 
   for (const fb of FALLBACK_SOURCES) {
-    // Le fallback ne sert que s'il fournit au moins un show non-encore couvert.
-    const missing = fb.shows.filter((s) => !covered.has(s))
+    const missing = fb.shows.filter((s) => !wellCovered(s))
     if (missing.length === 0) continue
     const fbRes = await tryFetch(fb, now)
     if (!fbRes.ok) {
@@ -77,9 +84,18 @@ export async function aggregateLineups(now: Date = new Date()): Promise<Aggregat
       continue
     }
     for (const l of fbRes.data) {
-      if (covered.has(l.show)) continue
-      lineups.push(l)
-      covered.add(l.show)
+      if (wellCovered(l.show)) continue
+      // Même show + même jour : le lineup fallback plus riche REMPLACE le
+      // lineup maigre (sinon doublon d'épisode) ; sinon il s'ajoute.
+      const sameDay = lineups.findIndex(
+        (c) => c.show === l.show && c.startAtIso.slice(0, 10) === l.startAtIso.slice(0, 10),
+      )
+      if (sameDay >= 0) {
+        if (l.artistsRaw.length <= lineups[sameDay].artistsRaw.length) continue
+        lineups[sameDay] = l
+      } else {
+        lineups.push(l)
+      }
       fallbacksUsed.push({ source: fb.label, show: l.show })
     }
   }
