@@ -4,6 +4,19 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-13 (après-midi) — Round 5 : accents Unicode, stages SBS, nommage court, UI vivante, crons Paris
+
+**10 retours Rudy — 5 commits mergés (`feat/r5-polish`)** :
+
+1. **Pliage d'accents** (`fix/matching`) : l'ère solo 2024 ENTIÈRE de Rosé (APT., number one girl, toxic till the end) était invisible — sa chaîne titre avec un é DÉCOMPOSÉ (e + U+0301, style macOS) que `normalize()` strippait d'un côté mais pas de l'autre. NFD + strip \p{M} + NFC des deux côtés (hangul inchangé, prouvé par test). **Re-backfill : +53 MVs (2 225 → 2 278), 0 sur-attribution.** Enquête menée en rejouant les gates sur le titre BRUT de l'API (les 3 gates passaient sur le titre retapé à la main — le bug n'était visible qu'aux codepoints).
+2. **Stages Inkigayo** (`fix/stage-links`) : les 3 stages du 12/07 existaient sur @sbskpop mais SBS a changé son format de titre (« Song - Group | SBS 260712 방송 », sans « Inkigayo ») → marqueur étendu (+ The Show, même famille SBS), les 3 liés et vérifiés par oembed. Music Bank s'était auto-réparé (les stages remontent parfois à J+1/J+2 — la fenêtre 10 j du cron les rattrape).
+3. **Nommage court unifié** : `displayEventTitle` délègue à `displaySongTitle` pour type=mv → Top Rated, bandeaux calendrier, hero, digest, iCal affichent le nom de la chanson seul. Ticker : « AESPA · RICH MAN D-11 » au lieu de « comeback » générique, et séquence répétée avec séparateur ◆ à chaque couture (plus de reset visible).
+4. **UI vivante** : fil de commentaires v2 (tronc sous le [−] qui S'ARRÊTE au coude arrondi du dernier item, bande de repli cliquable — capture Reddit de Rudy) ; tri Top/New des commentaires et pills All/Following + new/top de /mvs passés en **100 % client** (plus de navigation ?sort=/?feed= qui re-rendait la page) ; lien Calendar au niveau du header Upcoming (groupe + artiste) ; slots « Lineup TBA » avec l'avatar de la chaîne officielle du diffuseur ; **heure locale en avant partout** (queue-row, next-drop — event-card l'était), KST en référence.
+5. **Crons retunés** (référence Paris, table complète SCRAPING §Cron) : scan YouTube 03:00→10:00 UTC (19h KST, 1 h après le créneau de sortie 18h KST + après le reset de quota), digest 10:00→07:45 Paris, rappel comeback 11:00→10:30 Paris (~30 min avant les sorties). Music-shows/comebacks/images inchangés (déjà optimaux).
+6. **Photos membres** : 2 sous-classes de misses corrigées — casse mi-mot (« NingNing » ≠ page « Ningning », MediaWiki sensible à la casse après la 1re lettre → variante Title-case demandée en plus) et solistes (« Jennie (Jennie) » n'existe pas → titre nu). **+93 photos d'ère courante (265/534)** ; le reste = pages hors convention, la rotation quotidienne continue.
+
+**Vérifications** : 547 tests + build verts avant merge ; stages Inkigayo contrôlés par oembed ; APT./Rosé revérifiés en SQL ; CI #283. **Leçon** : pour un rejet silencieux de scraper, rejouer les gates sur la donnée BRUTE de l'API, jamais sur une copie retapée.
+
 ## 2026-07-13 — Round 4 : catalogues COMPLETS (+1 155 MVs), images à la source, rosters audités, debuts automatiques
 
 **12 retours Rudy + consigne méta** (« une erreur repérée = une classe à chercher partout, corriger à la source ») — 6 investigations parallèles puis 5 merges :
