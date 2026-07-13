@@ -11,12 +11,14 @@ import { cn } from '@/lib/utils'
 const BODY_MAX = 500
 
 /**
- * Widget Feedback léger (bug / idée) : bouton discret → mini-formulaire.
- * Anti-spam côté serveur (auth requise, 2/24h, longueur bornée + CHECK DB).
+ * Widget Feedback léger (idée / bug / data) : bouton discret → mini-formulaire.
+ * 'data' (R4-E) remplace l'ancien formulaire structuré Contribute — texte
+ * libre, le champ hidden `page` donne le contexte (une page groupe identifie
+ * le groupe). Anti-spam côté serveur (auth requise, 2/24h, longueur + CHECK DB).
  */
 export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string }) {
   const [open, setOpen] = useState(false)
-  const [kind, setKind] = useState<'bug' | 'idea'>('idea')
+  const [kind, setKind] = useState<'bug' | 'idea' | 'data'>('idea')
   const [chars, setChars] = useState(0)
   const pathname = usePathname()
   const formRef = useRef<HTMLFormElement>(null)
@@ -53,7 +55,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
           <input type="hidden" name="page" value={pathname} />
           <input type="hidden" name="kind" value={kind} />
           <div className="flex gap-1.5" role="radiogroup" aria-label="Feedback type">
-            {(['idea', 'bug'] as const).map((k) => (
+            {(['idea', 'bug', 'data'] as const).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -67,7 +69,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
                     : 'bg-secondary text-muted-foreground hover:text-foreground',
                 )}
               >
-                {k === 'idea' ? '💡 Idea' : '🐛 Bug'}
+                {k === 'idea' ? '💡 Idea' : k === 'bug' ? '🐛 Bug' : '📊 Data'}
               </button>
             ))}
           </div>
@@ -80,7 +82,9 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
             placeholder={
               kind === 'bug'
                 ? 'What went wrong? Where, and what did you expect?'
-                : 'What would make KStage better for you?'
+                : kind === 'data'
+                  ? 'Missing or wrong group, event, MV? Paste a link and tell us what’s off.'
+                  : 'What would make KStage better for you?'
             }
             className="bg-secondary focus-visible:ring-primary/50 w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-2"
           />

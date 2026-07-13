@@ -31,7 +31,8 @@ export async function submitFeedback(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Sign in to send feedback.' }
 
-  const kind = formData.get('kind') === 'bug' ? 'bug' : 'idea'
+  const rawKind = formData.get('kind')
+  const kind = rawKind === 'bug' ? 'bug' : rawKind === 'data' ? 'data' : 'idea'
   const body = String(formData.get('body') ?? '').trim()
   const page = String(formData.get('page') ?? '').slice(0, 200)
   if (body.length < BODY_MIN) return { error: `Tell us a bit more (min ${BODY_MIN} characters).` }
