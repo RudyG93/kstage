@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  clusterByGroup,
   splitUpcomingByWeek,
   splitUpcomingByBuckets,
   capLaterEvents,
@@ -298,5 +299,27 @@ describe('time-shift carrd (fix 2026-07-12)', () => {
     const grouped = groupMusicShowEpisodes(events)
     expect(grouped).toHaveLength(1)
     expect(grouped[0].lineup).toHaveLength(2) // un par groupe, pas quatre
+  })
+})
+
+describe('clusterByGroup (R6)', () => {
+  const e = (id: string, group: string, at: string) => ({
+    id,
+    group_id: group,
+    start_at: at,
+    groups: { name: group },
+  })
+  it("rapproche les events d'un même groupe, ancrés au premier, ordre stable sinon", () => {
+    const day = [
+      e('a', 'youngposse', '2026-07-13T00:00:00Z'),
+      e('b', 'dailydirection', '2026-07-13T09:00:00Z'),
+      e('c', 'youngposse', '2026-07-13T12:00:00Z'),
+      e('d', 'qwer', '2026-07-13T15:00:00Z'),
+    ]
+    expect(clusterByGroup(day).map((x) => x.id)).toEqual(['a', 'c', 'b', 'd'])
+  })
+  it('sans doublon de groupe : ordre inchangé', () => {
+    const day = [e('a', 'g1', '1'), e('b', 'g2', '2')]
+    expect(clusterByGroup(day).map((x) => x.id)).toEqual(['a', 'b'])
   })
 })

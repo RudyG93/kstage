@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { groupEventsByKstDay, kstDayKey } from '@/lib/events/date'
+import { clusterByGroup } from '@/lib/events/grouping'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { Panel } from '@/components/ui/panel'
 import { QueueRow } from '@/components/events/queue-row'
@@ -36,7 +37,9 @@ export function CalendarMonth({
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const byDay = groupEventsByKstDay(events)
+  // Chronologie + clustering par groupe (R6) : deux events du même groupe le
+  // même jour se suivent dans la liste.
+  const byDay = new Map([...groupEventsByKstDay(events)].map(([k, v]) => [k, clusterByGroup(v)]))
 
   const monthPrefix = `${year}-${pad(month)}`
   const todayKey = kstDayKey(new Date().toISOString())

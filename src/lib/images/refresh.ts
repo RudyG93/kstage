@@ -201,7 +201,14 @@ interface FandomQueryResponse {
   query?: {
     normalized?: { from: string; to: string }[]
     redirects?: { from: string; to: string }[]
-    pages?: Record<string, { title?: string; original?: { source?: string } }>
+    pages?: Record<
+      string,
+      {
+        title?: string
+        original?: { source?: string }
+        categories?: { title: string }[]
+      }
+    >
   }
 }
 
@@ -240,6 +247,13 @@ export async function refreshMemberPhotos(
   // premier passage, classe repérée par Rudy sur aespa) : on demande aussi la
   // variante Title-case. Les misses gardent leur photo actuelle (self-host
   // kprofiles) et sortent de la rotation jusqu'au tour suivant.
+  // Convention fandom réelle (R6, sondée le 2026-07-13) : le qualificatif
+  // « (groupe) » n'existe QUE s'il y a collision de noms sur le wiki —
+  // « Karina (aespa) » mais « Ningning », « An Yujin », « Jang Wonyoung »,
+  // « Leeseo » au nom NU. On tente donc aussi le nom nu pour les membres de
+  // groupes, mais un hit nu n'est accepté que si les CATÉGORIES de la page
+  // confirment le groupe (sans ça, une rookie sans page hériterait de la
+  // photo d'une homonyme célèbre).
   const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
   type Target = NonNullable<typeof members>[number] & { fandomTitles: string[] }
   const targets: Target[] = (members ?? []).map((m) => ({
@@ -250,23 +264,67 @@ export async function refreshMemberPhotos(
           ? // Soliste : la page fandom est le nom nu (« ROSÉ », « Jennie ») —
             // le qualificateur « (Jennie (Jennie)) » n'existe pas.
             [m.stage_name, titleCase(m.stage_name)]
-          : [`${m.stage_name} (${m.groups.name})`, `${titleCase(m.stage_name)} (${m.groups.name})`],
+          : [
+              `${m.stage_name} (${m.groups.name})`,
+              `${titleCase(m.stage_name)} (${m.groups.name})`,
+              m.stage_name,
+              titleCase(m.stage_name),
+              // « Ahn Yujin » vs page « An Yujin » (romanisations) : la
+              // redirection « Yujin (IVE) » existe — dernier mot + groupe.
+              ...(m.stage_name.includes(' ')
+                ? [`${titleCase(m.stage_name.split(' ').at(-1)!)} (${m.groups.name})`]
+                : []),
+            ],
       ),
     ],
   }))
 
-  // 25 membres/appel : jusqu'à 2 titres chacun, sous la limite API de 50.
-  for (let i = 0; i < targets.length; i += 25) {
-    const batch = targets.slice(i, i + 25)
+  // 8 membres/appel : jusqu'à 5 titres chacun, sous la limite API de 50.
+  for (let i = 0; i < targets.length; i += 8) {
+    const batch = targets.slice(i, i + 8)
     const titles = batch.flatMap((t) => t.fandomTitles).join('|')
-    let data: FandomQueryResponse | null = null
+    // La réponse est PAGINÉE dès que categories/pageimages dépassent leurs
+    // limites (pilimit, cllimit) : sans suivre `continue`, une partie des
+    // pages arrive sans image (Ningning, R6). On merge toutes les tranches.
+    const data: FandomQueryResponse = { query: { normalized: [], redirects: [], pages: {} } }
     try {
-      const res = await fetch(
-        `https://kpop.fandom.com/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=original&titles=${encodeURIComponent(titles)}`,
-        { headers: { 'User-Agent': UA, Accept: 'application/json' } },
-      )
-      if (res.ok) data = (await res.json()) as FandomQueryResponse
-      else if (res.status === 403) summary.apiBlocked = true
+      let cont: Record<string, string> = {}
+      for (let hop = 0; hop < 6; hop++) {
+        const params = new URLSearchParams({
+          action: 'query',
+          format: 'json',
+          redirects: '1',
+          prop: 'pageimages|categories',
+          piprop: 'original',
+          pilimit: 'max',
+          cllimit: 'max',
+          titles,
+          ...cont,
+        })
+        const res = await fetch(`https://kpop.fandom.com/api.php?${params}`, {
+          headers: { 'User-Agent': UA, Accept: 'application/json' },
+        })
+        if (!res.ok) {
+          if (res.status === 403) summary.apiBlocked = true
+          break
+        }
+        const slice = (await res.json()) as FandomQueryResponse & {
+          continue?: Record<string, string>
+        }
+        data.query!.normalized!.push(...(slice.query?.normalized ?? []))
+        data.query!.redirects!.push(...(slice.query?.redirects ?? []))
+        for (const [pid, page] of Object.entries(slice.query?.pages ?? {})) {
+          const cur = data.query!.pages![pid]
+          data.query!.pages![pid] = {
+            ...cur,
+            ...page,
+            original: page.original ?? cur?.original,
+            categories: [...(cur?.categories ?? []), ...(page.categories ?? [])],
+          }
+        }
+        if (!slice.continue) break
+        cont = slice.continue
+      }
     } catch {
       summary.failures++
     }
@@ -288,16 +346,28 @@ export async function refreshMemberPhotos(
       }
       return norm(t)
     }
-    const sourceByTitle = new Map<string, string>()
+    const pageByTitle = new Map<string, { source: string; categories: string[] }>()
     for (const page of Object.values(data?.query?.pages ?? {})) {
       if (page.title && page.original?.source)
-        sourceByTitle.set(norm(page.title), page.original.source)
+        pageByTitle.set(norm(page.title), {
+          source: page.original.source,
+          categories: (page.categories ?? []).map((c) => c.title),
+        })
     }
 
     for (const m of batch) {
       summary.checked++
+      const groupKey = norm(m.groups.name)
       const source = m.fandomTitles
-        .map((t) => sourceByTitle.get(finalTitle(t)))
+        .map((t) => {
+          const hit = pageByTitle.get(finalTitle(t))
+          if (!hit) return undefined
+          // Titre NU d'un membre de groupe : exiger la catégorie du groupe.
+          const bare = !t.includes('(')
+          if (bare && !m.groups.is_solo && !hit.categories.some((c) => norm(c).includes(groupKey)))
+            return undefined
+          return hit.source
+        })
         .find((s): s is string => !!s)
       if (!source) {
         summary.misses++
