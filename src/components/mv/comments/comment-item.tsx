@@ -108,9 +108,11 @@ export function CommentItem({
     )
   }
 
-  // Rail sur TOUS les niveaux (modèle Reddit) : ligne de thread cliquable qui
-  // replie CE commentaire (et son sous-arbre) — feuilles incluses, ce qui
-  // aligne aussi tous les frères sur la même colonne. Masqué au-delà de
+  // Fil sur TOUS les niveaux (modèle Reddit) : ligne 1px couleur border —
+  // discrète, elle ne « recouvre » plus le commentaire (retour Rudy
+  // 2026-07-13) — toujours cliquable pleine hauteur (hit area w-4) pour
+  // replier CE commentaire et son sous-arbre. Un coude arrondi relie la
+  // ligne à chaque réponse (voir le conteneur enfants). Masqué au-delà de
   // MAX_INDENT_DEPTH : le fil continue à plat plutôt que d'écraser le mobile.
   const showRail = depth < MAX_INDENT_DEPTH
 
@@ -122,16 +124,25 @@ export function CommentItem({
             type="button"
             onClick={() => setCollapsed(true)}
             aria-label="Collapse comment"
-            className="group/rail flex w-3 shrink-0 cursor-pointer justify-center"
+            className="group/rail focus-visible:ring-ring/50 flex w-4 shrink-0 cursor-pointer justify-center rounded outline-none focus-visible:ring-2"
           >
             <span
-              className="bg-primary/35 group-hover/rail:bg-primary w-[2px] rounded-full transition-colors"
+              className="bg-border group-hover/rail:bg-foreground/40 w-px transition-colors"
               aria-hidden
             />
           </button>
         )}
         <div className="min-w-0 flex-1 space-y-1.5">
           <header className="text-muted-foreground flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              aria-expanded={true}
+              aria-label="Collapse comment"
+              className="text-faint hover:text-foreground tabular focus-visible:ring-ring/50 cursor-pointer rounded px-0.5 outline-none focus-visible:ring-2"
+            >
+              [−]
+            </button>
             {username ? (
               <Link
                 href={`/u/${username}`}
@@ -237,16 +248,26 @@ export function CommentItem({
           {childCount > 0 && (
             <div className="space-y-3 pt-1">
               {visibleChildren.map((child) => (
-                <CommentItem
-                  key={child.id}
-                  node={child}
-                  eventId={eventId}
-                  slug={slug}
-                  viewerId={viewerId}
-                  isAuthed={isAuthed}
-                  depth={depth + 1}
-                  ratingsByUser={ratingsByUser}
-                />
+                <div key={child.id} className="relative">
+                  {/* Coude Reddit : quart de cercle reliant le fil vertical du
+                      parent (colonne w-4 + gap-2 → centre à -16px) à la
+                      réponse. Décoratif — le clic reste sur le fil/[−]. */}
+                  {showRail && (
+                    <span
+                      aria-hidden
+                      className="border-border absolute top-0 -left-4 h-2.5 w-3 rounded-bl-[10px] border-b border-l"
+                    />
+                  )}
+                  <CommentItem
+                    node={child}
+                    eventId={eventId}
+                    slug={slug}
+                    viewerId={viewerId}
+                    isAuthed={isAuthed}
+                    depth={depth + 1}
+                    ratingsByUser={ratingsByUser}
+                  />
+                </div>
               ))}
               {!repliesOpen && childCount > replyPreview && (
                 <button
