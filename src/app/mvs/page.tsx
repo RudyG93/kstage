@@ -14,7 +14,6 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { formatKst } from '@/lib/events/date'
-import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Drops',
@@ -35,22 +34,8 @@ export default async function MvsPage({
 }) {
   const sp = await searchParams
   const sort = sp.sort === 'top' ? 'top' : 'new'
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
   const followedIds = await getFollowedGroupIds()
   const feed = sp.feed === 'following' && followedIds.size > 0 ? 'following' : 'all'
-
-  let tier: 'free' | 'premium' = 'free'
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('id', user.id)
-      .single()
-    tier = profile?.tier ?? 'free'
-  }
 
   // Les DEUX jeux (All + Following) partent au client : les pills filtrent en
   // mémoire (R5) au lieu d'une navigation ?feed=&sort= qui re-rendait la page.
@@ -79,7 +64,7 @@ export default async function MvsPage({
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft tier={tier} showFilters={false} />
+          <SidebarLeft showFilters={false} />
         </aside>
 
         <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">

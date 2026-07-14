@@ -72,11 +72,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   // Indépendants (les deux ne dépendent que de user.id) : en parallèle plutôt
   // que 2 allers-retours séquentiels sur la page connectée la plus chargée.
   const [{ data: profile }, followedIds] = await Promise.all([
-    supabase.from('profiles').select('timezone, tier').eq('id', user.id).single(),
+    supabase.from('profiles').select('timezone').eq('id', user.id).single(),
     getFollowedGroupIds(),
   ])
   const timeZone = profile?.timezone ?? 'Asia/Seoul'
-  const tier = profile?.tier ?? 'free'
   const ids = [...followedIds]
   const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
     await Promise.all([
@@ -149,7 +148,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-            <SidebarLeft tier={tier} showFilters={false} />
+            <SidebarLeft showFilters={false} />
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
             {/* 0 follow : la home affiche des replis globaux — le dire, et

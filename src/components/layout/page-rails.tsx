@@ -8,13 +8,13 @@ import { SidebarRight } from '@/components/home/sidebar-right'
  * laisser les côtés vides sur les pages groupe/MV/membre (retour Rudy R10).
  * Rails DESKTOP-only (`hidden lg:block`) : sur mobile la page détail garde son
  * propre contenu, sans empiler les rails. `SidebarLeft` (My groups, auth) n'est
- * rendu que si `tier` est fourni (utilisateur connecté).
+ * rendu que si le viewer est connecté (`signedIn`).
  */
 export function PageRails({
-  tier,
+  signedIn = false,
   children,
 }: {
-  tier?: 'free' | 'premium' | null
+  signedIn?: boolean
   children: ReactNode
 }) {
   return (
@@ -22,9 +22,9 @@ export function PageRails({
     // (hero groupe, player MV edge-to-edge). Les rails sont desktop-only.
     <div className="mx-auto w-full max-w-[1400px] py-4 md:px-4 md:py-6">
       <div className="flex gap-6">
-        {tier != null && (
+        {signedIn && (
           <aside className="hidden shrink-0 lg:block lg:w-60">
-            <SidebarLeft tier={tier} showFilters={false} />
+            <SidebarLeft showFilters={false} />
           </aside>
         )}
         <div className="min-w-0 flex-1">{children}</div>

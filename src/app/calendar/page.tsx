@@ -9,7 +9,6 @@ import { generateShowSlots } from '@/lib/events/show-slots'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey, getKstMonthRange } from '@/lib/events/date'
-import { createClient } from '@/lib/supabase/server'
 
 function parseMonth(raw?: string): { year: number; month: number } {
   if (raw && /^\d{4}-\d{2}$/.test(raw)) {
@@ -38,20 +37,6 @@ export default async function CalendarPage({
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  let tier: 'free' | 'premium' = 'free'
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('id', user.id)
-      .single()
-    tier = profile?.tier ?? 'free'
-  }
-
   const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
     getGroupsCached(),
     getFollowedGroupIds(),
@@ -79,7 +64,6 @@ export default async function CalendarPage({
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
             <SidebarLeft
-              tier={tier}
               groupFilter={
                 <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
               }
