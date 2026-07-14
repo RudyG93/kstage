@@ -86,7 +86,7 @@ export function FeedbackDialog({ triggerClassName }: { triggerClassName?: string
                   ? 'Missing or wrong group, event, MV? Paste a link and tell us what’s off.'
                   : 'What would make KStage better for you?'
             }
-            className="bg-secondary focus-visible:ring-primary/50 w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-2"
+            className="bg-secondary focus-visible:ring-primary/50 w-full resize-y rounded-lg border px-3 py-2 text-base outline-none focus-visible:ring-2 md:text-sm"
           />
           <div className="flex items-center justify-between text-xs">
             <span

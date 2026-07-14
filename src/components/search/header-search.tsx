@@ -105,7 +105,7 @@ export function HeaderSearch() {
           aria-expanded={open}
           aria-controls="header-search-listbox"
           aria-autocomplete="list"
-          className="placeholder:text-faint w-full bg-transparent text-xs outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="placeholder:text-faint w-full bg-transparent text-base outline-none md:text-xs [&::-webkit-search-cancel-button]:hidden"
         />
       </div>
 

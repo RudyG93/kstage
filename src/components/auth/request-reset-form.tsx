@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { requestPasswordReset, type AuthState } from '@/lib/auth/actions'
 
 const inputClass =
-  'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-9 w-full rounded-lg border bg-background px-3 text-base md:text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function RequestResetForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(

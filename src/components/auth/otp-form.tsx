@@ -8,7 +8,7 @@ import { verifySignupOtp, resendSignupOtp, type AuthState } from '@/lib/auth/act
 import { OTP_LENGTH } from '@/lib/auth/validation'
 
 const inputClass =
-  'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-9 w-full rounded-lg border bg-background px-3 text-base md:text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
 const RESEND_COOLDOWN = 60
 
