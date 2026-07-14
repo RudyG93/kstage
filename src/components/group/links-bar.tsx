@@ -16,7 +16,46 @@ import {
 
 type IconProps = { size?: number; color?: string; className?: string }
 
+// Weverse n'est pas dans @icons-pack/react-simple-icons → icône maison (le « W »
+// continu du logo). Même signature que les composants simple-icons (size/color).
+function SiWeverse({ size = 18, color = 'currentColor', className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M2 5.5 7 18.5 12 8 17 18.5 22 5.5" />
+    </svg>
+  )
+}
+
 type LinkGroup = 'streaming' | 'social'
+
+// Ordre de priorité en mode compact (stats strip) : les réseaux clés d'abord,
+// pour qu'ils ne sautent jamais derrière le streaming (R8).
+const COMPACT_PRIORITY = [
+  'spotify',
+  'instagram',
+  'youtube',
+  'weverse',
+  'tiktok',
+  'twitter',
+  'apple_music',
+  'youtube_music',
+  'deezer',
+  'facebook',
+  'tidal',
+  'soundcloud',
+  'weibo',
+]
 
 // Couleur de marque appliquée au survol (§6.3). Par défaut l'icône suit la
 // couleur du texte (theme-safe) : les marques quasi-noires (X, TikTok, Tidal)
@@ -56,6 +95,7 @@ const ENTRIES: {
   { key: 'instagram', Icon: SiInstagram, label: 'Instagram', group: 'social', brand: '#E4405F' },
   { key: 'twitter', Icon: SiX, label: 'X', group: 'social', brand: '#1DA1F2' },
   { key: 'tiktok', Icon: SiTiktok, label: 'TikTok', group: 'social', brand: '#25F4EE' },
+  { key: 'weverse', Icon: SiWeverse, label: 'Weverse', group: 'social', brand: '#4B7BFF' },
   { key: 'facebook', Icon: SiFacebook, label: 'Facebook', group: 'social', brand: '#1877F2' },
   { key: 'weibo', Icon: SiSinaweibo, label: 'Weibo', group: 'social', brand: '#E6162D' },
 ]
@@ -117,7 +157,14 @@ export function LinksBar({
   if (present.length === 0) return null
 
   if (compact) {
-    return <Row entries={present.slice(0, 6)} links={links} compact />
+    // Ordre de priorité compact (R8) : les réseaux clés passent AVANT le
+    // streaming secondaire — sans ça l'Instagram/TikTok sautaient (les 6
+    // premières entrées étant toutes du streaming → cap coupait les socials,
+    // « oubli » de l'IG de ZB1). Le Row wrap déjà, cap monté à 8.
+    const ordered = [...present].sort(
+      (a, b) => COMPACT_PRIORITY.indexOf(a.key) - COMPACT_PRIORITY.indexOf(b.key),
+    )
+    return <Row entries={ordered.slice(0, 8)} links={links} compact />
   }
 
   const streaming = present.filter((e) => e.group === 'streaming')

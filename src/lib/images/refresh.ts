@@ -227,7 +227,9 @@ export async function refreshMemberPhotos(
   const batchSize = opts.batch ?? 100
   const { data: members, error } = await supabase
     .from('members')
-    .select('id, stage_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)')
+    .select(
+      'id, stage_name, real_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)',
+    )
     .order('photo_checked_at', { ascending: true, nullsFirst: true })
     .limit(batchSize)
   if (error) throw new Error(`members select: ${error.message}`)
@@ -256,32 +258,45 @@ export async function refreshMemberPhotos(
   // photo d'une homonyme célèbre).
   const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
   type Target = NonNullable<typeof members>[number] & { fandomTitles: string[] }
-  const targets: Target[] = (members ?? []).map((m) => ({
-    ...m,
-    fandomTitles: [
-      ...new Set(
-        m.groups.is_solo
-          ? // Soliste : la page fandom est le nom nu (« ROSÉ », « Jennie ») —
-            // le qualificateur « (Jennie (Jennie)) » n'existe pas.
-            [m.stage_name, titleCase(m.stage_name)]
-          : [
-              `${m.stage_name} (${m.groups.name})`,
-              `${titleCase(m.stage_name)} (${m.groups.name})`,
-              m.stage_name,
-              titleCase(m.stage_name),
-              // « Ahn Yujin » vs page « An Yujin » (romanisations) : la
-              // redirection « Yujin (IVE) » existe — dernier mot + groupe.
-              ...(m.stage_name.includes(' ')
-                ? [`${titleCase(m.stage_name.split(' ').at(-1)!)} (${m.groups.name})`]
-                : []),
-            ],
-      ),
-    ],
-  }))
+  const targets: Target[] = (members ?? []).map((m) => {
+    // Candidats real_name (R8) : la page fandom porte parfois le VRAI nom plutôt
+    // que le stage_name — « Sakura » → page « Miyawaki Sakura ». Le nom nu
+    // real_name reste soumis à la garde de catégorie (comme stage_name nu).
+    const rn = m.real_name?.trim()
+    const realCands =
+      rn && rn.toLowerCase() !== m.stage_name.toLowerCase()
+        ? m.groups.is_solo
+          ? [rn, titleCase(rn)]
+          : [rn, titleCase(rn), `${rn} (${m.groups.name})`]
+        : []
+    return {
+      ...m,
+      fandomTitles: [
+        ...new Set(
+          m.groups.is_solo
+            ? // Soliste : la page fandom est le nom nu (« ROSÉ », « Jennie ») —
+              // le qualificateur « (Jennie (Jennie)) » n'existe pas.
+              [m.stage_name, titleCase(m.stage_name), ...realCands]
+            : [
+                `${m.stage_name} (${m.groups.name})`,
+                `${titleCase(m.stage_name)} (${m.groups.name})`,
+                m.stage_name,
+                titleCase(m.stage_name),
+                // « Ahn Yujin » vs page « An Yujin » (romanisations) : la
+                // redirection « Yujin (IVE) » existe — dernier mot + groupe.
+                ...(m.stage_name.includes(' ')
+                  ? [`${titleCase(m.stage_name.split(' ').at(-1)!)} (${m.groups.name})`]
+                  : []),
+                ...realCands,
+              ],
+        ),
+      ],
+    }
+  })
 
-  // 8 membres/appel : jusqu'à 5 titres chacun, sous la limite API de 50.
-  for (let i = 0; i < targets.length; i += 8) {
-    const batch = targets.slice(i, i + 8)
+  // 6 membres/appel : jusqu'à ~7 titres chacun (real_name inclus), sous 50.
+  for (let i = 0; i < targets.length; i += 6) {
+    const batch = targets.slice(i, i + 6)
     const titles = batch.flatMap((t) => t.fandomTitles).join('|')
     // La réponse est PAGINÉE dès que categories/pageimages dépassent leurs
     // limites (pilimit, cllimit) : sans suivre `continue`, une partie des

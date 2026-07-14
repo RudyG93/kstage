@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -8,8 +9,9 @@ import { ageFromBirthday, type MemberSummary } from '@/lib/members/queries'
  * Carte membre 84px du rail (§7.6.5) : portrait rounded-xl (fallback
  * gradient couleur groupe + initiale), nom, position. Bias = ring dorée + ★.
  *
- * Volontairement non navigable : la page membre `/artists/[slug]` est quasi-vide
- * et redondante avec ce rail → on ne crée plus de cul-de-sac.
+ * Navigable vers `/artists/[slug]` depuis R8 : la page membre a désormais du
+ * contenu unique (réseaux, birthday, carrière) — ce n'est plus un cul-de-sac.
+ * Fallback `<div>` si le membre n'a pas de slug.
  */
 export function MemberCard({
   member,
@@ -25,8 +27,8 @@ export function MemberCard({
   const color = groupColorHex ?? '#888'
   const isDimmed = member.status !== 'active'
 
-  return (
-    <div className={cn('block', isDimmed && 'opacity-70')}>
+  const inner = (
+    <>
       <div
         className={cn(
           'bg-muted relative aspect-square w-full overflow-hidden rounded-xl',
@@ -42,7 +44,7 @@ export function MemberCard({
             fill
             unoptimized
             sizes="84px"
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div
@@ -80,6 +82,20 @@ export function MemberCard({
           </p>
         )}
       </div>
-    </div>
+    </>
+  )
+
+  return member.slug ? (
+    <Link
+      href={`/artists/${member.slug}`}
+      className={cn(
+        'group focus-visible:ring-primary/40 block rounded-xl outline-none focus-visible:ring-2',
+        isDimmed && 'opacity-70',
+      )}
+    >
+      {inner}
+    </Link>
+  ) : (
+    <div className={cn('block', isDimmed && 'opacity-70')}>{inner}</div>
   )
 }
