@@ -63,7 +63,10 @@ function keyForUrl(u: string): string | null {
 
 async function mbid(name: string, isSolo: boolean): Promise<string | null> {
   const res = await fetchRetry(
-    `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&fmt=json&limit=5`,
+    // limit=25 : un nom court (« Lisa ») ramène des homonymes mondiaux mieux
+    // scorés que l'idole KR — avec limit=5 la vraie Lisa (rang ~17) sortait des
+    // résultats et on récupérait le bloc social de LiSA (JP).
+    `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&fmt=json&limit=25`,
     { headers: { 'User-Agent': UA } },
   )
   if (!res || !res.ok) return null
@@ -75,12 +78,15 @@ async function mbid(name: string, isSolo: boolean): Promise<string | null> {
     ).artists ?? []
   const wantType = isSolo ? 'Person' : 'Group'
   const matches = artists.filter((a) => norm(a.name) === norm(name))
+  // Garde pays : on exige la Corée, ou un match unique. On NE choisit PLUS un
+  // homonyme non-KR (l'ancien fallback `type` puis `matches[0]` collait le bloc
+  // social de la mauvaise personne — Lisa BLACKPINK → LiSA JP). Un artiste KR
+  // sans `country` en base MusicBrainz est accepté seulement s'il est le seul
+  // homonyme.
   const pick =
     matches.find((a) => a.type === wantType && a.country === 'KR') ??
-    matches.find((a) => a.type === wantType) ??
     matches.find((a) => a.country === 'KR') ??
-    matches[0] ??
-    null
+    (matches.length === 1 ? matches[0] : null)
   return pick?.id ?? null
 }
 
