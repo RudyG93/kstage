@@ -10,6 +10,7 @@ import { displaySongTitle } from '@/lib/events/title'
 
 type Group = { slug: string; name: string; image: string | null; isSolo: boolean }
 type Mv = { slug: string | null; title: string; group: string | null; videoId: string | null }
+type Member = { slug: string | null; name: string; group: string | null; photo: string | null }
 
 const normLite = (s: string) =>
   s
@@ -29,6 +30,7 @@ export function HeaderSearch() {
   const [q, setQ] = useState('')
   const [groupResults, setGroupResults] = useState<Group[]>([])
   const [mvResults, setMvResults] = useState<Mv[]>([])
+  const [memberResults, setMemberResults] = useState<Member[]>([])
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(null)
@@ -82,6 +84,7 @@ export function HeaderSearch() {
     const needle = next.trim()
     if (needle.length < 2) {
       setGroupResults([])
+      setMemberResults([])
       setMvResults([])
       setOpen(false)
       return
@@ -101,7 +104,9 @@ export function HeaderSearch() {
           signal: controller.signal,
         })
         if (!res.ok) return
-        setMvResults(((await res.json()) as { mvs: Mv[] }).mvs)
+        const data = (await res.json()) as { members: Member[]; mvs: Mv[] }
+        setMemberResults(data.members)
+        setMvResults(data.mvs)
         setOpen(true)
       } catch {
         // requête annulée/réseau — silencieux
@@ -115,7 +120,7 @@ export function HeaderSearch() {
     router.push(`/search?q=${encodeURIComponent(q.trim())}`)
   }
 
-  const hasResults = groupResults.length > 0 || mvResults.length > 0
+  const hasResults = groupResults.length > 0 || memberResults.length > 0 || mvResults.length > 0
 
   return (
     <div ref={rootRef} className="relative w-full">
@@ -155,7 +160,7 @@ export function HeaderSearch() {
       <div aria-live="polite" className="sr-only">
         {open &&
           (hasResults
-            ? `${groupResults.length + mvResults.length} results available`
+            ? `${groupResults.length + memberResults.length + mvResults.length} results available`
             : q.trim().length >= 2
               ? 'No results'
               : '')}
@@ -223,6 +228,41 @@ export function HeaderSearch() {
                   <span className="label-data-inline text-faint text-[8px]">
                     {g.isSolo ? 'Solo' : 'Group'}
                   </span>
+                </Link>
+              ))}
+              {memberResults.map((m, i) => (
+                <Link
+                  key={m.slug ?? `mbr-${i}`}
+                  href={m.slug ? `/artists/${m.slug}` : '/search'}
+                  data-search-result
+                  role="option"
+                  aria-selected={false}
+                  onClick={closeAndReset}
+                  className="hover:bg-secondary/60 flex items-center gap-2.5 px-3 py-2 transition-colors"
+                >
+                  {m.photo ? (
+                    <Image
+                      src={faceCrop(m.photo, 48, 48)}
+                      alt=""
+                      width={24}
+                      height={24}
+                      unoptimized
+                      className="size-6 shrink-0 rounded-full object-cover"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                      aria-hidden
+                    >
+                      {m.name[0]}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+                    {m.name}
+                    {m.group && <span className="text-faint font-normal"> · {m.group}</span>}
+                  </span>
+                  <span className="label-data-inline text-faint text-[8px]">Artist</span>
                 </Link>
               ))}
               {mvResults.map((m, i) => (

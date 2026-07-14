@@ -154,6 +154,26 @@ export async function getGroupMvs(slug: string, limit = 48) {
 }
 
 /**
+ * MVs SOLO d'un membre (mv_kind='member', member_id) — surfacés sur sa page
+ * /artists/[slug] (R10). Ces MVs étaient collectés mais jamais affichés
+ * (getGroupMvs les exclut, la branche membre ne les requêtait pas).
+ */
+export async function getMemberMvs(memberId: string, limit = 24) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select(MV_SELECT)
+    .eq('member_id', memberId)
+    .eq('type', 'mv')
+    .eq('mv_kind', 'member')
+    .eq('hidden', false)
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+/**
  * Liste globale des MVs (main only), optionnellement restreinte à un set de
  * groupes (utilisé pour la section "From your groups" sur /mvs).
  */

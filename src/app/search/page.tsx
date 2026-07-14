@@ -7,7 +7,7 @@ import { QueueRow } from '@/components/events/queue-row'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { searchGroups, searchMvs, searchEvents } from '@/lib/search/queries'
+import { searchGroups, searchMvs, searchEvents, searchMembers } from '@/lib/search/queries'
 import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
   description: 'Search k-pop groups, artists, MVs and events on KStage.',
 }
 
-type Segment = 'all' | 'groups' | 'mvs' | 'events'
-const SEGMENTS: Segment[] = ['all', 'groups', 'mvs', 'events']
+type Segment = 'all' | 'groups' | 'artists' | 'mvs' | 'events'
+const SEGMENTS: Segment[] = ['all', 'groups', 'artists', 'mvs', 'events']
 
 // Recherche globale (§7.3) : groupes + MVs + events — le gap « findabilité »
 // de l'audit UX. Server component sur ?q=&seg=, saisie debouncée côté client.
@@ -40,16 +40,17 @@ export default async function SearchPage({
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [groups, mvs, events, followedIds] = q
+  const [groups, members, mvs, events, followedIds] = q
     ? await Promise.all([
         seg === 'all' || seg === 'groups' ? searchGroups(q) : Promise.resolve([]),
+        seg === 'all' || seg === 'artists' ? searchMembers(q) : Promise.resolve([]),
         seg === 'all' || seg === 'mvs' ? searchMvs(q) : Promise.resolve([]),
         seg === 'all' || seg === 'events' ? searchEvents(q) : Promise.resolve([]),
         getFollowedGroupIds(),
       ])
-    : [[], [], [], new Set<string>()]
+    : [[], [], [], [], new Set<string>()]
 
-  const hasResults = groups.length > 0 || mvs.length > 0 || events.length > 0
+  const hasResults = groups.length > 0 || members.length > 0 || mvs.length > 0 || events.length > 0
   const segHref = (target: Segment) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
@@ -176,6 +177,46 @@ export default async function SearchPage({
                         <span className="text-muted-foreground block truncate text-[10px]">
                           {g.is_solo ? 'Solo' : 'Group'}
                           {g.agency ? ` · ${g.agency}` : ''}
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            {members.length > 0 && (
+              <Panel>
+                <PanelHeader label="Artists" />
+                <div className="divide-y">
+                  {members.map((m) => (
+                    <Link
+                      key={m.id}
+                      href={`/artists/${m.slug}`}
+                      className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-1.5 transition-colors"
+                    >
+                      {m.photo_url ? (
+                        <Image
+                          src={faceCrop(m.photo_url, 64, 64)}
+                          alt=""
+                          width={32}
+                          height={32}
+                          unoptimized
+                          className="size-8 shrink-0 rounded-full object-cover"
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className="gradient-signature flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                          aria-hidden
+                        >
+                          {m.stage_name[0]}
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold">{m.stage_name}</span>
+                        <span className="text-muted-foreground block truncate text-[10px]">
+                          {m.groups?.name}
                         </span>
                       </span>
                     </Link>

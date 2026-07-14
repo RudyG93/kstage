@@ -5,11 +5,18 @@ import { Badge } from '@/components/ui/badge'
 import { ArtistHero } from '@/components/group/artist-hero'
 import { CollapsibleMvs } from '@/components/group/collapsible-mvs'
 import { LinksBar } from '@/components/group/links-bar'
+import { MvCard } from '@/components/group/mv-card'
+import { MembersGrid } from '@/components/member/members-grid'
 import { EventList } from '@/components/event-list'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FollowButton } from '@/components/follow-button'
-import { getCareerPath, getMemberBySlug, getMemberSlugById } from '@/lib/members/queries'
-import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
+import {
+  getCareerPath,
+  getMemberBySlug,
+  getMemberSlugById,
+  getMembersForGroup,
+} from '@/lib/members/queries'
+import { getUpcomingEvents, getGroupMvs, getMemberMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -227,6 +234,18 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const photo = photoRaw ? faceCrop(photoRaw, 192, 192) : null
   const statusText = statusLabel[member.status]
 
+  // R10 — contenu unique : MVs solo (mv_kind='member', jusque-là jamais affichés)
+  // + « groupmates » (les autres membres actifs du groupe) pour que la page ne
+  // soit plus un cul-de-sac maigre.
+  const memberMvs = await getMemberMvs(member.id)
+  const memberRatings =
+    memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
+  const groupmates = group
+    ? (await getMembersForGroup(group.id)).filter(
+        (m) => m.id !== member.id && m.status === 'active',
+      )
+    : []
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="space-y-6">
@@ -294,7 +313,25 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </dl>
         </section>
 
+        {memberMvs.length > 0 && (
+          <section className="space-y-2">
+            <span className="label-data">Solo releases</span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {memberMvs.map((mv) => (
+                <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} />
+              ))}
+            </div>
+          </section>
+        )}
+
         <CareerSection career={career} />
+
+        {groupmates.length > 0 && group && (
+          <section className="space-y-2">
+            <span className="label-data">{group.name} members</span>
+            <MembersGrid members={groupmates} groupColorHex={group.color_hex} />
+          </section>
+        )}
       </div>
     </div>
   )
