@@ -247,23 +247,15 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       )
     : []
 
-  // tier pour le rail « My groups » (R10).
+  // Rail « My groups » (R10) — affiché seulement si le viewer est connecté.
   const supabaseM = await createClient()
   const {
     data: { user: viewerM },
   } = await supabaseM.auth.getUser()
-  let tier: 'free' | 'premium' | null = null
-  if (viewerM) {
-    const { data: prof } = await supabaseM
-      .from('profiles')
-      .select('tier')
-      .eq('id', viewerM.id)
-      .maybeSingle()
-    tier = prof?.tier ?? 'free'
-  }
+  const signedIn = viewerM != null
 
   return (
-    <PageRails tier={tier}>
+    <PageRails signedIn={signedIn}>
       <div className="space-y-6 px-4 md:px-0">
         <header className="flex items-start gap-4">
           <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-xl">

@@ -8,17 +8,15 @@ import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import { getProfile } from '@/lib/profiles/queries'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database'
 
-// Cap d'affichage des groupes suivis pour les comptes free. Premium = illimité.
-const FREE_VISIBLE_FOLLOWS = 10
+// Cap d'affichage des groupes suivis dans le rail (au-delà : lien « + N more »
+// vers le profil). Limite d'affichage neutre, indépendante du compte.
+const SIDEBAR_MAX_FOLLOWS = 10
 
 export async function SidebarLeft({
-  tier,
   groupFilter,
   showFilters = true,
 }: {
-  tier: Database['public']['Enums']['tier_type']
   // Slot optionnel injecté dans la section Filters (filtre Group du calendrier).
   groupFilter?: ReactNode
   // /groups réutilise le template SANS le bloc Filters (§3.4).
@@ -50,7 +48,7 @@ export async function SidebarLeft({
   const countFor = (id: string) => (counts.get(id) ?? 0) + (annivCounts.get(id) ?? 0)
   const totalUpcoming = followed.reduce((a, g) => a + countFor(g.id), 0)
 
-  const visibleFollowed = tier === 'premium' ? followed : followed.slice(0, FREE_VISIBLE_FOLLOWS)
+  const visibleFollowed = followed.slice(0, SIDEBAR_MAX_FOLLOWS)
   const hiddenCount = followed.length - visibleFollowed.length
 
   return (

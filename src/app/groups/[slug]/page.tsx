@@ -84,19 +84,18 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   const memorialMembers = members.filter((m) => m.status === 'deceased')
   const inactiveMembers = members.filter((m) => m.status !== 'active' && m.status !== 'deceased')
 
-  // Bias du viewer → ring dorée dans le rail membres (§7.6.5). + tier pour le
-  // rail « My groups » (R10) — même fetch profil.
+  // Bias du viewer → ring dorée dans le rail membres (§7.6.5). Rail « My groups »
+  // (R10) affiché seulement si le viewer est connecté.
   let biasMemberId: string | null = null
-  let tier: 'free' | 'premium' | null = null
   if (user) {
     const { data: viewerProfile } = await supabase
       .from('profiles')
-      .select('bias_member_id, tier')
+      .select('bias_member_id')
       .eq('id', user.id)
       .maybeSingle()
     biasMemberId = viewerProfile?.bias_member_id ?? null
-    tier = viewerProfile?.tier ?? 'free'
   }
+  const signedIn = user != null
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
   // par les labels à chaque ère) remplace le hqdefault 480px flou du dernier
@@ -125,7 +124,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   ].filter(Boolean)
 
   return (
-    <PageRails tier={tier}>
+    <PageRails signedIn={signedIn}>
       <JsonLd
         data={{
           '@context': 'https://schema.org',

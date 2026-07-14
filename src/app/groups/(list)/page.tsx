@@ -53,16 +53,6 @@ export default async function GroupsPage({
     supabase.rpc('group_follow_counts'),
   ])
 
-  let tier: 'free' | 'premium' = 'free'
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('id', user.id)
-      .single()
-    tier = profile?.tier ?? 'free'
-  }
-
   const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const popOf = (id: string) => followCount.get(id) ?? 0
 
@@ -114,7 +104,7 @@ export default async function GroupsPage({
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft tier={tier} showFilters={false} />
+          <SidebarLeft showFilters={false} />
         </aside>
 
         <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">
