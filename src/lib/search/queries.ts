@@ -1,7 +1,10 @@
+import { unstable_cache } from 'next/cache'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { normalize } from '@/lib/scrapers/group-match'
+import type { Database } from '@/types/database'
 
 /**
  * Échappe une saisie user pour un `.ilike()` PostgREST : neutralise les
@@ -51,17 +54,37 @@ const GROUP_SELECT = 'id, slug, name, agency, image_url, color_hex, is_solo'
 // ((G)I-DLE → « gidle » ≠ « idle »). Aligné sur GROUP_ALIASES du scraping.
 const SEARCH_ALIASES: Record<string, string> = { gidle: 'idle' }
 
+/** Client anon sans cookies — requis par `unstable_cache` (lecture cookies interdite). */
+function anon() {
+  return createAnonClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+}
+
+/**
+ * Liste complète des groupes pour la recherche, mise en cache (§perf R8) : la
+ * recherche par frappe débouncée retapait Supabase 3× (searchGroups + 2×
+ * allGroupRefs). Data publique quasi statique → cache 1h, tag `groups` (même
+ * invalidation que `getGroupsCached`).
+ */
+const searchGroupList = unstable_cache(
+  async () => {
+    const { data, error } = await anon().from('groups').select(GROUP_SELECT)
+    if (error) throw error
+    return data ?? []
+  },
+  ['search-group-list'],
+  { revalidate: 3600, tags: ['groups'] },
+)
+
 export async function searchGroups(q: string, limit = 5) {
   const needle = q.trim()
   if (!needle) return []
-  const supabase = await createClient()
   // Matching NORMALISÉ en TS, pas un ilike brut : « idle » doit trouver
   // « i-dle » (le tiret cassait le LIKE — retour Rudy 2026-07-12). Même
   // pattern que resolveGroupTokens ; ~112 rows, coût négligeable.
-  const [{ data }, subs] = await Promise.all([
-    supabase.from('groups').select(GROUP_SELECT),
-    getGroupSubscriberCounts(),
-  ])
+  const [data, subs] = await Promise.all([searchGroupList(), getGroupSubscriberCounts()])
   const norm = normalize(needle)
   if (!norm) return []
   const target = SEARCH_ALIASES[norm] ?? norm
@@ -78,20 +101,26 @@ export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]
 
 const MV_SELECT = 'id, slug, title, type, start_at, source_url, groups!inner(name, slug)'
 
-type SupabaseServer = Awaited<ReturnType<typeof createClient>>
-
-/** Groupes minimaux pour la résolution de tokens (une query, ~114 rows). */
-async function allGroupRefs(supabase: SupabaseServer) {
-  const { data } = await supabase.from('groups').select('id, name')
-  return data ?? []
-}
+/**
+ * Groupes minimaux (id, name) pour la résolution de tokens. Caché : appelé par
+ * searchMvs ET searchEvents à chaque frappe → sans cache, 2 queries Supabase
+ * par recherche pour une data quasi statique.
+ */
+const allGroupRefs = unstable_cache(
+  async () => {
+    const { data } = await anon().from('groups').select('id, name')
+    return data ?? []
+  },
+  ['search-group-refs'],
+  { revalidate: 3600, tags: ['groups'] },
+)
 
 export async function searchMvs(q: string, limit = 6) {
   const needle = sanitizeIlike(q)
   if (!needle) return []
   const supabase = await createClient()
   const tokens = tokenize(needle)
-  const { groupIds, titleTokens } = resolveGroupTokens(tokens, await allGroupRefs(supabase))
+  const { groupIds, titleTokens } = resolveGroupTokens(tokens, await allGroupRefs())
 
   type MvRow = {
     id: string
@@ -165,7 +194,7 @@ export async function searchEvents(q: string, limit = 6) {
   if (!needle) return []
   const supabase = await createClient()
   const tokens = tokenize(needle)
-  const { groupIds, titleTokens } = resolveGroupTokens(tokens, await allGroupRefs(supabase))
+  const { groupIds, titleTokens } = resolveGroupTokens(tokens, await allGroupRefs())
 
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
   let query = supabase.from('events').select(EVENT_SELECT).neq('type', 'mv').gte('start_at', since)

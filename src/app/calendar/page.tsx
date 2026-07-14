@@ -6,7 +6,7 @@ import { CalendarFilterProvider, CalendarEvents } from '@/components/calendar/ca
 import { getEventsForMonth } from '@/lib/events/queries'
 import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
 import { generateShowSlots } from '@/lib/events/show-slots'
-import { getGroups } from '@/lib/groups/queries'
+import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey, getKstMonthRange } from '@/lib/events/date'
 import { createClient } from '@/lib/supabase/server'
@@ -53,7 +53,7 @@ export default async function CalendarPage({
   }
 
   const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
-    getGroups(),
+    getGroupsCached(),
     getFollowedGroupIds(),
     getEventsForMonth({ year, month }),
     getAnniversariesForMonth({ year, month }),
