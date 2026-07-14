@@ -99,6 +99,41 @@ export async function searchGroups(q: string, limit = 5) {
 
 export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]
 
+/**
+ * Liste complète des groupes pour la recherche header CÔTÉ CLIENT (§perf R8.1) :
+ * envoyée une fois, filtrée localement à chaque frappe → « aespa » instantané,
+ * zéro round-trip serveur pour le segment groupes. Pré-triée par notoriété
+ * (subs YouTube). Cache 1h, tag `groups`.
+ */
+export const allGroupsForClient = unstable_cache(
+  async () => {
+    // Client anon (PAS getGroupSubscriberCounts, qui lit les cookies → interdit
+    // dans unstable_cache). Groupes + subs en une passe, tri par notoriété.
+    const supabase = anon()
+    const [{ data: groups }, { data: sources }] = await Promise.all([
+      supabase.from('groups').select('id, slug, name, image_url, is_solo'),
+      supabase
+        .from('sources')
+        .select('group_id, subscriber_count')
+        .not('subscriber_count', 'is', null)
+        .not('group_id', 'is', null),
+    ])
+    const subs = new Map<string, number>()
+    for (const row of sources ?? []) {
+      if (!row.group_id || row.subscriber_count == null) continue
+      subs.set(row.group_id, Math.max(subs.get(row.group_id) ?? 0, row.subscriber_count))
+    }
+    return (groups ?? [])
+      .map((g) => ({ g, subs: subs.get(g.id) ?? 0 }))
+      .sort((a, b) => b.subs - a.subs)
+      .map(({ g }) => ({ slug: g.slug, name: g.name, image: g.image_url, isSolo: g.is_solo }))
+  },
+  ['all-groups-client'],
+  { revalidate: 3600, tags: ['groups'] },
+)
+
+export type ClientGroup = Awaited<ReturnType<typeof allGroupsForClient>>[number]
+
 const MV_SELECT = 'id, slug, title, type, start_at, source_url, groups!inner(name, slug)'
 
 /**
@@ -115,7 +150,7 @@ const allGroupRefs = unstable_cache(
   { revalidate: 3600, tags: ['groups'] },
 )
 
-export async function searchMvs(q: string, limit = 6) {
+export async function searchMvs(q: string, limit = 6, opts: { withRatings?: boolean } = {}) {
   const needle = sanitizeIlike(q)
   if (!needle) return []
   const supabase = await createClient()
@@ -173,7 +208,10 @@ export async function searchMvs(q: string, limit = 6) {
     }) as MvRow[]
   }
 
-  const ratings = await getRatingsForEvents(rows.map((r) => r.id))
+  // Le dropdown header (withRatings:false) n'a pas besoin du tri par note (6
+  // ratings en base) → on saute ce round-trip séquentiel par frappe.
+  const ratings =
+    opts.withRatings === false ? new Map() : await getRatingsForEvents(rows.map((r) => r.id))
   // Mieux notés d'abord (retour Rudy) ; la récence départage et classe les non-notés.
   return rows
     .map((r) => ({ ...r, rating: ratings.get(r.id) ?? null }))
