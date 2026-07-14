@@ -257,6 +257,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
                 {statusText}
               </Badge>
             )}
+            {/* Réseaux du membre (R8) — Instagram, Weverse… via le LinksBar. */}
+            <div className="mt-2">
+              <LinksBar links={member.links as Record<string, string> | null} compact />
+            </div>
           </div>
         </header>
 

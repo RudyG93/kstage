@@ -585,6 +585,7 @@ export type Database = {
           former_reason: string | null
           group_id: string
           id: string
+          links: Json | null
           photo_checked_at: string | null
           photo_source_key: string | null
           photo_url: string | null
@@ -601,6 +602,7 @@ export type Database = {
           former_reason?: string | null
           group_id: string
           id?: string
+          links?: Json | null
           photo_checked_at?: string | null
           photo_source_key?: string | null
           photo_url?: string | null
@@ -617,6 +619,7 @@ export type Database = {
           former_reason?: string | null
           group_id?: string
           id?: string
+          links?: Json | null
           photo_checked_at?: string | null
           photo_source_key?: string | null
           photo_url?: string | null
