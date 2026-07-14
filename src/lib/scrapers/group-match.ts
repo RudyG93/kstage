@@ -64,11 +64,24 @@ export function withinOneEdit(a: string, b: string): boolean {
   return edits + (l.length - j) + (s.length - i) <= 1
 }
 
+// Alias de noms de scène : un groupe peut REBRANDER (NOWADAYS → NOWZ) tout en
+// gardant des MVs YouTube — anciens ET nouveaux — titrés sous l'autre forme. On
+// matche alors le nom DB ET ses alias connus, sinon les futurs MVs ne
+// s'auto-attribuent plus (le nom stocké est « NOWZ » mais les titres disent
+// « NOWADAYS » — piège de couplage nom↔matching, 2026-07-14). Clés et valeurs
+// sont des noms NORMALISÉS (cf. normalize()). Bidirectionnel volontairement pour
+// rester robuste quel que soit le nom retenu en DB.
+const NAME_ALIASES: Record<string, string[]> = {
+  nowz: ['nowadays'],
+  nowadays: ['nowz'],
+}
+
 /**
  * Vérifie qu'un texte (titre vidéo) mentionne le groupe ciblé.
  * Comparaison après normalisation, donc tolérante aux variantes typographiques
  * courantes : "AESPA", "aespa", "(G)I-DLE", "BABYMONSTER (베이비몬스터)"...
  * Les crédits de featuring entre parenthèses sont ignorés (cf. FEATURING_RE).
+ * Le nom DB est testé avec ses alias connus (rebrand, cf. NAME_ALIASES).
  *
  * Renvoie false si `groupName` est vide ou si la normalisation produit une
  * chaîne vide (sinon n'importe quel texte matcherait).
@@ -77,12 +90,14 @@ export function matchesGroup(text: string, groupName: string | null | undefined)
   if (!groupName) return false
   const needle = normalize(groupName)
   if (!needle) return false
+  const needles = [needle, ...(NAME_ALIASES[needle] ?? [])]
   // 1) Titre éditorial (hashtags retirés, crédits feat. ignorés).
-  if (normalize(stripHashtags(text).replace(FEATURING_RE, ' ')).includes(needle)) return true
+  const editorial = normalize(stripHashtags(text).replace(FEATURING_RE, ' '))
+  if (needles.some((n) => editorial.includes(n))) return true
   // 2) Repli : un hashtag STRICTEMENT égal au nom du groupe compte (certaines
   //    chaînes officielles titrent « #ENHYPEN 'Knife' Official MV »). L'égalité
   //    est exacte, pas une inclusion : « #Dreamcatcher_UAU » ne matche PAS
   //    Dreamcatcher (c'est le tag maison d'un autre artiste du label).
   const hashtags = text.match(HASHTAG_RE) ?? []
-  return hashtags.some((h) => normalize(h) === needle)
+  return hashtags.some((h) => needles.some((n) => normalize(h) === n))
 }
