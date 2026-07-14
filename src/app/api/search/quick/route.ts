@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { searchMvs } from '@/lib/search/queries'
+import { searchMvs, searchMembers } from '@/lib/search/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 
 // Segment MVs du dropdown header. Les GROUPES sont désormais filtrés côté client
@@ -8,11 +8,20 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 // on économise un round-trip séquentiel par frappe.
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams.get('q')?.trim() ?? ''
-  if (q.length < 2) return NextResponse.json({ mvs: [] })
+  if (q.length < 2) return NextResponse.json({ members: [], mvs: [] })
 
-  const mvs = await searchMvs(q, 3, { withRatings: false })
+  const [members, mvs] = await Promise.all([
+    searchMembers(q, 3),
+    searchMvs(q, 3, { withRatings: false }),
+  ])
   return NextResponse.json(
     {
+      members: members.map((m) => ({
+        slug: m.slug,
+        name: m.stage_name,
+        group: m.groups?.name ?? null,
+        photo: m.photo_url,
+      })),
       mvs: mvs.map((m) => ({
         slug: m.slug,
         title: m.title,

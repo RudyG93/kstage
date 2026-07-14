@@ -256,3 +256,26 @@ export async function searchEvents(q: string, limit = 6) {
 }
 
 export type SearchEvent = Awaited<ReturnType<typeof searchEvents>>[number]
+
+const MEMBER_SELECT = 'id, slug, stage_name, real_name, photo_url, groups!inner(name, slug)'
+
+/**
+ * Recherche de MEMBRES par nom (R10 : « Karina », « Hanni »… étaient
+ * introuvables — la recherche n'indexait que groupes + MVs). Membres canoniques
+ * cliquables uniquement (`canonical_id is null`, slug non-null).
+ */
+export async function searchMembers(q: string, limit = 8) {
+  const needle = sanitizeIlike(q)
+  if (!needle) return []
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('members')
+    .select(MEMBER_SELECT)
+    .is('canonical_id', null)
+    .not('slug', 'is', null)
+    .or(`stage_name.ilike.%${needle}%,real_name.ilike.%${needle}%`)
+    .limit(limit)
+  return data ?? []
+}
+
+export type SearchMember = Awaited<ReturnType<typeof searchMembers>>[number]
