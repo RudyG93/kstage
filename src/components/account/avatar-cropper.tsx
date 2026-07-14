@@ -1,10 +1,26 @@
 'use client'
 
-import { useCallback, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
-import Cropper, { type Area } from 'react-easy-crop'
+import {
+  useCallback,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
+import dynamic from 'next/dynamic'
+import { type Area, type CropperProps } from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { downscaleToObjectURL, getCroppedBlob } from '@/lib/profiles/crop-image'
+
+// Chargé à la demande (lib lourde) : hors du bundle de la page account, importée
+// seulement quand on ouvre le cropper. ssr:false — pas de rendu serveur du canvas.
+// Cast : à travers `dynamic`, les defaultProps de react-easy-crop sont perdus et
+// TS exige toutes les props → on repasse aux props réellement optionnelles.
+const Cropper = dynamic(() => import('react-easy-crop'), {
+  ssr: false,
+}) as ComponentType<Partial<CropperProps> & { image: string }>
 
 export function AvatarCropper({
   onCropped,
@@ -17,6 +33,7 @@ export function AvatarCropper({
   triggerClassName?: string
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
   const [src, setSrc] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -32,11 +49,16 @@ export function AvatarCropper({
     setError(null)
     setCrop({ x: 0, y: 0 })
     setZoom(1)
-    // downscale d'abord → drag/zoom fluides même sur une grosse photo
+    setSrc(null)
+    // Ouvre la modale IMMÉDIATEMENT (spinner) puis décode : le downscale
+    // canvas d'une grosse photo bloque le thread → sans ça, rien n'apparaît
+    // pendant le décodage et l'ouverture paraît lente.
+    setOpen(true)
     setSrc(await downscaleToObjectURL(file))
   }
 
   function close() {
+    setOpen(false)
     if (src) URL.revokeObjectURL(src)
     setSrc(null)
     setAreaPixels(null)
@@ -78,15 +100,15 @@ export function AvatarCropper({
       />
 
       <Dialog
-        open={src !== null}
-        onOpenChange={(open) => {
-          if (!open) close()
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) close()
         }}
       >
         <DialogContent>
           <DialogTitle>Crop your avatar</DialogTitle>
           <div className="bg-muted relative mt-4 h-64 w-full overflow-hidden rounded-xl">
-            {src && (
+            {src ? (
               <Cropper
                 image={src}
                 crop={crop}
@@ -98,6 +120,10 @@ export function AvatarCropper({
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
               />
+            ) : (
+              <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                Loading…
+              </div>
             )}
           </div>
           <div className="mt-4 flex items-center gap-3">

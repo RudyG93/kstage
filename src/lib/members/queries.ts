@@ -1,4 +1,7 @@
+import { unstable_cache } from 'next/cache'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database'
 
 /**
  * Récupère un membre par son slug composite (`{groupSlug}-{stageName}`).
@@ -108,14 +111,24 @@ export function ageFromBirthday(
  * Bias du profil. `canonical_id is null` = identité actuelle ; `slug not null`
  * pour pouvoir lier vers /artists/[slug].
  */
-export async function getAllMembers() {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('members')
-    .select('id, slug, stage_name, photo_url, groups!inner(name)')
-    .is('canonical_id', null)
-    .not('slug', 'is', null)
-    .order('stage_name', { ascending: true })
-  if (error) throw error
-  return data ?? []
-}
+export const getAllMembers = unstable_cache(
+  async () => {
+    // Client anon sans cookies (requis par unstable_cache) : members = données
+    // publiques quasi statiques (~675 rows) sérialisées dans le payload du profil
+    // → cache 1h pour éviter le hit Supabase à chaque visite de profil.
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('members')
+      .select('id, slug, stage_name, photo_url, groups!inner(name)')
+      .is('canonical_id', null)
+      .not('slug', 'is', null)
+      .order('stage_name', { ascending: true })
+    if (error) throw error
+    return data ?? []
+  },
+  ['all-members'],
+  { revalidate: 3600, tags: ['members'] },
+)
