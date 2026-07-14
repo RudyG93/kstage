@@ -1,28 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/scrape-youtube",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/scrape-comebacks",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron/scrape-music-shows",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/send-digest",
-      "schedule": "45 5 * * *"
-    },
-    {
-      "path": "/api/cron/notify-comebacks",
-      "schedule": "30 8 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-images",
-      "schedule": "0 4 * * *"
-    }
-  ]
+  "crons": []
 }
