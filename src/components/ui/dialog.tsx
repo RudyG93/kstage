@@ -19,7 +19,11 @@ function DialogClose(props: DialogPrimitive.Close.Props) {
 function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.Props) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0" />
+      {/* Voile opaque SANS backdrop-blur : le blur plein écran se composait
+          par-dessus 2 autres backdrop-filter (header + bottom-bar) → jank
+          d'ouverture/fermeture sur TOUTES les modals. duration-150 borne le
+          fondu (Base UI attend la fin de l'anim avant de démonter). */}
+      <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 duration-150 data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0" />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         // max-h + overflow : un dialog fixed plus haut que le viewport est
@@ -27,7 +31,7 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
         // onglet Artist de « Contribute », audit 2026-07-10). 100dvh, pas
         // 100vh : la barre d'URL mobile mange la différence.
         className={cn(
-          'bg-card text-card-foreground border border-border fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl p-6 shadow-xl outline-none data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95',
+          'bg-card text-card-foreground border border-border fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl p-6 shadow-xl outline-none duration-150 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95',
           className,
         )}
         {...props}
