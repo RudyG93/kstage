@@ -45,6 +45,7 @@ const statusLabel = {
   active: null,
   former: 'Former member',
   pre_debut: 'Pre-debut',
+  deceased: 'In memoriam',
 } as const
 
 type CareerStep = Awaited<ReturnType<typeof getCareerPath>>[number]

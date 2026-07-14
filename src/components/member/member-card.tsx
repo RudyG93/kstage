@@ -25,7 +25,8 @@ export function MemberCard({
   const initial = member.stage_name.slice(0, 1).toUpperCase()
   const age = ageFromBirthday(member.birthday)
   const color = groupColorHex ?? '#888'
-  const isDimmed = member.status !== 'active'
+  // Les décédés ne sont PAS grisés (honorés à pleine présence, In memoriam).
+  const isDimmed = member.status !== 'active' && member.status !== 'deceased'
 
   const inner = (
     <>
@@ -78,7 +79,9 @@ export function MemberCard({
               ? (member.position ?? `${age} yrs`)
               : member.status === 'former'
                 ? 'Former'
-                : 'Pre-debut'}
+                : member.status === 'deceased'
+                  ? 'In memoriam'
+                  : 'Pre-debut'}
           </p>
         )}
       </div>
