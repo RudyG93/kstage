@@ -116,26 +116,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {isOwner && (
             <div className="flex shrink-0 items-center gap-1">
               {admin && (
-                <>
-                  <Link
-                    href="/admin/suggestions"
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-                  </Link>
-                  <Link
-                    href="/admin/feedback"
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    Feedback
-                  </Link>
-                  <Link
-                    href="/admin/debuts"
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    Debuts
-                  </Link>
-                </>
+                <Link href="/admin" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                  Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                </Link>
               )}
               <PushBell />
               <Link

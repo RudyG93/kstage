@@ -371,6 +371,7 @@ export type Database = {
           end_at: string | null
           episode_number: number | null
           group_id: string
+          hidden: boolean
           id: string
           image_url: string | null
           member_id: string | null
@@ -391,6 +392,7 @@ export type Database = {
           end_at?: string | null
           episode_number?: number | null
           group_id: string
+          hidden?: boolean
           id?: string
           image_url?: string | null
           member_id?: string | null
@@ -411,6 +413,7 @@ export type Database = {
           end_at?: string | null
           episode_number?: number | null
           group_id?: string
+          hidden?: boolean
           id?: string
           image_url?: string | null
           member_id?: string | null
