@@ -148,6 +148,14 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 - **Instagram groupes — restes** : 7 groupes sans IG (`select ... where links->>'instagram' is null and is_solo=false`) — 5 sous-unités/collabs (DK X Seungkwan, NCT JNJM, PJX, V8, ChaDongHyeop, sans IG dédié légitime) + **A.C.E et Highlight** (vrais groupes, pas de `{{Instagram}}` en infobox fandom → handles à poser à la main via `/admin/images`… non, via Studio/`groups.links`, l'éditeur admin ne fait que les photos membres).
 - **Réseaux solistes — scan fait (R8.1)** : `scripts/scan-soloist-socials.ts` a diffé les 33 solistes contre l'infobox fandom. **Seule Lisa était fausse** (corrigée). 7 « mismatches » écartés (comptes perso officiels stockés vs comptes fan/agence/anciens sur fandom — NE PAS écraser). Solar/kiseo/suction = sous-remplis (backfill optionnel, sources fandom conflictuelles pour solar `solarkeem`/`solarsido` → ne pas deviner).
 
+## Restes du round 10 (2026-07-14)
+
+- **⚠️ Action Rudy — secret `CRON_SECRET` GitHub** : les crons sont passés sur GitHub Actions (`.github/workflows/crons.yml`, `vercel.json` vidé). Ajouter le secret repo `CRON_SECRET` (= la var Vercel du même nom), puis un `workflow_dispatch 'scrape-music-shows'` pour confirmer. Sans lui, les crons GH renvoient 401 → aucun scraping (rattrapé au run suivant car idempotent). C'est ce qui **restaure les music shows** (0 futur actuellement).
+- **Parsing carrd music-show** : Music Bank arrive toujours par le fallback (0 numéro d'épisode), Inkigayo sous-capté par le primaire, The Show (ep 394) revenu mais non capté. Corriger `extractArtistsRaw`/`SECTION_PATTERNS` sur une fixture carrd fraîche. **Moot tant que le cron GH ne tourne pas** — à faire une fois `CRON_SECRET` posé.
+- **Rails sur le MV individuel** (`/mv/[slug]`) : différé (player full-bleed + comments realtime). `<PageRails>` réutilisable existe (appliqué à groupe + membre).
+- **Groupes créés R10 — compléter** : BADVILLAIN (0 membre, infobox non parsée), YOUNITE (sans source YT). me:I non ajouté (titre fandom différent). Les crons enrichissent les MVs ; membres/source manquants à compléter (admin/discover-mv-channels).
+- **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron. Surveiller `/admin/debuts` (les nugu y restent en pending). `ingestNamedGroups` pour tout ajout ciblé.
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.

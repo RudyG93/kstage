@@ -4,6 +4,17 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-14 (R10) — Socle scraping (groupes + crons) + pages membres + rails
+
+**4 retours Rudy, priorité au socle d'automatisation — 5 merges** (`feat/r10-gh-crons`, `feat/r10-groups`, `feat/r10-member-pages`, `feat/r10-rails`) :
+
+1. **Crons → GitHub Actions** (débloque le socle) : `vercel.json` avait **6 crons** ; Vercel Hobby plafonne leur nombre → 3 ne tournaient plus (music-shows/digest/notify silencieux depuis le 12/07, **0 music show futur**). `.github/workflows/crons.yml` (7 schedules UTC dont music-shows 2×/jour + `workflow_dispatch`) `curl` chaque endpoint avec `Authorization: Bearer CRON_SECRET`. `vercel.json` vidé (source unique, évite le double-run YT). Un run raté/sauté est désormais VISIBLE. **⚠️ Action Rudy** : ajouter le secret repo `CRON_SECRET`.
+2. **Groupes manquants (RESCENE…)** : cause racine — la découverte auto était **forward-only** (ne scannait que `Category:{annéeCourante}_debuts`) → RESCENE (2024)/PLAVE (2023)/UNIS·NEXZ jamais atteints ; et le gate laissait passer tout nugu d'une major (aucun signal de popularité → biais 2026). Fix `ingest.ts` : **backfill 2023-2025** (scan 796 pages vs ~100) + gate = date concrète ET **audience réelle** (subs YT ≥10k OU fans Deezer ≥5k, helper `deezerFans`). + `ingestNamedGroups()`/`scripts/roster/add-named-groups.ts` (ajout ciblé par nom → dossier complet `createFromPayload`). Prod : **14 groupes créés** avec dossier complet (RESCENE/PLAVE/UNIS/NEXZ + BADVILLAIN/KickFlip/CORTIS/Candy Shop/POW/Nowadays/YOUNITE/n.SSign/ARrC/AHOF), MVs au prochain scrape. 2 agences corrompues nettoyées (KISEO, QQQ — `field()` inline).
+3. **Pages membres vides + hors recherche** (reco : enrichir + indexer, pas revert) : **9 membres** avaient des MVs solo (`mv_kind='member'`) **stockés mais jamais affichés** → `getMemberMvs` + section « Solo releases ». Fullness : section « groupmates ». **Recherche** : `searchMembers()` + segment/panneau « Artists » sur `/search` + membres dans le dropdown header. « Karina », « Hanni »… enfin trouvables (le sitemap indexait déjà les 677 pages → incohérence interne). Vérifié navigateur (Karina cherchable + « aespa members » ; Heejin « Solo releases » + « ARTMS members »).
+4. **Rails latéraux** : `<PageRails>` (shell 3 colonnes réutilisable) appliqué aux pages groupe + membre — `SidebarLeft` (My groups, si connecté) + contenu + `SidebarRight` (recent comebacks + discussions). **Desktop-only** (`hidden lg:block`) → mobile garde la page seule, **hero full-bleed préservé** (vérifié : desktop rail à droite, mobile 0→375 edge-to-edge).
+
+**Vérifications** : tsc + 568 tests verts par lot ; CI verte ; **prod SQL** (14 groupes dossiers complets, agences nettoyées) ; **navigateur** (recherche membres, pages enrichies, rails desktop/mobile). **Différé** : parsing carrd music-show (numéros d'épisode Music Bank/Inkigayo/The Show — moot tant que le cron GH ne tourne pas → backlog) ; rails sur le MV individuel (player + comments realtime) ; me:I (titre fandom différent). **Action Rudy** : secret `CRON_SECRET` (sinon les crons GH renvoient 401).
+
 ## 2026-07-14 (R9) — Reste-à-faire : photos solistes, In memoriam, éditeurs admin
 
 **État des lieux du reste-à-faire (3 explorations) + 2 décisions Rudy (In memoriam OUI, Stripe reporté) — 3 merges** (`fix/r9-soloist-photos`, `feat/r9-in-memoriam`, `feat/r9-admin`) :
