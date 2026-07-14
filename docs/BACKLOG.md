@@ -136,6 +136,7 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 ## Prévention découverte de chaînes (R7, 2026-07-13)
 
 - **MVs sur chaîne d'agence** : les groupes debut auto-créés sont seedés avec leur seule chaîne perso — or les labels hébergent souvent les MVs (VAYONN→iNKODE corrigé + 6 autres). **À terme** : découverte périodique de chaînes pour tout groupe à catalogue fin (<3 MVs, debut_date récent) via `scripts/discover-mv-channels.ts`, seed auto des chaînes vérifiées (garde title-match). Pour l'instant : manuel quand signalé.
+  - ✅ **R11 (2026-07-14)** : passe manuelle sur les 8 nouveaux groupes à 0 MV → `discover-mv-channels` puis seed umbrella (`youtube-channels.json`) + backfill = **65 MVs** (NEXZ/KickFlip→JYP, YOUNITE→BRANDNEW, POW→GRID, BADVILLAIN→BPM, Nowadays→NOWZ, n.SSign→propre, Candy Shop→Brave). Confirme que la découverte auto pour groupe à catalogue fin vaut le coup d'être automatisée.
 - **Cas non résolus** (documentés) : CHASER (nom trop générique, aucune chaîne fiable au discover) ; SUCTION (MVs seulement sur 1theK dont la playlist uploads dépasse le cap API 20k — impaginables) ; MiiWAN (idole virtuelle, pas de chaîne officielle claire) ; AEN (pré-debut, 0 MV normal jusqu'au 05/08).
 
 ## Restes du round 8 (2026-07-14) — reportés en rounds dédiés
@@ -154,7 +155,11 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 - **⚠️ E2E réellement skippés en CI (découvert R10.1)** : le repo n'a **aucun secret/variable Actions au niveau repo** (à part `CRON_SECRET` posé). `ci.yml` gate l'E2E sur `vars.E2E_ENABLED == 'true'` qui n'existe pas → **les tests E2E ne s'exécutent pas** (le job est skippé, la CI passe quand même). Rudy croyait les avoir activés. À poser au bon endroit (Settings → Secrets and variables → Actions → Variables : `E2E_ENABLED=true` + Secrets : `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `E2E_AUTH_EMAIL/PASSWORD`) — avec un **compte test dédié** (creds actuelles = compte perso de Rudy).
 - **Parsing carrd music-show** : à la vérif R10.1, le carrd primaire a parsé les 6 shows **sans fallback** (`primary_ok`, Music Bank/Inkigayo/The Show captés) → le problème « Music Bank via fallback / Inkigayo 0 » était **intermittent** (contenu carrd variable), pas systématique. À re-surveiller ; pas de fix urgent.
 - **Rails sur le MV individuel** (`/mv/[slug]`) : différé (player full-bleed + comments realtime). `<PageRails>` réutilisable existe (appliqué à groupe + membre).
-- **Groupes créés R10 — compléter** : NEXZ/KickFlip/BADVILLAIN/Nowadays = 0 MV (MVs sur chaîne label → discover-mv-channels). BADVILLAIN 0 membre, YOUNITE sans source YT, me:I non ajouté. RESCENE/PLAVE/UNIS/CORTIS/ARrC/AHOF ont leurs MVs.
+- ~~**Groupes créés R10 — compléter**~~ → **FAIT R11 (2026-07-14)** : photos membres (`refresh --stale`, 88+5), MVs des 8 groupes label-channel (65 via seed umbrella + backfill), 18 bannières YT, membres BADVILLAIN (7) + NOWZ (5) insérés (classifiés person-vs-song). **Restes R11** :
+  - **7 membres sans photo** (BADVILLAIN Emma/INA/Vin/YunSeo, NOWZ Hyeonbin/Jinhyuk/Yeonwoo) : classe « page fandom sans pageimage » → non résoluble auto, saisie via `/admin/images`.
+  - **NOWZ ≠ « Nowadays »** : le groupe est en DB sous le nom « Nowadays » (slug `nowadays`) mais sa page fandom + ses membres sont catégorisés « NOWZ » → la garde de catégorie du résolveur photo rejette. À trancher : renommer le groupe en **NOWZ** (nom officiel Cube) ou ajouter un alias fandom. Ses 4 MVs + 5 membres sont déjà en base.
+  - **ARrC dissous** (fandom `years=2024–2026`, que des `former`) : optionnellement poser `disbanded_on` (pas de date précise trouvée) ; membres former non insérés. Groupe obscur, faible priorité.
+  - **me:I** non ajouté (titre fandom différent).
 - **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron `scrape-comebacks`. Surveiller `/admin/debuts`. `ingestNamedGroups` pour tout ajout ciblé.
 
 ## Ops manuelles en attente

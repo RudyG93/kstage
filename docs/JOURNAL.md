@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-14 (R11) — Récolte de données post-activation (photos, MVs, membres)
+
+**Le socle activé (R10.1), Rudy : « récupère les images de membres, leurs MV, les lineups quand c'est possible ». Récolte des trous que les crons ne ferment pas seuls, concentrée sur les 14 nouveaux groupes.** Pas de merge de code (hors `scripts/youtube-channels.json`) — l'essentiel est de la donnée en prod.
+
+- **Constat (scrape_log)** : les crons GH tournent déjà depuis le secret — `music_shows` 14:50/14:56 (32 events, carrd primaire OK, 6/6 lineups), `youtube_backfill` 14:43 (14 MVs). Donc **music shows = déjà auto** (rien à relancer ; les unmatched ASCENDER/IDID/UDTT = rookies absents de la DB). Le `refresh_images` de 04:05 tournait AVANT la création des groupes → leurs membres restaient sans photo.
+- **Photos membres** : `refresh-images-once --stale` (phase photos seule, `photo_source_key null`) → **88 photos résolues** (les ~66 nouveaux + résidus solistes), 3 misses. 2ᵉ passe après insertions membres : +5.
+- **MVs des groupes label-channel** : cause = le cron backfille la chaîne _propre_ du groupe, mais leurs clips vivent sur la chaîne du **label** (classe R7-2, `discover-mv-channels`). Découverte → seed umbrella (`youtube-channels.json` + `seed-youtube-sources`, pattern HYBE-×12, attribution par **filtre titre** `matchesGroup` — pas de flag `is_shared`) → backfill pleine profondeur (`pageCache` partage JYP entre NEXZ+KickFlip → 2 units). **65 MVs insérés** sur 8 groupes : NEXZ 13 (JYP), YOUNITE 12 (BRANDNEW), n.SSign 11, POW 9 (GRID), KickFlip 8 (JYP), BADVILLAIN 5 (BPM), Nowadays 4 (NOWZ), Candy Shop 3 (Brave). Les chaînes propres confirment 0 MV (clips bien sur le label).
+- **Bannières / images** : `refresh-images-once --photos=0` → **18 bannières YT 2560px** rafraîchies (nouveaux groupes à source YT). Spotify by-ID : 0 update (nouveaux groupes sans lien Spotify, gardent l'image fandom).
+- **Membres manquants** : 3 groupes à 0 membre — parse infobox échoué pour raisons **structurelles** (BADVILLAIN : champ `current=` vide, membres en table ; ARrC : que des `former`, groupe **dissous** 2024–2026 ; Nowadays : page réelle = « NOWZ », pas « Nowadays »). Extraction fiabilisée : **classification person-vs-song par infobox** (le suffixe `(GROUPE)` capte aussi les pages de titres — Thriller/Hurricane/Ignition écartés). **12 membres insérés** (BADVILLAIN 7, NOWZ 5) via la forme `createFromPayload`, idempotent par (group_id, stage_name). 5 photos résolues ; 7 misses = classe connue « page fandom sans pageimage » (→ éditeur admin). ARrC laissé tel quel (dissous, pas de date précise à inventer).
+
+**Vérification (prod SQL)** : 11 des 14 nouveaux groupes ont roster **complet + photos** (AHOF 9/9, NEXZ 7/7, UNIS 7/7, YOUNITE 7/7, KickFlip 6/6, CORTIS/PLAVE/RESCENE/POW 5/5, Candy Shop 4/4, n.SSign 7/7) ; les 14 ont des MVs sauf ARrC (dissous). **Résiduels documentés** : 7 membres BADVILLAIN/NOWZ sans pageimage (admin) ; ARrC dissous ; NOWZ nom/catégorie fandom ≠ « Nowadays » (photos non résolues → renommer en NOWZ ou alias à décider). **Sécurité** : aucun cron d'envoi (`send-digest`/`notify-comebacks`) déclenché, aucun E2E activé, `seed-roster` non touché.
+
 ## 2026-07-14 (R10) — Socle scraping (groupes + crons) + pages membres + rails
 
 **4 retours Rudy, priorité au socle d'automatisation — 5 merges** (`feat/r10-gh-crons`, `feat/r10-groups`, `feat/r10-member-pages`, `feat/r10-rails`) :

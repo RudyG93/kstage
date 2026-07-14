@@ -1238,5 +1238,81 @@
         "url": "https://www.youtube.com/@bigbang"
       }
     ]
+  },
+  {
+    "slug": "nexz",
+    "channels": [
+      {
+        "name": "NEXZ · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
+    ]
+  },
+  {
+    "slug": "kickflip",
+    "channels": [
+      {
+        "name": "KickFlip · JYP Entertainment",
+        "url": "https://www.youtube.com/@JYPEntertainment"
+      }
+    ]
+  },
+  {
+    "slug": "badvillain",
+    "channels": [
+      {
+        "name": "BADVILLAIN · BPM Entertainment",
+        "url": "https://www.youtube.com/@bpmentertainment-official"
+      }
+    ]
+  },
+  {
+    "slug": "younite",
+    "channels": [
+      {
+        "name": "YOUNITE · BRANDNEW MUSIC",
+        "url": "https://www.youtube.com/@brandnewmusic_official"
+      },
+      {
+        "name": "YOUNITE · YOUNITE",
+        "url": "https://www.youtube.com/@youniteofficial"
+      }
+    ]
+  },
+  {
+    "slug": "pow",
+    "channels": [
+      {
+        "name": "POW · GRID Entertainment",
+        "url": "https://www.youtube.com/@gridentertainment"
+      }
+    ]
+  },
+  {
+    "slug": "nowadays",
+    "channels": [
+      {
+        "name": "Nowadays · NOWZ",
+        "url": "https://www.youtube.com/@cube_nowz"
+      }
+    ]
+  },
+  {
+    "slug": "n-ssign",
+    "channels": [
+      {
+        "name": "n.SSign · nSSign",
+        "url": "https://www.youtube.com/@nssign_official"
+      }
+    ]
+  },
+  {
+    "slug": "candy-shop",
+    "channels": [
+      {
+        "name": "Candy Shop · Brave Entertainment",
+        "url": "https://www.youtube.com/@braveentertainment"
+      }
+    ]
   }
 ]
