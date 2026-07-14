@@ -46,7 +46,7 @@ export function SearchInput() {
         onChange={(e) => onChange(e.target.value)}
         placeholder="Groups, MVs, events…"
         aria-label="Search"
-        className="placeholder:text-faint w-full bg-transparent text-sm outline-none [&::-webkit-search-cancel-button]:hidden"
+        className="placeholder:text-faint w-full bg-transparent text-base outline-none md:text-sm [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button

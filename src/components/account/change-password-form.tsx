@@ -7,7 +7,7 @@ import { updatePassword, type AuthResult } from '@/lib/auth/actions'
 import { PASSWORD_MIN } from '@/lib/auth/validation'
 
 const inputClass =
-  'h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/30'
+  'h-9 w-full rounded-lg border bg-background px-3 text-base md:text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/30'
 
 function ErrorBanner({ children }: { children: string }) {
   return (

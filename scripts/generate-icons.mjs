@@ -28,8 +28,8 @@ const markup = (
 ) => `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="k" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8b5cff" />
-      <stop offset="1" stop-color="#ff2d87" />
+      <stop offset="0" stop-color="#5b5bf0" />
+      <stop offset="1" stop-color="#3fe0b8" />
     </linearGradient>
   </defs>
   <rect width="100" height="100" fill="url(#k)" />
