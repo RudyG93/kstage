@@ -3,10 +3,10 @@
  *   1. DÉTECTION  : Category:{YYYY}_debuts sur kpop.fandom (diff contre
  *      debut_candidates, idempotence par fandom_pageid).
  *   2. GATE       : auto-création SEULEMENT si date de debut concrète ET un
- *      signal de notabilité — liste Wikipedia OU chaîne YouTube vérifiée
- *      (forHandle, ≥ 10k subs) OU label déjà présent dans groups.agency.
- *      Le reste part en revue admin (/admin/debuts) : pas de re-création du
- *      problème « pages vides » que le page-pruning vient de résoudre.
+ *      signal d'AUDIENCE réel — chaîne YouTube vérifiée (forHandle, ≥ 10k subs)
+ *      OU fans Deezer ≥ 5k (R10 : plus de « label déjà en base » seul, qui
+ *      laissait passer tout nugu d'une major). Le reste part en revue admin
+ *      (/admin/debuts). Scan BACKFILLÉ sur les 3 années passées + année courante.
  *   3. CRÉATION   : groups + members (lineup annoncé, actifs) + source
  *      youtube_api vérifiée (le cron scrape-youtube prend le relais) + event
  *      release « {name} debut » — les crons existants (kpopofficial,
