@@ -150,11 +150,12 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 
 ## Restes du round 10 (2026-07-14)
 
-- **⚠️ Action Rudy — secret `CRON_SECRET` GitHub** : les crons sont passés sur GitHub Actions (`.github/workflows/crons.yml`, `vercel.json` vidé). Ajouter le secret repo `CRON_SECRET` (= la var Vercel du même nom), puis un `workflow_dispatch 'scrape-music-shows'` pour confirmer. Sans lui, les crons GH renvoient 401 → aucun scraping (rattrapé au run suivant car idempotent). C'est ce qui **restaure les music shows** (0 futur actuellement).
-- **Parsing carrd music-show** : Music Bank arrive toujours par le fallback (0 numéro d'épisode), Inkigayo sous-capté par le primaire, The Show (ep 394) revenu mais non capté. Corriger `extractArtistsRaw`/`SECTION_PATTERNS` sur une fixture carrd fraîche. **Moot tant que le cron GH ne tourne pas** — à faire une fois `CRON_SECRET` posé.
+- ~~**Action Rudy — secret `CRON_SECRET` GitHub**~~ → **FAIT (2026-07-14)** : posé en secret repo Actions (via l'API, autorisé par Rudy — il l'avait mis au mauvais endroit). Le workflow `Scheduled scrapers` termine `success`. Music shows **restaurés** (curl direct + cron : 32 events, The Show ep 394 récupéré, carrd primaire OK sur les 6 shows sans fallback). Les crons quotidiens GH Actions tournent désormais.
+- **⚠️ E2E réellement skippés en CI (découvert R10.1)** : le repo n'a **aucun secret/variable Actions au niveau repo** (à part `CRON_SECRET` posé). `ci.yml` gate l'E2E sur `vars.E2E_ENABLED == 'true'` qui n'existe pas → **les tests E2E ne s'exécutent pas** (le job est skippé, la CI passe quand même). Rudy croyait les avoir activés. À poser au bon endroit (Settings → Secrets and variables → Actions → Variables : `E2E_ENABLED=true` + Secrets : `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `E2E_AUTH_EMAIL/PASSWORD`) — avec un **compte test dédié** (creds actuelles = compte perso de Rudy).
+- **Parsing carrd music-show** : à la vérif R10.1, le carrd primaire a parsé les 6 shows **sans fallback** (`primary_ok`, Music Bank/Inkigayo/The Show captés) → le problème « Music Bank via fallback / Inkigayo 0 » était **intermittent** (contenu carrd variable), pas systématique. À re-surveiller ; pas de fix urgent.
 - **Rails sur le MV individuel** (`/mv/[slug]`) : différé (player full-bleed + comments realtime). `<PageRails>` réutilisable existe (appliqué à groupe + membre).
-- **Groupes créés R10 — compléter** : BADVILLAIN (0 membre, infobox non parsée), YOUNITE (sans source YT). me:I non ajouté (titre fandom différent). Les crons enrichissent les MVs ; membres/source manquants à compléter (admin/discover-mv-channels).
-- **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron. Surveiller `/admin/debuts` (les nugu y restent en pending). `ingestNamedGroups` pour tout ajout ciblé.
+- **Groupes créés R10 — compléter** : NEXZ/KickFlip/BADVILLAIN/Nowadays = 0 MV (MVs sur chaîne label → discover-mv-channels). BADVILLAIN 0 membre, YOUNITE sans source YT, me:I non ajouté. RESCENE/PLAVE/UNIS/CORTIS/ARrC/AHOF ont leurs MVs.
+- **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron `scrape-comebacks`. Surveiller `/admin/debuts`. `ingestNamedGroups` pour tout ajout ciblé.
 
 ## Ops manuelles en attente
 
