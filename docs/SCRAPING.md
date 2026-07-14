@@ -398,6 +398,20 @@ Cette méthode a évité l'erreur du PR-B initial où on avait choisi `@theunite
 3. **Validation** : pour chaque chaîne candidate top-3, faire `search.list?channelId=X&q="${artist}"&maxResults=10` et compter combien de résultats. Une chaîne avec ≥3 résultats `q="${artist}"` est très probablement la bonne.
 4. **Output humain** : afficher les 3 candidates avec name, handle, count, et liens directs vers la chaîne (`youtube.com/channel/<id>`). L'opérateur (Rudy) confirme et le script fait l'INSERT en DB.
 
+### Runbook « compléter un groupe à 0 MV » (fait R11, 2026-07-14)
+
+Le script existe : **`scripts/discover-mv-channels.ts slug1,slug2`** (histogramme des `channelId` sur `search.list q="{name} MV"`). Cas typique : un groupe debut auto-créé n'a QUE sa chaîne perso seedée, mais ses clips vivent sur la **chaîne du label** (NEXZ/KickFlip→JYP, YOUNITE→BRANDNEW, POW→GRID, BADVILLAIN→BPM, Candy Shop→Brave). Enchaînement :
+
+1. `discover-mv-channels.ts <slugs>` → identifie la vraie chaîne hôte (la plus fréquente ; ignorer les homonymes — « Nowadays » ramenait Lil Skies/PnB Rock, « Candy Shop » ramenait 50 Cent).
+2. Ajouter le mapping dans `scripts/youtube-channels.json` (respecter la **casse existante** de l'URL umbrella : `@JYPEntertainment` déjà utilisé par 6 groupes) → `seed-youtube-sources.ts`.
+3. `backfill-youtube.ts --slugs=… --max-pages=0` : l'**attribution est par filtre-titre** (`matchesGroup`, §3.10) — pas de flag `is_shared`, le même `@JYPEntertainment` sert N groupes, chacun ne garde que ses titres. Le `pageCache` partage la playlist umbrella entre sources d'un run (JYP paginé 1×, KickFlip = 2 units). **65 MVs** récoltés en R11.
+
+⚠️ **Couplage nom-de-groupe ↔ matching MV** (piège R11) : `matchesGroup` exige que **le nom DB du groupe apparaisse dans le titre du MV**. Renommer un groupe dont les MVs portent un autre libellé casse l'ingestion future — ex. « NOWZ » renommé alors que les clips sont titrés « NOWADAYS(나우어데이즈) » → `matchesGroup` échoue, futurs MVs manqués. Avant de renommer un groupe : vérifier que le nouveau nom est un sous-mot des titres de ses MVs, sinon prévoir un alias.
+
+### Extraction fiable des membres depuis fandom (piège R11)
+
+Quand l'infobox n'a pas de champ `current`/`members` exploitable (BADVILLAIN : champ vide, membres en table ; ARrC : que `former`, groupe dissous ; page au mauvais titre : « Nowadays » → réel « NOWZ ») : extraire les liens `[[Nom (GROUPE)]]` **ne suffit pas** — le suffixe désambiguïsateur `(GROUPE)` capte AUSSI les **pages de titres/singles** (« Thriller (BADVILLAIN) », « Ignition (NOWZ) » sont des chansons). **Classer chaque candidat person-vs-song par les marqueurs de son infobox** (`birthday`/`birth_name`/`position`/`height` = personne ; `released`/`length`/`producer` = chanson) AVANT d'insérer. Insert via la forme `createFromPayload` (`group_id`, `stage_name` sans `(…)`, `status`, `slug=${groupSlug}-${slugify(name)}`), idempotent par `(group_id, stage_name)`.
+
 ### Fallback Google search
 
 Pour artistes très obscurs où YouTube search ranke mal : Google `"${artist} Official Music Video" site:youtube.com`. Récupérer un videoId. oembed pour identifier la chaîne. Vérifier par recherche `q="${artist}"` sur cette chaîne.
