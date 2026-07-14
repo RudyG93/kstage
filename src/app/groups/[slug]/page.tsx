@@ -18,6 +18,7 @@ import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/qu
 import { formatDDay, isFutureDate } from '@/lib/events/date'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
+import { PageRails } from '@/components/layout/page-rails'
 import { createClient } from '@/lib/supabase/server'
 
 export async function generateMetadata({
@@ -83,15 +84,18 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   const memorialMembers = members.filter((m) => m.status === 'deceased')
   const inactiveMembers = members.filter((m) => m.status !== 'active' && m.status !== 'deceased')
 
-  // Bias du viewer → ring dorée dans le rail membres (§7.6.5).
+  // Bias du viewer → ring dorée dans le rail membres (§7.6.5). + tier pour le
+  // rail « My groups » (R10) — même fetch profil.
   let biasMemberId: string | null = null
+  let tier: 'free' | 'premium' | null = null
   if (user) {
     const { data: viewerProfile } = await supabase
       .from('profiles')
-      .select('bias_member_id')
+      .select('bias_member_id, tier')
       .eq('id', user.id)
       .maybeSingle()
     biasMemberId = viewerProfile?.bias_member_id ?? null
+    tier = viewerProfile?.tier ?? 'free'
   }
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
@@ -121,7 +125,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   ].filter(Boolean)
 
   return (
-    <div className="mx-auto w-full max-w-3xl md:px-4 md:py-6">
+    <PageRails tier={tier}>
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -257,6 +261,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           )}
         </div>
       </div>
-    </div>
+    </PageRails>
   )
 }
