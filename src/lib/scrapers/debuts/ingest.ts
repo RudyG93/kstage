@@ -25,7 +25,35 @@ type SupabaseClient = ReturnType<typeof createClient<Database>>
 // 1 requête/page). En régime établi : 0-2 nouvelles pages/jour.
 const MAX_PARSES_PER_RUN = 12
 const MIN_YT_SUBS = 10_000
+// Seuil de popularité Deezer (aligné sur build-roster MIN_FANS). Le gate exige
+// désormais un signal d'AUDIENCE réel (YT subs OU fans Deezer) — l'ancien
+// « label déjà en base » laissait passer tout nugu d'une major (biais 2026).
+const MIN_DEEZER_FANS = 5_000
 const GROUP_PHOTO_BUCKET = 'group-photos'
+const UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+
+/** Fans Deezer d'un artiste (match exact du nom, meilleur nb_fan) — signal de popularité du gate. */
+async function deezerFans(name: string): Promise<number> {
+  try {
+    const res = await fetch(
+      `https://api.deezer.com/search/artist?limit=5&q=${encodeURIComponent(name)}`,
+    )
+    if (!res.ok) return 0
+    const items = ((await res.json()) as { data?: { name: string; nb_fan: number }[] }).data ?? []
+    const n = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[^a-z0-9]/g, '')
+    return (
+      items.filter((a) => a?.name && n(a.name) === n(name)).sort((a, b) => b.nb_fan - a.nb_fan)[0]
+        ?.nb_fan ?? 0
+    )
+  } catch {
+    return 0
+  }
+}
 
 export interface DebutCandidatePayload {
   name: string
@@ -194,6 +222,75 @@ export async function createFromPayload(
   return { groupId: group.id }
 }
 
+/**
+ * Ajout CIBLÉ de groupes par NOM (hors scan de catégorie) — pour rattraper
+ * immédiatement des groupes populaires précis (RESCENE, PLAVE…) sans attendre
+ * que le backfill alphabétique du cron y arrive. Résout la page fandom par
+ * recherche, réutilise le MÊME dossier complet (createFromPayload : group +
+ * members + source YT + event debut). Non-destructif (skip si déjà en base).
+ */
+export async function ingestNamedGroups(
+  supabase: SupabaseClient,
+  names: string[],
+  opts: { youtubeKey?: string } = {},
+): Promise<{ created: string[]; skipped: { name: string; reason: string }[] }> {
+  const created: string[] = []
+  const skipped: { name: string; reason: string }[] = []
+  const { data: existingGroups } = await supabase.from('groups').select('name')
+  const knownNames = new Set((existingGroups ?? []).map((g) => normalizeDebutName(g.name)))
+  const wikipediaNames = await fetchWikipediaDebutNames(new Date().getUTCFullYear())
+
+  for (const name of names) {
+    if (knownNames.has(normalizeDebutName(name))) {
+      skipped.push({ name, reason: 'already-in-db' })
+      continue
+    }
+    let pageids: number[] = []
+    try {
+      const res = await fetch(
+        `https://kpop.fandom.com/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(name)}&srlimit=5`,
+        { headers: { 'User-Agent': UA } },
+      )
+      pageids =
+        ((await res.json()) as { query?: { search?: { pageid: number }[] } }).query?.search?.map(
+          (s) => s.pageid,
+        ) ?? []
+    } catch {
+      skipped.push({ name, reason: 'search-failed' })
+      continue
+    }
+
+    let handled = false
+    for (const pageid of pageids) {
+      const { infobox } = await fetchInfobox(pageid)
+      if (!infobox?.name || normalizeDebutName(infobox.name) !== normalizeDebutName(name)) continue
+      const ytVerified =
+        infobox.youtubeHandle && opts.youtubeKey
+          ? await verifyYouTubeHandle(infobox.youtubeHandle, opts.youtubeKey)
+          : null
+      const imageUrl = infobox.imageFile ? await resolveImageUrl(infobox.imageFile) : null
+      const out = await createFromPayload(supabase, {
+        name: infobox.name,
+        debutDate: infobox.debutDate,
+        label: infobox.label,
+        members: infobox.members,
+        youtubeHandle: infobox.youtubeHandle,
+        instagram: infobox.instagram,
+        imageUrl,
+        wikipediaListed: wikipediaNames.has(normalizeDebutName(infobox.name)),
+        ytVerified,
+        fandomUrl: `https://kpop.fandom.com/wiki/${encodeURIComponent(infobox.name.replace(/ /g, '_'))}`,
+      })
+      if ('groupId' in out) created.push(infobox.name)
+      else skipped.push({ name, reason: out.error })
+      handled = true
+      break
+    }
+    if (!handled) skipped.push({ name, reason: 'no-infobox-match' })
+  }
+  return { created, skipped }
+}
+
 export async function ingestDebuts(
   supabase: SupabaseClient,
   opts: { youtubeKey?: string; nowMs?: number } = {},
@@ -209,10 +306,23 @@ export async function ingestDebuts(
     errors: [],
   }
 
-  // Année courante KST (+ rollover : dès novembre, on surveille aussi N+1).
+  // Année courante KST (+ rollover : dès novembre, on surveille aussi N+1) ET
+  // BACKFILL des 3 années passées : la découverte était forward-only, donc les
+  // groupes actifs/populaires débutés 2023-2025 (RESCENE, PLAVE, UNIS, NEXZ)
+  // n'étaient JAMAIS atteints (leur Category:{année}_debuts n'était pas scannée).
+  // Idempotent (fandom_pageid), borné par MAX_PARSES_PER_RUN ; le seuil de
+  // popularité (ci-dessous) écarte les nugu de ces cohortes.
   const kstYear = new Date(nowMs + 9 * 3600_000).getUTCFullYear()
   const kstMonth = new Date(nowMs + 9 * 3600_000).getUTCMonth() + 1
-  const years = kstMonth >= 11 ? [kstYear, kstYear + 1] : [kstYear]
+  const years = [
+    ...new Set([
+      kstYear - 3,
+      kstYear - 2,
+      kstYear - 1,
+      kstYear,
+      ...(kstMonth >= 11 ? [kstYear + 1] : []),
+    ]),
+  ]
 
   const members: { pageid: number; title: string }[] = []
   for (const y of years) {
@@ -234,13 +344,8 @@ export async function ingestDebuts(
 
   const [wikipediaNames, { data: existingGroups }] = await Promise.all([
     fetchWikipediaDebutNames(kstYear),
-    supabase.from('groups').select('name, agency'),
+    supabase.from('groups').select('name'),
   ])
-  const knownAgencies = new Set(
-    (existingGroups ?? [])
-      .map((g) => g.agency?.toLowerCase().trim())
-      .filter((a): a is string => !!a),
-  )
   const knownNames = new Set((existingGroups ?? []).map((g) => normalizeDebutName(g.name)))
 
   for (const page of fresh.slice(0, MAX_PARSES_PER_RUN)) {
@@ -286,11 +391,14 @@ export async function ingestDebuts(
         fandomUrl,
       }
 
-      const notable =
-        payload.wikipediaListed ||
-        (ytVerified !== null && ytVerified.subs >= MIN_YT_SUBS) ||
-        (payload.label !== null && knownAgencies.has(payload.label.toLowerCase().trim()))
-      const autoCreate = payload.debutDate !== null && notable
+      // Gate = date concrète ET signal d'AUDIENCE réel : subs YouTube ≥ 10k OU
+      // fans Deezer ≥ 5k. On abandonne « label déjà en base » (laissait passer
+      // tout nugu d'une major → biais 2026). wikipediaListed reste au payload
+      // pour la revue admin mais ne suffit plus (Wikipedia liste trop largement).
+      const deezerFanCount = await deezerFans(payload.name)
+      const audience =
+        (ytVerified !== null && ytVerified.subs >= MIN_YT_SUBS) || deezerFanCount >= MIN_DEEZER_FANS
+      const autoCreate = payload.debutDate !== null && audience
 
       let groupId: string | null = null
       if (autoCreate) {
