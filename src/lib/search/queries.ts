@@ -175,6 +175,7 @@ export async function searchMvs(q: string, limit = 6, opts: { withRatings?: bool
       .select(MV_SELECT)
       .eq('type', 'mv')
       .eq('mv_kind', 'main')
+      .eq('hidden', false)
       .in('group_id', groupIds)
     for (const t of titleTokens) query = query.ilike('title', `%${t}%`)
     const { data } = await query.order('start_at', { ascending: false }).limit(limit * 2)
@@ -188,6 +189,7 @@ export async function searchMvs(q: string, limit = 6, opts: { withRatings?: bool
         .select(MV_SELECT)
         .eq('type', 'mv')
         .eq('mv_kind', 'main')
+        .eq('hidden', false)
         .ilike('title', `%${needle}%`)
         .order('start_at', { ascending: false })
         .limit(limit),
@@ -196,6 +198,7 @@ export async function searchMvs(q: string, limit = 6, opts: { withRatings?: bool
         .select(MV_SELECT)
         .eq('type', 'mv')
         .eq('mv_kind', 'main')
+        .eq('hidden', false)
         .ilike('groups.name', `%${needle}%`)
         .order('start_at', { ascending: false })
         .limit(limit),
@@ -235,7 +238,12 @@ export async function searchEvents(q: string, limit = 6) {
   const { groupIds, titleTokens } = resolveGroupTokens(tokens, await allGroupRefs())
 
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
-  let query = supabase.from('events').select(EVENT_SELECT).neq('type', 'mv').gte('start_at', since)
+  let query = supabase
+    .from('events')
+    .select(EVENT_SELECT)
+    .neq('type', 'mv')
+    .eq('hidden', false)
+    .gte('start_at', since)
   if (groupIds.length > 0) {
     // « Music Bank aespa » → events d'aespa dont le titre contient music ET bank.
     query = query.in('group_id', groupIds)

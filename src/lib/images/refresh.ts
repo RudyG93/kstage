@@ -477,6 +477,9 @@ export async function refreshMemberPhotos(
     }
 
     for (const m of batch) {
+      // Override admin : une photo posée manuellement (éditeur /admin/images,
+      // photo_source_key='admin') n'est jamais écrasée par le cron fandom.
+      if (m.photo_source_key === 'admin') continue
       summary.checked++
       const groupKey = norm(m.groups.name)
       let source = m.fandomTitles
