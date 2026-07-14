@@ -40,10 +40,12 @@ jobs:
 
   # E2E Playwright. Désactivé par défaut : les specs ont besoin d'un vrai backend
   # Supabase (landing/calendar lisent la DB) + d'un compte test pour le golden
-  # path auth. Pour l'activer une fois les secrets posés : définir la variable
-  # de repo `E2E_ENABLED=true` et les secrets `NEXT_PUBLIC_SUPABASE_URL`,
-  # `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `E2E_AUTH_EMAIL`, `E2E_AUTH_PASSWORD`
-  # (sinon le golden path auth se skip proprement, les smoke restent).
+  # path auth. Pour l'activer, tout doit être au niveau REPOSITORY (pas
+  # « Environment » : une variable d'env n'est PAS lisible dans un `if:` de job) :
+  #   - Variables repo : E2E_ENABLED=true, NEXT_PUBLIC_SUPABASE_URL,
+  #     NEXT_PUBLIC_SUPABASE_ANON_KEY (publiques), E2E_AUTH_EMAIL.
+  #   - Secret repo : E2E_AUTH_PASSWORD.
+  # Le golden path auth se skip proprement si les creds manquent ; les smoke restent.
   e2e:
     if: ${{ vars.E2E_ENABLED == 'true' }}
     runs-on: ubuntu-latest
@@ -69,13 +71,13 @@ jobs:
       - name: Build (production)
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Playwright E2E
         run: npm run test:e2e
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          E2E_AUTH_EMAIL: ${{ secrets.E2E_AUTH_EMAIL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          E2E_AUTH_EMAIL: ${{ vars.E2E_AUTH_EMAIL }}
           E2E_AUTH_PASSWORD: ${{ secrets.E2E_AUTH_PASSWORD }}
