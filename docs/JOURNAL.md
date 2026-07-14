@@ -4,6 +4,24 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-14 (R8) — Round 8 : bugs data (Lisa/ARTMS/anniversaires), réseaux membres, perf mobile, zoom input, logo
+
+**11 retours Rudy + 3 décisions produit — 5 merges (`feat/r8-data-fixes`, `feat/r8-socials`, `feat/r8-mobile-pwa`, `chore favicon`, `perf/r8-mobile`)** :
+
+1. **Lisa = LiSA japonaise (bug de lien seedé, pas de fetch)** : `groups.links.spotify` du slug `lisa` pointait `0blbVefuxOGltDBa00dspv` = **LiSA** (chanteuse Demon Slayer). La garde de nom `spotifyNameMatches` NE PEUT PAS l'attraper (les deux se normalisent en « lisa »). Corrigé vers le vrai ID BLACKPINK (`5L1lO4eRHmJ7a0Q6csE5cT`), image re-fetchée. Balayage phase-1 des homonymes = 0 autre mismatch.
+2. **Faux MVs ARTMS (classe vlog)** : 3 rows `type='mv'` étaient des vlogs (« MV 속 Club Icarus… EN JP CN ») passés car « MV » dans le titre. `is-official-mv.ts` durci de **7 règles blacklist ciblées** (content-tag « EN JP CN », « MV shoot », « Let's Play », « MV time », vlog maquillage 메이크업, « funniest », jalons de vues 돌파/달성/공약). **Pas de règle emoji** (elle cassait ROSÉ « F1® » et TXT « LO$ER=LO♡ER » — ® et ♡ sont Extended_Pictographic). Balayage prod : **21 faux MVs purgés** (ARTMS ×3 + tripleS, MCND Let's Play, TRI.BE jalons…), 0 faux positif. 8 titres réels ajoutés en tests de régression.
+3. **Anniversaires en double (soliste = membre)** : Hwasa/MAMAMOO, Lisa, Solar… ont **2 rows membre** (groupe + solo `is_solo`) même date → 2 anniversaires. `dedupePersons()` dans `anniversaries.ts` déduplique par `normalize(stage_name)|MM-DD`, garde la row du groupe non-solo. Vérifié : Hwasa → 1 anniversaire. `is_solo` ajouté aux selects (+ route iCal).
+4. **Réseaux mal affichés (ZB1 « sans Instagram »)** : ZB1 **avait** son IG en base — c'est l'affichage : `StatsStrip` → `<LinksBar compact>` plafonnait à 6 icônes streaming-first → réseaux coupés. Ajout `COMPACT_PRIORITY` (spotify, IG, YouTube, Weverse, TikTok, Twitter…), cap 6→8. **18 groupes** manquaient vraiment l'IG → backfill fandom en a récupéré 9.
+5. **Réseaux des membres (feature)** : migration `members.links jsonb` (0047), rendu via `LinksBar compact` sur la page artiste, **member cards re-navigables** (`<Link>`), Weverse ajouté aux ENTRIES (icône SVG custom, `SiWeverse` absent du pack). Backfill Instagram par page membre fandom : **314 membres** dotés. Weverse = manuel plus tard (décision : aucune source structurée, 0/150 groupes).
+6. **Photos LE SSERAFIM** : candidats de titre `real_name` ajoutés à `refresh.ts` (Sakura → « Miyawaki Sakura »). Sakura résolue ; Kim Chaewon reste (page « Kim Chae-won » à tiret) → photo actuelle conservée.
+7. **Zoom recherche mobile (iOS)** : inputs < 16px zooment au focus. Champs recherche (14/12px) + auth/account + feedback → `text-base md:text-sm` (16px mobile). **Pas** de `maximum-scale` (a11y WCAG 1.4.4).
+8. **Logo incohérent desktop/mobile** : 3 artworks « K » divergents. `generate-icons.mjs` alignée sur `icon.svg` (gradient periwinkle→teal = `--primary`), PNG PWA/apple/badge régénérés, `favicon.ico` périmé (22 mai) retiré → Next retombe sur `icon.svg`.
+9. **Perf mobile** : le changement de mois refetchait les ~150 groupes NON cachés (nav RSC) → `getGroupsCached`. La recherche tapait Supabase 3× par frappe pour la liste groupes → `unstable_cache` (anon, 1h, tag `groups`). Hero home : `unoptimized` retiré (i.ytimg.com whitelisté) → webp redimensionné + `priority` (LCP). Nav month full-client reportée (backlog, gain marginal une fois les groupes cachés).
+
+**Décisions produit (AskUserQuestion)** : ① **Monétisation** = abonnement **2,99€ à avantages, zéro pub** (Stripe, round dédié). ② **Admin** = **Supabase Studio** (CRUD brut, dispo maintenant) + éditeurs in-app ciblés (round dédié — surface privilégiée à ne pas bâcler). ③ **Weverse membres** = manuel plus tard.
+
+**Vérifications** : 568 tests + tsc verts à chaque lot ; CI verte (A/B+C/E+F/favicon `success`) ; **prod SQL** : Lisa bon ID + image fraîche, ZB1 IG visible, Hwasa 2 rows (dédup query-time), 314 membres avec réseaux, ARTMS vlogs purgés. **Reportés (round dédié)** : Lot G éditeurs admin in-app, Lot H abonnement Stripe.
+
 ## 2026-07-13 (soir, R7) — Round 7 : MVs sur chaîne d'agence (VAYONN), carte MV revert, fil commentaires, fix trending
 
 **3 retours Rudy + 1 bug latent trouvé — 3 commits mergés (`feat/r7-polish`) + data** :

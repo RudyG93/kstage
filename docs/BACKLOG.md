@@ -138,6 +138,15 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `pro
 - **MVs sur chaîne d'agence** : les groupes debut auto-créés sont seedés avec leur seule chaîne perso — or les labels hébergent souvent les MVs (VAYONN→iNKODE corrigé + 6 autres). **À terme** : découverte périodique de chaînes pour tout groupe à catalogue fin (<3 MVs, debut_date récent) via `scripts/discover-mv-channels.ts`, seed auto des chaînes vérifiées (garde title-match). Pour l'instant : manuel quand signalé.
 - **Cas non résolus** (documentés) : CHASER (nom trop générique, aucune chaîne fiable au discover) ; SUCTION (MVs seulement sur 1theK dont la playlist uploads dépasse le cap API 20k — impaginables) ; MiiWAN (idole virtuelle, pas de chaîne officielle claire) ; AEN (pré-debut, 0 MV normal jusqu'au 05/08).
 
+## Restes du round 8 (2026-07-14) — reportés en rounds dédiés
+
+- **Lot G — Éditeurs admin in-app** (décision Rudy 2026-07-14 : Supabase Studio + éditeurs ciblés) : hub `/admin` (existe déjà pour debuts), **éditeur image groupe/membre avec aperçu** (patron `banner-cropper` + `banner-actions` : URL/upload → aperçu → écrit `image_url`/`photo_url` + `revalidatePath`), **éditeur titre MV / flag masquer-event** (corriger un titre, cacher un faux event sans re-scrape). **Reporté à un round dédié** : surface privilégiée (gating `isAdmin`, validation upload, RLS) à ne pas bâcler en fin de round polish. **Immédiat** : Supabase Studio couvre le CRUD brut (events/MVs/groupes/storage) dès maintenant.
+- **Lot H — Abonnement premium 2,99€** (décision Rudy 2026-07-14 : avantages, **zéro pub**) : cf. section « Premium (V2+) » ci-dessus pour les perks candidats + l'intégration Stripe. **Round dédié** : nécessite compte Stripe + définition claire des perks, pas un lot polish.
+- **Calendrier — nav de mois full-client** : les flèches restent une nav RSC (`<Link ?month>`), mais le levier lourd (refetch des ~150 groupes) est désormais caché (`getGroupsCached`) et les `<Link>` préfetchent. Le passage 100 % client (state + route handler caché) est un refactor à gain marginal → différé.
+- **Weverse membres/groupes** : ajouté aux ENTRIES du `LinksBar` (icône prête) mais **saisie manuelle** — 0/150 groupes en base, aucune source structurée fandom (contrairement à `{{Instagram}}`). À remplir à la main via l'éditeur admin (Lot G) ou Supabase Studio.
+- **Photos membres — restes** : Kim Chaewon (LE SSERAFIM) non résolue (page fandom « Kim Chae-won » à tiret hors convention) → photo actuelle conservée. Classe déjà connue (variantes de titre) ; la rotation quotidienne retente.
+- **Instagram groupes — restes** : 9 des 18 groupes ciblés n'avaient pas de `{{Instagram}}` dans leur infobox fandom → handles à poser à la main (admin/Studio) après vérification.
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.
