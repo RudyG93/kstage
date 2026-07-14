@@ -979,7 +979,7 @@ export type Database = {
         | "concert"
         | "other"
         | "release"
-      member_status: "active" | "former" | "pre_debut"
+      member_status: "active" | "former" | "pre_debut" | "deceased"
       mv_kind: "main" | "performance" | "member" | "other_version"
       suggestion_status: "pending" | "approved" | "rejected"
       tier_type: "free" | "premium"
@@ -1121,7 +1121,7 @@ export const Constants = {
         "other",
         "release",
       ],
-      member_status: ["active", "former", "pre_debut"],
+      member_status: ["active", "former", "pre_debut", "deceased"],
       mv_kind: ["main", "performance", "member", "other_version"],
       suggestion_status: ["pending", "approved", "rejected"],
       tier_type: ["free", "premium"],

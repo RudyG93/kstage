@@ -78,7 +78,10 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   )
   const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
   const activeMembers = members.filter((m) => m.status === 'active')
-  const inactiveMembers = members.filter((m) => m.status !== 'active')
+  // Décédés : section « In memoriam » dédiée (jamais rangés sous « Former » ni
+  // grisés). Le compteur « Members » reste sur les actifs seuls.
+  const memorialMembers = members.filter((m) => m.status === 'deceased')
+  const inactiveMembers = members.filter((m) => m.status !== 'active' && m.status !== 'deceased')
 
   // Bias du viewer → ring dorée dans le rail membres (§7.6.5).
   let biasMemberId: string | null = null
@@ -188,6 +191,13 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
                 groupColorHex={group.color_hex}
                 biasMemberId={biasMemberId}
               />
+            </section>
+          )}
+
+          {memorialMembers.length > 0 && (
+            <section className="space-y-2">
+              <span className="label-data">In memoriam</span>
+              <MembersGrid members={memorialMembers} groupColorHex={group.color_hex} />
             </section>
           )}
 

@@ -67,7 +67,7 @@ export async function getCareerPath(canonicalId: string) {
     .select('id, slug, status, former_reason, position, groups!inner(slug, name, color_hex)')
     .or(`id.eq.${canonicalId},canonical_id.eq.${canonicalId}`)
   if (error) throw error
-  const priority: Record<string, number> = { active: 0, pre_debut: 1, former: 2 }
+  const priority: Record<string, number> = { active: 0, deceased: 0, pre_debut: 1, former: 2 }
   return (data ?? []).sort((a, b) => (priority[a.status] ?? 9) - (priority[b.status] ?? 9))
 }
 
