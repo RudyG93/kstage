@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-14 (R9) — Reste-à-faire : photos solistes, In memoriam, éditeurs admin
+
+**État des lieux du reste-à-faire (3 explorations) + 2 décisions Rudy (In memoriam OUI, Stripe reporté) — 3 merges** (`fix/r9-soloist-photos`, `feat/r9-in-memoriam`, `feat/r9-admin`) :
+
+1. **Photos des 12 solistes datés** (suite R8.1) : le nom nu tombait sur une désambiguïsation OU redirigeait vers un homonyme (Jisoo→Jisu, Soojin→Sujin). Ajout de candidats **désambiguïsés DIRECTS** (parent via la row membre en groupe non-solo : `Jisoo (BLACKPINK)`, `Taemin (SHINee)`) tentés AVANT le nom nu, + `(singer)` en title-case mot-à-mot (`Yena (singer)` alors que la DB stocke « YENA » — classe casse), + `SOLO_PARENT_FALLBACK` pour les solistes dont le groupe a quitté le roster (Taeyeon/SNSD). **12 → 1** (reste Paul Kim, aucun pageimage fandom → manuel). A.C.E + Highlight : pas de `{{Instagram}}` en infobox → saisie manuelle (éditeur admin). 2 imprécisions BACKLOG corrigées (badge tier non rendu ; trigger autorise déjà le service_role).
+2. **In memoriam** (décision Rudy) : Jonghyun (SHINee) et Moonbin (ASTRO) étaient **absents** de la base. Migration 0049 (`member_status += 'deceased'`, dédiée — ADD VALUE inutilisable dans sa txn) + 0050 (insertion), photos sourcées par le pipeline fandom. Rendu **« In memoriam », jamais « Former »** : STATUS_LABEL, member-card (label + **pas grisé**), `getCareerPath`, et **section « In memoriam » DÉDIÉE** sur la page groupe (entre Members et Former ; le compteur « Members » reste sur les actifs). Vérifié navigateur (SHINee : section In memoriam, Jonghyun opacity 1, Members — 4 intact).
+3. **Éditeurs admin ciblés** (décision Rudy : Studio + in-app) : `requireAdmin()` extrait (était dupliqué), `selfHostImage()` partagé. **Hub `/admin`** (grille gatée ; le bloc profil pointe dessus). **`/admin/images`** : éditeur photo membre par URL (aperçu + self-host ; `photo_source_key='admin'` → le cron ne l'écrase plus, garde ajoutée). **`/admin/events`** : corriger un titre MV (`updateEventTitle`) + **masquer un faux event** (`setEventHidden`) — migration 0051 `events.hidden` + filtre `.eq('hidden', false)` sur les requêtes display (calendrier, upcoming, grilles MV, comebacks, trending) ET recherche (« masqué » ≠ « cancelled »). Effet levier : Rudy fait désormais lui-même les saisies manuelles (IG A.C.E/Highlight, Weverse).
+
+**Vérifications** : tsc + 568 tests verts par lot ; CI verte (Lots 1-2 `success`, Lot 3 en cours) ; **prod SQL** (12→1 stale, Jonghyun/Moonbin `deceased` + photo) ; **navigateur** (In memoriam SHINee, `/admin` gaté → login, filtre hidden non-breaking aespa 32 MVs). **Différé** (dépendances externes) : Stripe (compte Rudy + perks), KARD `disbanded_on` (28/07), The Show ep 394 (board SBS muet), ères BEAST→Highlight + solos membres (feature scraper ~20-30 MVs), ops Rudy (secrets E2E, Search Console).
+
 ## 2026-07-14 (R8.1) — Reprises : photos (racine + audit), réseaux Lisa (source + scan), modals, recherche
 
 **5 retours Rudy — dont 3 récidives de classe (« corrige à la source, scanne toute l'app »). 4 merges** (`fix/r81-member-photos`, `fix/r81-soloist-socials`, `perf/r81-modals`, `perf/r81-search`) :
