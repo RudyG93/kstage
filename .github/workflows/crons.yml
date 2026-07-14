@@ -1,0 +1,68 @@
+name: Scheduled scrapers
+
+# Crons déportés de Vercel vers GitHub Actions : Vercel Hobby plafonne le nombre
+# de crons (les 6 de vercel.json ne tournaient pas tous → music-shows/digest/notify
+# silencieux). GH Actions n'a pas ce plafond, autorise plusieurs runs/jour, et un
+# run raté/sauté est VISIBLE (onglet Actions + email). Horaires en UTC.
+#   Prérequis : secret repo CRON_SECRET (= la var d'env CRON_SECRET de Vercel).
+#   Optionnel : var repo PROD_URL (défaut https://kstage.vercel.app).
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # scrape-youtube        (19:00 KST, après le créneau 18:00 + reset quota)
+    - cron: '30 3 * * *' # scrape-comebacks       (12:30 KST)
+    - cron: '0 1 * * *' # scrape-music-shows AM   (10:00 KST — lineups publiés tôt)
+    - cron: '0 13 * * *' # scrape-music-shows PM  (22:00 KST — révisions du jour)
+    - cron: '0 4 * * *' # refresh-images          (13:00 KST)
+    - cron: '45 5 * * *' # send-digest            (14:45 KST)
+    - cron: '30 8 * * *' # notify-comebacks       (17:30 KST)
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: 'Endpoint cron à lancer (chemin après /api/cron/)'
+        required: true
+        default: scrape-music-shows
+        type: choice
+        options:
+          - scrape-music-shows
+          - scrape-youtube
+          - scrape-comebacks
+          - refresh-images
+          - send-digest
+          - notify-comebacks
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cron endpoint
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+          SCHEDULE: ${{ github.event.schedule }}
+          DISPATCH_EP: ${{ github.event.inputs.endpoint }}
+          BASE: ${{ vars.PROD_URL || 'https://kstage.vercel.app' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SECRET:-}" ]; then echo "::error::CRON_SECRET secret manquant"; exit 1; fi
+          if [ -n "${DISPATCH_EP:-}" ]; then
+            EP="$DISPATCH_EP"
+          else
+            case "${SCHEDULE:-}" in
+              "0 10 * * *") EP=scrape-youtube ;;
+              "30 3 * * *") EP=scrape-comebacks ;;
+              "0 1 * * *"|"0 13 * * *") EP=scrape-music-shows ;;
+              "0 4 * * *") EP=refresh-images ;;
+              "45 5 * * *") EP=send-digest ;;
+              "30 8 * * *") EP=notify-comebacks ;;
+              *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;
+            esac
+          fi
+          echo "→ $BASE/api/cron/$EP"
+          code=$(curl -sS --max-time 340 -o /tmp/cron-out.txt -w '%{http_code}' \
+            -H "Authorization: Bearer $SECRET" "$BASE/api/cron/$EP" || echo 000)
+          echo "HTTP $code"
+          head -c 2000 /tmp/cron-out.txt || true
+          echo ""
+          if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+            echo "::error::$EP a échoué (HTTP $code)"; exit 1
+          fi
