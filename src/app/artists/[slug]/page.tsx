@@ -7,6 +7,7 @@ import { CollapsibleMvs } from '@/components/group/collapsible-mvs'
 import { LinksBar } from '@/components/group/links-bar'
 import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
+import { PageRails } from '@/components/layout/page-rails'
 import { EventList } from '@/components/event-list'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FollowButton } from '@/components/follow-button'
@@ -246,9 +247,24 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       )
     : []
 
+  // tier pour le rail « My groups » (R10).
+  const supabaseM = await createClient()
+  const {
+    data: { user: viewerM },
+  } = await supabaseM.auth.getUser()
+  let tier: 'free' | 'premium' | null = null
+  if (viewerM) {
+    const { data: prof } = await supabaseM
+      .from('profiles')
+      .select('tier')
+      .eq('id', viewerM.id)
+      .maybeSingle()
+    tier = prof?.tier ?? 'free'
+  }
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="space-y-6">
+    <PageRails tier={tier}>
+      <div className="space-y-6 px-4 md:px-0">
         <header className="flex items-start gap-4">
           <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-xl">
             {photo ? (
@@ -333,6 +349,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </section>
         )}
       </div>
-    </div>
+    </PageRails>
   )
 }
