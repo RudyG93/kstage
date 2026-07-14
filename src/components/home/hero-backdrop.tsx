@@ -18,7 +18,11 @@ export function HeroBackdrop({ src, fallbackSrc }: { src: string; fallbackSrc?: 
       src={current}
       alt=""
       fill
-      unoptimized
+      // Optimisé (host i.ytimg.com whitelisté) : Next sert un webp redimensionné
+      // au `sizes` plutôt que le maxresdefault 1280×720 plein — gros gain mobile
+      // sur l'élément LCP de la home, d'où `priority`.
+      priority
+      quality={70}
       sizes="(min-width: 1024px) 640px, 100vw"
       className="object-cover object-[70%_30%]"
       onError={() => {
