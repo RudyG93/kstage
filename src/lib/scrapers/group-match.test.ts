@@ -62,6 +62,19 @@ describe('matchesGroup', () => {
     expect(matchesGroup('Karina (aespa) - solo stage', 'aespa')).toBe(true)
   })
 
+  it('alias de rebrand : NOWZ (nom DB) matche ses MVs titrés NOWADAYS et vice-versa', () => {
+    // Le groupe est stocké « NOWZ » mais tous ses MVs YouTube sont titrés
+    // « NOWADAYS(나우어데이즈) '…' Official Music Video ». Sans alias, les futurs
+    // MVs ne s'auto-attribueraient plus (piège nom↔matching, 2026-07-14).
+    const title = "NOWADAYS(나우어데이즈) 'Let's get it' Official Music Video"
+    expect(matchesGroup(title, 'NOWZ')).toBe(true)
+    expect(matchesGroup(title, 'NOWADAYS')).toBe(true)
+    // Bidirectionnel : un titre « NOWZ » matcherait aussi le nom NOWADAYS.
+    expect(matchesGroup("NOWZ 'X' MV", 'NOWADAYS')).toBe(true)
+    // Un MV sans rapport ne matche pas NOWZ.
+    expect(matchesGroup('aespa Whiplash MV', 'NOWZ')).toBe(false)
+  })
+
   it('groupName falsy → false (anti-faux-positif)', () => {
     expect(matchesGroup('aespa Whiplash MV', '')).toBe(false)
     expect(matchesGroup('aespa Whiplash MV', null)).toBe(false)
