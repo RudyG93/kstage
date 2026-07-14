@@ -28,6 +28,13 @@ const norm = (s: string) =>
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 
+// Groupe parent (pour le titre fandom désambiguïsé) des solistes dont le groupe
+// d'origine a quitté le roster → aucune row membre pour le dériver. Clé = slug du
+// groupe solo. Étendre au besoin (ex-membres de légendes retirées).
+const SOLO_PARENT_FALLBACK: Record<string, string> = {
+  taeyeon: "Girls' Generation",
+}
+
 /**
  * Repli de résolution par RECHERCHE fandom quand les titres devinés échouent :
  * camelCase (« HeeJin »/« HaSeul »/« JinSoul » LOONA/ARTMS que `titleCase`
@@ -305,6 +312,30 @@ export async function refreshMemberPhotos(
   // confirment le groupe (sans ça, une rookie sans page hériterait de la
   // photo d'une homonyme célèbre).
   const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+  // Title-case mot-à-mot : « KANG DANIEL » → « Kang Daniel » (le titleCase simple
+  // donne « Kang daniel », faux — MediaWiki est casse-sensible après la 1re lettre).
+  const wordTitleCase = (s: string) =>
+    s
+      .split(' ')
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+      .join(' ')
+
+  // Parents des SOLISTES (leur row membre dans un groupe non-solo) : la page
+  // fandom d'un soliste est DÉSAMBIGUÏSÉE (« Jisoo (BLACKPINK) », « Taemin
+  // (SHINee) ») ; le nom nu tombe sur une désambiguïsation OU redirige vers un
+  // homonyme (Jisoo→Jisu, Soojin→Sujin — vérifié). On tape la page exacte.
+  const soloParents = new Map<string, string[]>()
+  if ((members ?? []).some((m) => m.groups.is_solo)) {
+    const { data: memberships } = await supabase
+      .from('members')
+      .select('stage_name, groups!inner(name, is_solo)')
+      .eq('groups.is_solo', false)
+    for (const mm of memberships ?? []) {
+      const k = norm(mm.stage_name)
+      soloParents.set(k, [...(soloParents.get(k) ?? []), mm.groups.name])
+    }
+  }
+
   type Target = NonNullable<typeof members>[number] & { fandomTitles: string[] }
   const targets: Target[] = (members ?? []).map((m) => {
     // Candidats real_name (R8) : la page fandom porte parfois le VRAI nom plutôt
@@ -322,9 +353,30 @@ export async function refreshMemberPhotos(
       fandomTitles: [
         ...new Set(
           m.groups.is_solo
-            ? // Soliste : la page fandom est le nom nu (« ROSÉ », « Jennie ») —
-              // le qualificateur « (Jennie (Jennie)) » n'existe pas.
-              [m.stage_name, titleCase(m.stage_name), ...realCands]
+            ? // Soliste : candidats DÉSAMBIGUÏSÉS d'abord (page exacte, sûre face
+              // aux homonymes) puis « (singer) », puis le nom nu en repli.
+              [
+                ...[
+                  ...(soloParents.get(norm(m.stage_name)) ?? []),
+                  // Repli pour les solistes dont le groupe parent a quitté le
+                  // roster (Taeyeon/SNSD retiré) → pas de row membre pour dériver
+                  // le parent.
+                  ...(SOLO_PARENT_FALLBACK[m.groups.slug]
+                    ? [SOLO_PARENT_FALLBACK[m.groups.slug]]
+                    : []),
+                ].flatMap((p) => [
+                  `${m.stage_name} (${p})`,
+                  `${m.stage_name} (${p.toUpperCase()})`,
+                ]),
+                // « (singer) » en title-case mot-à-mot : le wiki écrit
+                // « Yena (singer) » alors que la DB stocke « YENA ».
+                `${wordTitleCase(m.stage_name)} (singer)`,
+                `${m.stage_name} (singer)`,
+                wordTitleCase(m.stage_name),
+                m.stage_name,
+                titleCase(m.stage_name),
+                ...realCands,
+              ]
             : [
                 `${m.stage_name} (${m.groups.name})`,
                 `${titleCase(m.stage_name)} (${m.groups.name})`,

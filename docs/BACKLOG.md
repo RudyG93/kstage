@@ -111,10 +111,10 @@ Idées activables (ordre approximatif valeur/effort) :
 4. **Digest hebdo enrichi** — version email premium avec stats perso, teaser des drops de la semaine (l'infra send-digest existe).
 5. **Stats avancées + Wrapped** — page stats perso approfondie (distribution des notes, streaks, genres) + le Wrapped annuel partageable en premium early-access.
 6. **Thèmes exclusifs** — variantes de thème (couleurs de bias, thèmes par groupe) sur le socle de tokens existant.
-7. **Badge profil premium** — signal social discret (le champ tier est déjà rendu côté profil).
+7. **Badge profil premium** — signal social discret. ⚠️ **À construire entièrement** : `profiles.tier` n'est **rendu nulle part** côté profil aujourd'hui (vérifié R9 — `u/[username]/page.tsx` ne lit pas `tier`) ; seul le cap sidebar le consomme.
 8. **Alertes mot-clé** — push sur mention d'un mot-clé dans les titres ingérés (« tour », « japan »…).
 
-Paiement : Stripe Checkout + webhook → update `profiles.tier` (le trigger `protect_profile_privileges` devra autoriser le service role). À cadrer le moment venu.
+Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migration DB requise** : le trigger `protect_profile_privileges` autorise DÉJÀ le service_role (`0017_phase1_schema.sql:42` — la garde est `auth.role() is distinct from 'service_role'`). Il « suffit » de la route checkout + webhook + UI. Préalable réel = compte Stripe de Rudy + choix des perks. Note R9 : `FREE_VISIBLE_FOLLOWS=10` est un cap d'**affichage** (sidebar), pas un vrai gate — suivre >10 reste possible ; le perk n°1 demande donc d'ajouter la limite dure.
 
 ## Roadmap R (actée 2026-07-05 — rétention/acquisition/monétisation)
 
