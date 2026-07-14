@@ -8,28 +8,33 @@ import { SearchIcon } from 'lucide-react'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { displaySongTitle } from '@/lib/events/title'
 
-interface QuickResults {
-  groups: { slug: string; name: string; image: string | null; isSolo: boolean }[]
-  mvs: { slug: string | null; title: string; group: string | null; videoId: string | null }[]
-}
+type Group = { slug: string; name: string; image: string | null; isSolo: boolean }
+type Mv = { slug: string | null; title: string; group: string | null; videoId: string | null }
+
+const normLite = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]/g, '')
 
 /**
- * Recherche live du header (desktop) : dropdown de résultats instantanés
- * (debounce 250 ms → /api/search/quick), clic = navigation directe,
- * Enter = page /search?q=. Sur mobile le header garde un simple lien /search
- * (géré par le parent).
+ * Recherche live du header (desktop). Segment GROUPES filtré 100 % côté client
+ * (liste servie une fois par /api/search/groups, ~150 entrées) → résultats
+ * instantanés sans round-trip ; le cold start du lambda ne se ressent plus sur
+ * les recherches de groupe (« aespa »). Segment MVs = /api/search/quick
+ * (debounce 250 ms, non embarquable). Enter = page /search?q=.
  */
 export function HeaderSearch() {
   const router = useRouter()
   const [q, setQ] = useState('')
-  const [results, setResults] = useState<QuickResults | null>(null)
+  const [groupResults, setGroupResults] = useState<Group[]>([])
+  const [mvResults, setMvResults] = useState<Mv[]>([])
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const groupsRef = useRef<Group[] | null>(null)
 
-  // Fermeture : au clic sur un résultat (onClick des liens), à Escape, au clic
-  // extérieur — pas d'effet sur pathname (lint set-state-in-effect).
   function closeAndReset() {
     setOpen(false)
     setQ('')
@@ -43,25 +48,60 @@ export function HeaderSearch() {
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [])
 
+  // Charge la liste des groupes UNE fois (cache CDN 1h). Idempotent.
+  async function ensureGroups() {
+    if (groupsRef.current) return
+    try {
+      const res = await fetch('/api/search/groups')
+      if (!res.ok) return
+      groupsRef.current = ((await res.json()) as { groups: Group[] }).groups
+    } catch {
+      // réseau — le segment groupes reste vide, les MVs répondent quand même
+    }
+  }
+
+  // Filtre local des groupes (pré-triés par notoriété → l'ordre est conservé).
+  function filterGroups(needle: string): Group[] {
+    const groups = groupsRef.current
+    const n = normLite(needle)
+    if (!groups || !n) return []
+    const target = n === 'gidle' ? 'idle' : n // alias (G)I-DLE, cf. queries.ts
+    return groups
+      .filter(
+        (g) =>
+          normLite(g.name).includes(n) ||
+          normLite(g.name).includes(target) ||
+          normLite(g.slug).includes(target),
+      )
+      .slice(0, 5)
+  }
+
   function onChange(next: string) {
     setQ(next)
     if (timer.current) clearTimeout(timer.current)
-    if (next.trim().length < 2) {
-      setResults(null)
+    const needle = next.trim()
+    if (needle.length < 2) {
+      setGroupResults([])
+      setMvResults([])
       setOpen(false)
       return
     }
+    // Groupes : filtre LOCAL instantané (charge la liste au 1er besoin).
+    void ensureGroups().then(() => {
+      setGroupResults(filterGroups(needle))
+      setOpen(true)
+    })
+    // MVs : fetch serveur débouncé.
     timer.current = setTimeout(async () => {
       abortRef.current?.abort()
       const controller = new AbortController()
       abortRef.current = controller
       try {
-        const res = await fetch(`/api/search/quick?q=${encodeURIComponent(next.trim())}`, {
+        const res = await fetch(`/api/search/quick?q=${encodeURIComponent(needle)}`, {
           signal: controller.signal,
         })
         if (!res.ok) return
-        const data = (await res.json()) as QuickResults
-        setResults(data)
+        setMvResults(((await res.json()) as { mvs: Mv[] }).mvs)
         setOpen(true)
       } catch {
         // requête annulée/réseau — silencieux
@@ -75,7 +115,7 @@ export function HeaderSearch() {
     router.push(`/search?q=${encodeURIComponent(q.trim())}`)
   }
 
-  const hasResults = results && (results.groups.length > 0 || results.mvs.length > 0)
+  const hasResults = groupResults.length > 0 || mvResults.length > 0
 
   return (
     <div ref={rootRef} className="relative w-full">
@@ -95,6 +135,7 @@ export function HeaderSearch() {
             }
           }}
           onFocus={() => {
+            void ensureGroups() // préchauffe la liste dès le focus
             if (hasResults) setOpen(true)
           }}
           placeholder="Groups, MVs, events…"
@@ -113,10 +154,11 @@ export function HeaderSearch() {
           dropdown est silencieuse pour un lecteur d'écran sans live region. */}
       <div aria-live="polite" className="sr-only">
         {open &&
-          results &&
           (hasResults
-            ? `${results.groups.length + results.mvs.length} results available`
-            : 'No results')}
+            ? `${groupResults.length + mvResults.length} results available`
+            : q.trim().length >= 2
+              ? 'No results'
+              : '')}
       </div>
 
       {open && (
@@ -149,7 +191,7 @@ export function HeaderSearch() {
             <p className="text-muted-foreground px-3 py-3 text-xs">No results for “{q.trim()}”.</p>
           ) : (
             <>
-              {results.groups.map((g) => (
+              {groupResults.map((g) => (
                 <Link
                   key={g.slug}
                   href={`/groups/${g.slug}`}
@@ -183,7 +225,7 @@ export function HeaderSearch() {
                   </span>
                 </Link>
               ))}
-              {results.mvs.map((m, i) => (
+              {mvResults.map((m, i) => (
                 <Link
                   key={m.slug ?? i}
                   href={m.slug ? `/mv/${m.slug}` : '/mvs'}
