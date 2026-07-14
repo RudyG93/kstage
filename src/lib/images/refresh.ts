@@ -28,6 +28,47 @@ const norm = (s: string) =>
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 
+/**
+ * Repli de résolution par RECHERCHE fandom quand les titres devinés échouent :
+ * camelCase (« HeeJin »/« HaSeul »/« JinSoul » LOONA/ARTMS que `titleCase`
+ * aplatit), romanisations divergentes, ou qualificateur à casse inattendue.
+ * `generator=search` trouve la vraie page en un appel (+ pageimages/categories) ;
+ * la garde de catégorie (page catégorisée sous le groupe) écarte les homonymes.
+ * Réservé aux membres de GROUPE — un solo n'a pas de catégorie-groupe pour garder.
+ */
+async function searchFandomPhoto(
+  stageName: string,
+  groupName: string,
+  groupKey: string,
+): Promise<string | undefined> {
+  const params = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    generator: 'search',
+    gsrsearch: `${stageName} ${groupName}`,
+    gsrlimit: '6',
+    prop: 'pageimages|categories',
+    piprop: 'original',
+    pilimit: 'max',
+    cllimit: 'max',
+  })
+  try {
+    const res = await fetch(`https://kpop.fandom.com/api.php?${params}`, {
+      headers: { 'User-Agent': UA, Accept: 'application/json' },
+    })
+    if (!res.ok) return undefined
+    const json = (await res.json()) as FandomQueryResponse
+    for (const page of Object.values(json.query?.pages ?? {})) {
+      if (!page.original?.source) continue
+      const cats = (page.categories ?? []).map((c) => norm(c.title))
+      if (cats.some((c) => c.includes(groupKey))) return page.original.source
+    }
+  } catch {
+    // silencieux : le repli échoue → le membre garde sa photo actuelle
+  }
+  return undefined
+}
+
 // ---------------------------------------------------------------------------
 // Phase 1 — images carrées de groupes, Spotify par ID
 // ---------------------------------------------------------------------------
@@ -222,14 +263,21 @@ const EXT_BY_TYPE: Record<string, string> = {
 
 export async function refreshMemberPhotos(
   supabase: SupabaseClient,
-  opts: { batch?: number } = {},
+  opts: { batch?: number; staleOnly?: boolean } = {},
 ): Promise<MemberPhotosSummary> {
   const batchSize = opts.batch ?? 100
-  const { data: members, error } = await supabase
+  // `staleOnly` : ne traiter que les membres JAMAIS sourcés fandom
+  // (photo_source_key null) — ils gardent une vieille photo → incohérence d'ère
+  // intra-groupe (Kim Chaewon vs le reste de LE SSERAFIM, Heejin/Haseul vs ARTMS).
+  // Le runner one-off l'active pour combler toute la classe en un passage ; le
+  // cron quotidien garde la rotation normale par ancienneté de vérification.
+  let mq = supabase
     .from('members')
     .select(
       'id, stage_name, real_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)',
     )
+  if (opts.staleOnly) mq = mq.is('photo_source_key', null)
+  const { data: members, error } = await mq
     .order('photo_checked_at', { ascending: true, nullsFirst: true })
     .limit(batchSize)
   if (error) throw new Error(`members select: ${error.message}`)
@@ -280,6 +328,11 @@ export async function refreshMemberPhotos(
             : [
                 `${m.stage_name} (${m.groups.name})`,
                 `${titleCase(m.stage_name)} (${m.groups.name})`,
+                // Le wiki met parfois le qualificateur en CAPITALES
+                // (« Kim Chaewon (LE SSERAFIM) ») alors que la DB stocke
+                // « Le Sserafim ». MediaWiki n'insensibilise que la 1re lettre
+                // du titre, pas le qualificateur → on demande la variante upper.
+                `${m.stage_name} (${m.groups.name.toUpperCase()})`,
                 m.stage_name,
                 titleCase(m.stage_name),
                 // « Ahn Yujin » vs page « An Yujin » (romanisations) : la
@@ -294,9 +347,10 @@ export async function refreshMemberPhotos(
     }
   })
 
-  // 6 membres/appel : jusqu'à ~7 titres chacun (real_name inclus), sous 50.
-  for (let i = 0; i < targets.length; i += 6) {
-    const batch = targets.slice(i, i + 6)
+  // 5 membres/appel : jusqu'à ~9 titres chacun (real_name + variante upper du
+  // qualificateur inclus) → 45, sous la limite MediaWiki de 50 titres/requête.
+  for (let i = 0; i < targets.length; i += 5) {
+    const batch = targets.slice(i, i + 5)
     const titles = batch.flatMap((t) => t.fandomTitles).join('|')
     // La réponse est PAGINÉE dès que categories/pageimages dépassent leurs
     // limites (pilimit, cllimit) : sans suivre `continue`, une partie des
@@ -373,7 +427,7 @@ export async function refreshMemberPhotos(
     for (const m of batch) {
       summary.checked++
       const groupKey = norm(m.groups.name)
-      const source = m.fandomTitles
+      let source = m.fandomTitles
         .map((t) => {
           const hit = pageByTitle.get(finalTitle(t))
           if (!hit) return undefined
@@ -384,6 +438,12 @@ export async function refreshMemberPhotos(
           return hit.source
         })
         .find((s): s is string => !!s)
+      // Repli recherche fandom pour les membres de groupe encore non sourcés
+      // (stale) : rattrape le camelCase/romanisations que les titres devinés
+      // ratent (Heejin/Haseul ARTMS). Borné aux stale pour limiter les appels.
+      if (!source && !m.groups.is_solo && !m.photo_source_key) {
+        source = await searchFandomPhoto(m.stage_name, m.groups.name, groupKey)
+      }
       if (!source) {
         summary.misses++
         await supabase.from('members').update({ photo_checked_at: now }).eq('id', m.id)
