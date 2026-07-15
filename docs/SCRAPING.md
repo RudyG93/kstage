@@ -463,8 +463,8 @@ WHERE title LIKE '%&#%' OR title LIKE '%&amp;%'
 
 ## 6. Triggers et cron
 
-- **Crons Vercel** (cf. `vercel.json`, tous protégés par `Authorization: Bearer $CRON_SECRET`, tous 1×/jour max — limite Hobby **par cron**) : `/api/cron/scrape-youtube` (03:00 UTC), `/api/cron/scrape-comebacks` (kpopofficial **+ Wikipedia**, 03:30 — cf. §10), `/api/cron/scrape-music-shows` (13:00), plus 3 crons non-scraping (`send-digest` 08:00, `notify-comebacks` 09:00, `refresh-images` lundi 04:00).
-- **Observabilité (P0.3, 2026-06-12)** : chaque run de scraping écrit une ligne dans `scrape_log` (`source`, `status` ok/partial/error, `error_msg`, `details` jsonb avec les counts) via `src/lib/scrapers/scrape-log.ts`. Contrat d'échec : **HTTP 500 quand le run est inexploitable** (0 source/page/lineup OK) pour que le dashboard Vercel Crons le signale ; `partial` (200) = sources en échec partiel, fallbacks utilisés, ou « pages 200 mais 0 entrée parsée » (signature d'un changement de markup). `last_scraped_at` n'est rafraîchi qu'en cas de récolte réelle.
+- **Crons GitHub Actions** (`.github/workflows/crons.yml`, tous protégés par `Authorization: Bearer $CRON_SECRET` ; migrés depuis Vercel Cron qui plafonnait le **nombre** de crons sur le plan Hobby — R10.1) : `/api/cron/scrape-youtube` (10:00 UTC / 19:00 KST), `/api/cron/scrape-comebacks` (kpopofficial **+ Wikipedia**, 03:30 — cf. §10), `/api/cron/scrape-music-shows` **2×/jour** (01:00 + 13:00 UTC — lineups publiés tôt puis révisions du jour), plus 3 crons non-scraping (`refresh-images` 04:00, `send-digest` 05:45, `notify-comebacks` 08:30).
+- **Observabilité (P0.3, 2026-06-12)** : chaque run de scraping écrit une ligne dans `scrape_log` (`source`, `status` ok/partial/error, `error_msg`, `details` jsonb avec les counts) via `src/lib/scrapers/scrape-log.ts`. Contrat d'échec : **HTTP 500 quand le run est inexploitable** (0 source/page/lineup OK) pour que le run ressorte en échec dans GitHub Actions (le step curl vérifie le code HTTP) ; `partial` (200) = sources en échec partiel, fallbacks utilisés, ou « pages 200 mais 0 entrée parsée » (signature d'un changement de markup). `last_scraped_at` n'est rafraîchi qu'en cas de récolte réelle.
 - **Diagnostic rapide** : `select source, status, error_msg, started_at from scrape_log order by started_at desc limit 10;`
 - **Trigger manuel** :
 
@@ -540,7 +540,7 @@ Helper partagé pour les 2-level SBS : `src/lib/scrapers/music-shows/sources/sbs
 
 ### Cron
 
-Vercel cron `/api/cron/scrape-music-shows` daily 13:00 UTC = 22:00 KST. Catche les lineups posted night-before (weekday) + 2-3 jours en avance (weekend).
+Cron GitHub Actions `/api/cron/scrape-music-shows` 2×/jour (01:00 + 13:00 UTC = 10:00 + 22:00 KST). Catche les lineups posted night-before (weekday) + 2-3 jours en avance (weekend).
 
 **Horaires des 6 crons — logique complète (retunés R5, 2026-07-13, référence Paris été = UTC+2)** :
 
