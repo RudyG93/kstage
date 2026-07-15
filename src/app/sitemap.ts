@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-
-const SITE_URL = 'https://kstage.vercel.app'
+import { SITE_URL } from '@/lib/site'
 
 // Regénéré au plus 1×/jour — sinon le sitemap fige au build.
 export const revalidate = 86400

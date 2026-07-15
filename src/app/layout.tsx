@@ -8,6 +8,7 @@ import {
   Archivo,
 } from 'next/font/google'
 import Link from 'next/link'
+import { SITE_URL } from '@/lib/site'
 import { BellIcon, SearchIcon } from 'lucide-react'
 import { Toaster } from 'sonner'
 import './globals.css'
@@ -60,7 +61,6 @@ const archivo = Archivo({
   axes: ['wdth'],
 })
 
-const SITE_URL = 'https://kstage.vercel.app'
 const SITE_DESCRIPTION =
   'Your k-pop calendar — releases, music videos, music shows, birthdays, and debut anniversaries.'
 

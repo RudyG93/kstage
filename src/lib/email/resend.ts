@@ -3,8 +3,9 @@
 // uniquement depuis les Server Actions ('use server') — la clé Resend n'est
 // jamais bundlée côté client.
 
+import { SITE_URL } from '@/lib/site'
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
-const SITE_URL = 'https://kstage.app'
 
 async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   const apiKey = process.env.RESEND_API_KEY
