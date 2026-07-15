@@ -16,6 +16,7 @@ import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
 import { formatDDay, isFutureDate } from '@/lib/events/date'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
@@ -96,6 +97,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     biasMemberId = viewerProfile?.bias_member_id ?? null
   }
   const signedIn = user != null
+  const timeZone = await getViewerTimeZone()
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
   // par les labels à chaque ère) remplace le hqdefault 480px flou du dernier
@@ -159,7 +161,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
               )}
               {nextComeback && (
                 <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
-                  Comeback {formatDDay(nextComeback.start_at, 'Asia/Seoul')}
+                  Comeback {formatDDay(nextComeback.start_at, timeZone)}
                 </span>
               )}
             </>

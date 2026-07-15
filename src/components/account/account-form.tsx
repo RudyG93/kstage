@@ -24,14 +24,19 @@ function ErrorBanner({ children }: { children: string }) {
   )
 }
 
+// Liste IANA complète (le <select> natif est searchable au clavier).
+const TIME_ZONES = Intl.supportedValuesOf('timeZone')
+
 export function AccountForm({
   email,
   username,
   avatarUrl,
+  timezone,
 }: {
   email: string
   username: string
   avatarUrl: string | null
+  timezone: string
 }) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ProfileState, FormData>(updateProfile, null)
@@ -106,6 +111,22 @@ export function AccountForm({
         </div>
 
         <div className="space-y-1.5">
+          <label htmlFor="timezone" className="text-sm font-medium">
+            Timezone
+          </label>
+          <select id="timezone" name="timezone" defaultValue={timezone} className={inputClass}>
+            {TIME_ZONES.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
+          <p className="text-muted-foreground text-xs">
+            Times, D-days and your calendar are shown in this timezone.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium">
             Email
           </label>
@@ -121,7 +142,7 @@ export function AccountForm({
         {usernameError && <ErrorBanner>{usernameError}</ErrorBanner>}
         {ok && (
           <p role="status" className="text-teal text-sm">
-            Username saved.
+            Changes saved.
           </p>
         )}
 

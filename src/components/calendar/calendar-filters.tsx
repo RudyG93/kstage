@@ -126,7 +126,15 @@ export function CalendarFilterProvider({
 }
 
 /** Pont : le mois rendu avec les events filtrés du contexte. */
-export function CalendarEvents({ year, month }: { year: number; month: number }) {
+export function CalendarEvents({
+  year,
+  month,
+  timeZone,
+}: {
+  year: number
+  month: number
+  timeZone: string
+}) {
   const { events } = useCalendarFilters()
-  return <CalendarMonth year={year} month={month} events={events} />
+  return <CalendarMonth year={year} month={month} events={events} timeZone={timeZone} />
 }

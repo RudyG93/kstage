@@ -20,10 +20,12 @@ export function NextDropCard({
   isAuthed = false,
   latestMvImage = null,
   latestMvFallback = null,
+  timeZone = 'Asia/Seoul',
 }: {
   event: GroupedUpcomingEvent | null
   isFollowing?: boolean
   isAuthed?: boolean
+  timeZone?: string
   // Thumbnail maxres du dernier MV du groupe : le visuel le plus FRAIS
   // disponible (les fanarts TheAudioDB datent — aespa servait un backdrop 2021).
   latestMvImage?: string | null
@@ -36,7 +38,7 @@ export function NextDropCard({
   // et le titre pointe le jour du calendrier (cf. QueueRow, même règle).
   const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
   const title = displayEventTitle(event.title, lineup ? undefined : group?.name, null, event.type)
-  const dayKey = lineup ? localDayKey(event.start_at, 'Asia/Seoul') : null
+  const dayKey = lineup ? localDayKey(event.start_at, timeZone) : null
   const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)
   const hex = group?.color_hex ?? 'var(--primary)'
@@ -91,7 +93,7 @@ export function NextDropCard({
                   {EVENT_TYPE_LABELS[event.type]}
                 </span>
                 <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
-                  {formatDDay(event.start_at, 'Asia/Seoul')}
+                  {formatDDay(event.start_at, timeZone)}
                 </span>
               </div>
               <h2 className="font-heading mt-1.5 text-xl leading-tight font-extrabold tracking-[-0.02em] text-balance">

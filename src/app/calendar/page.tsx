@@ -9,6 +9,7 @@ import { generateShowSlots } from '@/lib/events/show-slots'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { kstDayKey, getKstMonthRange } from '@/lib/events/date'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 
 function parseMonth(raw?: string): { year: number; month: number } {
   if (raw && /^\d{4}-\d{2}$/.test(raw)) {
@@ -37,11 +38,12 @@ export default async function CalendarPage({
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
 
-  const [groups, followedIds, dbEvents, anniversaries] = await Promise.all([
+  const [groups, followedIds, dbEvents, anniversaries, timeZone] = await Promise.all([
     getGroupsCached(),
     getFollowedGroupIds(),
     getEventsForMonth({ year, month }),
     getAnniversariesForMonth({ year, month }),
+    getViewerTimeZone(),
   ])
   const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
 
@@ -71,7 +73,7 @@ export default async function CalendarPage({
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
             <FilterChips />
-            <CalendarEvents year={year} month={month} />
+            <CalendarEvents year={year} month={month} timeZone={timeZone} />
           </div>
           <aside className="order-3 shrink-0 lg:w-80">
             <SidebarRight />
