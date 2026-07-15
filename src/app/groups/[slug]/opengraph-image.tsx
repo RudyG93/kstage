@@ -33,6 +33,7 @@ export default async function OpengraphImage({ params }: { params: Promise<{ slu
       .in('type', ['mv', 'release'])
       .gte('start_at', new Date().toISOString())
       .neq('status', 'cancelled')
+      .eq('hidden', false)
       .order('start_at', { ascending: true })
       .limit(1)
       .maybeSingle()

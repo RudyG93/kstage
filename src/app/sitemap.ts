@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select('slug, updated_at')
       .eq('type', 'mv')
       .not('slug', 'is', null)
+      .eq('hidden', false)
       .range(0, 4999), // cap PostgREST 1000 rows par défaut → fenêtre explicite
     supabase
       .from('members')

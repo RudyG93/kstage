@@ -58,6 +58,7 @@ export async function GET(req: Request) {
       .select(EVENT_FIELDS)
       .in('type', ['mv', 'release'])
       .neq('status', 'cancelled')
+      .eq('hidden', false)
       .gte('start_at', new Date(now.getTime() - DAY_MS).toISOString())
       .lt('start_at', new Date(now.getTime() + 3 * DAY_MS).toISOString()),
     supabase
@@ -65,6 +66,7 @@ export async function GET(req: Request) {
       .select(EVENT_FIELDS)
       .in('type', ['mv', 'release'])
       .neq('status', 'cancelled')
+      .eq('hidden', false)
       .gte('created_at', new Date(now.getTime() - DAY_MS).toISOString())
       .gte('start_at', now.toISOString()),
   ])

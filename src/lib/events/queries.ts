@@ -53,7 +53,7 @@ export async function getUpcomingEvents({
  */
 export async function getGroupEventCounts(): Promise<Map<string, number>> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('events').select('group_id')
+  const { data, error } = await supabase.from('events').select('group_id').eq('hidden', false)
   if (error) throw error
   const counts = new Map<string, number>()
   for (const e of data ?? []) {
@@ -104,6 +104,7 @@ export async function getUpcomingEventCountsByGroup(
     .in('group_id', groupIds)
     .gte('start_at', new Date().toISOString())
     .or(isMainOrNonMv)
+    .eq('hidden', false)
   if (error) throw error
   const counts = new Map<string, number>()
   for (const row of data ?? []) {
@@ -197,7 +198,10 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
 /** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */
 export async function getEventsCount(): Promise<number> {
   const supabase = await createClient()
-  const { count } = await supabase.from('events').select('id', { count: 'exact', head: true })
+  const { count } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('hidden', false)
   return count ?? 0
 }
 
@@ -302,7 +306,8 @@ export async function getRecentlyCommentedEvents(limit = 12) {
     supabase
       .from('events')
       .select('id, slug, title, type, image_url, source_url, groups!inner(slug, name)')
-      .in('id', ids),
+      .in('id', ids)
+      .eq('hidden', false),
     supabase.from('comments').select('event_id').is('deleted_at', null).in('event_id', ids),
   ])
   const countByEvent = new Map<string, number>()

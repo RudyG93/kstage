@@ -56,6 +56,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
         .gte('start_at', since)
         .neq('status', 'cancelled')
         .or(isMainOrNonMv)
+        .eq('hidden', false)
         .order('start_at', { ascending: true })
         .limit(500),
       supabase

@@ -139,6 +139,7 @@ export const getEventBySlug = cache(async (slug: string) => {
       'id, slug, title, type, start_at, status, source_url, description, groups!inner(slug, name, color_hex, image_url, banner_url)',
     )
     .eq('slug', slug)
+    .eq('hidden', false)
     .maybeSingle()
   return data
 })
