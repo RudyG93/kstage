@@ -1,7 +1,8 @@
 # KStage
 
-The personal k-pop calendar. Follow your favorite groups and see their comebacks,
-music shows and lives in one place — with push notifications, in your own timezone.
+The personal k-pop calendar. Follow your favorite groups and see their releases,
+music videos, music shows, birthdays, and debut anniversaries in one place — with
+optional push notifications, in your own timezone.
 
 Mobile-first PWA. Live: https://kstage.vercel.app
 

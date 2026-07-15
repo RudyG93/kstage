@@ -39,7 +39,10 @@ function welcomeHtml(username: string | null): string {
           </td></tr>
           <tr><td style="padding:12px 28px 4px;font-size:14px;line-height:1.6;color:#c9c9d1;">
             <p style="margin:0 0 12px;">${hello}</p>
-            <p style="margin:0 0 12px;">Your account is active. KStage is your k-pop calendar — comebacks, music shows, lives and more, all in one place.</p>
+            <p style="margin:0 0 12px;">
+              Your account is active. KStage is your k-pop calendar — releases, music videos, music shows,
+              birthdays, and debut anniversaries, all in one place.
+            </p>
             <p style="margin:0 0 4px;">Get started:</p>
             <ul style="margin:0 0 12px;padding-left:18px;">
               <li style="margin:4px 0;"><a href="${SITE_URL}/" style="color:#b79bff;">Browse upcoming events</a></li>
