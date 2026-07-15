@@ -9,7 +9,28 @@ import {
   kstTime24h,
   formatDDay,
   relativeTime,
+  kstToUtcISO,
+  isTimeTBA,
 } from './date'
+
+describe('isTimeTBA', () => {
+  const midnightKst = kstToUtcISO(2026, 5, 28) // 00:00 KST (heure technique par défaut)
+  it('tentative à minuit KST → true (jour connu, heure inconnue)', () => {
+    expect(isTimeTBA({ status: 'tentative', start_at: midnightKst })).toBe(true)
+  })
+  it('tentative à une heure réelle (slot music-show 18:00 KST) → false', () => {
+    expect(isTimeTBA({ status: 'tentative', start_at: kstToUtcISO(2026, 5, 28, 18, 0) })).toBe(
+      false,
+    )
+  })
+  it('confirmed → false même à minuit KST', () => {
+    expect(isTimeTBA({ status: 'confirmed', start_at: midnightKst })).toBe(false)
+  })
+  it('status ou start_at manquant → false', () => {
+    expect(isTimeTBA({})).toBe(false)
+    expect(isTimeTBA({ status: 'tentative' })).toBe(false)
+  })
+})
 
 describe('getKstMonthRange', () => {
   it('returns the KST month boundaries as UTC ISO', () => {

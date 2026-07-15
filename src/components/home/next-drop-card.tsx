@@ -6,7 +6,7 @@ import { NotifyCta } from './notify-cta'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
-import { formatDDay, formatKst, kstTime24h, localDayKey } from '@/lib/events/date'
+import { formatDDay, formatKst, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { LocalTime } from '@/components/local-time'
@@ -109,15 +109,23 @@ export function NextDropCard({
                 ) : (
                   group?.name && <span>{group.name} · </span>
                 )}
-                {/* Heure locale en avant (R5), KST en référence derrière. */}
-                {dateLabel} · <LocalTime iso={event.start_at} withZone={false} fallback="—" /> local
-                · {kstTime24h(event.start_at)} KST
+                {/* Heure locale en avant (R5), KST en référence derrière ;
+                    tentative à minuit KST = heure inconnue → « Time TBA ». */}
+                {dateLabel} ·{' '}
+                {isTimeTBA(event) ? (
+                  'Time TBA'
+                ) : (
+                  <>
+                    <LocalTime iso={event.start_at} withZone={false} fallback="—" /> local ·{' '}
+                    {kstTime24h(event.start_at)} KST
+                  </>
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <Countdown targetIso={event.start_at} variant="cells" />
+            {!isTimeTBA(event) && <Countdown targetIso={event.start_at} variant="cells" />}
             {event.group_id && (
               <NotifyCta
                 groupId={event.group_id}

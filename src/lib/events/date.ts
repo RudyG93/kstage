@@ -33,6 +33,15 @@ export function kstToUtcISO(
 }
 
 /**
+ * Un event `tentative` stocké à MINUIT KST (heure technique par défaut de
+ * kstToUtcISO) = jour connu, heure inconnue → les surfaces affichent « Time TBA »
+ * et suppriment le countdown minute ; le D-day reste honnête. Le test minuit
+ * exclut les slots music-show (tentative mais à l'heure réelle du show).
+ */
+export const isTimeTBA = (e: { status?: string | null; start_at?: string | null }): boolean =>
+  e.status === 'tentative' && !!e.start_at && kstTime24h(e.start_at) === '00:00'
+
+/**
  * Clé de jour 'YYYY-MM-DD' d'un instant, lue dans un fuseau IANA donné.
  * Via Intl (résout DST + offsets), contrairement à un offset fixe.
  */
