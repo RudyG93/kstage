@@ -4,7 +4,7 @@ import { LocalTime } from '@/components/local-time'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
-import { formatKst } from '@/lib/events/date'
+import { formatKst, isTimeTBA } from '@/lib/events/date'
 import type { UpcomingEvent } from '@/lib/events/queries'
 
 /**
@@ -83,15 +83,18 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
 
       <div className="flex shrink-0 flex-col items-end justify-center py-3 text-right">
         <span className="tabular text-sm font-semibold tracking-tight">{dateLabel}</span>
-        {!isAnniversary && (
-          <>
-            {/* Heure locale en avant, KST en référence dessous. */}
-            <span className="tabular text-foreground mt-0.5 text-[12px] font-medium">
-              <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} />
-            </span>
-            <span className="tabular text-muted-foreground/70 text-[10px]">{timeLabel} KST</span>
-          </>
-        )}
+        {!isAnniversary &&
+          (isTimeTBA(event) ? (
+            <span className="tabular text-muted-foreground/70 mt-0.5 text-[11px]">Time TBA</span>
+          ) : (
+            <>
+              {/* Heure locale en avant, KST en référence dessous. */}
+              <span className="tabular text-foreground mt-0.5 text-[12px] font-medium">
+                <LocalTime iso={event.start_at} withZone={false} fallback={timeLabel} />
+              </span>
+              <span className="tabular text-muted-foreground/70 text-[10px]">{timeLabel} KST</span>
+            </>
+          ))}
       </div>
     </Link>
   )

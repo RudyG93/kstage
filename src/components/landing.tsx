@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, BellRing, HeartIcon, Star } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
+import { isTimeTBA } from '@/lib/events/date'
 import { Panel } from '@/components/ui/panel'
 import { QueueRow } from '@/components/events/queue-row'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -105,7 +106,7 @@ export function Landing({
                 </p>
                 <p className="text-muted-foreground text-[10.5px]">{nextDrop.groups?.name}</p>
               </div>
-              <Countdown targetIso={nextDrop.start_at} variant="cells" />
+              {!isTimeTBA(nextDrop) && <Countdown targetIso={nextDrop.start_at} variant="cells" />}
             </div>
             {previewRows.length > 0 && (
               <div className="divide-y border-t">

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
-import { formatDDay, kstTime24h, localDayKey } from '@/lib/events/date'
+import { formatDDay, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
@@ -113,16 +113,24 @@ export function QueueRow({
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         {/* Heure LOCALE en avant (R5), KST en référence dessous — aligné sur
             event-card (décision « heure locale en avant »). */}
-        <span className="tabular text-muted-foreground flex items-center gap-1 text-[10px]">
-          <LocalTime iso={event.start_at} withZone={false} fallback="—" />
-          {/* La ligne ouvre YouTube dans un nouvel onglet (stage d'un music
-              show) : l'user doit le voir avant de cliquer (audit UX 2026-07-04). */}
-          {external && <ExternalLink className="text-faint size-3" aria-label="Opens YouTube" />}
-        </span>
-        <span className="tabular text-muted-foreground/70 text-[10px]">
-          {kstTime24h(event.start_at)} KST
-        </span>
-        {withCountdown && dday === 'D-DAY' && (
+        {isTimeTBA(event) ? (
+          <span className="tabular text-muted-foreground text-[10px]">Time TBA</span>
+        ) : (
+          <>
+            <span className="tabular text-muted-foreground flex items-center gap-1 text-[10px]">
+              <LocalTime iso={event.start_at} withZone={false} fallback="—" />
+              {/* La ligne ouvre YouTube dans un nouvel onglet (stage d'un music
+                  show) : l'user doit le voir avant de cliquer (audit UX 2026-07-04). */}
+              {external && (
+                <ExternalLink className="text-faint size-3" aria-label="Opens YouTube" />
+              )}
+            </span>
+            <span className="tabular text-muted-foreground/70 text-[10px]">
+              {kstTime24h(event.start_at)} KST
+            </span>
+          </>
+        )}
+        {withCountdown && dday === 'D-DAY' && !isTimeTBA(event) && (
           <Countdown targetIso={event.start_at} variant="inline" />
         )}
       </span>
