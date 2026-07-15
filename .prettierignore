@@ -1,6 +1,8 @@
 node_modules
 .next
 public
+output/
+.superpowers/
 *.log
 package-lock.json
 src/types/database.ts

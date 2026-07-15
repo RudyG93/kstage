@@ -1,7 +1,7 @@
 {
   "name": "KStage",
   "short_name": "KStage",
-  "description": "Your k-pop calendar — events, comebacks, and lives.",
+  "description": "Your k-pop calendar — releases, music videos, music shows, birthdays, and debut anniversaries.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B0D12",

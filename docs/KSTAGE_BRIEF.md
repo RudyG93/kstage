@@ -9,7 +9,7 @@
 
 ## 1. C'est quoi KStage, en une phrase
 
-**« Google Calendar conçu pour les fans de k-pop »** : une PWA mobile-first où le fan suit ses groupes favoris, et l'app filtre tout le reste, lui montre les events à venir (comebacks, music shows, lives, anniversaires) et le notifie au bon moment dans son fuseau horaire.
+**« Google Calendar conçu pour les fans de k-pop »** : une PWA mobile-first où le fan suit ses groupes favoris, et l'app filtre tout le reste, lui montre les événements à venir (sorties, MVs, music shows, anniversaires de membres et de début) et le notifie au bon moment dans son fuseau horaire.
 
 **Ce que ce n'est PAS** : une encyclopédie (kprofiles), un média éditorial chargé (kpopping), une liste statique de comebacks (dbkpop). KStage est un **outil personnel**, pas une base de données globale qu'on parcourt.
 

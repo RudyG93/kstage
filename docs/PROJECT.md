@@ -44,12 +44,12 @@ Choix volontaire : mix générations (3e/4e gen) et éditeurs (SM/HYBE/YG/Cube) 
 
 ### Types d'events couverts au lancement
 
-1. **Comebacks** (album, single, MV) — _essentiel_
-2. **Music shows** (M Countdown, Music Bank, Show Champion, Inkigayo, Music Core, The Show) — _essentiel, gros volume hebdo_
-3. **Lives officiels** (YouTube premieres, Weverse Live programmés)
-4. **Anniversaires** (debut date, members)
+1. **Releases** (albums, singles) — _essentiel_
+2. **Music videos** — _essentiel_
+3. **Music shows** (M Countdown, Music Bank, Show Champion, Inkigayo, Music Core, The Show) — _essentiel, gros volume hebdo_
+4. **Anniversaires** (dates de début et anniversaires des membres)
 
-Reporté en V2 : concerts, fanmeetings, tournées, variety shows, award shows, sub-units.
+Hors scope du lancement : événements live, concerts, fanmeetings, tournées, variety shows, award shows et sub-units. Le type interne live reste conservé pour les données historiques.
 
 ### Features MVP
 
@@ -105,7 +105,7 @@ user_notification_settings (id, user_id, event_type, lead_time_minutes, channel,
 event_suggestions (id, user_id, group_id, type, title, start_at, status, reviewed_by, reviewed_at, ...)
 push_subscriptions (id, user_id, endpoint, p256dh, auth, user_agent, created_at)
 
-Enums : event_type (comeback | music_show | live | anniversary | concert | other)
+Enums : event_type (mv | release | music_show | live | anniversary | concert | other)
         event_status (confirmed | tentative | cancelled)
         suggestion_status (pending | approved | rejected)
 ```
@@ -132,10 +132,11 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 - Lineups annoncés mardi-mercredi pour la semaine
 - Scraping nécessaire (pas d'API)
 
-### Lives
+### Événements live — compatibilité historique
 
-- **YouTube Data API** pour les premieres
-- **Weverse** : pas d'API publique, scraping nécessaire
+- Le type live reste lisible pour les anciennes données, mais n'est ni filtrable ni présenté comme une catégorie du lancement.
+- Les métadonnées YouTube liveBroadcastContent et scheduledStartTime restent utilisées pour distinguer une premiere programmée d'une vidéo déjà publiée.
+- Aucune ingestion Weverse Live n'est prévue pour la bêta.
 
 ### Anniversaires
 
@@ -171,8 +172,9 @@ Enums : event_type (comeback | music_show | live | anniversary | concert | other
 6. **Notifications push** — Service worker + Web Push API, abonnement push, envoi serveur (cron digest quotidien), guide install iOS. ✅ **DONE & mergé** (PR #9 + #10). Reste ops : confirmer les 4 vars VAPID sur Vercel **Production**.
 7. **Sources supplémentaires** — modules isolés :
    - **Comebacks** : scraping `kpopofficial.com`. ✅ **DONE & mergé** (PR #11 ; dbkpop abandonné, cf. §5).
-   - **Music shows & lives (Weverse)** : ⛔ **reportés à l'étape 8 (communauté)**. Recherche du 2026-05-26 : aucune source propre/scrapable (carrd fan fragile à placeholders/images ; sites diffuseurs JS+coréens, 1 émission chacun ; `kpop.fandom` 403 ; Wikipedia = gagnants _passés_ ; twicehub = backend à session ; pas de feed iCal). Pour nos 4 groupes ces events sont **rares** (fenêtres de promo / lives spontanés) → ROI scraping faible. Mieux servis par les suggestions communautaires.
-8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). Couvre aussi **music shows & lives** (cf. étape 7). ✅ **DONE & mergé** (PR #12).
+   - **Music shows** : agrégateur + sources diffuseurs pour les 6 émissions suivies. ✅ **DONE & mergé.**
+   - **Événements live (Weverse)** : retirés du scope du lancement ; compatibilité interne uniquement, sans promesse d'ingestion.
+8. **Système de suggestions communautaires** — Form user (auth) → `event_suggestions`, interface admin valider/rejeter (→ insert `events`). Admin via allowlist `ADMIN_EMAILS` ; notif au contributeur **reportée** (statut visible sur `/my`). La contribution couvre les catégories du lancement ; les suggestions live restent rejetées par la validation. ✅ **DONE & mergé** (PR #12).
 9. **Polish + lancement** — SEO/OpenGraph, landing marketing, analytics (Vercel Web Analytics, RGPD-friendly), PWA icônes brandées, redesign dark, audit a11y (Lighthouse 100). ✅ **Code mergé** (PR #13/#14/#15). Reste : **soft launch** (Reddit r/kpop, Twitter) — action produit, pas encore faite.
 
 > Plans d'étape détaillés : `docs/plans/`.

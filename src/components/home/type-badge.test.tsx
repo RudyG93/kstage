@@ -13,4 +13,9 @@ describe('TypeBadge', () => {
     render(<TypeBadge type="music_show" />)
     expect(screen.getByText('Music Show')).toBeInTheDocument()
   })
+
+  it('still renders the legacy live label', () => {
+    render(<TypeBadge type="live" />)
+    expect(screen.getByText('Live')).toBeInTheDocument()
+  })
 })

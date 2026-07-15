@@ -43,8 +43,8 @@ export async function savePushSubscription(sub: PushSubscriptionInput) {
   if (error) throw error
 }
 
-// Types exposés dans les préférences (concert/other non exposés : rares,
-// toujours inclus). Whitelist côté serveur — l'input client n'est pas fiable.
+// Types acceptés par l'action. L'UI expose les quatre catégories du lancement ;
+// live reste accepté pour les anciennes préférences et la compatibilité interne.
 const PREF_TYPES = ['mv', 'release', 'music_show', 'anniversary', 'live'] as const
 export type NotificationPrefType = (typeof PREF_TYPES)[number]
 

@@ -7,8 +7,8 @@ export default function AboutPage() {
   return (
     <LegalPage title="About KStage">
       <p>
-        KStage is an independent k-pop calendar that tracks comebacks, music shows, lives, and music
-        videos — so you never miss a drop from the groups you follow.
+        KStage is an independent k-pop calendar that tracks releases, music videos, music shows,
+        birthdays, and debut anniversaries — so you never miss a drop from the groups you follow.
       </p>
       <p>
         It started as a personal project by a fan who wanted a single, clean place to keep up with

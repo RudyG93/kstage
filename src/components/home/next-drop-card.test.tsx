@@ -51,14 +51,18 @@ describe('NextDropCard', () => {
     expect(screen.getByText(/next up — your groups/i)).toBeInTheDocument()
   })
 
-  it('shows the notify CTA when the event has a group + authed viewer', () => {
+  it('shows a truthful follow CTA when the event has a group', () => {
     render(<NextDropCard event={makeEvent()} isAuthed isFollowing={false} />)
-    expect(screen.getByRole('button', { name: /notify me/i })).toBeInTheDocument()
+    const follow = screen.getByRole('button', { name: 'Follow' })
+    expect(follow).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText(/notify/i)).not.toBeInTheDocument()
   })
 
-  it('links to notification settings when already following', () => {
+  it('shows a pressed Following button instead of a notification-settings link', () => {
     render(<NextDropCard event={makeEvent()} isAuthed isFollowing />)
-    expect(screen.getByRole('link', { name: /notify is on/i })).toHaveAttribute('href', '/account')
+    const following = screen.getByRole('button', { name: 'Following' })
+    expect(following).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('link', { name: /notify/i })).not.toBeInTheDocument()
   })
 
   it('falls back to "?" when the group is missing', () => {

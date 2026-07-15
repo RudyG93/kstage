@@ -61,7 +61,8 @@ const archivo = Archivo({
 })
 
 const SITE_URL = 'https://kstage.vercel.app'
-const SITE_DESCRIPTION = 'Your k-pop calendar — events, comebacks, and lives.'
+const SITE_DESCRIPTION =
+  'Your k-pop calendar — releases, music videos, music shows, birthdays, and debut anniversaries.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
