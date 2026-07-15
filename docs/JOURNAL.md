@@ -4,6 +4,10 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-15 — Phase 1 Lot 3a : timezone par viewer (réglage + affichage)
+
+**Branche/commit** : `feat/viewer-timezone` (`1bec8a2`) → `main`. Décisions Rudy : anonyme via **cookie navigateur** ; ticker gardé **KST**. `profiles.timezone` était **morte** (jamais écrite). **Quoi** : ① `getViewerTimeZone()` mémoïsé (`src/lib/profiles/timezone.ts`) : profil → cookie `tz` → défaut KST, avec `isValidTimeZone`. ② Réglage : `<select>` IANA dans Account + `updateProfile` écrit `profiles.timezone` (validé). ③ Anonyme : `TimezoneCookie` (Client Component au layout) détecte le fuseau navigateur, pose le cookie `tz` + **1 seul** `router.refresh` (garde anti-boucle) → « in your timezone » tenu sans compte. ④ Threading du fuseau résolu vers home (hero + queue/week), **calendrier** (`calendar-month` via `CalendarEvents`), `groups/[slug]` ; ticker reste KST explicite. Les primitifs `date.ts` (`localDayKey`/`formatDDay`/`groupEventsByDay`) acceptaient déjà un `timeZone`. **Pourquoi** : tenir la promesse « in your timezone » de la landing (exigence lancement international). L'heure PRIMAIRE était déjà correcte via `LocalTime` (navigateur) ; ce lot corrige D-day, regroupement par jour et calendrier côté serveur. **Vérification** : cookie `tz=Europe/Paris` posé en preview (anonyme), **pas de boucle**, 0 erreur console ; formatage tz-aware unit-testé (`formatDDay` Paris vs Seoul) ; threading typecheck-enforcé (props requises) ; 604 tests + build verts. **Différé** (lot polish, cosmétique) : puces D-day `group-card`/`trending`, mois-année `mv-card`/`mv-chart`, birthday. **Reste** : Lot 3b (push/digest par abonné), Lots 4-5.
+
 ## 2026-07-15 — Phase 1 Lots 1-2 : `hidden` filtré partout + dates `tentative` honnêtes
 
 **Branche/commit** : `fix/hidden-everywhere` (`cd5be20`) + `fix/tentative-dates` (`e96893b`) → `main`. Début de la **Phase 1 (contrat de confiance)** ; 2 lots contenus livrés (cartographie par 2 agents Explore avant édition).
