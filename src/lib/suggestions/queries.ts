@@ -61,6 +61,7 @@ export async function getTargetableEvents() {
   const { data, error } = await supabase
     .from('events')
     .select('id, title, type, start_at, groups!inner(name)')
+    .eq('hidden', false)
     .gte('start_at', since)
     .order('start_at', { ascending: false })
     .limit(200)

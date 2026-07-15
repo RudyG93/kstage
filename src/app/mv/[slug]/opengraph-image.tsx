@@ -20,6 +20,7 @@ export default async function OpengraphImage({ params }: { params: Promise<{ slu
     .from('events')
     .select('title, start_at, groups!inner(name)')
     .eq('slug', slug)
+    .eq('hidden', false)
     .maybeSingle()
 
   const groupName = event?.groups?.name ?? null

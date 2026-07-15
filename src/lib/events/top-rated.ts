@@ -90,6 +90,7 @@ export async function getTopRatedByPeriods(
       'event_id, score, events!inner(id, title, slug, start_at, type, groups!inner(name, image_url))',
     )
     .in('events.type', ['mv', 'release'])
+    .eq('events.hidden', false)
 
   const byEvent = new Map<string, RatedEventAgg & { sum: number }>()
   for (const r of data ?? []) {

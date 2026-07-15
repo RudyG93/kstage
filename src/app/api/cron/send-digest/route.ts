@@ -60,7 +60,8 @@ export async function GET(req: Request) {
       .select('group_id, title, start_at, type, groups!inner(name)')
       .gte('start_at', now.toISOString())
       .lt('start_at', until.toISOString())
-      .neq('status', 'cancelled'),
+      .neq('status', 'cancelled')
+      .eq('hidden', false),
   ])
 
   const err = subsRes.error ?? followsRes.error ?? prefsRes.error ?? eventsRes.error
