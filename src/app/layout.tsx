@@ -18,6 +18,7 @@ import { SiteNav } from '@/components/site-nav'
 import { HeaderSearch } from '@/components/search/header-search'
 import { AuthMenu } from '@/components/auth/auth-menu'
 import { Footer } from '@/components/footer'
+import { TimezoneCookie } from '@/components/timezone-cookie'
 import { Analytics } from '@vercel/analytics/next'
 import { createClient } from '@/lib/supabase/server'
 
@@ -182,6 +183,7 @@ export default async function RootLayout({
           <SiteNav variant="bottom" />
           <Footer />
           <Toaster position="bottom-right" richColors closeButton />
+          <TimezoneCookie />
         </ThemeProvider>
         <Analytics />
       </body>

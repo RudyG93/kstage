@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeUsername } from './validation'
+import { isValidTimeZone } from './timezone'
 
 export type ProfileState = { error: string } | { ok: true } | null
 export type AvatarResult = { error: string } | { ok: true; avatarUrl: string }
@@ -76,7 +77,13 @@ export async function updateProfile(
   const parsed = normalizeUsername(String(formData.get('username') ?? ''))
   if ('error' in parsed) return { error: parsed.error }
 
-  const { error } = await supabase.from('profiles').upsert({ id: user.id, username: parsed.value })
+  // Fuseau IANA : validé, sinon ignoré (on ne l'écrase pas avec une valeur folle).
+  const tzRaw = String(formData.get('timezone') ?? '')
+  const timezone = isValidTimeZone(tzRaw) ? tzRaw : undefined
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({ id: user.id, username: parsed.value, ...(timezone ? { timezone } : {}) })
   if (error) {
     if (/duplicate key|unique/i.test(error.message)) {
       return { error: 'That username is already taken.' }

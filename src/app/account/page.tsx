@@ -8,6 +8,7 @@ import { CalendarFeed } from '@/components/account/calendar-feed'
 import { createClient } from '@/lib/supabase/server'
 import { getNotificationPrefs } from '@/lib/notifications/queries'
 import { getProfile } from '@/lib/profiles/queries'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 
 export const metadata = { title: 'Account settings' }
 
@@ -41,6 +42,7 @@ export default async function AccountPage() {
           email={user.email ?? ''}
           username={profile?.username ?? ''}
           avatarUrl={profile?.avatar_url ?? null}
+          timezone={await getViewerTimeZone()}
         />
 
         <section className="space-y-3">

@@ -28,6 +28,7 @@ import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { findHeroEventIndex } from '@/lib/events/hero'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 
 // Home Data Desk : ticker global → hero NEXT UP → UPCOMING QUEUE → THIS WEEK →
 // FRESH DROPS, avec les sidebars My groups (gauche) et Recent comebacks /
@@ -68,11 +69,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
 
   // Indépendants (les deux ne dépendent que de user.id) : en parallèle plutôt
   // que 2 allers-retours séquentiels sur la page connectée la plus chargée.
-  const [{ data: profile }, followedIds] = await Promise.all([
-    supabase.from('profiles').select('timezone').eq('id', user.id).single(),
-    getFollowedGroupIds(),
-  ])
-  const timeZone = profile?.timezone ?? 'Asia/Seoul'
+  const [timeZone, followedIds] = await Promise.all([getViewerTimeZone(), getFollowedGroupIds()])
   const ids = [...followedIds]
   const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
     await Promise.all([
@@ -176,6 +173,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
                 isFollowing={nextDrop.group_id ? followedIds.has(nextDrop.group_id) : false}
                 latestMvImage={heroMvImage}
                 latestMvFallback={heroMvFallback}
+                timeZone={timeZone}
               />
             )}
             {queueEvents.length > 0 && (

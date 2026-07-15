@@ -36,13 +36,13 @@ function makeEvent(overrides: Partial<UpcomingEvent> = {}): UpcomingEvent {
 
 describe('CalendarMonth', () => {
   it('renders the page heading and the month pager', () => {
-    render(<CalendarMonth year={2026} month={6} events={[]} />)
+    render(<CalendarMonth year={2026} month={6} events={[]} timeZone="Asia/Seoul" />)
     expect(screen.getByRole('heading', { name: 'Calendar' })).toBeInTheDocument()
     expect(screen.getByText('JUN 2026')).toBeInTheDocument()
   })
 
   it('maps events to their KST day cell and lists them below the grid', async () => {
-    render(<CalendarMonth year={2026} month={6} events={[makeEvent()]} />)
+    render(<CalendarMonth year={2026} month={6} events={[makeEvent()]} timeZone="Asia/Seoul" />)
     // 09:00Z → 18:00 KST le 17 → la cellule du 17 porte 1 event.
     expect(screen.getByLabelText(/JUN 17, 1 event/)).toBeInTheDocument()
     // La liste par jour sous la grille montre l'event (sans clic).
@@ -50,7 +50,7 @@ describe('CalendarMonth', () => {
   })
 
   it('shows the empty message when selecting a day without events', async () => {
-    render(<CalendarMonth year={2026} month={6} events={[makeEvent()]} />)
+    render(<CalendarMonth year={2026} month={6} events={[makeEvent()]} timeZone="Asia/Seoul" />)
     await userEvent.click(screen.getByLabelText(/JUN 2, 0 events/))
     expect(screen.getByText('No events this day.')).toBeInTheDocument()
   })
