@@ -19,7 +19,7 @@ export default function AboutPage() {
       <p>
         Events and metadata are aggregated from public sources (official channels, broadcasters, and
         community trackers) and normalized for consistency. Mistakes happen — if you spot one, use
-        the <strong>Suggest</strong> button when logged in to send a fix.
+        the <strong>Feedback</strong> link at the bottom of any page to send a fix.
       </p>
       <p>
         KStage is a fan-made, non-commercial project and is not affiliated with any of the agencies

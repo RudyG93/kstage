@@ -114,6 +114,22 @@ Enums : event_type (mv | release | music_show | live | anniversary | concert | o
 
 **Principe** : commencer simple, étendre seulement quand un besoin concret apparaît. Pas de sur-modélisation (sub-units, parent companies, etc.) tant que pas nécessaire.
 
+**Sémantique des dates (contrat produit, Phase 0)** — 3 états, à respecter à l'affichage ET aux notifications :
+
+- **Date + heure exactes** (`status='confirmed'` avec une heure réelle) : D-day + heure locale + countdown minute autorisés.
+- **Date connue, heure TBA** : jour confirmé sans heure publiée → afficher « Date confirmed · time TBA », pas de countdown minute, pas de push minute-précis.
+- **Tentative** (`status='tentative'`) : la row porte une **heure technique = minuit KST** (`kstToUtcISO` défaut 00:00) qui NE DOIT PAS être présentée comme exacte → même traitement que « heure TBA ».
+
+> Ici on pose la **définition** ; l'implémentation honnête (masquer l'heure fictive d'un `tentative`, supprimer le countdown minute) est un lot de la **Phase 1** (contrat de confiance).
+
+**Niveaux de confiance (couverture graduée, roadmap Phase 3)** — définition posée en Phase 0, gate implémenté en Phase 3 :
+
+- **Vérifié** : identité + sources confirmées, scraping récent → publié + éligible aux notifications.
+- **Surveillé** : artiste légitime, couverture potentiellement partielle → publié (promesse limitée), notifie uniquement les données à forte confiance.
+- **Candidat / pré-début** : détection automatique encore ambiguë → non publié (ou noindex), jamais de notification.
+
+Principe : **découvrir largement, ne garantir que ce qui est vérifié.** L'auto-publication d'un nouveau debut est réservée aux cas à preuves fortes.
+
 ---
 
 ## 5. Sources de données
