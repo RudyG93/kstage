@@ -11,7 +11,6 @@ const PREF_ROWS = [
   { type: 'release', label: 'Releases', hint: 'Album & single release dates' },
   { type: 'music_show', label: 'Music shows', hint: 'Music Bank, Inkigayo… lineups' },
   { type: 'anniversary', label: 'Birthdays & anniversaries', hint: 'Member birthdays, debut days' },
-  { type: 'live', label: 'Lives', hint: 'Scheduled premieres and lives' },
 ] as const
 
 /**
@@ -37,8 +36,8 @@ export function NotificationPrefs({ initial }: { initial: Record<string, boolean
     }
   }, [])
 
-  // Sans abonnement push, ces 5 toggles n'ont aucun effet — les manipuler
-  // donnait l'impression que « rien ne marche » (audit 2026-07-10).
+  // Sans abonnement push, ces préférences n'ont aucun effet : les manipuler
+  // donnerait l'impression que « rien ne marche ».
   const inert = subscribed === false
 
   function toggle(type: string) {
