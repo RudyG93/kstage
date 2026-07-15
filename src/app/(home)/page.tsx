@@ -25,12 +25,9 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus, getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
 import { groupMusicShowEpisodes } from '@/lib/events/grouping'
+import { findHeroEventIndex } from '@/lib/events/hero'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
-
-// Types « vrai comeback » mis en avant par le hero (un anniversaire ne doit pas
-// occuper la carte principale — il reste dans la queue).
-const COMEBACK_TYPES = new Set(['mv', 'release', 'music_show', 'live'])
 
 // Home Data Desk : ticker global → hero NEXT UP → UPCOMING QUEUE → THIS WEEK →
 // FRESH DROPS, avec les sidebars My groups (gauche) et Recent comebacks /
@@ -96,12 +93,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   }
   const ratings = await getRatingsForEvents(freshMvs.map((m) => m.id))
 
-  // Hero = prochain VRAI comeback (pas un anniversaire) ; le reste va à la queue.
+  // Hero = prochain vrai comeback (MV, release ou music show). Les anniversaires
+  // et les données live héritées restent disponibles dans les autres surfaces.
   // Groupement AVANT le cap de la queue : un épisode à 5 groupes = 1 carte.
   const merged = groupMusicShowEpisodes(
     [...dbEvents, ...anniversaries].sort((a, b) => a.start_at.localeCompare(b.start_at)),
   )
-  const heroIdx = merged.findIndex((e) => COMEBACK_TYPES.has(e.type))
+  const heroIdx = findHeroEventIndex(merged)
   const nextDrop = heroIdx >= 0 ? merged[heroIdx] : null
 
   // Fond du hero : thumbnail maxres du DERNIER MV du groupe du hero — le
