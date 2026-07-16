@@ -15,6 +15,47 @@ const ev = (groupId: string, title: string, startAt: string, groupName?: string)
   groupName,
 })
 
+describe('buildDigest — gate de confiance (Phase 3 Lot 2)', () => {
+  const follows: DigestFollow[] = [{ userId: 'u1', groupId: 'g1' }]
+
+  it('candidate : jamais dans le digest, et le COUNT du titre ne le compte pas', () => {
+    const events: DigestEvent[] = [
+      { ...ev('g1', 'Ambiguous drop', '2026-05-26T01:00:00Z', 'Mystery'), confidence: 'candidate' },
+      { ...ev('g1', 'Real drop', '2026-05-26T02:00:00Z', 'aespa'), confidence: 'verified' },
+    ]
+    const [message] = buildDigest([sub('u1')], follows, events)
+    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.body).not.toContain('Ambiguous drop')
+  })
+
+  it('monitored : tentative non-youtube exclu, confirmed inclus', () => {
+    const events: DigestEvent[] = [
+      {
+        ...ev('g1', 'Rumored', '2026-05-26T01:00:00Z', 'X'),
+        confidence: 'monitored',
+        status: 'tentative',
+        sourceType: 'wikipedia',
+      },
+      {
+        ...ev('g1', 'Confirmed', '2026-05-26T02:00:00Z', 'X'),
+        confidence: 'monitored',
+        status: 'confirmed',
+        sourceType: 'kpopofficial',
+      },
+    ]
+    const [message] = buildDigest([sub('u1')], follows, events)
+    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.body).toContain('Confirmed')
+  })
+
+  it('que du candidate → aucun message du tout', () => {
+    const messages = buildDigest([sub('u1')], follows, [
+      { ...ev('g1', 'Ghost', '2026-05-26T01:00:00Z'), confidence: 'candidate' },
+    ])
+    expect(messages).toEqual([])
+  })
+})
+
 describe('buildDigest', () => {
   it('skips users who follow no groups', () => {
     const messages = buildDigest([sub('u1')], [], [ev('g1', 'Comeback', '2026-05-26T00:00:00Z')])

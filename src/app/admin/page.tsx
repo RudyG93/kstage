@@ -43,7 +43,16 @@ export default async function AdminHub() {
 
   // Même évaluation que /api/cron/monitor : la carte montre ce que le monitor
   // verrait à l'instant T (fraîcheur PAR FAMILLE — audit §7.6).
-  const [health, activation] = await Promise.all([getSourceHealth(), getActivationStats()])
+  const [health, activation, { data: tierRows }] = await Promise.all([
+    getSourceHealth(),
+    getActivationStats(),
+    supabase.from('groups').select('confidence'),
+  ])
+  // Tiers de confiance (Phase 3 Lot 2) — internes : visibles ici seulement.
+  const tierCounts = new Map<string, number>()
+  for (const r of tierRows ?? []) {
+    tierCounts.set(r.confidence, (tierCounts.get(r.confidence) ?? 0) + 1)
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -64,6 +73,20 @@ export default async function AdminHub() {
                 : `${health.alerts.length} alerte${health.alerts.length > 1 ? 's' : ''}`}
             </span>
           </div>
+          {/* Tiers de confiance (audit §4.1) : candidate = noindex + hors
+              sitemap + jamais notifié ; monitored = notifs à forte confiance. */}
+          <p className="text-muted-foreground mt-2 text-xs">
+            Confidence tiers :{' '}
+            {(['verified', 'monitored', 'candidate'] as const).map((tier, i) => (
+              <span key={tier}>
+                {i > 0 && ' · '}
+                <span className="text-foreground tabular font-semibold">
+                  {tierCounts.get(tier) ?? 0}
+                </span>{' '}
+                {tier}
+              </span>
+            ))}
+          </p>
           <ul className="mt-3 space-y-1.5">
             {health.checks.map((c) => (
               <li key={c.source} className="flex flex-wrap items-center gap-2 text-sm">

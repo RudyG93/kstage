@@ -32,18 +32,21 @@ export interface DebutCandidateRow {
   status: string
   detected_at: string
   payload: DebutCandidatePayload | null
+  /** Tier de confiance du groupe créé (Phase 3 Lot 2) — null si pas créé. */
+  group_confidence: string | null
 }
 
 export async function getDebutCandidates(): Promise<DebutCandidateRow[]> {
   if (!(await requireAdmin())) return []
   const { data } = await serviceClient()
     .from('debut_candidates')
-    .select('id, page_title, status, detected_at, payload')
+    .select('id, page_title, status, detected_at, payload, groups(confidence)')
     .order('detected_at', { ascending: false })
     .limit(100)
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map(({ groups, ...row }) => ({
     ...row,
     payload: row.payload as unknown as DebutCandidatePayload | null,
+    group_confidence: groups?.confidence ?? null,
   }))
 }
 

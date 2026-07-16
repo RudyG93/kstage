@@ -21,6 +21,11 @@ from (values
   ('1db0493d-c539-4e08-9b05-b2995b621c47', 'Min C',         'Min Seo',               '2006-04-21', null,                              'secretnumber-min-c'),
   ('19850eb6-fbcf-46ed-9623-0c7d0b334d9e', 'Lee Chanhyuk',  'Lee Chanhyuk',          '1996-09-12', 'Vocalist, Producer',              'akmu-lee-chanhyuk')
 ) as v(gid, stage, real, bday, pos, slug)
+-- Jointure sur groups (rétro-fix 2026-07-17, job CI DB) : les UUID sont ceux
+-- de la PROD — sur une base fraîche (supabase db reset) les groupes n'existent
+-- pas et l'insert violait la FK members_group_id_fkey. Le join = no-op propre
+-- sur base vierge, sémantique inchangée en prod (déjà appliquée, non rejouée).
+join public.groups g on g.id = v.gid::uuid
 where not exists (
   select 1 from public.members m
   where m.group_id = v.gid::uuid and lower(m.stage_name) = lower(v.stage)

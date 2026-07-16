@@ -165,6 +165,12 @@ export async function createFromPayload(
       image_url: image,
       links: links as Json,
       is_solo: payload.members.length === 0,
+      // Tier de confiance (Phase 3 Lot 2, audit §4.1) : un groupe auto-créé
+      // n'est JAMAIS `verified` d'emblée — `monitored` si la chaîne YouTube
+      // est vérifiée (les MVs viendront d'un canal sûr), sinon `candidate`
+      // (quarantaine : noindex, hors sitemap, aucune notification) jusqu'à la
+      // découverte d'une chaîne (Lot 3) ou une promotion admin.
+      confidence: payload.ytVerified ? 'monitored' : 'candidate',
     })
     .select('id')
     .single()

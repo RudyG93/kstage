@@ -18,14 +18,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
 
+  // Gate de confiance (Phase 3 Lot 2) : les groupes `candidate` (identité
+  // ambiguë) sont noindexés → ils ne doivent pas non plus être sitemappés.
+  // Même correction pour les pre-debut (noindexés depuis toujours mais
+  // sitemappés — incohérence historique).
+  const today = new Date().toISOString().slice(0, 10)
   const [groupsRes, mvsRes, membersRes] = await Promise.all([
-    supabase.from('groups').select('slug').eq('is_solo', false),
+    supabase
+      .from('groups')
+      .select('slug')
+      .eq('is_solo', false)
+      .neq('confidence', 'candidate')
+      .or(`debut_date.is.null,debut_date.lte.${today}`),
     supabase
       .from('events')
-      .select('slug, updated_at')
+      .select('slug, updated_at, groups!inner(confidence)')
       .eq('type', 'mv')
       .not('slug', 'is', null)
       .eq('hidden', false)
+      .neq('groups.confidence', 'candidate')
       .range(0, 4999), // cap PostgREST 1000 rows par défaut → fenêtre explicite
     supabase
       .from('members')

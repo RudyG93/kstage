@@ -5,6 +5,7 @@
 // titre « Your k-pop week ») — le choix de l'édition vient du cron.
 
 import { withPushSrc } from './push-url'
+import { passesConfidenceGate } from './comebacks'
 
 export type DigestSubscription = {
   userId: string
@@ -27,6 +28,10 @@ export type DigestEvent = {
   // précise sur une date sans heure » (audit §7.5) ; le digest ne cite aucune
   // heure, tous les statuts non-cancelled y sont légitimes.
   status?: string | null
+  // Tier de confiance du groupe + type de source (Phase 3 Lot 2) — mêmes
+  // règles que le push (cf. passesConfidenceGate). Absents = historique.
+  confidence?: 'verified' | 'monitored' | 'candidate' | null
+  sourceType?: string | null
 }
 
 export type DigestPayload = { title: string; body: string; url: string; tag?: string }
@@ -111,8 +116,11 @@ export function buildDigest(
     const disabled = disabledTypes?.get(subscription.userId)
     // Filtre AVANT digestLabels : le compte du titre et l'agrégation music_show
     // ne voient que les events pertinents. Event sans type → conservé (compat).
+    // Gate de confiance (Phase 3 Lot 2) : candidate jamais, monitored seulement
+    // confirmed/youtube_api — même règle que le push.
     const userEvents = sorted.filter(
-      (e) => followed.has(e.groupId) && !(e.type && disabled?.has(e.type)),
+      (e) =>
+        followed.has(e.groupId) && passesConfidenceGate(e) && !(e.type && disabled?.has(e.type)),
     )
     if (userEvents.length === 0) continue
     messages.push({ subscription, payload: buildPayload(userEvents, edition) })

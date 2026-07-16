@@ -49,6 +49,9 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/mv/${slug}` },
     openGraph: { title: `${title} — ${group?.name ?? 'KStage'}`, description },
+    // Tier `candidate` (Phase 3 Lot 2) : les MVs d'une identité encore ambiguë
+    // ne s'indexent pas — cohérent avec la page groupe et le sitemap.
+    ...(group?.confidence === 'candidate' ? { robots: { index: false, follow: true } } : {}),
   }
 }
 

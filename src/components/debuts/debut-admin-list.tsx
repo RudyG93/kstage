@@ -47,6 +47,19 @@ export function DebutAdminList({ items }: { items: DebutCandidateRow[] }) {
                 <span className="label-data-inline bg-secondary rounded-sm px-1.5 py-0.5 text-[9px]">
                   {c.status}
                 </span>
+                {/* Tier de confiance du groupe créé (Phase 3 Lot 2, interne). */}
+                {c.group_confidence && (
+                  <span
+                    className={cn(
+                      'label-data-inline rounded-sm px-1.5 py-0.5 text-[9px]',
+                      c.group_confidence === 'candidate'
+                        ? 'bg-amber/15 text-amber'
+                        : 'bg-teal/15 text-teal',
+                    )}
+                  >
+                    {c.group_confidence}
+                  </span>
+                )}
                 <span className="text-xs font-semibold">{c.payload?.name ?? c.page_title}</span>
                 {c.payload?.debutDate && (
                   <span className="tabular text-primary text-[10px]">
