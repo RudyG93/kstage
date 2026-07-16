@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
+import { getSourceHealth } from '@/lib/monitoring/queries'
+import { relativeTime } from '@/lib/events/date'
+import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Admin' }
 
@@ -23,6 +26,12 @@ const SECTIONS = [
   { href: '/admin/reports', title: 'Reports', desc: 'Commentaires signalés.' },
 ]
 
+const STATUS_STYLE: Record<string, string> = {
+  ok: 'bg-emerald-500/15 text-emerald-500',
+  partial: 'bg-amber/15 text-amber',
+  error: 'bg-destructive/15 text-destructive',
+}
+
 export default async function AdminHub() {
   const supabase = await createClient()
   const {
@@ -30,6 +39,10 @@ export default async function AdminHub() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   if (!isAdmin(user.email)) redirect('/')
+
+  // Même évaluation que /api/cron/monitor : la carte montre ce que le monitor
+  // verrait à l'instant T (fraîcheur PAR FAMILLE — audit §7.6).
+  const health = await getSourceHealth()
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -39,6 +52,45 @@ export default async function AdminHub() {
           Éditeurs ciblés. Le CRUD brut (création / suppression en masse) passe par Supabase Studio.
         </p>
       </div>
+
+      {health && (
+        <section className="bg-card mt-6 rounded-xl border p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-medium">Source health</h2>
+            <span className="text-muted-foreground text-xs">
+              {health.alerts.length === 0
+                ? 'Toutes les familles sont saines'
+                : `${health.alerts.length} alerte${health.alerts.length > 1 ? 's' : ''}`}
+            </span>
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {health.checks.map((c) => (
+              <li key={c.source} className="flex flex-wrap items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    'tabular rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold uppercase',
+                    STATUS_STYLE[c.lastStatus ?? ''] ?? 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {c.lastStatus ?? 'no run'}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                <span className="text-muted-foreground text-xs">
+                  {c.lastRunAt ? relativeTime(c.lastRunAt) : 'jamais logué'}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {health.alerts.length > 0 && (
+            <ul className="text-destructive mt-3 space-y-1 border-t pt-3 text-xs">
+              {health.alerts.map((a) => (
+                <li key={a}>⚠ {a}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {SECTIONS.map((s) => (
           <Link
