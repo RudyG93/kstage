@@ -62,7 +62,9 @@ export async function GET(req: Request) {
       .eq('channel', 'push'),
     supabase
       .from('events')
-      .select('group_id, title, start_at, type, status, groups!inner(name)')
+      .select(
+        'group_id, title, start_at, type, status, groups!inner(name, confidence), sources(type)',
+      )
       .gte('start_at', now.toISOString())
       .lt('start_at', until.toISOString())
       .neq('status', 'cancelled')
@@ -85,16 +87,22 @@ export async function GET(req: Request) {
       }),
     ),
     (followsRes.data ?? []).map((f): DigestFollow => ({ userId: f.user_id, groupId: f.group_id })),
-    (eventsRes.data ?? []).map(
-      (e): DigestEvent => ({
-        groupId: e.group_id,
-        title: e.title,
-        startAt: e.start_at,
-        groupName: e.groups?.name,
-        type: e.type,
-        status: e.status,
-      }),
-    ),
+    // Défense en profondeur : candidate écarté dès la route (le builder
+    // ré-applique le gate — passesConfidenceGate).
+    (eventsRes.data ?? [])
+      .filter((e) => e.groups?.confidence !== 'candidate')
+      .map(
+        (e): DigestEvent => ({
+          groupId: e.group_id,
+          title: e.title,
+          startAt: e.start_at,
+          groupName: e.groups?.name,
+          type: e.type,
+          status: e.status,
+          confidence: e.groups?.confidence ?? null,
+          sourceType: e.sources?.type ?? null,
+        }),
+      ),
     edition,
     disabledTypesByUser(prefsRes.data ?? []),
   )

@@ -165,6 +165,74 @@ describe('buildComebackNotifications', () => {
     expect(without).toHaveLength(1)
   })
 
+  describe('gate de confiance (Phase 3 Lot 2, audit §4.1)', () => {
+    it('candidate : JAMAIS notifié, quels que soient status et source', () => {
+      for (const over of [
+        { status: 'confirmed', sourceType: 'youtube_api' },
+        { status: 'confirmed', sourceType: 'kpopofficial' },
+        { status: 'tentative', sourceType: null },
+      ]) {
+        const messages = buildComebackNotifications(
+          [sub('u1')],
+          [follow('u1', 'g1')],
+          [ev({ confidence: 'candidate', ...over })],
+          new Set(),
+          NOW,
+        )
+        expect(messages).toEqual([])
+      }
+    })
+
+    it('monitored : tentative + source non-youtube exclu', () => {
+      const messages = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev({ confidence: 'monitored', status: 'tentative', sourceType: 'wikipedia' })],
+        new Set(),
+        NOW,
+      )
+      expect(messages).toEqual([])
+    })
+
+    it('monitored : confirmed inclus ; tentative + youtube_api inclus', () => {
+      const confirmed = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev({ confidence: 'monitored', status: 'confirmed', sourceType: 'kpopofficial' })],
+        new Set(),
+        NOW,
+      )
+      expect(confirmed).toHaveLength(1)
+      const youtube = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev({ confidence: 'monitored', status: 'tentative', sourceType: 'youtube_api' })],
+        new Set(),
+        NOW,
+      )
+      expect(youtube).toHaveLength(1)
+    })
+
+    it('verified / champ absent : comportement historique', () => {
+      const verified = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev({ confidence: 'verified', status: 'tentative' })],
+        new Set(),
+        NOW,
+      )
+      expect(verified).toHaveLength(1)
+      const absent = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev()],
+        new Set(),
+        NOW,
+      )
+      expect(absent).toHaveLength(1)
+    })
+  })
+
   describe('fuseau par abonné (Lot 3b)', () => {
     it('un même event : day_before à Séoul, day_of à Los Angeles', () => {
       // now = 09/06 14:00 UTC, event = 09/06 16:00 UTC.

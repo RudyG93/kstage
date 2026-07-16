@@ -41,6 +41,29 @@ export type ComebackEvent = {
   startAt: string
   status: string // confirmed | tentative (cancelled filtré côté route)
   url: string // déjà résolu (eventHref) côté route
+  // Tier de confiance du groupe (Phase 3 Lot 2, audit §4.1) + type de la
+  // source de l'event. Optionnels : absents = comportement historique.
+  confidence?: 'verified' | 'monitored' | 'candidate' | null
+  sourceType?: string | null
+}
+
+/**
+ * Gate de confiance (audit §4.1) — partagé comebacks/digest :
+ *   candidate : JAMAIS notifié (identité encore ambiguë) ;
+ *   monitored : seulement les données à forte confiance (status confirmed
+ *               OU source youtube_api — un MV posté sur la chaîne est un fait) ;
+ *   verified / champ absent : comportement historique.
+ */
+export function passesConfidenceGate(event: {
+  confidence?: 'verified' | 'monitored' | 'candidate' | null
+  status?: string | null
+  sourceType?: string | null
+}): boolean {
+  if (event.confidence === 'candidate') return false
+  if (event.confidence === 'monitored') {
+    return event.status === 'confirmed' || event.sourceType === 'youtube_api'
+  }
+  return true
 }
 
 export type NotificationKind = 'day_before' | 'day_of'
@@ -112,6 +135,7 @@ export function buildComebackNotifications(
     const timeZone = timeZones?.get(subscription.userId) ?? DEFAULT_TIME_ZONE
     for (const event of events) {
       if (!followed.has(event.groupId)) continue
+      if (!passesConfidenceGate(event)) continue
       if (disabled?.has(event.type)) continue
       const kind = resolveKind(event, now, timeZone)
       if (!kind) continue

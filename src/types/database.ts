@@ -553,6 +553,7 @@ export type Database = {
           banner_url: string | null
           banner_yt_url: string | null
           color_hex: string | null
+          confidence: Database["public"]["Enums"]["group_confidence"]
           created_at: string
           debut_date: string | null
           disbanded_on: string | null
@@ -571,6 +572,7 @@ export type Database = {
           banner_url?: string | null
           banner_yt_url?: string | null
           color_hex?: string | null
+          confidence?: Database["public"]["Enums"]["group_confidence"]
           created_at?: string
           debut_date?: string | null
           disbanded_on?: string | null
@@ -589,6 +591,7 @@ export type Database = {
           banner_url?: string | null
           banner_yt_url?: string | null
           color_hex?: string | null
+          confidence?: Database["public"]["Enums"]["group_confidence"]
           created_at?: string
           debut_date?: string | null
           disbanded_on?: string | null
@@ -1028,6 +1031,7 @@ export type Database = {
     }
     Enums: {
       event_status: "confirmed" | "tentative" | "cancelled"
+      group_confidence: "verified" | "monitored" | "candidate"
       event_type:
         | "mv"
         | "music_show"
@@ -1169,6 +1173,7 @@ export const Constants = {
   public: {
     Enums: {
       event_status: ["confirmed", "tentative", "cancelled"],
+      group_confidence: ["verified", "monitored", "candidate"],
       event_type: [
         "mv",
         "music_show",

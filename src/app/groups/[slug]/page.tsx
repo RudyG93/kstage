@@ -39,7 +39,11 @@ export async function generateMetadata({
     openGraph: { title: `${title} · KStage`, description, url: `/groups/${slug}` },
     // Pré-debut (R4-I) : page atteignable (calendrier/follow) mais hors index
     // tant que le groupe n'a pas de contenu — cohérent avec le page-pruning.
-    ...(isFutureDate(group.debut_date) ? { robots: { index: false, follow: true } } : {}),
+    // + tier `candidate` (Phase 3 Lot 2) : identité encore ambiguë → jamais
+    // indexée (audit §4.1 « Non ou noindex »), sitemap aligné.
+    ...(isFutureDate(group.debut_date) || group.confidence === 'candidate'
+      ? { robots: { index: false, follow: true } }
+      : {}),
   }
 }
 

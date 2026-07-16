@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const now = new Date()
   const EVENT_FIELDS =
-    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug)'
+    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug, confidence), sources(type)'
 
   // Superset d'events comeback (mv/release) sur la fenêtre [now-1j, now+3j) ;
   // resolveKind fait le test de jour exact PAR FUSEAU. La fenêtre couvre tous
@@ -81,17 +81,22 @@ export async function GET(req: Request) {
   }
 
   // Mapping vers ComebackEvent (url + titre nettoyés ici pour garder le
-  // builder pur).
-  const events: ComebackEvent[] = (upcomingRes.data ?? []).map((e) => ({
-    id: e.id,
-    groupId: e.group_id,
-    groupName: e.groups?.name ?? null,
-    title: displayEventTitle(e.title, e.groups?.name, null, e.type),
-    type: e.type,
-    startAt: e.start_at,
-    status: e.status,
-    url: eventHref(e),
-  }))
+  // builder pur). Défense en profondeur : les events de groupes `candidate`
+  // sont écartés dès ici (le builder ré-applique le gate — passesConfidenceGate).
+  const events: ComebackEvent[] = (upcomingRes.data ?? [])
+    .filter((e) => e.groups?.confidence !== 'candidate')
+    .map((e) => ({
+      id: e.id,
+      groupId: e.group_id,
+      groupName: e.groups?.name ?? null,
+      title: displayEventTitle(e.title, e.groups?.name, null, e.type),
+      type: e.type,
+      startAt: e.start_at,
+      status: e.status,
+      confidence: e.groups?.confidence ?? null,
+      sourceType: e.sources?.type ?? null,
+      url: eventHref(e),
+    }))
 
   // Triggers déjà envoyés pour ces events (idempotence).
   const eventIds = events.map((e) => e.id)
