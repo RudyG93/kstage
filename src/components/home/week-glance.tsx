@@ -15,9 +15,12 @@ import type { UpcomingEvent } from '@/lib/events/queries'
 export function WeekGlance({
   events,
   timeZone,
+  note,
 }: {
   events: readonly UpcomingEvent[]
   timeZone: string
+  /** « All groups » quand la semaine affiche le repli global (audit §8.4). */
+  note?: string
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const now = new Date()
@@ -51,7 +54,11 @@ export function WeekGlance({
 
   return (
     <Panel>
-      <PanelHeader label="This week" action={{ label: monthLabel, href: '/calendar' }} />
+      <PanelHeader
+        label="This week"
+        note={note}
+        action={{ label: monthLabel, href: '/calendar' }}
+      />
       <div className="grid grid-cols-7 gap-1.5 p-3">
         {days.map((day) => {
           const isSelected = selectedKey === day.key

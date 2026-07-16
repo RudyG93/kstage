@@ -14,8 +14,14 @@ test.describe('Landing (logged out)', () => {
     // duplication marquee) → strict mode violation sinon, surtout en prod où
     // l'hydratation est assez rapide pour monter le doublon avant l'assertion.
     await expect(page.getByText(/events tracked live/i).first()).toBeVisible()
-    await expect(page.getByRole('link', { name: /create your calendar — free/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /browse the calendar first/i })).toBeVisible()
+    // .first() : le CTA est rendu DEUX fois depuis P2 Lot 2 (2ᵉ écran + pied
+    // de page longue, audit §8.3) → strict mode violation sans .first().
+    await expect(
+      page.getByRole('link', { name: /create your calendar — free/i }).first(),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: /browse the calendar first/i }).first(),
+    ).toBeVisible()
 
     // 3 étapes : au moins la première (first() : le sous-titre du hero contient
     // aussi « Follow your groups »).
@@ -28,11 +34,17 @@ test.describe('Landing (logged out)', () => {
 
   test('CTA principal navigue vers /signup, CTA secondaire vers /calendar', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('link', { name: /create your calendar — free/i }).click()
+    await page
+      .getByRole('link', { name: /create your calendar — free/i })
+      .first()
+      .click()
     await expect(page).toHaveURL(/\/signup$/)
 
     await page.goto('/')
-    await page.getByRole('link', { name: /browse the calendar first/i }).click()
+    await page
+      .getByRole('link', { name: /browse the calendar first/i })
+      .first()
+      .click()
     await expect(page).toHaveURL(/\/calendar$/)
   })
 })

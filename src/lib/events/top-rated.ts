@@ -47,12 +47,17 @@ const PERIOD_DAYS: Record<Exclude<TopRatedPeriod, 'alltime'>, number> = {
 // deux mois consécutifs contiennent des sorties différentes).
 const NEW_DAYS = 7
 
-/** Classe les events notés par moyenne (puis nb de votes), par période de sortie. */
+/**
+ * Classe les events notés par moyenne (puis nb de votes), par période de sortie.
+ * `minCount = 2` (audit §8.7) : un MV noté UNE fois ne peut plus être n°1.
+ * Pas de moyenne bayésienne à ce volume — le prior dominerait tout le
+ * classement ; à revisiter quand une période porte ~50+ notes.
+ */
 export function bucketByReleaseWindow(
   aggs: readonly RatedEventAgg[],
   nowMs: number = Date.now(),
   limit = 5,
-  minCount = 1,
+  minCount = 2,
 ): Record<TopRatedPeriod, TopRatedItem[]> {
   const ranked = [...aggs]
     .filter((a) => a.count >= minCount)

@@ -134,6 +134,18 @@ export default async function Home({
   // (P0.8) — dédupliqués contre les épisodes réels GLOBAUX (pas seulement
   // suivis) : « Lineup TBA » ne doit jamais s'afficher quand le lineup est
   // déjà connu quelque part.
+  // Fallbacks globaux EXPLICITES (audit §8.4) : quand un module se replie sur
+  // le contenu global (0 follow, ou follows sans events), son header l'annonce
+  // au lieu de le taire — sinon le comportement change sans explication quand
+  // on suit ses 1ers groupes.
+  const globalFallback = merged.length === 0 ? 'All groups' : undefined
+  const dropsNote =
+    followedMvs.length === 0
+      ? 'All groups'
+      : followedMvs.length < freshMvs.length
+        ? 'Includes all groups'
+        : undefined
+
   const wantShows = types.length === 0 || types.includes('music_show')
   const weekBase = merged.length > 0 ? merged : globalGrouped
   // Fenêtre par défaut du générateur : [maintenant, +7 j).
@@ -197,6 +209,7 @@ export default async function Home({
               <Panel>
                 <PanelHeader
                   label="Upcoming queue"
+                  note={globalFallback}
                   action={{ label: 'Calendar', href: '/calendar' }}
                 />
                 <div className="divide-y">
@@ -206,8 +219,8 @@ export default async function Home({
                 </div>
               </Panel>
             )}
-            <WeekGlance events={weekEvents} timeZone={timeZone} />
-            <FreshDrops mvs={freshMvs} ratings={ratings} timeZone={timeZone} />
+            <WeekGlance events={weekEvents} timeZone={timeZone} note={globalFallback} />
+            <FreshDrops mvs={freshMvs} ratings={ratings} timeZone={timeZone} note={dropsNote} />
             {/* Safari iOS hors standalone uniquement (auto-gated) — fin de scroll,
                 l'user a déjà consommé sa valeur, zéro pollution du premier écran. */}
             <IosInstallHint />

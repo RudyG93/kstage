@@ -8,15 +8,23 @@ export function FreshDrops({
   mvs,
   ratings,
   timeZone,
+  note,
 }: {
   mvs: readonly MvEvent[]
   ratings: Map<string, Rating>
   timeZone: string
+  /** « All groups » / « Includes all groups » quand la grille est complétée
+   * au global (audit §8.4 : repli silencieux illisible). */
+  note?: string
 }) {
   if (mvs.length === 0) return null
   return (
     <Panel className="overflow-visible">
-      <PanelHeader label="Fresh drops — rate them" action={{ label: 'All drops', href: '/mvs' }} />
+      <PanelHeader
+        label="Fresh drops — rate them"
+        note={note}
+        action={{ label: 'All drops', href: '/mvs' }}
+      />
       <div className="grid grid-cols-2 gap-[9px] p-3">
         {mvs.map((mv) => (
           <MvCard

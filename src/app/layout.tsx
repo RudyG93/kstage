@@ -136,7 +136,11 @@ export default async function RootLayout({
                   <span className="bg-primary text-primary-foreground font-heading flex size-[27px] items-center justify-center rounded-md text-[14px] font-extrabold">
                     K
                   </span>
-                  <span className="label-data-inline text-[12px] tracking-[0.22em]">Stage</span>
+                  {/* Wordmark masqué sur très petits écrans : il comprimait la
+                      recherche du header visiteur (audit §8.5). */}
+                  <span className="label-data-inline hidden text-[12px] tracking-[0.22em] min-[380px]:inline">
+                    Stage
+                  </span>
                 </Link>
                 <SiteNav variant="header" />
               </div>
@@ -148,9 +152,9 @@ export default async function RootLayout({
                 </div>
                 <Link
                   href="/search"
-                  className="bg-secondary text-muted-foreground hover:text-foreground flex h-[33px] w-full min-w-0 items-center gap-2 rounded-md border px-3 text-xs transition-colors md:hidden"
+                  className="bg-secondary text-muted-foreground hover:text-foreground flex h-9 w-full min-w-0 items-center gap-2 rounded-md border px-3 text-sm transition-colors md:hidden"
                 >
-                  <SearchIcon className="size-3.5 shrink-0" />
+                  <SearchIcon className="size-4 shrink-0" />
                   <span className="truncate">Groups, MVs, events…</span>
                 </Link>
               </div>
