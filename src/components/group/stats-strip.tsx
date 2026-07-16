@@ -35,7 +35,7 @@ function Cell({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex min-h-[52px] flex-col items-center justify-center gap-1 p-2.5">
       <span className="tabular text-base leading-none font-bold">{value}</span>
-      <span className="label-data-inline text-faint text-[8px]">{label}</span>
+      <span className="label-data-inline text-faint text-[9px]">{label}</span>
     </div>
   )
 }

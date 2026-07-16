@@ -83,7 +83,7 @@ export function SiteNav({ variant }: { variant: 'header' | 'bottom' }) {
             )}
           >
             <Icon className="size-5" />
-            <span className="label-data-inline text-[8.5px]">{label}</span>
+            <span className="label-data-inline text-[9px]">{label}</span>
           </Link>
         )
       })}

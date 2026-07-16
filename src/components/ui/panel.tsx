@@ -44,7 +44,7 @@ export function PanelHeader({
       {!right && action && (
         <Link
           href={action.href}
-          className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
+          className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
         >
           {action.label} →
         </Link>

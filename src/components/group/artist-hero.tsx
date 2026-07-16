@@ -64,14 +64,12 @@ export function ArtistHero({
         <div className="min-w-0">
           {tags && <div className="flex flex-wrap items-center gap-1.5">{tags}</div>}
           <h1
-            className="font-heading mt-1.5 truncate text-[30px] leading-tight font-extrabold tracking-[-0.02em]"
+            className="font-heading mt-1.5 truncate text-[32px] leading-tight font-extrabold tracking-[-0.02em]"
             style={{ textShadow: '0 2px 16px color-mix(in srgb, var(--page) 60%, transparent)' }}
           >
             {name}
           </h1>
-          {meta && (
-            <p className="text-muted-foreground truncate text-[10.5px] font-medium">{meta}</p>
-          )}
+          {meta && <p className="text-muted-foreground truncate text-[11px] font-medium">{meta}</p>}
         </div>
         {follow && <div className="shrink-0 pb-1">{follow}</div>}
       </div>

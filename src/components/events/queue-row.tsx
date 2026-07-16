@@ -84,7 +84,7 @@ export function QueueRow({
           </span>
         ))}
       <span
-        className="label-data-inline shrink-0 rounded-sm px-1.5 py-1 text-[8px]"
+        className="label-data-inline shrink-0 rounded-sm px-1.5 py-1 text-[9px]"
         style={{ color, backgroundColor: eventTypeTint(color) }}
       >
         {EVENT_TYPE_LABELS[event.type]}

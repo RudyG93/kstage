@@ -79,7 +79,7 @@ export function WeekGlance({
             >
               <span
                 className={cn(
-                  'label-data-inline text-[8.5px]',
+                  'label-data-inline text-[9px]',
                   day.isToday ? 'text-primary' : 'text-muted-foreground',
                 )}
               >

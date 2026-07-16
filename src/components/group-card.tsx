@@ -87,7 +87,7 @@ export function GroupCard({
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2.5">
         <p
-          className="font-heading truncate text-[15px] font-extrabold"
+          className="font-heading truncate text-[14px] font-extrabold"
           style={{ textShadow: '0 2px 16px color-mix(in srgb, var(--page) 50%, transparent)' }}
         >
           {group.name}
@@ -99,7 +99,7 @@ export function GroupCard({
               style={{ backgroundColor: statusColor }}
               aria-hidden
             />
-            <span className="tabular text-[9.5px] font-semibold" style={{ color: statusColor }}>
+            <span className="tabular text-[10px] font-semibold" style={{ color: statusColor }}>
               {statusLabel}
             </span>
           </p>

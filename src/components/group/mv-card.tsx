@@ -68,7 +68,7 @@ export function MvCard({
         />
       </div>
       <div className="mt-1.5 px-0.5">
-        <p className="line-clamp-2 text-[11.5px] leading-snug font-semibold">
+        <p className="line-clamp-2 text-[12px] leading-snug font-semibold">
           {displaySongTitle(mv.title, group?.name)}
         </p>
         {/* Une seule ligne « Groupe · Mois Année » qui PASSE À LA LIGNE au lieu
