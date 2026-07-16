@@ -13,7 +13,8 @@ import { getTopRatedByPeriods } from '@/lib/events/top-rated'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { formatKst } from '@/lib/events/date'
+import { shortDate } from '@/lib/events/date'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 
 export const metadata: Metadata = {
   title: 'Drops',
@@ -39,12 +40,13 @@ export default async function MvsPage({
 
   // Les DEUX jeux (All + Following) partent au client : les pills filtrent en
   // mémoire (R5) au lieu d'une navigation ?feed=&sort= qui re-rendait la page.
-  const [latest, followingMvs, topRated] = await Promise.all([
+  const [latest, followingMvs, topRated, timeZone] = await Promise.all([
     getAllMvs({ limit: 31 }),
     followedIds.size > 0
       ? getAllMvs({ groupIds: [...followedIds], limit: 30 })
       : Promise.resolve([]),
     getTopRatedByPeriods(5),
+    getViewerTimeZone(),
   ])
 
   const hero = latest[0] ?? null
@@ -105,8 +107,7 @@ export default async function MvsPage({
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="label-data-inline text-muted-foreground text-[9px]">
-                        {heroGroup.name} ·{' '}
-                        {formatKst(hero.start_at, { month: 'short', day: 'numeric' })}
+                        {heroGroup.name} · {shortDate(hero.start_at, timeZone)}
                       </p>
                       <h2 className="font-heading group-hover:text-primary truncate text-lg leading-tight font-extrabold tracking-[-0.02em] transition-colors">
                         {displaySongTitle(hero.title, heroGroup.name)}
@@ -123,7 +124,7 @@ export default async function MvsPage({
             </Panel>
           )}
 
-          <MvChart periods={topRated} />
+          <MvChart periods={topRated} timeZone={timeZone} />
 
           <DropsGrid
             all={allGrid}
@@ -132,6 +133,7 @@ export default async function MvsPage({
             hasFollows={followedIds.size > 0}
             initialFeed={feed}
             initialSort={sort}
+            timeZone={timeZone}
           />
         </div>
 

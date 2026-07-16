@@ -22,6 +22,7 @@ import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { groupBannerSrc } from '@/lib/groups/banner'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { createClient } from '@/lib/supabase/server'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -41,9 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+// `members.birthday` est une date calendaire pure ('YYYY-MM-DD' → minuit UTC
+// via new Date) : formater en UTC, jamais dans un fuseau — un fuseau négatif
+// afficherait la veille ('Asia/Seoul' ne marchait que par chance, +9 > 0).
 const formatBirthday = (iso: string) =>
   new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -125,6 +129,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw) as ArtistGroup | null
 
   const career = await getCareerPath(member.id)
+  const timeZone = await getViewerTimeZone()
 
   // ── Artiste solo : même traitement que la page groupe (bandeau, follow, liens,
   // events, MVs via le groupe is_solo). ──────────────────────────────────────
@@ -218,7 +223,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           {mvs.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
-              <CollapsibleMvs mvs={mvs} ratings={ratings} />
+              <CollapsibleMvs mvs={mvs} ratings={ratings} timeZone={timeZone} />
             </section>
           )}
 
@@ -326,7 +331,12 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             <span className="label-data">Solo releases</span>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {memberMvs.map((mv) => (
-                <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} />
+                <MvCard
+                  key={mv.id}
+                  mv={mv}
+                  rating={memberRatings?.get(mv.id)}
+                  timeZone={timeZone}
+                />
               ))}
             </div>
           </section>

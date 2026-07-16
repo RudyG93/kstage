@@ -30,6 +30,13 @@ describe('trendingReason', () => {
     expect(trendingReason(undefined, sig('mv', days(-3)), NOW)).toMatch(/^MV out · /)
     expect(trendingReason(undefined, sig('release', days(-3)), NOW)).toMatch(/^Release · /)
   })
+  it('le D-day suit le fuseau du viewer', () => {
+    // NOW = 11 juil 12:00 UTC ; event le 12 juil 03:00 UTC = 12 juil en KST
+    // (D-1) mais encore le 11 juil 20:00 à Los Angeles (D-DAY).
+    const event = sig('release', '2026-07-12T03:00:00Z')
+    expect(trendingReason(event, undefined, NOW, 'Asia/Seoul')).toBe('Comeback · D-1')
+    expect(trendingReason(event, undefined, NOW, 'America/Los_Angeles')).toBe('Comeback · D-DAY')
+  })
 })
 
 describe('pickTrending', () => {

@@ -22,6 +22,7 @@ import { getLikedMvs } from '@/lib/events/queries'
 import { getRatingsForEvents, getUserRatings } from '@/lib/events/community'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { monthYear, shortDate } from '@/lib/events/date'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { displaySongTitle } from '@/lib/events/title'
 import { isAdmin } from '@/lib/auth/admin'
 import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
@@ -39,10 +40,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   } = await supabase.auth.getUser()
   const isOwner = user?.id === profile.id
 
-  const [stats, likedMvs, userRatings] = await Promise.all([
+  const [stats, likedMvs, userRatings, timeZone] = await Promise.all([
     getProfileStats(profile.id),
     getLikedMvs(profile.id, 30),
     getUserRatings(profile.id, 8),
+    getViewerTimeZone(),
   ])
   const ratings = await getRatingsForEvents(likedMvs.map((m) => m.id))
 
@@ -208,7 +210,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <span className="label-data">Followed groups — {followedGroups.length}</span>
             <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
               {followedGroups.map((g) => (
-                <GroupCard key={g.id} group={g} isFollowing isAuthed />
+                <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
               ))}
             </div>
           </section>
@@ -227,7 +229,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               action={isOwner ? { label: 'Explore MVs', href: '/mvs' } : undefined}
             />
           ) : (
-            <MvsGrid mvs={likedMvs} ratings={ratings} />
+            <MvsGrid mvs={likedMvs} ratings={ratings} timeZone={timeZone} />
           )}
         </section>
 

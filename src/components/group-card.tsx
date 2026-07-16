@@ -22,12 +22,14 @@ export function GroupCard({
   group,
   isFollowing,
   isAuthed,
+  timeZone,
   href,
   nextEvent,
 }: {
   group: GroupSummary
   isFollowing: boolean
   isAuthed: boolean
+  timeZone: string
   href?: string
   nextEvent?: NextEventInfo | null
 }) {
@@ -35,8 +37,8 @@ export function GroupCard({
   const statusColor = nextEvent ? EVENT_TYPE_COLORS[nextEvent.type] : null
   const statusLabel = nextEvent
     ? nextEvent.type === 'mv' || nextEvent.type === 'release'
-      ? `COMEBACK ${formatDDay(nextEvent.start_at, 'Asia/Seoul')}`
-      : `${EVENT_TYPE_LABELS[nextEvent.type].toUpperCase()} ${formatDDay(nextEvent.start_at, 'Asia/Seoul')}`
+      ? `COMEBACK ${formatDDay(nextEvent.start_at, timeZone)}`
+      : `${EVENT_TYPE_LABELS[nextEvent.type].toUpperCase()} ${formatDDay(nextEvent.start_at, timeZone)}`
     : null
 
   return (
