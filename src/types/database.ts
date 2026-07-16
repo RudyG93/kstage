@@ -523,6 +523,30 @@ export type Database = {
           },
         ]
       }
+      digest_log: {
+        Row: {
+          day_key: string
+          edition: string
+          id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          day_key: string
+          edition: string
+          id?: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          day_key?: string
+          edition?: string
+          id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           agency: string | null
