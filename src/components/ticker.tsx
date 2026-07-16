@@ -49,7 +49,7 @@ export function Ticker({ items }: { items: TickerItem[] }) {
             </span>
           ))}
           {animate && (
-            <span className="text-primary shrink-0 text-[7px]" aria-hidden>
+            <span className="text-primary shrink-0 text-[9px]" aria-hidden>
               ◆
             </span>
           )}

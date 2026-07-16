@@ -125,7 +125,7 @@ export function CalendarMonth({
       <Panel>
         <div className="grid grid-cols-7 gap-1 p-2.5">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="label-data-inline text-faint py-1 text-center text-[8px]">
+            <div key={w} className="label-data-inline text-faint py-1 text-center text-[9px]">
               {w}
             </div>
           ))}

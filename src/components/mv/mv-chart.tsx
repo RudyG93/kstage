@@ -141,7 +141,7 @@ export function MvChart({
                     style={{ width: `${item.avg * 10}%` }}
                   />
                 </span>
-                <span className="tabular w-8 shrink-0 text-right text-[12.5px] font-bold">
+                <span className="tabular w-8 shrink-0 text-right text-[13px] font-bold">
                   {item.avg.toFixed(1)}
                 </span>
                 {/* Nb de votes visible (audit §8.7 — cumul avec la date R6 :

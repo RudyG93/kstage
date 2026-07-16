@@ -180,7 +180,7 @@ export default async function MvPage({
             <div className="flex items-center justify-between gap-4 p-3.5">
               <div>
                 <div className="flex items-baseline gap-1">
-                  <span className="tabular text-[30px] leading-none font-bold">
+                  <span className="tabular text-[32px] leading-none font-bold">
                     {rating.avg !== null ? rating.avg.toFixed(1) : '—'}
                   </span>
                   <span className="text-muted-foreground text-xs">/ 10</span>
@@ -207,7 +207,7 @@ export default async function MvPage({
                 <span className="label-data">More from {group?.name}</span>
                 <Link
                   href={`/groups/${group?.slug ?? ''}`}
-                  className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
+                  className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
                 >
                   All MVs →
                 </Link>

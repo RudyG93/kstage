@@ -146,21 +146,21 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           colorHex={group.color_hex}
           tags={
             <>
-              <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+              <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                 Group
               </span>
               {isFutureDate(group.debut_date) && (
-                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                   Pre-debut
                 </span>
               )}
               {group.disbanded_on && (
-                <span className="label-data-inline bg-page/50 text-muted-foreground rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                <span className="label-data-inline bg-page/50 text-muted-foreground rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                   Disbanded {new Date(group.disbanded_on).getUTCFullYear()}
                 </span>
               )}
               {nextComeback && (
-                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                   Comeback {formatDDay(nextComeback.start_at, timeZone)}
                 </span>
               )}

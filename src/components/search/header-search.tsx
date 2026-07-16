@@ -225,7 +225,7 @@ export function HeaderSearch() {
                     </span>
                   )}
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold">{g.name}</span>
-                  <span className="label-data-inline text-faint text-[8px]">
+                  <span className="label-data-inline text-faint text-[9px]">
                     {g.isSolo ? 'Solo' : 'Group'}
                   </span>
                 </Link>
@@ -262,7 +262,7 @@ export function HeaderSearch() {
                     {m.name}
                     {m.group && <span className="text-faint font-normal"> · {m.group}</span>}
                   </span>
-                  <span className="label-data-inline text-faint text-[8px]">Artist</span>
+                  <span className="label-data-inline text-faint text-[9px]">Artist</span>
                 </Link>
               ))}
               {mvResults.map((m, i) => (
@@ -291,7 +291,7 @@ export function HeaderSearch() {
                   <span className="min-w-0 flex-1 truncate text-xs">
                     {displaySongTitle(m.title, m.group ?? undefined)}
                   </span>
-                  <span className="label-data-inline text-faint text-[8px]">MV</span>
+                  <span className="label-data-inline text-faint text-[9px]">MV</span>
                 </Link>
               ))}
               <button

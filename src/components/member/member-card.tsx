@@ -74,7 +74,7 @@ export function MemberCard({
         {/* Sous-titre : position, sinon ÂGE (le « — » ne disait rien), sinon
             rien du tout. */}
         {(member.status !== 'active' || member.position || age !== null) && (
-          <p className="label-data-inline text-faint truncate text-[8px]">
+          <p className="label-data-inline text-faint truncate text-[9px]">
             {member.status === 'active'
               ? (member.position ?? `${age} yrs`)
               : member.status === 'former'

@@ -202,7 +202,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
               <h2 className="text-sm font-medium">Upcoming events</h2>
               <Link
                 href={`/calendar?group=${group.slug}`}
-                className="label-data-inline text-primary hover:text-primary/80 text-[9.5px] font-semibold transition-colors"
+                className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
               >
                 Calendar →
               </Link>

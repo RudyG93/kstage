@@ -89,10 +89,10 @@ export function NextDropCard({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                <span className="label-data-inline bg-page/50 rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                   {EVENT_TYPE_LABELS[event.type]}
                 </span>
-                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[8.5px] backdrop-blur-sm">
+                <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
                   {formatDDay(event.start_at, timeZone)}
                 </span>
               </div>
@@ -105,7 +105,7 @@ export function NextDropCard({
                   {title}
                 </Link>
               </h2>
-              <p className="text-muted-foreground mt-0.5 text-[10.5px] font-medium">
+              <p className="text-muted-foreground mt-0.5 text-[11px] font-medium">
                 {lineup ? (
                   <span>{lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))} · </span>
                 ) : (

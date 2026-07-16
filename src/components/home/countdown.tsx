@@ -72,7 +72,7 @@ export function Countdown({
           >
             {hydrated ? pad(c.value) : '--'}
           </span>
-          <span className="label-data-inline text-faint mt-1 text-[7.5px]">{c.label}</span>
+          <span className="label-data-inline text-faint mt-1 text-[9px]">{c.label}</span>
         </div>
       ))}
     </div>

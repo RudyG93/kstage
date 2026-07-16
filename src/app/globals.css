@@ -297,7 +297,7 @@
     font-family: var(--font-condensed);
     font-stretch: 78%;
     font-weight: 700;
-    font-size: 9.5px;
+    font-size: 10px; /* 9.5 → 10 (P2 Lot 5 : consolidation ~20 → 10 niveaux) */
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--muted-foreground);

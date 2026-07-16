@@ -32,7 +32,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div className="flex min-h-[56px] flex-col items-center justify-center gap-1 p-2.5">
       <span className={cn('tabular text-lg leading-none font-bold', accent)}>{value}</span>
-      <span className="label-data-inline text-faint text-[8px]">{label}</span>
+      <span className="label-data-inline text-faint text-[9px]">{label}</span>
     </div>
   )
 }

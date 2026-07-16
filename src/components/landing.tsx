@@ -82,11 +82,11 @@ export function Landing({
             {compactNumber(eventsCount)}+ events tracked live
           </span>
         </p>
-        <h1 className="font-heading mt-3 text-[34px] leading-[1.06] font-extrabold tracking-[-0.028em]">
+        <h1 className="font-heading mt-3 text-[32px] leading-[1.06] font-extrabold tracking-[-0.028em]">
           Never miss a<br />
           comeback <span className="text-primary font-serif font-normal italic">again.</span>
         </h1>
-        <p className="text-muted-foreground mt-3 max-w-[310px] text-[12.5px] leading-relaxed sm:mx-auto">
+        <p className="text-muted-foreground mt-3 max-w-[310px] text-[13px] leading-relaxed sm:mx-auto">
           The personal calendar for k-pop fans. Follow your groups and get notified the moment
           something drops — wherever you are.
         </p>
@@ -105,14 +105,14 @@ export function Landing({
                 className="bg-teal animate-upcoming-pulse size-[5px] rounded-full"
                 aria-hidden
               />
-              <span className="label-data text-[8.5px] tracking-[0.16em]">Next up on KStage</span>
+              <span className="label-data text-[9px] tracking-[0.16em]">Next up on KStage</span>
             </div>
             <div className="space-y-3 p-3.5">
               <div>
                 <p className="text-sm font-semibold">
                   {displayEventTitle(nextDrop.title, nextDrop.groups?.name, null, nextDrop.type)}
                 </p>
-                <p className="text-muted-foreground text-[10.5px]">{nextDrop.groups?.name}</p>
+                <p className="text-muted-foreground text-[11px]">{nextDrop.groups?.name}</p>
               </div>
               {!isTimeTBA(nextDrop) && <Countdown targetIso={nextDrop.start_at} variant="cells" />}
             </div>
@@ -241,7 +241,7 @@ function Cta({ withPwaNote = false }: { withPwaNote?: boolean }) {
         <ArrowRight className="text-primary size-3.5" aria-hidden />
       </TrackedLink>
       {withPwaNote && (
-        <p className="tabular text-faint pt-1 text-center text-[8.5px] font-semibold tracking-[0.16em] uppercase">
+        <p className="tabular text-faint pt-1 text-center text-[9px] font-semibold tracking-[0.16em] uppercase">
           PWA — install from your browser · no app store
         </p>
       )}
