@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Mock du client service-role : on capture les inserts et on pilote l'erreur.
 const insertMock = vi.fn()
@@ -23,11 +23,25 @@ describe('dayKeyFor', () => {
 })
 
 describe('trackEvent', () => {
+  it('no-op sous GITHUB_ACTIONS (les E2E CI tournent contre la DB prod)', async () => {
+    vi.stubEnv('GITHUB_ACTIONS', 'true')
+    await trackEvent('landing_cta_clicked', { anonId: 'a' })
+    expect(insertMock).not.toHaveBeenCalled()
+  })
+
   // Accolades OBLIGATOIRES : mockReset() retourne le mock (chaînable), et un
   // hook vitest qui retourne une FONCTION l'exécute en teardown après le test
   // — le mock serait rappelé avec l'implémentation du test (throw → échec).
   beforeEach(() => {
     insertMock.mockReset()
+    // Dans la CI GitHub, GITHUB_ACTIONS=true est RÉELLEMENT posé pour vitest :
+    // sans ce stub, la garde no-op ferait échouer tous les tests d'insert
+    // (verts en local, rouges en CI).
+    vi.stubEnv('GITHUB_ACTIONS', '')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('insert la row avec le day_key de la politique', async () => {

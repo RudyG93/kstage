@@ -30,6 +30,10 @@ export async function trackEvent(
     now?: Date
   } = {},
 ): Promise<void> {
+  // Les E2E de la CI tournent contre la DB PROD (next start dans le runner) :
+  // sans garde, chaque run injectait des landing_cta_clicked/search_no_results
+  // fantômes dans le funnel. GITHUB_ACTIONS n'existe jamais au runtime Vercel.
+  if (process.env.GITHUB_ACTIONS) return
   try {
     const { error } = await serviceClient()
       .from('product_events')
