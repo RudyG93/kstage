@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { trackFollowMilestones } from '@/lib/analytics/milestones'
 
 export async function toggleFollow(groupId: string, isFollowing: boolean) {
   const supabase = await createClient()
@@ -23,6 +24,8 @@ export async function toggleFollow(groupId: string, isFollowing: boolean) {
       .from('user_follows')
       .insert({ user_id: user.id, group_id: groupId })
     if (error) throw error
+    // Jalons d'activation (1er / 3e follow) — dédup 'once' côté product_events.
+    await trackFollowMilestones(user.id)
   }
 
   revalidatePath('/')
@@ -43,6 +46,7 @@ export async function followMany(groupIds: string[]) {
     .from('user_follows')
     .upsert(rows, { onConflict: 'user_id,group_id', ignoreDuplicates: true })
   if (error) throw error
+  await trackFollowMilestones(user.id)
 
   revalidatePath('/')
   revalidatePath('/groups')

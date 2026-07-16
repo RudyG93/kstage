@@ -1,3 +1,35 @@
+# KStage — Audits performance
+
+## Baseline 2026-07-16 — avant Phase 2 (Lighthouse 12.8.2, mobile, prod)
+
+> Action 11 de la Phase 2 (audit stratégique §12) : mesurer AVANT les changements
+> UX des Lots 2-5, re-mesurer après le Lot 5 pour l'avant/après. Émulation
+> mobile Lighthouse par défaut, catégories perf + a11y, `kstage.vercel.app`,
+> anonyme (la home connectée n'est pas mesurable sans session — noté).
+
+| Page (mobile) | Perf   | A11y | LCP       | CLS   | TBT    | FCP   | Speed Index |
+| ------------- | ------ | ---- | --------- | ----- | ------ | ----- | ----------- |
+| `/` (landing) | **62** | 95   | 4.9 s     | 0.249 | 190 ms | 1.1 s | 5.7 s       |
+| `/calendar`   | **73** | 96   | 4.0 s     | 0.249 | 150 ms | 1.2 s | 2.5 s       |
+| `/mvs`        | **54** | 100  | **7.0 s** | 0.249 | 300 ms | 1.1 s | 4.7 s       |
+
+Lectures :
+
+1. **CLS 0.249 identique sur les 3 pages** → une cause PARTAGÉE (layout global :
+   ticker/header/fonts qui décalent au chargement), pas un problème par page.
+   Un seul fix global devrait remonter les 3 scores.
+2. **LCP 4-7 s** : le LCP est une image (hero/mur/vignettes YouTube) non
+   priorisée — cohérent avec le FCP sain (~1.1 s) : le squelette arrive vite,
+   le visuel principal tard.
+3. `/mvs` (54) = le plus dégradé : grille de vignettes YouTube + chart.
+4. A11y déjà ≥ 95 partout — le Lot 4 (a11y-pass) vise les points NON mesurés
+   par Lighthouse (skip-link, headings, ticker SR, reduced-motion).
+
+> Fixes : PAS dans le Lot 1 (baseline seulement). Candidats à trier au re-run
+> post-Lot 5 : cause CLS commune, `priority`/`fetchpriority` sur l'image LCP.
+
+---
+
 # KStage — Audit performance (2026-06-09)
 
 > Mesures **réelles** en prod (Playwright, navigation timing) AVANT toute optimisation (§2.1 du doc Polish/Perf/Data). But : ne pas optimiser à l'aveugle.

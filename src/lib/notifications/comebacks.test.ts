@@ -43,7 +43,9 @@ describe('buildComebackNotifications', () => {
       title: '🔥 Today: aespa — Whiplash',
       tag: 'comeback-e1',
       body: 'Out today — go check it out',
-      url: '/mv/aespa-whiplash',
+      // ?src=push = attribution des ouvertures (audit §10.3) ; le SW matche
+      // les onglets par pathname, le param ne casse pas le focus.
+      url: '/mv/aespa-whiplash?src=push',
     })
   })
 

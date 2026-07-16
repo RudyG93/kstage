@@ -19,6 +19,7 @@ import { HeaderSearch } from '@/components/search/header-search'
 import { AuthMenu } from '@/components/auth/auth-menu'
 import { Footer } from '@/components/footer'
 import { TimezoneCookie } from '@/components/timezone-cookie'
+import { NotificationOpenTracker } from '@/components/analytics/notification-open-tracker'
 import { Analytics } from '@vercel/analytics/next'
 import { createClient } from '@/lib/supabase/server'
 
@@ -184,6 +185,8 @@ export default async function RootLayout({
           <Footer />
           <Toaster position="bottom-right" richColors closeButton />
           <TimezoneCookie />
+          {/* Attribution des ouvertures de push (`?src=push`, audit §10.3). */}
+          <NotificationOpenTracker />
         </ThemeProvider>
         <Analytics />
       </body>

@@ -785,6 +785,36 @@ export type Database = {
           },
         ]
       }
+      product_events: {
+        Row: {
+          anon_id: string | null
+          created_at: string
+          day_key: string | null
+          event: string
+          id: number
+          props: Json
+          user_id: string | null
+        }
+        Insert: {
+          anon_id?: string | null
+          created_at?: string
+          day_key?: string | null
+          event: string
+          id?: never
+          props?: Json
+          user_id?: string | null
+        }
+        Update: {
+          anon_id?: string | null
+          created_at?: string
+          day_key?: string | null
+          event?: string
+          id?: never
+          props?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string

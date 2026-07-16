@@ -14,6 +14,7 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
+import { trackEvent } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -51,6 +52,15 @@ export default async function SearchPage({
     : [[], [], [], [], new Set<string>()]
 
   const hasResults = groups.length > 0 || members.length > 0 || mvs.length > 0 || events.length > 0
+
+  // Signal produit « trou de catalogue » (audit §10.3) : chaque recherche vide
+  // compte (pas de dédup) — c'est la liste brute qui intéresse l'admin.
+  if (q && !hasResults) {
+    await trackEvent('search_no_results', {
+      userId: user?.id ?? null,
+      props: { q: q.slice(0, 80), seg },
+    })
+  }
   const segHref = (target: Segment) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)

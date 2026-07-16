@@ -4,6 +4,7 @@ import { getNonSoloGroups } from '@/lib/groups/queries'
 import { getGroupEventCounts } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { OnboardingGrid } from '@/components/onboarding/onboarding-grid'
+import { TrackView } from '@/components/analytics/track-view'
 
 export const metadata = { title: 'Welcome to KStage' }
 
@@ -47,6 +48,7 @@ export default async function OnboardingPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
+      <TrackView event="onboarding_started" />
       <OnboardingGrid groups={top} />
     </div>
   )

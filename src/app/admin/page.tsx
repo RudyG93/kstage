@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
 import { getSourceHealth } from '@/lib/monitoring/queries'
+import { getActivationStats } from '@/lib/analytics/admin'
 import { relativeTime } from '@/lib/events/date'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +43,7 @@ export default async function AdminHub() {
 
   // Même évaluation que /api/cron/monitor : la carte montre ce que le monitor
   // verrait à l'instant T (fraîcheur PAR FAMILLE — audit §7.6).
-  const health = await getSourceHealth()
+  const [health, activation] = await Promise.all([getSourceHealth(), getActivationStats()])
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -87,6 +88,68 @@ export default async function AdminHub() {
                 <li key={a}>⚠ {a}</li>
               ))}
             </ul>
+          )}
+        </section>
+      )}
+
+      {activation && (
+        <section className="bg-card mt-6 rounded-xl border p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-medium">Activation</h2>
+            <span className="text-muted-foreground text-xs">7 j / 30 j</span>
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {activation.funnel.map((step) => (
+              <li key={step.event} className="flex items-center gap-2 text-sm">
+                <span className="min-w-0 flex-1 truncate">{step.label}</span>
+                <span className="tabular text-xs font-semibold">{step.last7}</span>
+                <span className="tabular text-muted-foreground w-10 text-right text-xs">
+                  {step.last30}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 border-t pt-3">
+            <p className="label-data">North-star — actifs calendrier / semaine</p>
+            {activation.northStar.length === 0 ? (
+              <p className="text-muted-foreground mt-1 text-xs">Aucune donnée encore.</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5">
+                {activation.northStar.map((w) => (
+                  <li key={w.weekStart} className="flex items-center gap-2 text-xs">
+                    <span className="tabular text-muted-foreground">{w.weekStart}</span>
+                    <span className="tabular font-semibold">{w.users}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {activation.emptySearches.length > 0 && (
+            <div className="mt-3 border-t pt-3">
+              <p className="label-data">Recherches sans résultat</p>
+              <ul className="mt-1 space-y-0.5">
+                {activation.emptySearches.map((s, i) => (
+                  <li key={`${s.at}-${i}`} className="flex items-center gap-2 text-xs">
+                    <span className="min-w-0 flex-1 truncate font-medium">« {s.q} »</span>
+                    <span className="text-muted-foreground">{s.seg}</span>
+                    <span className="text-muted-foreground">{relativeTime(s.at)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {activation.notifSent.length > 0 && (
+            <div className="mt-3 border-t pt-3">
+              <p className="label-data">Notifs envoyées — 7 j</p>
+              <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                {activation.notifSent.map((n) => (
+                  <li key={n.kind} className="text-xs">
+                    <span className="text-muted-foreground">{n.kind}</span>{' '}
+                    <span className="tabular font-semibold">{n.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       )}

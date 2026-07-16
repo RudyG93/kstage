@@ -41,7 +41,7 @@ export function PushBell() {
           setEnabled(false)
           return
         }
-        const result = await subscribeToPush()
+        const result = await subscribeToPush('profile')
         if (result === 'denied') {
           toast.error('Notifications are blocked in your browser settings.')
           return

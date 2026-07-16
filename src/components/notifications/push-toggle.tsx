@@ -43,7 +43,7 @@ export function PushToggle() {
           setEnabled(false)
           return
         }
-        const result = await subscribeToPush()
+        const result = await subscribeToPush('account')
         if (result === 'denied') {
           setDenied(true)
           return

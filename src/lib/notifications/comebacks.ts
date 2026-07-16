@@ -19,6 +19,7 @@
 // déclenche jamais d'alerte minute-précise).
 
 import { localDayKey } from '@/lib/events/date'
+import { withPushSrc } from './push-url'
 
 const DEFAULT_TIME_ZONE = 'Asia/Seoul'
 
@@ -77,7 +78,7 @@ function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPay
   const body = kind === 'day_of' ? 'Out today — go check it out' : 'Dropping tomorrow'
   // tag par event : les rappels successifs du même comeback (J-1 → jour J)
   // se REMPLACENT dans le tiroir au lieu de s'empiler.
-  return { title, body, url: event.url, tag: `comeback-${event.id}` }
+  return { title, body, url: withPushSrc(event.url), tag: `comeback-${event.id}` }
 }
 
 export function buildComebackNotifications(

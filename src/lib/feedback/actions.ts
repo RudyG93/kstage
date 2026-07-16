@@ -3,6 +3,7 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
+import { trackEvent } from '@/lib/analytics/track'
 import type { Database } from '@/types/database'
 
 export type FeedbackState = { error: string } | { ok: true } | null
@@ -52,6 +53,7 @@ export async function submitFeedback(
     .from('feedback')
     .insert({ user_id: user.id, kind, body, page: page || null })
   if (error) return { error: 'Could not send feedback. Try again later.' }
+  await trackEvent('feedback_submitted', { userId: user.id, props: { kind } })
   return { ok: true }
 }
 

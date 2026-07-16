@@ -1,4 +1,5 @@
 import { deletePushSubscription, savePushSubscription } from './actions'
+import { sendProductEvent } from '@/components/analytics/beacon'
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
@@ -30,8 +31,14 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
 
 export type SubscribeResult = 'subscribed' | 'denied' | 'unsupported'
 
-export async function subscribeToPush(): Promise<SubscribeResult> {
-  if (!pushSupported()) return 'unsupported'
+/** `surface` = d'où vient la demande (onboarding / account / profile) — sert
+ * uniquement aux events produit (funnel push, audit §10.3). */
+export async function subscribeToPush(surface?: string): Promise<SubscribeResult> {
+  const eventProps = surface ? { surface } : undefined
+  if (!pushSupported()) {
+    sendProductEvent('push_permission_unavailable', eventProps)
+    return 'unsupported'
+  }
   if (!VAPID_PUBLIC_KEY) {
     throw new Error(
       'NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set (restart dev server after filling .env.local)',
@@ -39,7 +46,11 @@ export async function subscribeToPush(): Promise<SubscribeResult> {
   }
 
   const permission = await Notification.requestPermission()
-  if (permission !== 'granted') return 'denied'
+  if (permission !== 'granted') {
+    sendProductEvent('push_permission_denied', eventProps)
+    return 'denied'
+  }
+  sendProductEvent('push_permission_granted', eventProps)
 
   const reg = await navigator.serviceWorker.register('/sw.js')
   await navigator.serviceWorker.ready
