@@ -7,9 +7,10 @@
 //   day_before (J-1) → day_of (jour J).
 // Le kind `announced` (event ajouté en DB < 24 h) a été COUPÉ (Phase 1 Lot 4,
 // budget de notifications — audit §7.3) : l'annonce vit dans le digest quotidien,
-// le push est réservé aux échéances. Fenêtres calées sur le JOUR KST (référence
-// k-pop). Précédence pour qu'un même run n'émette qu'UN kind par event :
-//   day_of > day_before.
+// le push est réservé aux échéances. Fenêtres calées sur le JOUR LOCAL de chaque
+// abonné (`timeZones` userId→IANA, Lot 3b) — « Today » doit être vrai chez lui ;
+// défaut KST (référence k-pop) pour les abonnés sans fuseau connu. Précédence
+// pour qu'un même run n'émette qu'UN kind par event : day_of > day_before.
 //
 // Politique `tentative` : un jour connu sans heure (stocké minuit KST) reste
 // éligible à day_before/day_of — aucun kind existant n'annonce d'heure dans son
@@ -17,7 +18,9 @@
 // `status === 'tentative'` / `isTimeTBA` (audit §7.5 : une date sans heure ne
 // déclenche jamais d'alerte minute-précise).
 
-import { kstDayKey } from '@/lib/events/date'
+import { localDayKey } from '@/lib/events/date'
+
+const DEFAULT_TIME_ZONE = 'Asia/Seoul'
 
 export type ComebackSubscription = {
   userId: string
@@ -49,18 +52,20 @@ export type ComebackMessage = {
   record: ComebackRecord
 }
 
+// Arithmétique PURE sur la clé 'YYYY-MM-DD' — surtout pas de round-trip par un
+// fuseau : `localDayKey(minuit UTC du jour X, tz négatif)` rendrait X-1.
 const addDaysKey = (key: string, days: number): string => {
   const [y, m, d] = key.split('-').map(Number)
-  return kstDayKey(new Date(Date.UTC(y, m - 1, d + days)).toISOString())
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
 }
 
 /**
- * Le `kind` applicable à un event au moment `now`, ou null si aucun.
- * Précédence day_of > day_before → un seul kind par run.
+ * Le `kind` applicable à un event au moment `now`, dans le fuseau de l'abonné,
+ * ou null si aucun. Précédence day_of > day_before → un seul kind par run.
  */
-function resolveKind(event: ComebackEvent, now: Date): NotificationKind | null {
-  const todayKey = kstDayKey(now.toISOString())
-  const startKey = kstDayKey(event.startAt)
+function resolveKind(event: ComebackEvent, now: Date, timeZone: string): NotificationKind | null {
+  const todayKey = localDayKey(now.toISOString(), timeZone)
+  const startKey = localDayKey(event.startAt, timeZone)
   if (startKey === todayKey) return 'day_of'
   if (startKey === addDaysKey(todayKey, 1)) return 'day_before'
   return null
@@ -84,6 +89,11 @@ export function buildComebackNotifications(
   // Types désactivés par user (user_notification_settings enabled=false).
   // Optionnel : sans la map, comportement historique (tout passe).
   disabledTypes?: ReadonlyMap<string, ReadonlySet<string>>,
+  // Fuseau IANA par user (profiles.timezone, déjà validé côté route).
+  // Optionnel : sans la map, comportement historique (KST pour tous). Un même
+  // event peut être day_of chez l'un et day_before chez l'autre — voulu ; la
+  // dédup userId:eventId:kind garantit toujours ≤ 2 push par event par user.
+  timeZones?: ReadonlyMap<string, string>,
 ): ComebackMessage[] {
   // user → groupes suivis
   const groupsByUser = new Map<string, Set<string>>()
@@ -98,10 +108,11 @@ export function buildComebackNotifications(
     const followed = groupsByUser.get(subscription.userId)
     if (!followed || followed.size === 0) continue
     const disabled = disabledTypes?.get(subscription.userId)
+    const timeZone = timeZones?.get(subscription.userId) ?? DEFAULT_TIME_ZONE
     for (const event of events) {
       if (!followed.has(event.groupId)) continue
       if (disabled?.has(event.type)) continue
-      const kind = resolveKind(event, now)
+      const kind = resolveKind(event, now, timeZone)
       if (!kind) continue
       const key = `${subscription.userId}:${event.id}:${kind}`
       if (alreadySent.has(key)) continue

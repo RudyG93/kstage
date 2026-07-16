@@ -162,4 +162,68 @@ describe('buildComebackNotifications', () => {
     expect(withMap).toEqual(without)
     expect(without).toHaveLength(1)
   })
+
+  describe('fuseau par abonné (Lot 3b)', () => {
+    it('un même event : day_before à Séoul, day_of à Los Angeles', () => {
+      // now = 09/06 14:00 UTC, event = 09/06 16:00 UTC.
+      // Séoul (UTC+9) : now = 09/06 23:00, event = 10/06 01:00 → demain → day_before.
+      // LA (UTC-7)    : now = 09/06 07:00, event = 09/06 09:00 → même jour → day_of.
+      const nowUtc = new Date('2026-06-09T14:00:00Z')
+      const event = ev({ startAt: '2026-06-09T16:00:00Z' })
+      const timeZones = new Map([
+        ['seoul', 'Asia/Seoul'],
+        ['la', 'America/Los_Angeles'],
+      ])
+      const messages = buildComebackNotifications(
+        [sub('seoul'), sub('la')],
+        [follow('seoul', 'g1'), follow('la', 'g1')],
+        [event],
+        new Set(),
+        nowUtc,
+        undefined,
+        timeZones,
+      )
+      const kinds = Object.fromEntries(messages.map((m) => [m.subscription.userId, m.record.kind]))
+      expect(kinds).toEqual({ seoul: 'day_before', la: 'day_of' })
+    })
+
+    it('sans map de fuseaux → identique au comportement KST historique', () => {
+      const withEmpty = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev()],
+        new Set(),
+        NOW,
+        undefined,
+        new Map(),
+      )
+      const without = buildComebackNotifications(
+        [sub('u1')],
+        [follow('u1', 'g1')],
+        [ev()],
+        new Set(),
+        NOW,
+      )
+      expect(withEmpty).toEqual(without)
+      expect(without[0].record.kind).toBe('day_of')
+    })
+
+    it('addDaysKey : changement de mois + fuseau négatif (piège du round-trip minuit UTC)', () => {
+      // now = 30/06 20:00 UTC → 30/06 13:00 à LA (jour local 06-30).
+      // Event 01/07 19:00 UTC → 01/07 12:00 à LA = demain local → day_before.
+      // Un addDaysKey qui repasserait par un fuseau négatif raterait le 07-01.
+      const nowUtc = new Date('2026-06-30T20:00:00Z')
+      const messages = buildComebackNotifications(
+        [sub('la')],
+        [follow('la', 'g1')],
+        [ev({ startAt: '2026-07-01T19:00:00Z' })],
+        new Set(),
+        nowUtc,
+        undefined,
+        new Map([['la', 'America/Los_Angeles']]),
+      )
+      expect(messages).toHaveLength(1)
+      expect(messages[0].record.kind).toBe('day_before')
+    })
+  })
 })
