@@ -17,6 +17,7 @@ on:
     - cron: '45 5 * * *' # send-digest            (14:45 KST)
     - cron: '30 8 * * *' # notify-comebacks       (17:30 KST)
     - cron: '30 13 * * *' # monitor               (22:30 KST — après le dernier scrape du jour)
+    - cron: '0 11 * * 1' # discover-channels      (lundi 20:00 KST — hebdo, 1 h après scrape-youtube)
   workflow_dispatch:
     inputs:
       endpoint:
@@ -32,6 +33,7 @@ on:
           - send-digest
           - notify-comebacks
           - monitor
+          - discover-channels
 
 jobs:
   run:
@@ -57,6 +59,7 @@ jobs:
               "45 5 * * *") EP=send-digest ;;
               "30 8 * * *") EP=notify-comebacks ;;
               "30 13 * * *") EP=monitor ;;
+              "0 11 * * 1") EP=discover-channels ;;
               *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;
             esac
           fi

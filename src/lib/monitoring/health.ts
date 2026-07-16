@@ -37,6 +37,9 @@ export const MONITORED_SOURCES: readonly SourceSpec[] = [
   { source: 'refresh_images', label: 'Images', cadenceHours: 24, critical: false },
   { source: 'notify_comebacks', label: 'Push comebacks', cadenceHours: 24, critical: true },
   { source: 'send_digest', label: 'Push digest', cadenceHours: 24, critical: true },
+  // Hebdo (lundi) — non critique : un lundi raté se rattrape la semaine
+  // suivante, la règle « périmé 2 cycles » ne s'applique qu'aux critiques.
+  { source: 'channel_discovery', label: 'Channel discovery', cadenceHours: 168, critical: false },
 ]
 
 export type SourceCheck = {
