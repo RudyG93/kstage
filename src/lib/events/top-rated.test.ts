@@ -8,7 +8,9 @@ import { bucketScores } from './rating-distribution'
 const NOW = Date.parse('2026-07-11T12:00:00Z')
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString()
 
-const agg = (id: string, avg: number, releasedDaysAgo: number, count = 1): RatedEventAgg => ({
+// count = 2 par défaut : depuis l'audit §8.7, minCount vaut 2 (un MV noté une
+// fois ne classe plus) — les fixtures de fenêtrage doivent passer le seuil.
+const agg = (id: string, avg: number, releasedDaysAgo: number, count = 2): RatedEventAgg => ({
   eventId: id,
   avg,
   count,
@@ -53,6 +55,11 @@ describe('bucketByReleaseWindow', () => {
     expect(bucketByReleaseWindow(many, NOW, 5).month).toHaveLength(5)
     const b = bucketByReleaseWindow([agg('solo', 8, 3, 1)], NOW, 5, 2)
     expect(b.alltime).toHaveLength(0)
+  })
+
+  it('défaut minCount = 2 : un MV noté une seule fois ne classe pas (audit §8.7)', () => {
+    const b = bucketByReleaseWindow([agg('single', 9.5, 3, 1), agg('double', 7, 3, 2)], NOW)
+    expect(b.month.map((i) => i.eventId)).toEqual(['double'])
   })
 
   it('fenêtres vides → tableaux vides (pas de throw)', () => {

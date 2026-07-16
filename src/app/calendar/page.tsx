@@ -2,6 +2,7 @@ import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupFilter } from '@/components/home/group-filter'
 import { FilterChips } from '@/components/calendar/filter-chips'
+import { MobileGroupFilter } from '@/components/calendar/mobile-group-filter'
 import { CalendarFilterProvider, CalendarEvents } from '@/components/calendar/calendar-filters'
 import { getEventsForMonth } from '@/lib/events/queries'
 import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
@@ -90,6 +91,9 @@ export default async function CalendarPage({
             />
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
+            <MobileGroupFilter>
+              <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
+            </MobileGroupFilter>
             <FilterChips />
             <CalendarEvents year={year} month={month} timeZone={timeZone} />
           </div>

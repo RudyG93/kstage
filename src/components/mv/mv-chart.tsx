@@ -144,6 +144,9 @@ export function MvChart({
                 <span className="tabular w-8 shrink-0 text-right text-[12.5px] font-bold">
                   {item.avg.toFixed(1)}
                 </span>
+                {/* Nb de votes visible (audit §8.7 — cumul avec la date R6 :
+                    la date reste en sous-titre, le volume qualifie le score). */}
+                <span className="tabular text-faint shrink-0 text-[10px]">({item.count})</span>
                 <DeltaBadge delta={item.delta} />
               </Link>
             </li>

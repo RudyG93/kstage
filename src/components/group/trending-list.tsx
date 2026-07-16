@@ -29,7 +29,10 @@ export function TrendingList({
   if (entries.length === 0) return null
   return (
     <Panel>
-      <PanelHeader label="Trending" />
+      {/* « In the spotlight » (audit §8.7) : le tri mesure l'IMMINENCE d'un
+          event + la récence d'une sortie, pas l'audience — « Trending »
+          promettait de la popularité. */}
+      <PanelHeader label="In the spotlight" />
       <ol>
         {entries.map(({ group, follows, isFollowing, reason }, i) => (
           <li key={group.id} className="relative border-b last:border-b-0">

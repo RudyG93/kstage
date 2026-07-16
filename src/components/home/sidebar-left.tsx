@@ -54,7 +54,9 @@ export async function SidebarLeft({
   return (
     <div className="space-y-6 lg:sticky lg:top-20">
       {showFilters && groupFilter && (
-        <section className="bg-card rounded-lg border p-4">
+        /* hidden lg:block : en mobile le filtre vit AVANT la grille
+           (MobileGroupFilter, audit §8.5) — pas de doublon. */
+        <section className="bg-card hidden rounded-lg border p-4 lg:block">
           <div className="mb-3">
             <span className="label-data">Filters</span>
           </div>

@@ -15,11 +15,16 @@ export function Panel({ className, children }: { className?: string; children: R
 
 export function PanelHeader({
   label,
+  note,
   action,
   right,
   className,
 }: {
   label: ReactNode
+  /** Annotation discrète à côté du label — ex. « All groups » quand un module
+   * affiche un repli GLOBAL au lieu du contenu suivi (audit §8.4 : les
+   * fallbacks silencieux rendaient le comportement illisible). */
+  note?: string
   action?: { label: string; href: string }
   /** Slot libre à droite (segmented control…) — exclusif avec `action`. */
   right?: ReactNode
@@ -27,7 +32,10 @@ export function PanelHeader({
 }) {
   return (
     <div className={cn('flex items-center justify-between border-b px-3 py-2', className)}>
-      <span className="label-data">{label}</span>
+      <span className="label-data">
+        {label}
+        {note && <span className="label-data-inline text-faint ml-2 text-[9px]">{note}</span>}
+      </span>
       {right}
       {!right && action && (
         <Link
