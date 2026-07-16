@@ -14,6 +14,7 @@ import { disabledTypesByUser } from '@/lib/notifications/prefs'
 import { eventHref } from '@/lib/events/href'
 import { displayEventTitle } from '@/lib/events/title'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
+import { isValidTimeZone } from '@/lib/profiles/timezone'
 
 // Push datés par comeback (§7) : « J-1 / jour J » pour les groupes suivis
 // (le kind `announced` a été coupé — budget notifs, Lot 4). Le cron déclenche
@@ -44,9 +45,11 @@ export async function GET(req: Request) {
   const EVENT_FIELDS =
     'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug)'
 
-  // Superset d'events comeback (mv/release) sur la fenêtre J-1/jour J (marge
-  // KST) ; resolveKind fait le test de jour exact.
-  const [subsRes, followsRes, prefsRes, upcomingRes] = await Promise.all([
+  // Superset d'events comeback (mv/release) sur la fenêtre [now-1j, now+3j) ;
+  // resolveKind fait le test de jour exact PAR FUSEAU. La fenêtre couvre tous
+  // les fuseaux (UTC-12 → UTC+14) : « aujourd'hui local » est toujours à
+  // < 25 h de now, « demain local » à < 48 h — superset garanti.
+  const [subsRes, followsRes, prefsRes, upcomingRes, profilesRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
     supabase.from('user_follows').select('user_id, group_id'),
     supabase
@@ -62,10 +65,20 @@ export async function GET(req: Request) {
       .eq('hidden', false)
       .gte('start_at', new Date(now.getTime() - DAY_MS).toISOString())
       .lt('start_at', new Date(now.getTime() + 3 * DAY_MS).toISOString()),
+    supabase.from('profiles').select('id, timezone').not('timezone', 'is', null),
   ])
 
-  const err = subsRes.error ?? followsRes.error ?? prefsRes.error ?? upcomingRes.error
+  const err =
+    subsRes.error ?? followsRes.error ?? prefsRes.error ?? upcomingRes.error ?? profilesRes.error
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
+
+  // Fuseau par abonné (Lot 3b) : profiles.timezone validé ; les abonnés sans
+  // réglage restent en KST (défaut du builder). Le cookie tz des anonymes est
+  // hors de portée d'un cron — assumé, le réglage existe dans /account.
+  const timeZones = new Map<string, string>()
+  for (const p of profilesRes.data ?? []) {
+    if (isValidTimeZone(p.timezone)) timeZones.set(p.id, p.timezone)
+  }
 
   // Mapping vers ComebackEvent (url + titre nettoyés ici pour garder le
   // builder pur).
@@ -109,6 +122,7 @@ export async function GET(req: Request) {
     alreadySent,
     now,
     disabledTypesByUser(prefsRes.data ?? []),
+    timeZones,
   )
 
   let sent = 0
