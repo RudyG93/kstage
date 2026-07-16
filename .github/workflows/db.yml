@@ -6,6 +6,10 @@
 # Path-filter (décision Rudy 2026-07-17) : ne tourne que quand supabase/**
 # change — zéro coût sur les PR normales. CI-only : le dev local Windows n'a
 # pas Docker garanti, rien n'est requis en local.
+#
+# En cas d'échec, le tail du log est posté en COMMIT COMMENT : les logs
+# Actions exigent une auth que l'outillage local n'a pas (pas de gh CLI) —
+# le commit comment est lisible via l'API publique.
 name: DB
 
 on:
@@ -15,19 +19,34 @@ on:
     branches: [main]
     paths: ['supabase/**', '.github/workflows/db.yml']
 
+permissions:
+  contents: write # commit comment de diagnostic en cas d'échec
+
 jobs:
   fresh-db:
     name: fresh db (migrations + seed)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v5
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Épinglé = la version qui a généré config.toml (un `latest` plus
+          # récent peut rejeter des clés de config).
+          version: 2.109.1
       # `db start` ne lance que Postgres (image supabase/postgres : schémas
       # auth/storage baseline inclus) ; `db reset` applique 0001→005x + seed.
-      # Si une migration exige un service complet (storage…), passer à
-      # `supabase start -x studio,imgproxy,edge-runtime` — à ajuster ici.
-      - run: supabase db start
-      - run: supabase db reset
+      - name: db start + reset
+        run: |
+          set -o pipefail
+          { supabase db start --debug && supabase db reset --debug; } 2>&1 | tee db.log
+      - name: diagnostic en commit comment
+        if: failure()
+        run: |
+          tail -c 6000 db.log > tail.log || echo "(pas de log)" > tail.log
+          jq -Rs '{body: ("⚠️ Workflow DB en échec — tail du log :\n```\n" + . + "\n```")}' tail.log > body.json
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -d @body.json > /dev/null
