@@ -19,6 +19,7 @@ export function PanelHeader({
   action,
   right,
   className,
+  as: Heading = 'h2',
 }: {
   label: ReactNode
   /** Annotation discrète à côté du label — ex. « All groups » quand un module
@@ -29,13 +30,16 @@ export function PanelHeader({
   /** Slot libre à droite (segmented control…) — exclusif avec `action`. */
   right?: ReactNode
   className?: string
+  /** Vrai heading (a11y §8.6 : les panels n'étaient que des <span> — un
+   * lecteur d'écran ne pouvait pas naviguer par sections). Aspect inchangé. */
+  as?: 'h2' | 'h3'
 }) {
   return (
     <div className={cn('flex items-center justify-between border-b px-3 py-2', className)}>
-      <span className="label-data">
+      <Heading className="label-data">
         {label}
         {note && <span className="label-data-inline text-faint ml-2 text-[9px]">{note}</span>}
-      </span>
+      </Heading>
       {right}
       {!right && action && (
         <Link

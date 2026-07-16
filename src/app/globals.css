@@ -98,11 +98,13 @@
   /* couleurs sémantiques d'event — assombries pour ≥ 4.5:1 en texte sur blanc
      (WCAG AA, audit contraste 2026-07-03 : les valeurs handoff faisaient
      2.9-3.4:1 sur les tags/chips du thème clair). */
-  --teal: oklch(0.53 0.11 172.6); /* MV / release */
+  --teal: oklch(0.51 0.11 172.6); /* MV / release — 4.5:1 aussi sur --secondary (a11y §8.6) */
   --amber: oklch(0.53 0.115 74.2); /* music show */
   --rose: oklch(0.54 0.17 1.5); /* live / concert */
   --live: oklch(0.593 0.211 26.5); /* LIVE NOW (dot only, jamais texte) */
-  --faint: oklch(0.55 0.025 262); /* micro-labels — 4.5:1 sur carte blanche */
+  --faint: oklch(
+    0.52 0.025 262
+  ); /* micro-labels — 4.5:1 aussi sur --secondary (a11y §8.6, avant : 4.12) */
 
   --chart-1: oklch(0.519 0.23 276);
   --chart-2: oklch(0.53 0.11 172.6);
@@ -183,6 +185,14 @@
   html {
     @apply font-sans;
   }
+  /* Focus visible UNIFORME (a11y §8.6, WCAG 2.4.7) : filet par défaut pour
+     tout élément focusable sans ring dédié. Les composants qui portent déjà
+     `outline-none` + focus-visible:ring-* le neutralisent (couche utilities
+     > base), rien ne double. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
   h1,
   h2,
   h3,
@@ -238,7 +248,9 @@
   @media (prefers-reduced-motion: reduce) {
     .animate-marquee,
     .animate-live-pulse,
-    .animate-upcoming-pulse {
+    .animate-upcoming-pulse,
+    /* a11y §8.6 : les skeletons (PageSkeleton) pulsaient malgré la préférence. */
+    .animate-pulse {
       animation: none;
     }
   }
@@ -265,6 +277,20 @@
       background-color: color-mix(in oklab, var(--primary) 10%, transparent);
     }
   }
+  /* Zone de frappe étendue en TACTILE (a11y §8.6, cible ~44px) sans changer le
+     rendu : extension verticale seulement — l'horizontale mordrait sur les
+     chips voisines (gap de quelques px) et détournerait les taps. */
+  @media (pointer: coarse) {
+    .tap-target {
+      position: relative;
+    }
+    .tap-target::after {
+      content: '';
+      position: absolute;
+      inset: -10px 0;
+    }
+  }
+
   /* Label de section « Data Desk » — remplace le font-mono uppercase v1.
      Usage : <span class="label-data">NEXT UP — YOUR GROUPS</span> */
   .label-data {

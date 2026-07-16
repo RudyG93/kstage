@@ -86,7 +86,7 @@ export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
               value={feedUrl}
               onFocus={(e) => e.currentTarget.select()}
               aria-label="Calendar feed URL"
-              className="bg-secondary text-muted-foreground w-full truncate rounded-md border px-2.5 py-1.5 text-xs outline-none"
+              className="bg-secondary text-muted-foreground focus-visible:ring-ring/50 w-full truncate rounded-md border px-2.5 py-1.5 text-xs outline-none focus-visible:ring-2"
             />
             <Button
               type="button"

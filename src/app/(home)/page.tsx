@@ -169,6 +169,8 @@ export default async function Home({
         <TrackView event="personal_calendar_ready" props={{ surface: 'home' }} />
       )}
       <Ticker items={tickerItems} />
+      {/* h1 de page (a11y §8.6) : la home connectée n'en avait aucun. */}
+      <h1 className="sr-only">Your k-pop calendar</h1>
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">

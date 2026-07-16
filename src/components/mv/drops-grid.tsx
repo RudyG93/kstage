@@ -42,7 +42,7 @@ export function DropsGrid({
 
   const pill = (active: boolean) =>
     cn(
-      'label-data-inline cursor-pointer rounded-sm px-2 py-1 text-[9px] transition-colors',
+      'label-data-inline tap-target cursor-pointer rounded-sm px-2 py-1 text-[9px] transition-colors',
       active
         ? 'bg-foreground text-background'
         : 'bg-secondary text-muted-foreground hover:text-foreground',
