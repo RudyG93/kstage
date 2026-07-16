@@ -4,7 +4,7 @@ import { ArrowRight, BellRing, HeartIcon, Star } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
 import { TrackedLink } from '@/components/analytics/tracked-link'
 import { isTimeTBA } from '@/lib/events/date'
-import { Panel } from '@/components/ui/panel'
+import { Panel, PanelHeader } from '@/components/ui/panel'
 import { QueueRow } from '@/components/events/queue-row'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { displayEventTitle } from '@/lib/events/title'
@@ -22,7 +22,9 @@ const STEPS = [
   {
     icon: BellRing,
     title: 'Get pinged at the right time',
-    desc: 'Comeback announced, day before, day of — in your timezone.',
+    // Copie alignée sur le comportement réel : le push announced a été coupé
+    // (Phase 1 Lot 4) — J-1 + jour J, l'annonce vit dans le digest.
+    desc: 'Day before and day of every drop — in your timezone.',
   },
   {
     icon: Star,
@@ -90,15 +92,20 @@ export function Landing({
         </p>
       </section>
 
-      {/* Preuve live : countdown temps réel (§7.9.4). */}
+      {/* Preuve courte : le prochain drop + countdown, COMPACT — l'ordre
+          audit §8.3 est promesse → preuve → CTA au-dessus de la ligne de
+          flottaison mobile ; le reste de la file vit dans « More coming up »
+          plus bas. Label « Next up » (l'ancien « Happening right now »
+          affichait un event FUTUR — trompeur, audit §8.7). */}
       {nextDrop && (
         <section className="relative">
           <Panel>
             <div className="flex items-center gap-2 border-b px-3 py-2">
-              <span className="bg-live animate-live-pulse size-[5px] rounded-full" aria-hidden />
-              <span className="label-data text-[8.5px] tracking-[0.16em]">
-                Happening on KStage right now
-              </span>
+              <span
+                className="bg-teal animate-upcoming-pulse size-[5px] rounded-full"
+                aria-hidden
+              />
+              <span className="label-data text-[8.5px] tracking-[0.16em]">Next up on KStage</span>
             </div>
             <div className="space-y-3 p-3.5">
               <div>
@@ -109,16 +116,13 @@ export function Landing({
               </div>
               {!isTimeTBA(nextDrop) && <Countdown targetIso={nextDrop.start_at} variant="cells" />}
             </div>
-            {previewRows.length > 0 && (
-              <div className="divide-y border-t">
-                {previewRows.map((event) => (
-                  <QueueRow key={event.id} event={event} />
-                ))}
-              </div>
-            )}
           </Panel>
         </section>
       )}
+
+      {/* CTA remonté au 2ᵉ écran mobile (audit §8.3 : il arrivait plusieurs
+          écrans sous la ligne de flottaison). Répété en pied de page. */}
+      <Cta />
 
       {/* Mur visuel (§7.9.5). */}
       {wallGroups.length > 0 && (
@@ -167,6 +171,24 @@ export function Landing({
         </section>
       )}
 
+      {/* Recentrage calendrier (audit §12 action 2) : la suite de la file,
+          avec un chemin explicite vers la vraie surface /calendar. */}
+      {previewRows.length > 0 && (
+        <section className="relative">
+          <Panel>
+            <PanelHeader
+              label="More coming up"
+              action={{ label: 'Full calendar', href: '/calendar' }}
+            />
+            <div className="divide-y">
+              {previewRows.map((event) => (
+                <QueueRow key={event.id} event={event} />
+              ))}
+            </div>
+          </Panel>
+        </section>
+      )}
+
       {/* Proof bar (§7.9.6). */}
       <p className="tabular text-faint relative text-center text-[9px] font-semibold tracking-[0.18em] uppercase">
         {compactNumber(eventsCount)} events · {groups.length} groups
@@ -189,30 +211,40 @@ export function Landing({
         ))}
       </section>
 
-      {/* CTA (§7.9.8). */}
-      <section className="relative space-y-3">
-        <TrackedLink
-          event="landing_cta_clicked"
-          eventProps={{ cta: 'signup' }}
-          href="/signup"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
-        >
-          Create your calendar — free
-          <ArrowRight className="size-4" aria-hidden />
-        </TrackedLink>
-        <TrackedLink
-          event="landing_cta_clicked"
-          eventProps={{ cta: 'browse_calendar' }}
-          href="/calendar"
-          className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 text-xs font-semibold transition-colors"
-        >
-          Browse the calendar first
-          <ArrowRight className="text-primary size-3.5" aria-hidden />
-        </TrackedLink>
+      {/* CTA répété en pied de page longue (§7.9.8). */}
+      <Cta withPwaNote />
+    </div>
+  )
+}
+
+// Double CTA (§7.9.8) — rendu au 2ᵉ écran ET en pied de page. La note PWA ne
+// s'affiche qu'en bas (le CTA haut reste net).
+function Cta({ withPwaNote = false }: { withPwaNote?: boolean }) {
+  return (
+    <section className="relative space-y-3">
+      <TrackedLink
+        event="landing_cta_clicked"
+        eventProps={{ cta: 'signup' }}
+        href="/signup"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
+      >
+        Create your calendar — free
+        <ArrowRight className="size-4" aria-hidden />
+      </TrackedLink>
+      <TrackedLink
+        event="landing_cta_clicked"
+        eventProps={{ cta: 'browse_calendar' }}
+        href="/calendar"
+        className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 text-xs font-semibold transition-colors"
+      >
+        Browse the calendar first
+        <ArrowRight className="text-primary size-3.5" aria-hidden />
+      </TrackedLink>
+      {withPwaNote && (
         <p className="tabular text-faint pt-1 text-center text-[8.5px] font-semibold tracking-[0.16em] uppercase">
           PWA — install from your browser · no app store
         </p>
-      </section>
-    </div>
+      )}
+    </section>
   )
 }

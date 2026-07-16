@@ -44,12 +44,14 @@ export default async function OnboardingPage() {
     const bHas = rb.content > 0 ? 1 : 0
     return bHas - aHas || rb.pop - ra.pop || rb.content - ra.content || a.name.localeCompare(b.name)
   })
-  const top = sorted.slice(0, 30).map((g) => ({ id: g.id, name: g.name, image: g.image_url }))
+  // Liste COMPLÈTE (la grille montre le top 30 par défaut, la recherche client
+  // couvre tout — audit §12 action 3 : « trouver SES trois artistes »).
+  const all = sorted.map((g) => ({ id: g.id, name: g.name, image: g.image_url }))
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
       <TrackView event="onboarding_started" />
-      <OnboardingGrid groups={top} />
+      <OnboardingGrid groups={all} />
     </div>
   )
 }
