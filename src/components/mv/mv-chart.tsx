@@ -75,7 +75,7 @@ export function MvChart({
                 onClick={() => setActive(key)}
                 aria-pressed={active === key}
                 className={cn(
-                  'label-data-inline rounded-sm px-2 py-1 text-[9px] transition-colors',
+                  'label-data-inline tap-target rounded-sm px-2 py-1 text-[9px] transition-colors',
                   active === key
                     ? 'bg-foreground text-background'
                     : 'text-muted-foreground hover:text-foreground',

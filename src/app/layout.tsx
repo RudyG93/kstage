@@ -124,6 +124,14 @@ export default async function RootLayout({
           {/* Header Data Desk (§7.1.1) : logo K + STAGE, recherche factice → /search,
               cloche → réglages notifs, avatar = entrée profil. Nav desktop inline ;
               sur mobile la nav vit dans la bottom-bar (SiteNav fixed). */}
+          {/* Skip-link (WCAG 2.4.1) : premier focus de la page — le clavier
+              saute header + nav vers le contenu. Visible seulement au focus. */}
+          <a
+            href="#main"
+            className="focus:bg-primary focus:text-primary-foreground sr-only z-50 rounded-md focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-3 focus:py-2 focus:text-sm focus:font-semibold"
+          >
+            Skip to content
+          </a>
           <header className="bg-background/95 sticky top-0 z-30 border-b backdrop-blur">
             {/* Grid 3 zones (gauche/centre/droite) : la recherche est centrée au
                 lieu de pousser les groupes avec un flex-1 déséquilibré. */}
@@ -181,7 +189,11 @@ export default async function RootLayout({
               </div>
             </div>
           </header>
-          <main className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          <main
+            id="main"
+            tabIndex={-1}
+            className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] outline-none md:pb-6"
+          >
             {children}
           </main>
           {/* Barre mobile hors du header : son backdrop-filter piégerait le fixed. */}

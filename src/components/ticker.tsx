@@ -31,7 +31,10 @@ export function Ticker({ items }: { items: TickerItem[] }) {
       {...(ariaHidden ? { 'aria-hidden': true } : {})}
     >
       {Array.from({ length: repeats }, (_, r) => (
-        <span key={r} className="flex items-center gap-7">
+        // a11y §8.6 : seule la 1ʳᵉ séquence est lisible — les répétitions ne
+        // servent qu'à couvrir la largeur du marquee, un lecteur d'écran
+        // entendait chaque annonce jusqu'à 8 fois.
+        <span key={r} className="flex items-center gap-7" aria-hidden={r > 0 || undefined}>
           {items.map((item, i) => (
             <span key={i} className="flex items-center gap-2 whitespace-nowrap">
               <span

@@ -17,8 +17,10 @@ import { cn } from '@/lib/utils'
 export function FilterChips() {
   const { activeTypes, toggleType, events } = useCalendarFilters()
 
+  // min-h-6 : cible ≥ 24px (WCAG 2.5.8 AA) — le conteneur overflow-x-auto
+  // clipperait une extension ::after (.tap-target), on garantit par la hauteur.
   const chipBase =
-    'label-data-inline inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 cursor-pointer'
+    'label-data-inline inline-flex min-h-6 shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 cursor-pointer'
 
   return (
     <div className="space-y-2">
