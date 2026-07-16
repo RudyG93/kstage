@@ -67,6 +67,30 @@ export interface DebutCandidatePayload {
   ytVerified: { channelId: string; subs: number } | null
   fandomUrl: string
   reason?: string
+  /** Fans Deezer au moment du scan (Phase 3 Lot 3) — persisté pour que la
+   * revue admin voie le signal d'audience qui a décidé du gate. */
+  deezerFans?: number
+}
+
+/**
+ * Décision du gate d'auto-création (Phase 3 Lot 3 — pur, testable) :
+ * autoCreate = date concrète ET audience réelle (YT ≥ 10k subs OU Deezer
+ * ≥ 5k fans) ; confidence = `monitored` si chaîne vérifiée (canal MV sûr),
+ * sinon `candidate` (quarantaine : noindex, hors sitemap, jamais notifié).
+ * C'est LE point unique qui incarne le garde-fou de l'audit : « ne jamais
+ * publier une identité ambiguë pour augmenter le compteur ».
+ */
+export function debutGateDecision(
+  payload: Pick<DebutCandidatePayload, 'debutDate' | 'ytVerified'>,
+  deezerFanCount: number,
+): { autoCreate: boolean; confidence: 'monitored' | 'candidate' } {
+  const audience =
+    (payload.ytVerified !== null && payload.ytVerified.subs >= MIN_YT_SUBS) ||
+    deezerFanCount >= MIN_DEEZER_FANS
+  return {
+    autoCreate: payload.debutDate !== null && audience,
+    confidence: payload.ytVerified ? 'monitored' : 'candidate',
+  }
 }
 
 export interface DebutIngestResult {
@@ -133,63 +157,101 @@ async function selfHostGroupImage(
 /**
  * Crée groupe + membres + source + event debut depuis un payload candidat.
  * Utilisé par le gate automatique ET par le bouton Create de /admin/debuts.
+ *
+ * RÉCUPÉRABLE (Phase 3 Lot 3, action « création transactionnelle ou
+ * récupérable ») : chaque étape est idempotente et un rappel REPREND une
+ * création interrompue (groupe déjà là → resume, membres insérés par
+ * différence, source tolérante au duplicate, event déjà idempotent). Pas de
+ * RPC transactionnelle : l'upload Storage n'est pas transactionnable et le
+ * bouton Create de /admin/debuts devient « retry = resume » gratuitement.
+ * Les échecs d'étapes remontent dans `stepErrors` (visibles en scrape_log).
  */
 export async function createFromPayload(
   supabase: SupabaseClient,
   payload: DebutCandidatePayload,
-): Promise<{ groupId: string } | { error: string }> {
+): Promise<{ groupId: string; resumed: boolean; stepErrors: string[] } | { error: string }> {
   if (!payload.name) return { error: 'payload sans nom' }
+  const stepErrors: string[] = []
 
   // Slug unique (collision → suffixe année).
   const base = slugify(payload.name)
   if (!base) return { error: `slug vide pour « ${payload.name} »` }
-  const { data: taken } = await supabase.from('groups').select('slug').ilike('slug', `${base}%`)
-  const takenSet = new Set((taken ?? []).map((g) => g.slug))
-  const slug = !takenSet.has(base) ? base : `${base}-${payload.debutDate?.slice(0, 4) ?? 'new'}`
-  if (takenSet.has(slug)) return { error: `slug déjà pris: ${slug}` }
-
-  const links: Record<string, string> = {}
-  if (payload.ytVerified)
-    links.youtube = `https://www.youtube.com/channel/${payload.ytVerified.channelId}`
-  if (payload.instagram) links.instagram = `https://www.instagram.com/${payload.instagram}`
-
-  const image = payload.imageUrl ? await selfHostGroupImage(supabase, slug, payload.imageUrl) : null
-
-  const { data: group, error: groupErr } = await supabase
+  const { data: taken } = await supabase
     .from('groups')
-    .insert({
-      slug,
-      name: payload.name,
-      agency: payload.label,
-      debut_date: payload.debutDate,
-      image_url: image,
-      links: links as Json,
-      is_solo: payload.members.length === 0,
-      // Tier de confiance (Phase 3 Lot 2, audit §4.1) : un groupe auto-créé
-      // n'est JAMAIS `verified` d'emblée — `monitored` si la chaîne YouTube
-      // est vérifiée (les MVs viendront d'un canal sûr), sinon `candidate`
-      // (quarantaine : noindex, hors sitemap, aucune notification) jusqu'à la
-      // découverte d'une chaîne (Lot 3) ou une promotion admin.
-      confidence: payload.ytVerified ? 'monitored' : 'candidate',
-    })
-    .select('id')
-    .single()
-  if (groupErr || !group) return { error: `insert group: ${groupErr?.message}` }
+    .select('id, slug, name')
+    .ilike('slug', `${base}%`)
+  const takenSet = new Set((taken ?? []).map((g) => g.slug))
 
-  // Lineup annoncé → membres ACTIFS (le statut pre_debut est réservé aux
-  // partants d'avant-debut ; un flip au jour J serait un cron de plus pour rien).
+  // RESUME : si un groupe du MÊME NOM existe déjà (création interrompue après
+  // l'insert groups, ou re-clic admin), on reprend son id et on complète les
+  // étapes manquantes au lieu d'échouer sur « slug déjà pris ».
+  const sameName = (taken ?? []).find(
+    (g) => normalizeDebutName(g.name) === normalizeDebutName(payload.name),
+  )
+  let groupId: string
+  let slug: string
+  let resumed = false
+  if (sameName) {
+    groupId = sameName.id
+    slug = sameName.slug
+    resumed = true
+  } else {
+    slug = !takenSet.has(base) ? base : `${base}-${payload.debutDate?.slice(0, 4) ?? 'new'}`
+    if (takenSet.has(slug)) return { error: `slug déjà pris: ${slug}` }
+
+    const links: Record<string, string> = {}
+    if (payload.ytVerified)
+      links.youtube = `https://www.youtube.com/channel/${payload.ytVerified.channelId}`
+    if (payload.instagram) links.instagram = `https://www.instagram.com/${payload.instagram}`
+
+    const image = payload.imageUrl
+      ? await selfHostGroupImage(supabase, slug, payload.imageUrl)
+      : null
+
+    const { data: group, error: groupErr } = await supabase
+      .from('groups')
+      .insert({
+        slug,
+        name: payload.name,
+        agency: payload.label,
+        debut_date: payload.debutDate,
+        image_url: image,
+        links: links as Json,
+        is_solo: payload.members.length === 0,
+        // Tier de confiance (Phase 3 Lot 2, audit §4.1) : un groupe auto-créé
+        // n'est JAMAIS `verified` d'emblée — cf. debutGateDecision.
+        confidence: payload.ytVerified ? 'monitored' : 'candidate',
+      })
+      .select('id')
+      .single()
+    if (groupErr || !group) return { error: `insert group: ${groupErr?.message}` }
+    groupId = group.id
+  }
+
+  // Lineup annoncé → membres ACTIFS, insérés PAR DIFFÉRENCE (resume-safe : les
+  // slugs membres sont déterministes `${slug}-${stage}`).
   if (payload.members.length > 0) {
-    const rows = payload.members.map((stage) => ({
-      group_id: group.id,
-      stage_name: stage.replace(/\s*\([^)]*\)\s*$/, ''),
-      status: 'active' as const,
-      slug: `${slug}-${slugify(stage.replace(/\s*\([^)]*\)\s*$/, ''))}`,
-    }))
-    const { error: mErr } = await supabase.from('members').insert(rows)
-    if (mErr) console.error(`debut-ingest members ${slug}: ${mErr.message}`)
+    const { data: existingMembers } = await supabase
+      .from('members')
+      .select('slug')
+      .eq('group_id', groupId)
+    const existingSlugs = new Set((existingMembers ?? []).map((m) => m.slug))
+    const rows = payload.members
+      .map((stage) => ({
+        group_id: groupId,
+        stage_name: stage.replace(/\s*\([^)]*\)\s*$/, ''),
+        status: 'active' as const,
+        slug: `${slug}-${slugify(stage.replace(/\s*\([^)]*\)\s*$/, ''))}`,
+      }))
+      .filter((r) => !existingSlugs.has(r.slug))
+    if (rows.length > 0) {
+      const { error: mErr } = await supabase.from('members').insert(rows)
+      if (mErr) stepErrors.push(`members: ${mErr.message}`)
+    }
   }
 
   // Source YouTube vérifiée → le cron quotidien scrape-youtube ingérera les MVs.
+  // Idempotent via unique(url, group_id) — le duplicate est un resume normal.
   if (payload.ytVerified) {
     const { error: sErr } = await supabase.from('sources').insert({
       type: 'youtube_api',
@@ -197,9 +259,9 @@ export async function createFromPayload(
       url: `https://www.youtube.com/channel/${payload.ytVerified.channelId}`,
       channel_id: payload.ytVerified.channelId,
       subscriber_count: payload.ytVerified.subs,
-      group_id: group.id,
+      group_id: groupId,
     })
-    if (sErr) console.error(`debut-ingest source ${slug}: ${sErr.message}`)
+    if (sErr && sErr.code !== '23505') stepErrors.push(`source: ${sErr.message}`)
   }
 
   // Event debut (release) — idempotent par (source_url, group_id), comme
@@ -209,23 +271,23 @@ export async function createFromPayload(
     const { data: existing } = await supabase
       .from('events')
       .select('id')
-      .eq('group_id', group.id)
+      .eq('group_id', groupId)
       .eq('source_url', payload.fandomUrl)
       .maybeSingle()
     if (!existing) {
       const { error: eErr } = await supabase.from('events').insert({
-        group_id: group.id,
+        group_id: groupId,
         type: 'release',
         title: `${payload.name} debut`,
         start_at: kstToUtcISO(y, m - 1, d, 18, 0),
         status: 'confirmed',
         source_url: payload.fandomUrl,
       })
-      if (eErr) console.error(`debut-ingest event ${slug}: ${eErr.message}`)
+      if (eErr) stepErrors.push(`event: ${eErr.message}`)
     }
   }
 
-  return { groupId: group.id }
+  return { groupId, resumed, stepErrors }
 }
 
 /**
@@ -398,20 +460,24 @@ export async function ingestDebuts(
       }
 
       // Gate = date concrète ET signal d'AUDIENCE réel : subs YouTube ≥ 10k OU
-      // fans Deezer ≥ 5k. On abandonne « label déjà en base » (laissait passer
-      // tout nugu d'une major → biais 2026). wikipediaListed reste au payload
-      // pour la revue admin mais ne suffit plus (Wikipedia liste trop largement).
+      // fans Deezer ≥ 5k (décision pure debutGateDecision — testée). On
+      // abandonne « label déjà en base » (laissait passer tout nugu d'une
+      // major → biais 2026). wikipediaListed reste au payload pour la revue
+      // admin mais ne suffit plus. deezerFans est PERSISTÉ dans le payload :
+      // la revue admin voit le signal qui a décidé.
       const deezerFanCount = await deezerFans(payload.name)
-      const audience =
-        (ytVerified !== null && ytVerified.subs >= MIN_YT_SUBS) || deezerFanCount >= MIN_DEEZER_FANS
-      const autoCreate = payload.debutDate !== null && audience
+      payload.deezerFans = deezerFanCount
+      const decision = debutGateDecision(payload, deezerFanCount)
 
       let groupId: string | null = null
-      if (autoCreate) {
+      if (decision.autoCreate) {
         const createRes = await createFromPayload(supabase, payload)
         if ('groupId' in createRes) {
           groupId = createRes.groupId
           result.created.push(payload.name)
+          // Étapes partiellement échouées (membres, source, event) : visibles
+          // en scrape_log — le prochain run/clic admin RESUME (idempotent).
+          for (const se of createRes.stepErrors) result.errors.push(`${payload.name}: ${se}`)
         } else {
           result.errors.push(`${payload.name}: ${createRes.error}`)
           result.pending.push(payload.name)
