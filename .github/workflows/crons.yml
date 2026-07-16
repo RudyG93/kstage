@@ -16,6 +16,7 @@ on:
     - cron: '0 4 * * *' # refresh-images          (13:00 KST)
     - cron: '45 5 * * *' # send-digest            (14:45 KST)
     - cron: '30 8 * * *' # notify-comebacks       (17:30 KST)
+    - cron: '30 13 * * *' # monitor               (22:30 KST — après le dernier scrape du jour)
   workflow_dispatch:
     inputs:
       endpoint:
@@ -30,6 +31,7 @@ on:
           - refresh-images
           - send-digest
           - notify-comebacks
+          - monitor
 
 jobs:
   run:
@@ -54,6 +56,7 @@ jobs:
               "0 4 * * *") EP=refresh-images ;;
               "45 5 * * *") EP=send-digest ;;
               "30 8 * * *") EP=notify-comebacks ;;
+              "30 13 * * *") EP=monitor ;;
               *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;
             esac
           fi
