@@ -24,7 +24,8 @@ async function sendEmail({ to, subject, html }: { to: string; subject: string; h
   }
 }
 
-function welcomeHtml(username: string | null): string {
+/** Exporté pour le test de contrat (les liens du mail pointent /calendar). */
+export function welcomeHtml(username: string | null): string {
   const hello = username ? `Hi ${username},` : 'Hi,'
   return `<!doctype html>
 <html lang="en">
@@ -46,13 +47,13 @@ function welcomeHtml(username: string | null): string {
             </p>
             <p style="margin:0 0 4px;">Get started:</p>
             <ul style="margin:0 0 12px;padding-left:18px;">
-              <li style="margin:4px 0;"><a href="${SITE_URL}/" style="color:#b79bff;">Browse upcoming events</a></li>
-              <li style="margin:4px 0;"><a href="${SITE_URL}/groups" style="color:#b79bff;">Follow your favorite groups</a></li>
-              <li style="margin:4px 0;"><a href="${SITE_URL}/mvs" style="color:#b79bff;">Catch up on recent MVs</a></li>
+              <li style="margin:4px 0;"><a href="${SITE_URL}/calendar" style="color:#b79bff;">See your personalized calendar</a></li>
+              <li style="margin:4px 0;"><a href="${SITE_URL}/groups" style="color:#b79bff;">Follow more groups</a></li>
+              <li style="margin:4px 0;"><a href="${SITE_URL}/account" style="color:#b79bff;">Turn on notifications</a></li>
             </ul>
           </td></tr>
           <tr><td style="padding:8px 28px 28px;">
-            <a href="${SITE_URL}/" style="display:inline-block;background:linear-gradient(90deg,#5b5bf0,#3fe0b8);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:10px;">Open KStage</a>
+            <a href="${SITE_URL}/calendar" style="display:inline-block;background:linear-gradient(90deg,#5b5bf0,#3fe0b8);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:10px;">Open your calendar</a>
           </td></tr>
         </table>
         <p style="max-width:480px;margin:16px auto 0;font-size:11px;color:#6b6b74;">You're receiving this because you signed up for KStage.</p>
