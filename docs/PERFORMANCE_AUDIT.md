@@ -28,6 +28,18 @@ Lectures :
 > Fixes : PAS dans le Lot 1 (baseline seulement). Candidats à trier au re-run
 > post-Lot 5 : cause CLS commune, `priority`/`fetchpriority` sur l'image LCP.
 
+### Re-run post-Phase 2 (2026-07-16, après le merge du Lot 5)
+
+| Page (mobile) | Perf        | A11y | LCP   | CLS   | TBT    | Speed Index    |
+| ------------- | ----------- | ---- | ----- | ----- | ------ | -------------- |
+| `/` (landing) | **65** (+3) | 95   | 5.1 s | 0.249 | 190 ms | 3.0 s (−2.7 s) |
+| `/calendar`   | **73** (=)  | 96   | 4.2 s | 0.249 | 70 ms  | 1.8 s (−0.7 s) |
+| `/mvs`        | **56** (+2) | 100  | 7.1 s | 0.249 | 250 ms | 4.6 s (=)      |
+
+Verdict : la Phase 2 (5 lots UX/a11y/typo) n'a **rien régressé** — scores stables
+ou légèrement meilleurs. Le **CLS 0.249 commun** et le **LCP image** restent
+entiers : ce sont les 2 cibles du mini-lot perf à cadrer (hors Phase 2).
+
 ---
 
 # KStage — Audit performance (2026-06-09)
