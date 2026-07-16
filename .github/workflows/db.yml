@@ -1,0 +1,33 @@
+# Base fraîche reproductible (Phase 3 Lot 1, audit §9.2 « la CI ne reconstruit
+# pas une base Supabase fraîche »). Rejoue TOUTES les migrations + seed.sql sur
+# un Postgres jetable : échec = migration ou seed cassé (la classe de bug du
+# `on conflict (url)` mort depuis 0033, resté invisible un mois).
+#
+# Path-filter (décision Rudy 2026-07-17) : ne tourne que quand supabase/**
+# change — zéro coût sur les PR normales. CI-only : le dev local Windows n'a
+# pas Docker garanti, rien n'est requis en local.
+name: DB
+
+on:
+  pull_request:
+    paths: ['supabase/**', '.github/workflows/db.yml']
+  push:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/db.yml']
+
+jobs:
+  fresh-db:
+    name: fresh db (migrations + seed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # `db start` ne lance que Postgres (image supabase/postgres : schémas
+      # auth/storage baseline inclus) ; `db reset` applique 0001→005x + seed.
+      # Si une migration exige un service complet (storage…), passer à
+      # `supabase start -x studio,imgproxy,edge-runtime` — à ajuster ici.
+      - run: supabase db start
+      - run: supabase db reset
