@@ -13,9 +13,11 @@ import { sendPush } from '@/lib/notifications/send'
 import { disabledTypesByUser } from '@/lib/notifications/prefs'
 import { eventHref } from '@/lib/events/href'
 import { displayEventTitle } from '@/lib/events/title'
+import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
-// Push datés par comeback (§7) : « annoncé / J-1 / jour J » pour les groupes
-// suivis. Vercel Cron déclenche en GET + en-tête Authorization: Bearer ${CRON_SECRET}.
+// Push datés par comeback (§7) : « J-1 / jour J » pour les groupes suivis
+// (le kind `announced` a été coupé — budget notifs, Lot 4). Le cron déclenche
+// en GET + en-tête Authorization: Bearer ${CRON_SECRET}.
 // Idempotent via la table event_notifications (cf. buildComebackNotifications).
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -40,12 +42,11 @@ export async function GET(req: Request) {
 
   const now = new Date()
   const EVENT_FIELDS =
-    'id, group_id, slug, type, title, start_at, source_url, created_at, groups!inner(name, slug)'
+    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug)'
 
-  // Superset d'events comeback (mv/release) : fenêtre J-1/jour J (avec marge KST)
-  // OU créés dans les dernières 24 h (annoncés). Deux requêtes dédupliquées par id
-  // — plus lisible qu'un .or() postgREST croisant deux colonnes.
-  const [subsRes, followsRes, prefsRes, upcomingRes, announcedRes] = await Promise.all([
+  // Superset d'events comeback (mv/release) sur la fenêtre J-1/jour J (marge
+  // KST) ; resolveKind fait le test de jour exact.
+  const [subsRes, followsRes, prefsRes, upcomingRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
     supabase.from('user_follows').select('user_id, group_id'),
     supabase
@@ -61,37 +62,23 @@ export async function GET(req: Request) {
       .eq('hidden', false)
       .gte('start_at', new Date(now.getTime() - DAY_MS).toISOString())
       .lt('start_at', new Date(now.getTime() + 3 * DAY_MS).toISOString()),
-    supabase
-      .from('events')
-      .select(EVENT_FIELDS)
-      .in('type', ['mv', 'release'])
-      .neq('status', 'cancelled')
-      .eq('hidden', false)
-      .gte('created_at', new Date(now.getTime() - DAY_MS).toISOString())
-      .gte('start_at', now.toISOString()),
   ])
 
-  const err =
-    subsRes.error ?? followsRes.error ?? prefsRes.error ?? upcomingRes.error ?? announcedRes.error
+  const err = subsRes.error ?? followsRes.error ?? prefsRes.error ?? upcomingRes.error
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
 
-  // Dédup par id, puis mapping vers ComebackEvent (url + titre nettoyés ici pour
-  // garder le builder pur).
-  const byId = new Map<string, ComebackEvent>()
-  for (const e of [...(upcomingRes.data ?? []), ...(announcedRes.data ?? [])]) {
-    if (byId.has(e.id)) continue
-    byId.set(e.id, {
-      id: e.id,
-      groupId: e.group_id,
-      groupName: e.groups?.name ?? null,
-      title: displayEventTitle(e.title, e.groups?.name, null, e.type),
-      type: e.type,
-      startAt: e.start_at,
-      createdAt: e.created_at,
-      url: eventHref(e),
-    })
-  }
-  const events = [...byId.values()]
+  // Mapping vers ComebackEvent (url + titre nettoyés ici pour garder le
+  // builder pur).
+  const events: ComebackEvent[] = (upcomingRes.data ?? []).map((e) => ({
+    id: e.id,
+    groupId: e.group_id,
+    groupName: e.groups?.name ?? null,
+    title: displayEventTitle(e.title, e.groups?.name, null, e.type),
+    type: e.type,
+    startAt: e.start_at,
+    status: e.status,
+    url: eventHref(e),
+  }))
 
   // Triggers déjà envoyés pour ces events (idempotence).
   const eventIds = events.map((e) => e.id)
@@ -126,13 +113,17 @@ export async function GET(req: Request) {
 
   let sent = 0
   let removed = 0
+  let failed = 0
   for (const { subscription, payload, record } of messages) {
     const res = await sendPush(supabase, subscription, payload)
     if (res === 'removed') {
       removed += 1
       continue
     }
-    if (res !== 'sent') continue
+    if (res !== 'sent') {
+      failed += 1
+      continue
+    }
     sent += 1
     // Marque le trigger comme envoyé (l'unique couvre les races inter-runs).
     await supabase.from('event_notifications').insert({
@@ -142,5 +133,24 @@ export async function GET(req: Request) {
     })
   }
 
-  return NextResponse.json({ ok: true, candidates: messages.length, sent, removed })
+  // Observabilité (Lot 4/5) : le run alimente scrape_log comme les scrapers —
+  // c'est ce que lira le cron monitor. `error` = tout a échoué → 500 → run
+  // GitHub Actions rouge → email natif.
+  const status =
+    messages.length > 0 && sent === 0 && failed > 0 ? 'error' : failed > 0 ? 'partial' : 'ok'
+  await logScrapeRun(supabase, {
+    source: 'notify_comebacks',
+    status,
+    startedAt: now.toISOString(),
+    errorMsg: failed > 0 ? `${failed} push failed` : undefined,
+    details: { candidates: messages.length, sent, removed, failed },
+  })
+
+  if (status === 'error') {
+    return NextResponse.json(
+      { ok: false, candidates: messages.length, sent, removed, failed },
+      { status: 500 },
+    )
+  }
+  return NextResponse.json({ ok: true, candidates: messages.length, sent, removed, failed })
 }

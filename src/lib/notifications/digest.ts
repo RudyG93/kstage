@@ -21,6 +21,10 @@ export type DigestEvent = {
   // Sert à agréger les music shows par épisode dans le payload (optionnel :
   // les anciens appelants/tests sans type gardent le comportement historique).
   type?: string | null
+  // confirmed | tentative — projeté pour la politique « pas d'alerte à heure
+  // précise sur une date sans heure » (audit §7.5) ; le digest ne cite aucune
+  // heure, tous les statuts non-cancelled y sont légitimes.
+  status?: string | null
 }
 
 export type DigestPayload = { title: string; body: string; url: string; tag?: string }

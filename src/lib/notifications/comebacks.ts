@@ -3,11 +3,19 @@
 // + l'ensemble des triggers déjà envoyés ; on produit un message par (abonnement,
 // event, kind) pertinent et non encore envoyé.
 //
-// Un comeback déclenche jusqu'à 3 push au fil du temps, façon Bandsintown :
-//   announced (vient d'être ajouté en DB) → day_before (J-1) → day_of (jour J).
-// Fenêtres calées sur le JOUR KST (référence k-pop, cohérent avec le reste de
-// l'app). Précédence pour qu'un même run n'émette qu'UN kind par event :
-//   day_of > day_before > announced.
+// Un comeback déclenche jusqu'à 2 push au fil du temps :
+//   day_before (J-1) → day_of (jour J).
+// Le kind `announced` (event ajouté en DB < 24 h) a été COUPÉ (Phase 1 Lot 4,
+// budget de notifications — audit §7.3) : l'annonce vit dans le digest quotidien,
+// le push est réservé aux échéances. Fenêtres calées sur le JOUR KST (référence
+// k-pop). Précédence pour qu'un même run n'émette qu'UN kind par event :
+//   day_of > day_before.
+//
+// Politique `tentative` : un jour connu sans heure (stocké minuit KST) reste
+// éligible à day_before/day_of — aucun kind existant n'annonce d'heure dans son
+// copy. Tout FUTUR kind à heure précise (« dans 15 min ») devra exclure
+// `status === 'tentative'` / `isTimeTBA` (audit §7.5 : une date sans heure ne
+// déclenche jamais d'alerte minute-précise).
 
 import { kstDayKey } from '@/lib/events/date'
 
@@ -27,11 +35,11 @@ export type ComebackEvent = {
   title: string // déjà nettoyé (displayEventTitle) côté route
   type: string // mv | release — sert au filtre préférences par user
   startAt: string
-  createdAt: string
+  status: string // confirmed | tentative (cancelled filtré côté route)
   url: string // déjà résolu (eventHref) côté route
 }
 
-export type NotificationKind = 'announced' | 'day_before' | 'day_of'
+export type NotificationKind = 'day_before' | 'day_of'
 
 export type ComebackPayload = { title: string; body: string; url: string; tag?: string }
 export type ComebackRecord = { userId: string; eventId: string; kind: NotificationKind }
@@ -41,8 +49,6 @@ export type ComebackMessage = {
   record: ComebackRecord
 }
 
-const ANNOUNCED_WINDOW_MS = 24 * 60 * 60 * 1000
-
 const addDaysKey = (key: string, days: number): string => {
   const [y, m, d] = key.split('-').map(Number)
   return kstDayKey(new Date(Date.UTC(y, m - 1, d + days)).toISOString())
@@ -50,40 +56,22 @@ const addDaysKey = (key: string, days: number): string => {
 
 /**
  * Le `kind` applicable à un event au moment `now`, ou null si aucun.
- * Précédence day_of > day_before > announced → un seul kind par run.
+ * Précédence day_of > day_before → un seul kind par run.
  */
 function resolveKind(event: ComebackEvent, now: Date): NotificationKind | null {
   const todayKey = kstDayKey(now.toISOString())
   const startKey = kstDayKey(event.startAt)
   if (startKey === todayKey) return 'day_of'
   if (startKey === addDaysKey(todayKey, 1)) return 'day_before'
-  // announced : créé récemment ET pas déjà couvert par day_of/day_before
-  // (start ≥ J+2). On ignore les events déjà passés.
-  if (
-    now.getTime() - new Date(event.createdAt).getTime() < ANNOUNCED_WINDOW_MS &&
-    startKey > todayKey
-  ) {
-    return 'announced'
-  }
   return null
 }
 
 function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPayload {
   const label = event.groupName ? `${event.groupName} — ${event.title}` : event.title
-  const title =
-    kind === 'day_of'
-      ? `🔥 Today: ${label}`
-      : kind === 'day_before'
-        ? `⏳ Tomorrow: ${label}`
-        : `🎉 ${label}`
-  const body =
-    kind === 'day_of'
-      ? 'Out today — go check it out'
-      : kind === 'day_before'
-        ? 'Dropping tomorrow'
-        : 'New comeback announced'
-  // tag par event : les rappels successifs du même comeback (annonce → J-1 →
-  // jour J) se REMPLACENT dans le tiroir au lieu de s'empiler.
+  const title = kind === 'day_of' ? `🔥 Today: ${label}` : `⏳ Tomorrow: ${label}`
+  const body = kind === 'day_of' ? 'Out today — go check it out' : 'Dropping tomorrow'
+  // tag par event : les rappels successifs du même comeback (J-1 → jour J)
+  // se REMPLACENT dans le tiroir au lieu de s'empiler.
   return { title, body, url: event.url, tag: `comeback-${event.id}` }
 }
 

@@ -22,7 +22,7 @@ const ev = (over: Partial<ComebackEvent> = {}): ComebackEvent => ({
   title: 'Whiplash',
   type: 'mv',
   startAt: '2026-06-09T05:00:00Z', // KST 14:00 même jour → day_of par défaut
-  createdAt: '2026-06-01T00:00:00Z',
+  status: 'confirmed',
   url: '/mv/aespa-whiplash',
   ...over,
 })
@@ -59,38 +59,34 @@ describe('buildComebackNotifications', () => {
     expect(m.payload.title).toBe('⏳ Tomorrow: aespa — Whiplash')
   })
 
-  it('announced : event futur lointain créé < 24 h', () => {
-    const [m] = buildComebackNotifications(
-      [sub('u1')],
-      [follow('u1', 'g1')],
-      [ev({ startAt: '2026-06-15T05:00:00Z', createdAt: '2026-06-09T02:00:00Z' })],
-      new Set(),
-      NOW,
-    )
-    expect(m.record.kind).toBe('announced')
-    expect(m.payload.title).toBe('🎉 aespa — Whiplash')
-  })
-
-  it('précédence : créé récemment ET start demain → day_before (pas announced)', () => {
-    const [m] = buildComebackNotifications(
-      [sub('u1')],
-      [follow('u1', 'g1')],
-      [ev({ startAt: '2026-06-10T05:00:00Z', createdAt: '2026-06-09T02:00:00Z' })],
-      new Set(),
-      NOW,
-    )
-    expect(m.record.kind).toBe('day_before')
-  })
-
-  it('aucun trigger : event lointain et ancien', () => {
+  it("pas de kind 'announced' : un event futur lointain n'émet RIEN, même tout juste ajouté", () => {
+    // Budget notifs (Lot 4) : l'annonce vit dans le digest, le push est
+    // réservé aux échéances J-1 / jour J.
     const messages = buildComebackNotifications(
       [sub('u1')],
       [follow('u1', 'g1')],
-      [ev({ startAt: '2026-06-15T05:00:00Z', createdAt: '2026-06-01T00:00:00Z' })],
+      [ev({ startAt: '2026-06-15T05:00:00Z' })],
       new Set(),
       NOW,
     )
     expect(messages).toEqual([])
+  })
+
+  it('contrat tentative : day_of émis (jour connu), aucun payload ne cite une heure', () => {
+    // Audit §7.5 : une date sans heure (tentative, minuit KST technique) ne
+    // déclenche jamais d'alerte à heure précise. Les kinds jour existants sont
+    // légitimes ; leur copy ne doit contenir AUCUNE heure.
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      // minuit KST = 15:00 UTC la veille (jour KST 2026-06-09 = aujourd'hui)
+      [ev({ status: 'tentative', startAt: '2026-06-08T15:00:00Z' })],
+      new Set(),
+      NOW,
+    )
+    expect(m.record.kind).toBe('day_of')
+    expect(m.payload.title).not.toMatch(/\d{1,2}:\d{2}/)
+    expect(m.payload.body).not.toMatch(/\d{1,2}:\d{2}/)
   })
 
   it('idempotence : un trigger déjà envoyé est ignoré', () => {
