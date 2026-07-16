@@ -9,6 +9,7 @@ import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
 import { getNextEventForGroups, getRecentReleasesForGroups } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { pickTrending } from '@/lib/groups/trending'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 
@@ -46,11 +47,13 @@ export default async function GroupsPage({
     items,
     followedIds,
     { data: countRows },
+    timeZone,
   ] = await Promise.all([
     supabase.auth.getUser(),
     activeTab === 'solo' ? getSoloArtists() : getNonSoloGroups(),
     getFollowedGroupIds(),
     supabase.rpc('group_follow_counts'),
+    getViewerTimeZone(),
   ])
 
   const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
@@ -83,7 +86,9 @@ export default async function GroupsPage({
     getRecentReleasesForGroups(allIds, 30),
   ])
 
-  const trending = pickTrending(items, nextEvents, recentReleases, popOf, 5)
+  // nowMs = undefined → défaut Date.now() DANS la lib (le lint purity interdit
+  // l'appel direct dans le render RSC).
+  const trending = pickTrending(items, nextEvents, recentReleases, popOf, 5, undefined, timeZone)
 
   const toGridItem = (item: (typeof sorted)[number]) => ({
     group: item,
@@ -131,7 +136,7 @@ export default async function GroupsPage({
               <span className="label-data">Following — {followedItems.length}</span>
               <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
                 {followedItems.map((item) => (
-                  <GroupCard key={item.slug} {...toGridItem(item)} />
+                  <GroupCard key={item.slug} {...toGridItem(item)} timeZone={timeZone} />
                 ))}
               </div>
             </section>
@@ -143,7 +148,7 @@ export default async function GroupsPage({
             <span className="label-data">
               All {activeTab === 'solo' ? 'soloists' : 'groups'} — {sorted.length}
             </span>
-            <GroupsGrid items={sorted.map(toGridItem)} />
+            <GroupsGrid items={sorted.map(toGridItem)} timeZone={timeZone} />
           </section>
         </div>
 

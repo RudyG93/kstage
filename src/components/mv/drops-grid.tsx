@@ -21,6 +21,7 @@ export function DropsGrid({
   hasFollows,
   initialFeed,
   initialSort,
+  timeZone,
 }: {
   all: MvEvent[]
   following: MvEvent[]
@@ -28,6 +29,7 @@ export function DropsGrid({
   hasFollows: boolean
   initialFeed: 'all' | 'following'
   initialSort: 'new' | 'top'
+  timeZone: string
 }) {
   const [feed, setFeed] = useState(initialFeed)
   const [sort, setSort] = useState(initialSort)
@@ -98,7 +100,7 @@ export function DropsGrid({
         <ul className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {grid.map((mv) => (
             <li key={mv.id}>
-              <MvCard mv={mv} rating={ratings[mv.id]} />
+              <MvCard mv={mv} rating={ratings[mv.id]} timeZone={timeZone} />
             </li>
           ))}
         </ul>

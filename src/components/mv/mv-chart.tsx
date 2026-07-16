@@ -41,7 +41,13 @@ const PERIODS: { key: TopRatedPeriod; label: string; empty: string }[] = [
 // Client : les 3 périodes sont préchargées côté serveur (le volume de notes
 // est minuscule), la bascule est instantanée — pas de searchParams, le widget
 // reste découplé du tri « Latest drops » de la page.
-export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedItem[]> }) {
+export function MvChart({
+  periods,
+  timeZone,
+}: {
+  periods: Record<TopRatedPeriod, TopRatedItem[]>
+  timeZone: string
+}) {
   // Défaut : Month dès qu'il porte un vrai chart (≥ 3 entrées), sinon All-time
   // — un chart d'1 item fait vide, un chart vide fait cassé.
   const [active, setActive] = useState<TopRatedPeriod>(
@@ -126,7 +132,7 @@ export function MvChart({ periods }: { periods: Record<TopRatedPeriod, TopRatedI
                   {/* Date de sortie plutôt que le nb de ratings (R6), format
                       mois-année sans apostrophe (R7). */}
                   <span className="text-muted-foreground block truncate text-[10px]">
-                    {item.groupName} · {monthYear(item.releaseAt, 'Asia/Seoul')}
+                    {item.groupName} · {monthYear(item.releaseAt, timeZone)}
                   </span>
                 </span>
                 <span className="bg-foreground/8 h-[4px] w-16 shrink-0 overflow-hidden rounded-full">

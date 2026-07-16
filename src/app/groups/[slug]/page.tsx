@@ -246,7 +246,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
               <span className="label-data">MVs — {mvs.length}</span>
               <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
                 {mvs.map((mv) => (
-                  <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} />
+                  <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} timeZone={timeZone} />
                 ))}
               </div>
             </section>

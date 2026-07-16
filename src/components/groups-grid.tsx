@@ -18,7 +18,7 @@ export type GroupGridItem = {
  * côté serveur puis filtrée côté client par nom — filtrage instantané à la frappe
  * via useDeferredValue pour garder la saisie fluide.
  */
-export function GroupsGrid({ items }: { items: GroupGridItem[] }) {
+export function GroupsGrid({ items, timeZone }: { items: GroupGridItem[]; timeZone: string }) {
   const [q, setQ] = useState('')
   const deferredQ = useDeferredValue(q)
 
@@ -55,6 +55,7 @@ export function GroupsGrid({ items }: { items: GroupGridItem[] }) {
               group={it.group}
               isFollowing={it.isFollowing}
               isAuthed={it.isAuthed}
+              timeZone={timeZone}
               href={it.href}
               nextEvent={it.nextEvent}
             />

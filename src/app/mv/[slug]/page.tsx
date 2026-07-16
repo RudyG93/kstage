@@ -15,7 +15,8 @@ import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { getGroupMvs } from '@/lib/events/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { formatKst, relativeTime } from '@/lib/events/date'
+import { relativeTime } from '@/lib/events/date'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { BackButton } from '@/components/back-button'
 import { JsonLd } from '@/components/seo/json-ld'
 import { Panel } from '@/components/ui/panel'
@@ -79,9 +80,10 @@ export default async function MvPage({
   const videoId = extractYouTubeId(event.source_url)
   const like = await getLikeSummary(event.id, viewerId)
 
-  const [flatComments, groupMvs] = await Promise.all([
+  const [flatComments, groupMvs, timeZone] = await Promise.all([
     getCommentsForEvent(event.id, viewerId),
     group?.slug ? getGroupMvs(group.slug, 9) : Promise.resolve([]),
+    getViewerTimeZone(),
   ])
   const commentRoots = sortTree(buildCommentTree(flatComments), sort)
   // « More from {group} » : le reste du catalogue, sans le MV courant.
@@ -89,7 +91,12 @@ export default async function MvPage({
   const moreRatings = await getRatingsForEvents(moreFromGroup.map((m) => m.id))
 
   const title = displaySongTitle(event.title, group?.name)
-  const kstLabel = formatKst(event.start_at, { month: 'short', day: 'numeric', year: 'numeric' })
+  const dateLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  }).format(new Date(event.start_at))
   // Étoiles de moyenne : avg/2 arrondi (affichage compact §7.7.3).
 
   return (
@@ -156,7 +163,7 @@ export default async function MvPage({
                   ) : null}
                   {group?.name}
                 </Link>
-                <span aria-hidden>·</span> MV · dropped {relativeTime(event.start_at)} · {kstLabel}
+                <span aria-hidden>·</span> MV · dropped {relativeTime(event.start_at)} · {dateLabel}
               </p>
             </div>
             <LikeButton
@@ -207,7 +214,7 @@ export default async function MvPage({
               </div>
               <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-4">
                 {moreFromGroup.map((mv) => (
-                  <MvCard key={mv.id} mv={mv} rating={moreRatings.get(mv.id)} />
+                  <MvCard key={mv.id} mv={mv} rating={moreRatings.get(mv.id)} timeZone={timeZone} />
                 ))}
               </div>
             </section>

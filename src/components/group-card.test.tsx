@@ -20,17 +20,17 @@ const group = {
 
 describe('GroupCard', () => {
   it('renders the group name', () => {
-    render(<GroupCard group={group} isFollowing={false} isAuthed />)
+    render(<GroupCard group={group} isFollowing={false} isAuthed timeZone="Asia/Seoul" />)
     expect(screen.getByText('aespa')).toBeInTheDocument()
   })
 
   it('exposes an Unfollow control when already following', () => {
-    render(<GroupCard group={group} isFollowing isAuthed />)
+    render(<GroupCard group={group} isFollowing isAuthed timeZone="Asia/Seoul" />)
     expect(screen.getByLabelText('Unfollow')).toBeInTheDocument()
   })
 
   it('sends a logged-out visitor to /login to follow', () => {
-    render(<GroupCard group={group} isFollowing={false} isAuthed={false} />)
+    render(<GroupCard group={group} isFollowing={false} isAuthed={false} timeZone="Asia/Seoul" />)
     const follow = screen.getByLabelText('Follow')
     expect(follow).toHaveAttribute('href', '/login')
   })

@@ -37,12 +37,13 @@ export function trendingReason(
   next: TrendingSignal | undefined,
   recent: TrendingSignal | undefined,
   nowMs: number = Date.now(),
+  timeZone = 'Asia/Seoul',
 ): string {
   if (next && (Date.parse(next.start_at) - nowMs) / 86_400_000 <= IMMINENCE_DAYS) {
     // Threader nowMs jusqu'à formatDDay (bug R7) : sans lui il retombait sur
     // l'heure réelle → « D+1 » sur un event futur quand l'horloge serveur
     // dépassait minuit KST (label incohérent avec le score, et test flaky).
-    const dday = formatDDay(next.start_at, 'Asia/Seoul', new Date(nowMs).toISOString())
+    const dday = formatDDay(next.start_at, timeZone, new Date(nowMs).toISOString())
     return next.type === 'music_show' ? `Music show · ${dday}` : `Comeback · ${dday}`
   }
   if (recent) {
@@ -60,6 +61,7 @@ export function pickTrending<T extends { id: string; name: string }>(
   followsOf: (id: string) => number,
   limit = 5,
   nowMs: number = Date.now(),
+  timeZone = 'Asia/Seoul',
 ): { item: T; reason: string }[] {
   const scoreOf = (id: string) => trendingScore(nextEvents.get(id), recentReleases.get(id), nowMs)
   return items
@@ -73,6 +75,6 @@ export function pickTrending<T extends { id: string; name: string }>(
     .slice(0, limit)
     .map((item) => ({
       item,
-      reason: trendingReason(nextEvents.get(item.id), recentReleases.get(item.id), nowMs),
+      reason: trendingReason(nextEvents.get(item.id), recentReleases.get(item.id), nowMs, timeZone),
     }))
 }

@@ -190,7 +190,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
               </Panel>
             )}
             <WeekGlance events={weekEvents} timeZone={timeZone} />
-            <FreshDrops mvs={freshMvs} ratings={ratings} />
+            <FreshDrops mvs={freshMvs} ratings={ratings} timeZone={timeZone} />
             {/* Safari iOS hors standalone uniquement (auto-gated) — fin de scroll,
                 l'user a déjà consommé sa valeur, zéro pollution du premier écran. */}
             <IosInstallHint />

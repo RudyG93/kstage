@@ -15,7 +15,15 @@ export type Rating = { avg: number; count: number }
  * (2026-07-12, retour Rudy : vignettes uniformes, pas de CTA qui prend
  * l'utilisateur par la main — la page MV porte déjà la notation).
  */
-export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
+export function MvCard({
+  mv,
+  rating,
+  timeZone,
+}: {
+  mv: MvEvent
+  rating?: Rating
+  timeZone: string
+}) {
   const videoId = extractYouTubeId(mv.source_url)
   const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : mv.image_url
   const group = mv.groups
@@ -67,7 +75,7 @@ export function MvCard({ mv, rating }: { mv: MvEvent; rating?: Rating }) {
             de tronquer (R7) : un nom long (DAILY:DIRECTION) garde son nom entier
             ET sa date, jamais coupés. Mois-année sans jour ni apostrophe. */}
         <p className="label-data-inline text-muted-foreground mt-0.5 line-clamp-2 text-[9px]">
-          {group?.name} · {monthYear(mv.start_at, 'Asia/Seoul')}
+          {group?.name} · {monthYear(mv.start_at, timeZone)}
         </p>
         {rating !== undefined && (
           <div className="mt-1.5 flex items-center gap-1">
