@@ -1,7 +1,12 @@
 -- ============================================================
--- KStage — seed de développement (groupes réels + events fictifs).
--- Idempotent : ré-exécutable sans créer de doublons.
--- Appliqué via MCP execute_sql (hors migrations versionnées du schéma).
+-- KStage — seed de développement (base de dev minimale : 4 groupes réels
+-- + leurs sources YouTube). Idempotent : ré-exécutable sans doublons.
+-- Rejoué par `supabase db reset` (job CI « DB », .github/workflows/db.yml).
+--
+-- Les sources STRUCTURELLES (kpopofficial, community, wikipedia, music_shows)
+-- vivent dans les migrations (0014, 0056) : une base fraîche les a toujours,
+-- le seed n'en porte plus. Les events viennent du scraping (déclencher
+-- /api/cron/scrape-youtube après seed pour peupler une DB de dev).
 -- ============================================================
 
 insert into groups (slug, name, agency, fandom_name, debut_date, color_hex) values
@@ -11,33 +16,28 @@ insert into groups (slug, name, agency, fandom_name, debut_date, color_hex) valu
   ('idle',       'i-dle',       'CUBE Entertainment', 'NEVERLAND', '2018-05-02', '#D4145A')
 on conflict (slug) do nothing;
 
--- Note : le bloc INSERT INTO events fictif a été retiré (cf. feat/mv-discovery-
--- and-seed-cleanup). Les events viennent désormais uniquement du scraping
--- (YouTube + kpopofficial + community suggestions). Pour peupler une DB de
--- dev local, déclencher manuellement le cron /api/cron/scrape-youtube après
--- avoir seedé les sources ci-dessous.
-
--- Sources YouTube (étape 5)
--- Les handles @xxx sont à vérifier / corriger si besoin
+-- Sources YouTube par groupe (data, pas structurel). La cible ON CONFLICT est
+-- la contrainte sources_url_group_unique (0033) — l'ancien `on conflict (url)`
+-- échouait depuis que unique(url) a été supprimée (audit §9.2).
 insert into sources (name, url, type, group_id)
 select 'aespa YouTube', 'https://www.youtube.com/@aespa', 'youtube_api', id
 from groups where slug = 'aespa'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'ILLIT YouTube', 'https://www.youtube.com/@ILLIT_official', 'youtube_api', id
 from groups where slug = 'illit'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'BABYMONSTER YouTube', 'https://www.youtube.com/@BABYMONSTER', 'youtube_api', id
 from groups where slug = 'babymonster'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'i-dle YouTube', 'https://www.youtube.com/@official_i_dle', 'youtube_api', id
 from groups where slug = 'idle'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 -- Chaînes d'agence (4.B.1) : la plupart des MVs k-pop sont publiés sur la
 -- chaîne du label, pas celle du groupe. scrapeGroup() filtre par groups.name
@@ -46,29 +46,19 @@ on conflict (url) do nothing;
 insert into sources (name, url, type, group_id)
 select 'aespa SMTOWN', 'https://www.youtube.com/@SMTOWN', 'youtube_api', id
 from groups where slug = 'aespa'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'BABYMONSTER YG', 'https://www.youtube.com/@YGEntertainment', 'youtube_api', id
 from groups where slug = 'babymonster'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'ILLIT HYBE LABELS', 'https://www.youtube.com/@HYBELABELS', 'youtube_api', id
 from groups where slug = 'illit'
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
 
 insert into sources (name, url, type, group_id)
 select 'i-dle United CUBE', 'https://www.youtube.com/@theunitedcube', 'youtube_api', id
 from groups where slug = 'idle'
-on conflict (url) do nothing;
-
--- Source comebacks (étape 7) — groupe-agnostique : le matching se fait en code.
-insert into sources (name, url, type)
-values ('kpopofficial comebacks', 'https://kpopofficial.com/kpop-comebacks/', 'kpopofficial')
-on conflict (url) do nothing;
-
--- Source communautaire (étape 8) — attribution des events validés depuis les suggestions.
-insert into sources (name, url, type)
-values ('community suggestions', 'https://kstage.vercel.app/suggest', 'community')
-on conflict (url) do nothing;
+on conflict (url, group_id) do nothing;
