@@ -6,6 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database, Json } from '@/types/database'
 import { isAdmin } from '@/lib/auth/admin'
+import { trackEvent } from '@/lib/analytics/track'
 import { buildEventSlug, generateUniqueSlug, slugify } from '@/lib/events/slug'
 import { parseSuggestionInput, DAILY_SUGGESTION_CAP } from './validation'
 import { parseArtistSuggestionInput } from './artist-validation'
@@ -92,6 +93,10 @@ export async function submitSuggestion(
     if (error) return { error: 'Could not submit fix suggestion.' }
   }
 
+  await trackEvent('feedback_submitted', {
+    userId: user.id,
+    props: { kind: v.kind === 'new' ? 'event_suggestion' : 'event_fix' },
+  })
   revalidatePath('/')
   return { ok: true }
 }
@@ -147,6 +152,7 @@ export async function submitArtistSuggestion(
   })
   if (error) return { error: 'Could not submit your artist suggestion. Please try again.' }
 
+  await trackEvent('feedback_submitted', { userId: user.id, props: { kind: 'artist_suggestion' } })
   revalidatePath('/')
   return { ok: true }
 }

@@ -29,11 +29,16 @@ import { findHeroEventIndex } from '@/lib/events/hero'
 import { parseTypesParam } from '@/lib/events/filters'
 import { createClient } from '@/lib/supabase/server'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
+import { TrackView } from '@/components/analytics/track-view'
 
 // Home Data Desk : ticker global → hero NEXT UP → UPCOMING QUEUE → THIS WEEK →
 // FRESH DROPS, avec les sidebars My groups (gauche) et Recent comebacks /
 // discussions (droite).
-export default async function Home({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; src?: string }>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -139,6 +144,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
 
   return (
     <>
+      {/* North-star (audit §10.2) : ouverture du calendrier perso = home
+          connectée avec ≥1 follow. Dédup 1/jour côté serveur ; composant
+          client monté = visite réelle (pas un prefetch). */}
+      {ids.length > 0 && (
+        <TrackView
+          event="calendar_opened"
+          props={{ surface: 'home', ...(sp.src === 'push' ? { src: 'push' } : {}) }}
+        />
+      )}
+      {ids.length > 0 && merged.length > 0 && (
+        <TrackView event="personal_calendar_ready" props={{ surface: 'home' }} />
+      )}
       <Ticker items={tickerItems} />
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">

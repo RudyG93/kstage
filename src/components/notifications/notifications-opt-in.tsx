@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { BellIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { pushSupported, subscribeToPush } from '@/lib/notifications/subscribe'
+import { sendProductEvent } from '@/components/analytics/beacon'
 
 /**
  * Étape 2 de l'onboarding (juste après le follow) : le moment où l'intention
@@ -19,10 +20,20 @@ export function NotificationsOptIn({ onDone }: { onDone: () => void }) {
   const [status, setStatus] = useState<'idle' | 'denied' | 'failed'>('idle')
   const supported = pushSupported()
 
+  // Funnel push (audit §10.3) : « prompt affiché » = cet écran d'opt-in.
+  // Environnement sans push (iOS Safari hors PWA) → unavailable directement.
+  const tracked = useRef(false)
+  useEffect(() => {
+    if (tracked.current) return
+    tracked.current = true
+    sendProductEvent('push_prompt_shown', { surface: 'onboarding' })
+    if (!supported) sendProductEvent('push_permission_unavailable', { surface: 'onboarding' })
+  }, [supported])
+
   function enable() {
     startTransition(async () => {
       try {
-        const result = await subscribeToPush()
+        const result = await subscribeToPush('onboarding')
         if (result === 'denied') {
           setStatus('denied')
           return

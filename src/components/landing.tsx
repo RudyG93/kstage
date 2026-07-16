@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, BellRing, HeartIcon, Star } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
+import { TrackedLink } from '@/components/analytics/tracked-link'
 import { isTimeTBA } from '@/lib/events/date'
 import { Panel } from '@/components/ui/panel'
 import { QueueRow } from '@/components/events/queue-row'
@@ -190,20 +191,24 @@ export function Landing({
 
       {/* CTA (§7.9.8). */}
       <section className="relative space-y-3">
-        <Link
+        <TrackedLink
+          event="landing_cta_clicked"
+          eventProps={{ cta: 'signup' }}
           href="/signup"
           className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-bold shadow-[0_8px_20px_rgba(125,122,255,.3)] transition-colors outline-none focus-visible:ring-2"
         >
           Create your calendar — free
           <ArrowRight className="size-4" aria-hidden />
-        </Link>
-        <Link
+        </TrackedLink>
+        <TrackedLink
+          event="landing_cta_clicked"
+          eventProps={{ cta: 'browse_calendar' }}
           href="/calendar"
           className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 text-xs font-semibold transition-colors"
         >
           Browse the calendar first
           <ArrowRight className="text-primary size-3.5" aria-hidden />
-        </Link>
+        </TrackedLink>
         <p className="tabular text-faint pt-1 text-center text-[8.5px] font-semibold tracking-[0.16em] uppercase">
           PWA — install from your browser · no app store
         </p>

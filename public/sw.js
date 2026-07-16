@@ -30,10 +30,14 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = event.notification.data?.url ?? '/'
+  // Match par PATHNAME : les URLs push portent `?src=push` (attribution
+  // analytics) — un includes() sur l'URL complète ne matcherait plus jamais
+  // un onglet ouvert (dont l'URL est déjà nettoyée par replaceState).
+  const targetPath = new URL(url, self.location.origin).pathname
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if (client.url.includes(url) && 'focus' in client) return client.focus()
+        if (new URL(client.url).pathname === targetPath && 'focus' in client) return client.focus()
       }
       return self.clients.openWindow(url)
     }),

@@ -1,11 +1,19 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email/resend'
+import { trackEvent } from '@/lib/analytics/track'
 import { validateSignup, validatePassword } from './validation'
 import type { Database } from '@/types/database'
+
+// Cookie analytics first-party posé par /api/e (id anonyme opaque) : permet de
+// relier le clic CTA anonyme au signup du même navigateur. Absent = null.
+async function analyticsAnonId(): Promise<string | null> {
+  return (await cookies()).get('kstage_aid')?.value ?? null
+}
 
 export type AuthState = { error: string } | null
 // Pour les actions qui restent sur la même page au succès (pas de redirect).
@@ -87,8 +95,16 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   // Message générique : pas de fuite « email déjà utilisé » (anti-énumération).
   if (error) return { error: 'Could not create the account. Try a different email or username.' }
 
+  await trackEvent('signup_started', { anonId: await analyticsAnonId() })
+
   // Confirm email OFF → session déjà ouverte. ON → vérification par code OTP.
-  if (data.session) redirect('/')
+  if (data.session) {
+    await trackEvent('signup_completed', {
+      userId: data.session.user.id,
+      anonId: await analyticsAnonId(),
+    })
+    redirect('/')
+  }
   redirect(`/signup/verify?email=${encodeURIComponent(email)}`)
 }
 
@@ -116,6 +132,9 @@ export async function verifySignupOtp(_prev: AuthState, formData: FormData): Pro
     if (user?.email) {
       const username = (user.user_metadata?.username as string | undefined) ?? null
       await sendWelcomeEmail(user.email, username)
+    }
+    if (user) {
+      await trackEvent('signup_completed', { userId: user.id, anonId: await analyticsAnonId() })
     }
   } catch (e) {
     console.error('[welcome-email]', e)

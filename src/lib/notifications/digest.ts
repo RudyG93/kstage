@@ -4,6 +4,8 @@
 // Deux éditions : 'daily' (fenêtre 48 h) et 'weekly' (lundi, fenêtre 7 j,
 // titre « Your k-pop week ») — le choix de l'édition vient du cron.
 
+import { withPushSrc } from './push-url'
+
 export type DigestSubscription = {
   userId: string
   endpoint: string
@@ -81,7 +83,7 @@ function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): D
   // Deep link : le digest liste des events datés → le calendrier est la
   // destination utile (la home re-priorise le hero, pas la liste).
   // tag : le digest du jour REMPLACE celui d'hier au lieu de s'empiler.
-  return { title, body: listed + more, url: '/calendar', tag: 'digest' }
+  return { title, body: listed + more, url: withPushSrc('/calendar'), tag: 'digest' }
 }
 
 export function buildDigest(

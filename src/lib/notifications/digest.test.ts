@@ -42,7 +42,8 @@ describe('buildDigest', () => {
       title: 'Today in k-pop: 1 event',
       tag: 'digest',
       body: 'aespa — New single',
-      url: '/calendar',
+      // ?src=push = attribution des ouvertures (audit §10.3).
+      url: '/calendar?src=push',
     })
   })
 

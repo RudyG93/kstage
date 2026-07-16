@@ -8,8 +8,9 @@ import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
 import { generateShowSlots } from '@/lib/events/show-slots'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { kstDayKey, getKstMonthRange } from '@/lib/events/date'
+import { kstDayKey, getKstMonthRange, isFutureDate } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
+import { TrackView } from '@/components/analytics/track-view'
 
 function parseMonth(raw?: string): { year: number; month: number } {
   if (raw && /^\d{4}-\d{2}$/.test(raw)) {
@@ -33,7 +34,7 @@ export const metadata = {
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; day?: string; group?: string }>
+  searchParams: Promise<{ month?: string; day?: string; group?: string; src?: string }>
 }) {
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
@@ -56,12 +57,29 @@ export default async function CalendarPage({
     a.start_at.localeCompare(b.start_at),
   )
 
+  // North-star (audit §10.2) : /calendar compte comme « calendrier perso »
+  // dès que le viewer a ≥1 follow ; « prêt » = ≥1 event FUTUR d'un groupe suivi
+  // dans le mois affiché. Dédup 1/jour côté serveur.
+  const followedSet = new Set(followedSlugs)
+  const hasUpcomingFollowed = events.some(
+    (e) => e.groups?.slug && followedSet.has(e.groups.slug) && isFutureDate(e.start_at),
+  )
+
   return (
     <CalendarFilterProvider
       events={events}
       followedSlugs={followedSlugs}
       initialSlugs={sp.group ? sp.group.split(',').filter(Boolean) : undefined}
     >
+      {followedSlugs.length > 0 && (
+        <TrackView
+          event="calendar_opened"
+          props={{ surface: 'calendar', ...(sp.src === 'push' ? { src: 'push' } : {}) }}
+        />
+      )}
+      {followedSlugs.length > 0 && hasUpcomingFollowed && (
+        <TrackView event="personal_calendar_ready" props={{ surface: 'calendar' }} />
+      )}
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">

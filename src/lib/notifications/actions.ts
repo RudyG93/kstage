@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { trackEvent } from '@/lib/analytics/track'
 
 export type PushSubscriptionInput = {
   endpoint: string
@@ -70,6 +71,14 @@ export async function setNotificationPref(eventType: string, enabled: boolean) {
     { onConflict: 'user_id,event_type,channel' },
   )
   if (error) throw error
+
+  // Signal de sur-notification (audit §10.3) : seule la DÉSACTIVATION compte.
+  if (!enabled) {
+    await trackEvent('notification_type_disabled', {
+      userId: user.id,
+      props: { type: eventType },
+    })
+  }
 }
 
 export async function deletePushSubscription(endpoint: string) {

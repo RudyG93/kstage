@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { trackEvent } from '@/lib/analytics/track'
 
 /** Active le feed iCal (création lazy — la row n'existe qu'à l'opt-in). */
 export async function enableCalendarFeed() {
@@ -17,6 +18,7 @@ export async function enableCalendarFeed() {
     .from('calendar_feeds')
     .upsert({ user_id: user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
   if (error) throw error
+  await trackEvent('ical_enabled', { userId: user.id })
   revalidatePath('/account')
 }
 
