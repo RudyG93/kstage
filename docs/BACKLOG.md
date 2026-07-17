@@ -162,6 +162,13 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
   - **me:I** non ajouté (titre fandom différent).
 - **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron `scrape-comebacks`. Surveiller `/admin/debuts`. `ingestNamedGroups` pour tout ajout ciblé.
 
+## Restes du round de retours 2026-07-17 (7 lots livrés — cf. JOURNAL)
+
+- **31 groupes à ≤ 1 MV visible** restants après le sweep (82MAJOR/8TURN/YENA traités) : passes `npx tsx scripts/discover-mv-channels.ts --thin --limit=20` (~4 100 unités/passe, quota 10 000/j) puis review → youtube-channels.json → seed + backfill. Le cron discover-channels élargi (rotation hebdo, 3 groupes/lundi) fait le fond de tâche en continu.
+- **Matching hangul-only** : dans les lineups SBS, « 선미 » (Sunmi) ou « 기현 (몬스타엑스) » ne matchent pas — `matchesGroup` exige le nom latin. Piste : colonne alias hangul par groupe (mécanisme d'alias déjà envisagé pour NOWZ).
+- **Fetch broadcaster silencieusement vide** : `fetchSbsBoardLatestPost` → null = ni erreur ni usage loggés (constaté au run de 10:21 le 17/07 — l'épisode 1318 est passé au run suivant). Optionnel : logguer un `warning` dans scrape_log.details pour l'observabilité.
+- **Cartes solo dans l'onglet Groups préchargé** : payload RSC ×2 (~172 items) assumé ; à surveiller si le roster dépasse ~400.
+
 ## Restes de l'audit notifs (2026-07-17, nuit de vérification)
 
 > P1 (titres digest bruts), TTL 20 h et wording « Today & tomorrow » livrés (merge `1fa9d5c`). Restent des décisions produit :
