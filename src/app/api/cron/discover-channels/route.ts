@@ -19,7 +19,6 @@ import type { Database } from '@/types/database'
 
 const MAX_GROUPS_PER_RUN = 3
 const THIN_CATALOG_MVS = 3
-const RECENT_DEBUT_DAYS = 180
 
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
@@ -34,12 +33,13 @@ export async function GET(req: Request) {
   )
   const startedAt = new Date().toISOString()
 
-  // Cibles : récents (debut < 180 j) OU en quarantaine candidate.
-  const cutoff = new Date(Date.now() - RECENT_DEBUT_DAYS * 86_400_000).toISOString().slice(0, 10)
+  // Cibles : TOUT groupe à catalogue fin (élargi 2026-07-17 — le pool limité
+  // « debut < 180 j OU candidate » laissait des trous type YENA : une sortie
+  // one-off distribuée par un label non seedé chez un artiste établi n'était
+  // jamais re-regardée). Les récents restent servis en premier par le tri.
   const { data: pool, error: poolErr } = await supabase
     .from('groups')
     .select('id, name, slug, confidence, debut_date')
-    .or(`debut_date.gte.${cutoff},confidence.eq.candidate`)
     .order('debut_date', { ascending: false, nullsFirst: false })
   if (poolErr) return NextResponse.json({ error: poolErr.message }, { status: 500 })
 
@@ -56,9 +56,13 @@ export async function GET(req: Request) {
   const mvCount = new Map<string, number>()
   for (const r of mvRows ?? []) mvCount.set(r.group_id, (mvCount.get(r.group_id) ?? 0) + 1)
 
-  const targets = (pool ?? [])
-    .filter((g) => (mvCount.get(g.id) ?? 0) < THIN_CATALOG_MVS)
-    .slice(0, MAX_GROUPS_PER_RUN)
+  const thin = (pool ?? []).filter((g) => (mvCount.get(g.id) ?? 0) < THIN_CATALOG_MVS)
+  // Rotation hebdo déterministe sur le pool élargi : sans elle, les 3 mêmes
+  // groupes (une discovery qui ne trouve rien laisse le catalogue fin) seraient
+  // re-scannés chaque lundi et le reste du pool jamais visité.
+  const week = Math.floor(Date.now() / (7 * 86_400_000))
+  const offset = thin.length ? (week * MAX_GROUPS_PER_RUN) % thin.length : 0
+  const targets = [...thin.slice(offset), ...thin.slice(0, offset)].slice(0, MAX_GROUPS_PER_RUN)
 
   let units = 0
   let seeded = 0
