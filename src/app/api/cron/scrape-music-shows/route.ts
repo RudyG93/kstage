@@ -24,7 +24,7 @@ import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // normalize partagé (Unicode-aware) : matche aussi les noms hangul des lineups —
 // la copie locale ASCII-only les ratait (DRY, audit 2026-07-03).
 import { normalize, withinOneEdit } from '@/lib/scrapers/group-match'
-import { kstDayBounds } from '@/lib/events/date'
+import { kstDayBounds, kstDayKey } from '@/lib/events/date'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 
@@ -163,6 +163,24 @@ export async function GET(req: Request) {
     const showStats = (byShow[lineup.show] ??= { matched: 0, created: 0, skipped: 0, updated: 0 })
     const showLabel = SHOW_DISPLAY_NAME[lineup.show]
     const matchedIds: string[] = []
+
+    // Entité épisode (Lot N 2026-07-17) : une row stable par (show, jour KST)
+    // — ancre des pages /show/[show]/[day] et de leurs commentaires. Upsert
+    // best-effort : le time-shift met start_at à jour, episode_number n'est
+    // écrit que quand la source le fournit (ne pas écraser par null).
+    try {
+      await supabase.from('show_episodes').upsert(
+        {
+          show_title: showLabel,
+          kst_day: kstDayKey(lineup.startAtIso),
+          start_at: lineup.startAtIso,
+          ...(lineup.episodeNumber != null ? { episode_number: lineup.episodeNumber } : {}),
+        },
+        { onConflict: 'show_title,kst_day' },
+      )
+    } catch {
+      // Table absente / erreur réseau : l'épisode ré-upsertera au prochain run.
+    }
 
     for (const artistRaw of lineup.artistsRaw) {
       const canonical = extractCanonicalName(artistRaw)

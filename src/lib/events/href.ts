@@ -3,25 +3,42 @@
  * JAMAIS vers une source scrapée / site concurrent (kpopofficial, carrd…).
  *
  * - `mv` (+ slug) → page article interne `/mv/[slug]`.
- * - `music_show` → la vidéo YouTube du passage **uniquement si `stage_url` est
- *   une URL YouTube** (posée par l'enrichissement stage-links, colonne dédiée
- *   depuis la migration 0039 — `source_url` reste la clé d'idempotence carrd
- *   et ne route jamais) ; sinon page du groupe.
+ * - `music_show` → page ÉPISODE interne `/show/[show]/[day]` (Lot N
+ *   2026-07-17 — évolution du ledger « stage links » : la vidéo YouTube du
+ *   passage reste accessible DANS la page épisode) ; repli stage_url YouTube
+ *   puis page du groupe pour un show inconnu du descripteur.
  * - `release` / `anniversary` / `live` / `concert` / `other` → page du groupe.
  */
+import { kstDayKey } from './date'
+import { SHOW_ID_BY_TITLE } from '@/lib/scrapers/music-shows/types'
+
 const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i
+
+/** `/show/inkigayo/2026-07-19` — page épisode d'un music show connu, sinon null. */
+export function episodeHref(event: {
+  title?: string | null
+  start_at?: string | null
+}): string | null {
+  const showId = event.title ? SHOW_ID_BY_TITLE[event.title] : undefined
+  if (!showId || !event.start_at) return null
+  return `/show/${showId}/${kstDayKey(event.start_at)}`
+}
 
 export function eventHref(event: {
   type: string
   slug: string | null
+  title?: string | null
+  start_at?: string | null
   stage_url?: string | null
   groups?: { slug?: string | null } | null
 }): string {
   if (event.type === 'mv' && event.slug) {
     return `/mv/${event.slug}`
   }
-  if (event.type === 'music_show' && event.stage_url && YOUTUBE_RE.test(event.stage_url)) {
-    return event.stage_url
+  if (event.type === 'music_show') {
+    const episode = episodeHref(event)
+    if (episode) return episode
+    if (event.stage_url && YOUTUBE_RE.test(event.stage_url)) return event.stage_url
   }
   return `/groups/${event.groups?.slug ?? ''}`
 }

@@ -50,11 +50,22 @@ export async function getCommentsForEvent(
   eventId: string,
   viewerId: string | null,
 ): Promise<FlatComment[]> {
+  return getCommentsForTarget({ eventId }, viewerId)
+}
+
+/** Même chargement, cible générique : event (MV) ou épisode de music show (Lot N). */
+export async function getCommentsForTarget(
+  target: { eventId: string; episodeId?: never } | { episodeId: string; eventId?: never },
+  viewerId: string | null,
+): Promise<FlatComment[]> {
   const supabase = await createClient()
-  const { data: rows, error } = await supabase
+  const base = supabase
     .from('comments')
     .select('id, event_id, user_id, parent_id, body, created_at, updated_at, deleted_at')
-    .eq('event_id', eventId)
+  const eventId = 'eventId' in target ? target.eventId : undefined
+  const { data: rows, error } = eventId
+    ? await base.eq('event_id', eventId)
+    : await base.eq('episode_id', (target as { episodeId: string }).episodeId)
   if (error) throw error
   const list = rows ?? []
   if (list.length === 0) return []

@@ -78,6 +78,12 @@ export const SHOW_ICON_BY_TITLE: Record<string, string> = Object.fromEntries(
   SHOW_DESCRIPTORS.map((s) => [s.displayName, s.iconUrl]),
 )
 
+// displayName → id de route (« Music Bank » → music-bank) pour les pages
+// épisode /show/[show]/[day] (Lot N 2026-07-17).
+export const SHOW_ID_BY_TITLE: Record<string, string> = Object.fromEntries(
+  SHOW_DESCRIPTORS.map((s) => [s.displayName, s.id]),
+)
+
 export interface ParsedLineup {
   show: ShowId
   /** Numéro d'épisode, null si la source ne le fournit pas. */

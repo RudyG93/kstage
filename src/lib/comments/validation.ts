@@ -36,21 +36,30 @@ function tooManyLines(body: string): boolean {
 }
 
 export interface CommentInput {
-  eventId: string
+  /** Exactement une des deux cibles (MV = event, épisode de music show = episode). */
+  eventId: string | null
+  episodeId: string | null
   parentId: string | null
   body: string
 }
 
 export interface RawComment {
-  eventId: string
+  eventId?: string
+  episodeId?: string
   parentId?: string | null
   body: string
 }
 
 /** Valide une saisie user non fiable pour `postComment` / `editComment`. */
 export function parseCommentInput(raw: RawComment): { error: string } | { value: CommentInput } {
-  const eventId = (raw.eventId ?? '').trim()
-  if (!UUID_RE.test(eventId)) return { error: 'Invalid event reference.' }
+  const eventRaw = (raw.eventId ?? '').trim()
+  const episodeRaw = (raw.episodeId ?? '').trim()
+  // Exactement UNE cible (miroir du check DB comments_one_target).
+  if ((eventRaw === '') === (episodeRaw === '')) return { error: 'Invalid comment target.' }
+  const eventId = eventRaw || null
+  const episodeId = episodeRaw || null
+  if (eventId && !UUID_RE.test(eventId)) return { error: 'Invalid event reference.' }
+  if (episodeId && !UUID_RE.test(episodeId)) return { error: 'Invalid episode reference.' }
 
   const parentRaw = (raw.parentId ?? '').toString().trim()
   let parentId: string | null = null
@@ -65,7 +74,7 @@ export function parseCommentInput(raw: RawComment): { error: string } | { value:
   if (tooManyLines(body)) return { error: 'Too many line breaks — please tighten your comment.' }
   if (containsBlockedContent(body)) return { error: 'Your comment was blocked by our spam filter.' }
 
-  return { value: { eventId, parentId, body } }
+  return { value: { eventId, episodeId, parentId, body } }
 }
 
 export interface EditInput {

@@ -5,7 +5,7 @@ import { Countdown } from '@/components/home/countdown'
 import { eventDDay, eventDayKey, kstTime24h, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
-import { eventHref, isExternalHref } from '@/lib/events/href'
+import { episodeHref, eventHref, isExternalHref } from '@/lib/events/href'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { isSyntheticSlot } from '@/lib/events/show-slots'
 import { SHOW_ICON_BY_TITLE } from '@/lib/scrapers/music-shows/types'
@@ -43,7 +43,14 @@ export function QueueRow({
   // jour dans le calendrier, comme un épisode groupé.
   const slot = isSyntheticSlot(event)
   const dayKey = lineup || slot ? eventDayKey(event, timeZone) : null
-  const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
+  // Épisode groupé réel → page épisode (Lot N 2026-07-17) ; slot synthétique
+  // « Lineup TBA » → jour du calendrier (pas de page tant que rien n'est connu).
+  const calendarHref = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : null
+  const href = slot
+    ? (calendarHref ?? eventHref(event))
+    : lineup
+      ? (episodeHref(event) ?? calendarHref ?? eventHref(event))
+      : eventHref(event)
   const external = isExternalHref(href)
   const dday = eventDDay(event, timeZone)
   // Anniversaire = date pure : aucune heure à afficher (le « 00:00 KST » de

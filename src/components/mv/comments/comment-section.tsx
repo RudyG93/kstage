@@ -11,8 +11,12 @@ import { SortToggle } from './sort-toggle'
 import { countVisible, sortTree, type CommentNode, type SortMode } from '@/lib/comments/tree'
 
 interface Props {
-  eventId: string
-  slug: string
+  // Cible : event (MV) OU épisode de music show (Lot N 2026-07-17).
+  eventId?: string
+  episodeId?: string
+  // Revalidation : slug MV OU chemin /show/... complet.
+  slug?: string
+  path?: string
   isAuthed: boolean
   viewerId: string | null
   roots: CommentNode[]
@@ -22,8 +26,10 @@ interface Props {
 }
 
 export function CommentSection({
-  eventId,
-  slug,
+  eventId = '',
+  episodeId = '',
+  slug = '',
+  path = '',
   isAuthed,
   viewerId,
   roots,
@@ -59,7 +65,9 @@ export function CommentSection({
               key={node.id}
               node={node}
               eventId={eventId}
+              episodeId={episodeId}
               slug={slug}
+              path={path}
               viewerId={viewerId}
               isAuthed={isAuthed}
               ratingsByUser={ratingsByUser}
@@ -71,7 +79,13 @@ export function CommentSection({
       {/* Composer en pied de discussion (§7.7.4). */}
       {isAuthed ? (
         <div className="border-t pt-3">
-          <CommentCompose eventId={eventId} slug={slug} placeholder="Join the discussion…" />
+          <CommentCompose
+            eventId={eventId}
+            episodeId={episodeId}
+            slug={slug}
+            path={path}
+            placeholder="Join the discussion…"
+          />
         </div>
       ) : (
         <p className="text-muted-foreground border-t pt-3 text-sm">

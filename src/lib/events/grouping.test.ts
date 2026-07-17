@@ -56,7 +56,10 @@ describe('groupMusicShowEpisodes', () => {
     ])
   })
 
-  it('post-enrichissement mixte : les lignes avec stage_url restent individuelles', () => {
+  it('post-enrichissement mixte : les lignes avec stage_url fusionnent AUSSI (page épisode, Lot N)', () => {
+    // Depuis /show/[show]/[day], toutes les rows music_show routent en interne
+    // — leurs stages vivent DANS la page épisode, plus besoin de cartes
+    // individuelles vers YouTube.
     const events = [
       show('a', 'ATEEZ', { stage_url: 'https://www.youtube.com/watch?v=abc' }),
       show('b', 'Hearts2Hearts'),
@@ -65,11 +68,8 @@ describe('groupMusicShowEpisodes', () => {
       show('e', 'RIIZE'),
     ]
     const grouped = groupMusicShowEpisodes(events)
-    // 2 individuelles (stages enrichis) + 1 groupée de 3 (carrd redondant).
-    expect(grouped).toHaveLength(3)
-    expect(grouped.find((e) => e.id === 'a')?.lineup).toBeUndefined()
-    expect(grouped.find((e) => e.id === 'c')?.lineup).toBeUndefined()
-    expect(grouped.find((e) => e.id === 'b')?.lineup?.map((e) => e.id)).toEqual(['b', 'd', 'e'])
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].lineup?.map((e) => e.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 
   it('episode_number : premier non-null du lineup exposé sur le représentant', () => {
@@ -118,9 +118,10 @@ describe('groupMusicShowEpisodes', () => {
       show('b-carrd', 'RIIZE'),
     ]
     const grouped = groupMusicShowEpisodes(events)
-    // 2 cartes stage individuelles, AUCUNE carte carrd fusionnée résiduelle.
-    expect(grouped.map((e) => e.id).sort()).toEqual(['a-stage', 'b-stage'])
-    expect(grouped.every((e) => !e.lineup)).toBe(true)
+    // La dédup garde la row ENRICHIE par (groupe, épisode), puis les deux
+    // fusionnent en une carte épisode (routage interne depuis le Lot N).
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].lineup?.map((e) => e.id).sort()).toEqual(['a-stage', 'b-stage'])
   })
 
   it('singleton : pas de champ lineup → rendu identique à aujourd’hui', () => {
