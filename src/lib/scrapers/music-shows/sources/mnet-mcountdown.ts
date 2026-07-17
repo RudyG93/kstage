@@ -19,11 +19,11 @@
 
 import { nextWeeklySlotIso } from '../slots'
 import type { ParsedLineup, SourceScraper } from '../types'
+import { fetchViaJina } from '../jina-fetch'
 
 export const SOURCE_URL =
   'https://www.mnetplus.world/contents/en/shows/675aa046f350a1a1c97035b3/lineup'
 const SOURCE_LABEL = 'mnet-mcountdown'
-const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
 /** Pure : extrait les artistes depuis le markdown brut MnetPlus. */
 export function parseMnetMcountdown(markdown: string): { artistsRaw: string[] } | null {
@@ -80,11 +80,7 @@ export function parseMnetMcountdown(markdown: string): { artistsRaw: string[] } 
 }
 
 export async function fetchMnetMcountdown(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const res = await fetch(JINA_URL, {
-    headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
-  })
-  if (!res.ok) throw new Error(`MnetPlus fetch failed: HTTP ${res.status}`)
-  const markdown = await res.text()
+  const markdown = await fetchViaJina(SOURCE_URL)
   const parsed = parseMnetMcountdown(markdown)
   if (!parsed) return []
   return [
@@ -101,6 +97,7 @@ export async function fetchMnetMcountdown(now: Date = new Date()): Promise<Parse
 
 export const mnetMcountdownSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: SOURCE_URL,
   shows: ['m-countdown'],
   fetch: fetchMnetMcountdown,
 }

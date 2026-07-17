@@ -82,6 +82,7 @@ export async function fetchTheShow(now: Date = new Date()): Promise<ParsedLineup
 
 export const sbsTheShowSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: BOARD_URL,
   shows: ['the-show'],
   fetch: fetchTheShow,
 }

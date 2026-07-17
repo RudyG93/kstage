@@ -102,16 +102,45 @@ export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupR
  * source. Tradeoff assumé : deux vraies releases distinctes d'un même groupe
  * à < N jours seraient fusionnées (rare, déjà accepté cross-source).
  */
+/** Row near-dup existante, pour la décision de fusion. */
+export type NearDupRow = { id: string; t: number; status: string; imageUrl: string | null }
+
+/**
+ * Décision near-dup (Phase 3 Lot 4, « fusion des annonces plus précises ») —
+ * pure, testable :
+ *   - aucun near dans la fenêtre → 'insert' ;
+ *   - candidat `confirmed` (heure exacte) vs near `tentative` (minuit KST
+ *     technique) → { upgradeId } : on PROMEUT l'event existant au lieu de
+ *     jeter la précision (la tentative wikipedia restait figée quand
+ *     kpopofficial arrivait avec l'heure) ;
+ *   - sinon 'skip' (comportement historique).
+ * Idempotent : au run suivant le near est `confirmed` → 'skip'.
+ */
+export function resolveNearDup(
+  candidate: { startAt: string; status: string },
+  nears: readonly NearDupRow[],
+  windowMs: number,
+): 'insert' | 'skip' | { upgradeId: string; imageUrl: string | null } {
+  const t = Date.parse(candidate.startAt)
+  const near = nears.find((n) => Math.abs(n.t - t) <= windowMs)
+  if (!near) return 'insert'
+  if (candidate.status === 'confirmed' && near.status === 'tentative') {
+    return { upgradeId: near.id, imageUrl: near.imageUrl }
+  }
+  return 'skip'
+}
+
 export async function ingestComebacks(
   entries: readonly ParsedComeback[],
   sourceId: string,
   groups: readonly GroupRef[],
   supabase: SupabaseClient,
   opts: { crossSourceDedupeDays?: number } = {},
-): Promise<{ matched: number; inserted: number; skipped: number }> {
+): Promise<{ matched: number; inserted: number; skipped: number; upgraded: number }> {
   let matched = 0
   let inserted = 0
   let skipped = 0
+  let upgraded = 0
 
   // Matching pur d'abord : une ligne candidate par (entrée, groupe matché).
   const candidates: { cb: ParsedComeback; group: GroupRef }[] = []
@@ -121,7 +150,7 @@ export async function ingestComebacks(
       candidates.push({ cb, group })
     }
   }
-  if (candidates.length === 0) return { matched, inserted, skipped }
+  if (candidates.length === 0) return { matched, inserted, skipped, upgraded }
 
   // Batching (2026-07-11) : l'ancienne boucle faisait 1-2 allers-retours
   // Supabase PAR candidat (wikipedia parse ~200 entrées → centaines de
@@ -142,7 +171,8 @@ export async function ingestComebacks(
 
   // 2) Fenêtre near-dup : toutes les releases des groupes concernés dans
   //    l'enveloppe [min-N j, max+N j] des candidats, indexées par groupe.
-  const nearByGroup = new Map<string, number[]>()
+  //    id/status/image projetés pour la FUSION (upgrade tentative→confirmed).
+  const nearByGroup = new Map<string, NearDupRow[]>()
   if (opts.crossSourceDedupeDays) {
     const ms = opts.crossSourceDedupeDays * 86_400_000
     const times = candidates.map((c) => Date.parse(c.cb.startAt)).filter(Number.isFinite)
@@ -151,7 +181,7 @@ export async function ingestComebacks(
       const hi = new Date(Math.max(...times) + ms).toISOString()
       const { data: nearRows } = await supabase
         .from('events')
-        .select('group_id, start_at')
+        .select('id, group_id, start_at, status, image_url')
         .eq('type', 'release')
         // Pas de filtre source : la fenêtre couvre aussi les entrées de la
         // MÊME source sous une autre URL (placeholder vs album finalisé,
@@ -161,7 +191,7 @@ export async function ingestComebacks(
         .lte('start_at', hi)
       for (const r of nearRows ?? []) {
         const list = nearByGroup.get(r.group_id) ?? []
-        list.push(Date.parse(r.start_at))
+        list.push({ id: r.id, t: Date.parse(r.start_at), status: r.status, imageUrl: r.image_url })
         nearByGroup.set(r.group_id, list)
       }
     }
@@ -179,13 +209,41 @@ export async function ingestComebacks(
     }
     if (opts.crossSourceDedupeDays) {
       const ms = opts.crossSourceDedupeDays * 86_400_000
-      const t = Date.parse(cb.startAt)
       const nears = nearByGroup.get(group.id) ?? []
-      if (nears.some((n) => Math.abs(n - t) <= ms)) {
+      const decision = resolveNearDup(cb, nears, ms)
+      if (decision === 'skip') {
         skipped++
         continue
       }
-      nears.push(t)
+      if (decision !== 'insert') {
+        // FUSION : l'annonce précise (heure exacte, confirmed) promeut la
+        // tentative existante. source_url INTOUCHÉ (clé d'idempotence, leçon
+        // 0040) — l'event garde l'URL de sa source d'origine. L'échec (ex.
+        // start_at cible déjà pris par l'unique) → skip loggé, pas de crash.
+        const { error: upErr } = await supabase
+          .from('events')
+          .update({
+            start_at: cb.startAt,
+            status: 'confirmed',
+            ...(decision.imageUrl === null && cb.imageUrl ? { image_url: cb.imageUrl } : {}),
+          })
+          .eq('id', decision.upgradeId)
+        if (upErr) {
+          console.error(`comeback-ingest upgrade ${decision.upgradeId}: ${upErr.message}`)
+          skipped++
+        } else {
+          upgraded++
+          // Reflet en mémoire : le near devient confirmed à la nouvelle heure
+          // (idempotence intra-run — un 2ᵉ candidat identique skippera).
+          const near = nears.find((n) => n.id === decision.upgradeId)
+          if (near) {
+            near.status = 'confirmed'
+            near.t = Date.parse(cb.startAt)
+          }
+        }
+        continue
+      }
+      nears.push({ id: '', t: Date.parse(cb.startAt), status: cb.status, imageUrl: null })
       nearByGroup.set(group.id, nears)
     }
     existing.add(`${cb.sourceUrl}|${group.id}`)
@@ -223,5 +281,5 @@ export async function ingestComebacks(
     }
   }
 
-  return { matched, inserted, skipped }
+  return { matched, inserted, skipped, upgraded }
 }

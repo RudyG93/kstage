@@ -14,10 +14,10 @@
 
 import { kstDateTimeToIso, nextWeeklySlotIso } from '../slots'
 import type { ParsedLineup, SourceScraper } from '../types'
+import { fetchViaJina } from '../jina-fetch'
 
 export const SOURCE_URL = 'https://playvod.imbc.com/Templete/PreView?bid=1000788100000100000'
 const SOURCE_LABEL = 'mbc-music-core'
-const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
 export interface ParsedImbcMusicCore {
   artistsRaw: string[]
@@ -79,11 +79,7 @@ export function parseMbcMusicCore(markdown: string): ParsedImbcMusicCore | null 
 }
 
 export async function fetchMbcMusicCore(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const res = await fetch(JINA_URL, {
-    headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
-  })
-  if (!res.ok) throw new Error(`imbc Music Core fetch failed: HTTP ${res.status}`)
-  const markdown = await res.text()
+  const markdown = await fetchViaJina(SOURCE_URL)
   const parsed = parseMbcMusicCore(markdown)
   if (!parsed) return []
 
@@ -115,6 +111,7 @@ export async function fetchMbcMusicCore(now: Date = new Date()): Promise<ParsedL
 
 export const mbcMusicCoreSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: SOURCE_URL,
   shows: ['music-core'],
   fetch: fetchMbcMusicCore,
 }

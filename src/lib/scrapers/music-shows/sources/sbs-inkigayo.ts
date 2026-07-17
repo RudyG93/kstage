@@ -79,6 +79,7 @@ export async function fetchInkigayo(now: Date = new Date()): Promise<ParsedLineu
 
 export const sbsInkigayoSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: BOARD_URL,
   shows: ['inkigayo'],
   fetch: fetchInkigayo,
 }

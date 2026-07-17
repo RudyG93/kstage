@@ -27,11 +27,13 @@ describe('aggregateLineups', () => {
     ]
     const primaryMock: SourceScraper = {
       label: 'mock-primary',
+      sourceUrl: 'https://mock.example/primary',
       shows: allShows,
       fetch: vi.fn().mockResolvedValue(allShows.map((s) => makeLineup(s, 'mock-primary'))),
     }
     const fallbackMock: SourceScraper = {
       label: 'mock-fallback',
+      sourceUrl: 'https://mock.example/fallback',
       shows: ['music-bank'],
       fetch: vi.fn().mockResolvedValue([makeLineup('music-bank', 'mock-fallback')]),
     }
@@ -51,6 +53,7 @@ describe('aggregateLineups', () => {
   it('si le primary manque un show, le fallback le fournit', async () => {
     const primaryMock: SourceScraper = {
       label: 'mock-primary',
+      sourceUrl: 'https://mock.example/primary',
       shows: ['the-show', 'm-countdown', 'music-bank', 'music-core', 'inkigayo'],
       fetch: vi
         .fn()
@@ -61,6 +64,7 @@ describe('aggregateLineups', () => {
     }
     const fallbackMock: SourceScraper = {
       label: 'mock-fallback',
+      sourceUrl: 'https://mock.example/fallback',
       shows: ['show-champion'],
       fetch: vi.fn().mockResolvedValue([makeLineup('show-champion', 'mock-fallback')]),
     }
@@ -73,16 +77,19 @@ describe('aggregateLineups', () => {
   it('si le primary throw, tous les fallbacks tentent et leurs erreurs sont loggées', async () => {
     const primaryMock: SourceScraper = {
       label: 'mock-primary',
+      sourceUrl: 'https://mock.example/primary',
       shows: ['music-bank'],
       fetch: vi.fn().mockRejectedValue(new Error('primary boom')),
     }
     const fallbackOk: SourceScraper = {
       label: 'mock-fb-ok',
+      sourceUrl: 'https://mock.example/fb-ok',
       shows: ['music-bank'],
       fetch: vi.fn().mockResolvedValue([makeLineup('music-bank', 'mock-fb-ok')]),
     }
     const fallbackFail: SourceScraper = {
       label: 'mock-fb-fail',
+      sourceUrl: 'https://mock.example/fb-fail',
       shows: ['music-core'],
       fetch: vi.fn().mockRejectedValue(new Error('fb boom')),
     }

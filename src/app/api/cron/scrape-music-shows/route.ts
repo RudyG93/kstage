@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/cron/auth'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { aggregateLineups } from '@/lib/scrapers/music-shows/aggregator'
+import {
+  aggregateLineups,
+  PRIMARY_SOURCE,
+  FALLBACK_SOURCES,
+} from '@/lib/scrapers/music-shows/aggregator'
 import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
 import { enrichStageLinks } from '@/lib/scrapers/music-shows/stage-links'
@@ -93,6 +97,22 @@ export async function GET(req: Request) {
     .maybeSingle()
   if (sourceError) return NextResponse.json({ error: sourceError.message }, { status: 500 })
   if (!source) return NextResponse.json({ error: 'music-shows source not seeded' }, { status: 500 })
+
+  // Provenance exacte des fallbacks (Phase 3 Lot 4) : events.source_id pointe
+  // le provider RÉEL du lineup (rows broadcasters versionnées en 0058), plus
+  // toujours la row carrd. Mapping label → row via SourceScraper.sourceUrl ;
+  // row absente → repli carrd (jamais bloquant).
+  const { data: showSources } = await supabase
+    .from('sources')
+    .select('id, url')
+    .eq('type', 'music_shows')
+    .is('group_id', null)
+  const sourceIdByUrl = new Map((showSources ?? []).map((s) => [s.url, s.id]))
+  const sourceIdByLabel = new Map<string, string>()
+  for (const scraper of [PRIMARY_SOURCE, ...FALLBACK_SOURCES]) {
+    const id = sourceIdByUrl.get(scraper.sourceUrl)
+    if (id) sourceIdByLabel.set(scraper.label, id)
+  }
 
   const { data: groups, error: groupsError } = await supabase
     .from('groups')
@@ -198,10 +218,15 @@ export async function GET(req: Request) {
         continue
       }
       if (sameDay.length > 0) {
-        // Time-shift : même épisode, nouvelle heure → update de la row du jour.
+        // Time-shift : même épisode, nouvelle heure → update de la row du jour
+        // (+ provenance : le provider du lineup révisé peut différer).
         const { error: updErr } = await supabase
           .from('events')
-          .update({ start_at: lineup.startAtIso, episode_number: lineup.episodeNumber })
+          .update({
+            start_at: lineup.startAtIso,
+            episode_number: lineup.episodeNumber,
+            source_id: sourceIdByLabel.get(lineup.sourceLabel) ?? source.id,
+          })
           .eq('id', sameDay[0].id)
         if (updErr) console.error(`music-shows time-shift update failed: ${updErr.message}`)
         else showStats.updated++
@@ -210,7 +235,10 @@ export async function GET(req: Request) {
 
       const { error: insertErr } = await supabase.from('events').insert({
         group_id: group.id,
-        source_id: source.id,
+        // source_id = provenance RÉELLE ; source_url RESTE l'URL carrd (clé
+        // d'idempotence unique(group,type,start,source_url) + clés de la
+        // réconciliation — leçon 0040 : ne jamais toucher une clé d'unicité).
+        source_id: sourceIdByLabel.get(lineup.sourceLabel) ?? source.id,
         source_url: SOURCE_URL,
         type: 'music_show',
         title: showLabel,

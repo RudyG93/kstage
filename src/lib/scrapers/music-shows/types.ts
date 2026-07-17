@@ -99,6 +99,10 @@ export interface ParsedLineup {
  */
 export interface SourceScraper {
   label: string
+  /** URL canonique de la source — clé de la row `sources` correspondante
+   * (provenance exacte des fallbacks, Phase 3 Lot 4 : events.source_id doit
+   * pointer le provider RÉEL du lineup, pas toujours le carrd). */
+  sourceUrl: string
   /** Shows que ce scraper peut potentiellement fournir. */
   shows: readonly ShowId[]
   /** Fetch + parse. Doit throw en cas d'erreur réseau ; renvoie [] si pas de
