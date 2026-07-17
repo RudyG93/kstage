@@ -205,17 +205,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </Panel>
         )}
 
-        {isOwner && followedGroups.length > 0 && (
-          <section className="space-y-2">
-            <span className="label-data">Followed groups — {followedGroups.length}</span>
-            <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
-              {followedGroups.map((g) => (
-                <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
-              ))}
-            </div>
-          </section>
-        )}
-
+        {/* Ordre voulu (retour Rudy 2026-07-17) : ratings → Liked MVs → Followed groups. */}
         <section className="space-y-2">
           <span className="label-data">Liked MVs</span>
           {likedMvs.length === 0 ? (
@@ -232,6 +222,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <MvsGrid mvs={likedMvs} ratings={ratings} timeZone={timeZone} />
           )}
         </section>
+
+        {isOwner && followedGroups.length > 0 && (
+          <section className="space-y-2">
+            <span className="label-data">Followed groups — {followedGroups.length}</span>
+            <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
+              {followedGroups.map((g) => (
+                <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Bloc Settings supprimé (R4-G) : l'écrou du header de page mène à
             /account et le toggle thème vit dans le header du site (mobile

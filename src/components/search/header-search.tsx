@@ -8,7 +8,14 @@ import { SearchIcon } from 'lucide-react'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { displaySongTitle } from '@/lib/events/title'
 
-type Group = { slug: string; name: string; image: string | null; isSolo: boolean }
+type Group = {
+  slug: string
+  name: string
+  image: string | null
+  isSolo: boolean
+  /** Slug /artists/ du membre canonique quand le « groupe » est un soliste. */
+  artistSlug: string | null
+}
 type Mv = { slug: string | null; title: string; group: string | null; videoId: string | null }
 type Member = { slug: string | null; name: string; group: string | null; photo: string | null }
 
@@ -199,7 +206,7 @@ export function HeaderSearch() {
               {groupResults.map((g) => (
                 <Link
                   key={g.slug}
-                  href={`/groups/${g.slug}`}
+                  href={g.artistSlug ? `/artists/${g.artistSlug}` : `/groups/${g.slug}`}
                   data-search-result
                   role="option"
                   aria-selected={false}
@@ -230,41 +237,45 @@ export function HeaderSearch() {
                   </span>
                 </Link>
               ))}
-              {memberResults.map((m, i) => (
-                <Link
-                  key={m.slug ?? `mbr-${i}`}
-                  href={m.slug ? `/artists/${m.slug}` : '/search'}
-                  data-search-result
-                  role="option"
-                  aria-selected={false}
-                  onClick={closeAndReset}
-                  className="hover:bg-secondary/60 flex items-center gap-2.5 px-3 py-2 transition-colors"
-                >
-                  {m.photo ? (
-                    <Image
-                      src={faceCrop(m.photo, 48, 48)}
-                      alt=""
-                      width={24}
-                      height={24}
-                      unoptimized
-                      className="size-6 shrink-0 rounded-full object-cover"
-                      aria-hidden
-                    />
-                  ) : (
-                    <span
-                      className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      aria-hidden
-                    >
-                      {m.name[0]}
+              {/* Dédup solistes : le segment groupes affiche déjà l'artiste
+                  canonique — ne pas répéter la même personne en « Artist ». */}
+              {memberResults
+                .filter((m) => !m.slug || !groupResults.some((g) => g.artistSlug === m.slug))
+                .map((m, i) => (
+                  <Link
+                    key={m.slug ?? `mbr-${i}`}
+                    href={m.slug ? `/artists/${m.slug}` : '/search'}
+                    data-search-result
+                    role="option"
+                    aria-selected={false}
+                    onClick={closeAndReset}
+                    className="hover:bg-secondary/60 flex items-center gap-2.5 px-3 py-2 transition-colors"
+                  >
+                    {m.photo ? (
+                      <Image
+                        src={faceCrop(m.photo, 48, 48)}
+                        alt=""
+                        width={24}
+                        height={24}
+                        unoptimized
+                        className="size-6 shrink-0 rounded-full object-cover"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        className="gradient-signature flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                        aria-hidden
+                      >
+                        {m.name[0]}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+                      {m.name}
+                      {m.group && <span className="text-faint font-normal"> · {m.group}</span>}
                     </span>
-                  )}
-                  <span className="min-w-0 flex-1 truncate text-xs font-semibold">
-                    {m.name}
-                    {m.group && <span className="text-faint font-normal"> · {m.group}</span>}
-                  </span>
-                  <span className="label-data-inline text-faint text-[9px]">Artist</span>
-                </Link>
-              ))}
+                    <span className="label-data-inline text-faint text-[9px]">Artist</span>
+                  </Link>
+                ))}
               {mvResults.map((m, i) => (
                 <Link
                   key={m.slug ?? i}
