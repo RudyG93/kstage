@@ -15,6 +15,8 @@
 import type { createClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database'
 import { kstToUtcISO } from '@/lib/events/date'
+import { normalize } from '@/lib/scrapers/group-match'
+import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
 import { fetchDebutCategory, fetchInfobox, resolveImageUrl } from './fandom'
 import { fetchWikipediaDebutNames, normalizeDebutName } from './wikipedia-debuts'
 
@@ -262,6 +264,64 @@ export async function createFromPayload(
       group_id: groupId,
     })
     if (sErr && sErr.code !== '23505') stepErrors.push(`source: ${sErr.message}`)
+  }
+
+  // Enrichissement MusicBrainz BEST-EFFORT (Lot L 2026-07-17, décision Rudy :
+  // « faire ça propre ») : réseaux/streaming officiels + birthdays des membres.
+  // Un échec MB n'échoue jamais la création — journalisé en stepErrors.
+  try {
+    const mb = await fetchMbEnrichment(payload.name)
+    if (mb) {
+      // Liens : merge SANS écraser l'existant (fandom / chaîne YT vérifiée priment).
+      const { data: g } = await supabase.from('groups').select('links').eq('id', groupId).single()
+      const currentLinks = (g?.links ?? {}) as Record<string, string>
+      const mergedLinks = { ...mb.links, ...currentLinks }
+      if (Object.keys(mergedLinks).length > Object.keys(currentLinks).length) {
+        const { error: lErr } = await supabase
+          .from('groups')
+          .update({ links: mergedLinks as Json })
+          .eq('id', groupId)
+        if (lErr) stepErrors.push(`mb links: ${lErr.message}`)
+      }
+      // Membres : birthday par match normalisé (nom MB souvent hangul, le
+      // romanisé vit dans sort-name) ; membre MB absent du roster → inséré
+      // seulement si le sort-name est un romanisé propre (jamais de stage_name
+      // hangul deviné).
+      if (mb.members.length > 0) {
+        const { data: memberRows } = await supabase
+          .from('members')
+          .select('id, stage_name, birthday')
+          .eq('group_id', groupId)
+        for (const person of mb.members) {
+          const match = (memberRows ?? []).find(
+            (m) =>
+              normalize(m.stage_name) === normalize(person.sortName) ||
+              normalize(m.stage_name) === normalize(person.name),
+          )
+          if (match) {
+            if (!match.birthday && person.birthday) {
+              const { error: bErr } = await supabase
+                .from('members')
+                .update({ birthday: person.birthday })
+                .eq('id', match.id)
+              if (bErr) stepErrors.push(`mb birthday ${person.sortName}: ${bErr.message}`)
+            }
+          } else if (person.sortName && /^[\x20-\x7e]+$/.test(person.sortName)) {
+            const { error: iErr } = await supabase.from('members').insert({
+              group_id: groupId,
+              stage_name: person.sortName,
+              status: 'active',
+              slug: `${slug}-${slugify(person.sortName)}`,
+              birthday: person.birthday,
+            })
+            if (iErr && iErr.code !== '23505')
+              stepErrors.push(`mb member ${person.sortName}: ${iErr.message}`)
+          }
+        }
+      }
+    }
+  } catch (e) {
+    stepErrors.push(`musicbrainz: ${String(e)}`)
   }
 
   // Event debut (release) — idempotent par (source_url, group_id), comme
