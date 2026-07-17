@@ -40,9 +40,9 @@ describe('buildComebackNotifications', () => {
     )
     expect(m.record.kind).toBe('day_of')
     expect(m.payload).toEqual({
-      title: '🔥 Today: aespa — Whiplash',
+      title: '🔥 Out now: aespa — Whiplash',
       tag: 'comeback-e1',
-      body: 'Out today — go check it out',
+      body: 'Just dropped — go watch',
       // ?src=push = attribution des ouvertures (audit §10.3) ; le SW matche
       // les onglets par pathname, le param ne casse pas le focus.
       url: '/mv/aespa-whiplash?src=push',

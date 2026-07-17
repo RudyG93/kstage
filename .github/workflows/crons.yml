@@ -14,8 +14,12 @@ on:
     - cron: '0 1 * * *' # scrape-music-shows AM   (10:00 KST — lineups publiés tôt)
     - cron: '0 13 * * *' # scrape-music-shows PM  (22:00 KST — révisions du jour)
     - cron: '0 4 * * *' # refresh-images          (13:00 KST)
-    - cron: '45 5 * * *' # send-digest            (14:45 KST)
-    - cron: '30 8 * * *' # notify-comebacks       (17:30 KST)
+    # Notifs APRÈS le scan complet du jour (retour Rudy 2026-07-17) : le
+    # scrape-youtube de 10:00 UTC capte les drops du créneau 18:00 KST — le
+    # digest (12:30 Paris) et l'alerte jour J (« Out now », 12:45 Paris)
+    # partent ensuite, jamais avant la donnée fraîche.
+    - cron: '30 10 * * *' # send-digest           (19:30 KST / 12:30 Paris)
+    - cron: '45 10 * * *' # notify-comebacks      (19:45 KST / 12:45 Paris)
     - cron: '30 13 * * *' # monitor               (22:30 KST — après le dernier scrape du jour)
     - cron: '0 11 * * 1' # discover-channels      (lundi 20:00 KST — hebdo, 1 h après scrape-youtube)
   workflow_dispatch:
@@ -56,8 +60,8 @@ jobs:
               "30 3 * * *") EP=scrape-comebacks ;;
               "0 1 * * *"|"0 13 * * *") EP=scrape-music-shows ;;
               "0 4 * * *") EP=refresh-images ;;
-              "45 5 * * *") EP=send-digest ;;
-              "30 8 * * *") EP=notify-comebacks ;;
+              "30 10 * * *") EP=send-digest ;;
+              "45 10 * * *") EP=notify-comebacks ;;
               "30 13 * * *") EP=monitor ;;
               "0 11 * * 1") EP=discover-channels ;;
               *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;

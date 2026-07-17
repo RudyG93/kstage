@@ -97,8 +97,11 @@ function resolveKind(event: ComebackEvent, now: Date, timeZone: string): Notific
 
 function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPayload {
   const label = event.groupName ? `${event.groupName} — ${event.title}` : event.title
-  const title = kind === 'day_of' ? `🔥 Today: ${label}` : `⏳ Tomorrow: ${label}`
-  const body = kind === 'day_of' ? 'Out today — go check it out' : 'Dropping tomorrow'
+  // Copy « Out now » : depuis le passage du cron APRÈS le scan du soir
+  // (10:45 UTC = 19:45 KST), le push jour J part après le créneau de drop
+  // 18:00 KST — « c'est sorti », plus « ça sort aujourd'hui ».
+  const title = kind === 'day_of' ? `🔥 Out now: ${label}` : `⏳ Tomorrow: ${label}`
+  const body = kind === 'day_of' ? 'Just dropped — go watch' : 'Dropping tomorrow'
   // tag par event : les rappels successifs du même comeback (J-1 → jour J)
   // se REMPLACENT dans le tiroir au lieu de s'empiler.
   return { title, body, url: withPushSrc(event.url), tag: `comeback-${event.id}` }

@@ -12,6 +12,7 @@ import {
 } from '@/lib/notifications/digest'
 import { sendPush } from '@/lib/notifications/send'
 import { disabledTypesByUser } from '@/lib/notifications/prefs'
+import { isValidTimeZone } from '@/lib/profiles/timezone'
 import { displayEventTitle } from '@/lib/events/title'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
   // servi — un re-run du cron ne renvoie pas le digest aux users déjà servis.
   const dayKey = now.toISOString().slice(0, 10)
 
-  const [subsRes, followsRes, prefsRes, eventsRes, sentRes] = await Promise.all([
+  const [subsRes, followsRes, prefsRes, eventsRes, sentRes, profilesRes] = await Promise.all([
     supabase.from('push_subscriptions').select('user_id, endpoint, p256dh, auth'),
     supabase.from('user_follows').select('user_id, group_id'),
     supabase
@@ -71,12 +72,25 @@ export async function GET(req: Request) {
       .neq('status', 'cancelled')
       .eq('hidden', false),
     supabase.from('digest_log').select('user_id').eq('day_key', dayKey).eq('edition', edition),
+    supabase.from('profiles').select('id, timezone').not('timezone', 'is', null),
   ])
 
   const err =
-    subsRes.error ?? followsRes.error ?? prefsRes.error ?? eventsRes.error ?? sentRes.error
+    subsRes.error ??
+    followsRes.error ??
+    prefsRes.error ??
+    eventsRes.error ??
+    sentRes.error ??
+    profilesRes.error
   if (err) return NextResponse.json({ error: err.message }, { status: 500 })
   const alreadyServed = new Set((sentRes.data ?? []).map((r) => r.user_id))
+
+  // Fuseau par abonné (même règle que notify-comebacks) : profiles.timezone
+  // validé, sans réglage = KST — sert les étiquettes today/tomorrow du payload.
+  const timeZones = new Map<string, string>()
+  for (const p of profilesRes.data ?? []) {
+    if (isValidTimeZone(p.timezone)) timeZones.set(p.id, p.timezone)
+  }
 
   const built = buildDigest(
     (subsRes.data ?? []).map(
@@ -109,6 +123,8 @@ export async function GET(req: Request) {
       ),
     edition,
     disabledTypesByUser(prefsRes.data ?? []),
+    timeZones,
+    now.toISOString(),
   )
   // Filtrage idempotence dans la route (le builder reste pur).
   const messages = built.filter((m) => !alreadyServed.has(m.subscription.userId))
