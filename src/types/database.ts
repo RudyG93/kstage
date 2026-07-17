@@ -547,6 +547,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lineup_unmatched: {
+        Row: {
+          display_name: string
+          first_seen: string
+          last_seen: string
+          name_norm: string
+          occurrences: number
+          shows: string[]
+          status: string
+        }
+        Insert: {
+          display_name: string
+          first_seen?: string
+          last_seen?: string
+          name_norm: string
+          occurrences?: number
+          shows?: string[]
+          status?: string
+        }
+        Update: {
+          display_name?: string
+          first_seen?: string
+          last_seen?: string
+          name_norm?: string
+          occurrences?: number
+          shows?: string[]
+          status?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           agency: string | null

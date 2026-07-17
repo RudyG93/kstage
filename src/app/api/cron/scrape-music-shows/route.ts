@@ -9,6 +9,11 @@ import {
 } from '@/lib/scrapers/music-shows/aggregator'
 import { SOURCE_URL } from '@/lib/scrapers/music-shows/sources/live-show-updates'
 import { extractCanonicalName } from '@/lib/scrapers/music-shows/canonical'
+import {
+  collectUnmatched,
+  persistUnmatched,
+  type UnmatchedCollector,
+} from '@/lib/scrapers/music-shows/unmatched'
 import { enrichStageLinks } from '@/lib/scrapers/music-shows/stage-links'
 import {
   SHOW_DESCRIPTORS,
@@ -147,6 +152,7 @@ export async function GET(req: Request) {
   let created = 0
   let matchedTotal = 0
   const unmatched: string[] = []
+  const unmatchedCollector: UnmatchedCollector = new Map()
   const byShow: Record<
     string,
     { matched: number; created: number; skipped: number; updated: number }
@@ -175,6 +181,9 @@ export async function GET(req: Request) {
       }
       if (!group) {
         unmatched.push(`${lineup.show}/${canonical}`)
+        // File « artistes hors-app » (retour Rudy 2026-07-17) : persistés avec
+        // compteur de récurrence pour la revue admin — le log seul les perdait.
+        collectUnmatched(unmatchedCollector, canonical, lineup.show)
         continue
       }
       matchedTotal++
@@ -346,6 +355,10 @@ export async function GET(req: Request) {
       .eq('id', source.id)
   }
 
+  // Persistance best-effort de la file hors-app — une table absente ou une
+  // erreur réseau ne doit jamais faire échouer le scrape lui-même.
+  const unmatchedPersist = await persistUnmatched(supabase, unmatchedCollector)
+
   const summary = {
     primary_ok: aggregateResult.primaryOk,
     fallbacks_used: aggregateResult.fallbacksUsed,
@@ -355,6 +368,8 @@ export async function GET(req: Request) {
     created,
     reconciled,
     unmatched_count: unmatched.length,
+    unmatched_persisted: unmatchedPersist.upserted,
+    ...(unmatchedPersist.error ? { unmatched_persist_error: unmatchedPersist.error } : {}),
     // Échantillon PAR SHOW (8 max chacun) : le cap global de 20 masquait les
     // unmatched des derniers shows (le raté Heart2Hearts était invisible).
     unmatched_sample: Object.values(
