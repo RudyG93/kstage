@@ -162,6 +162,17 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
   - **me:I** non ajouté (titre fandom différent).
 - **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron `scrape-comebacks`. Surveiller `/admin/debuts`. `ingestNamedGroups` pour tout ajout ciblé.
 
+## Restes de l'audit notifs (2026-07-17, nuit de vérification)
+
+> P1 (titres digest bruts), TTL 20 h et wording « Today & tomorrow » livrés (merge `1fa9d5c`). Restent des décisions produit :
+
+- **Toggle « Birthdays & anniversaries » mort** (`notification-prefs.tsx:13`) : aucun event `anniversary` ne passe par la table `events` que lisent les 2 crons (ils sont générés à la volée pour l'affichage). Soit injecter les birthdays du jour dans le digest (réutiliser `anniversaries.ts`), soit griser la ligne « coming soon ». En l'état, promesse non tenue silencieuse.
+- **Capturer le fuseau à l'abonnement push** : l'unique abonné réel a `profiles.timezone = NULL` → ses push sont ciblés en jour KST alors que le site le sert en heure de Paris (cookie `tz`). `subscribeToPush` pourrait upserter `Intl.DateTimeFormat().resolvedOptions().timeZone` si NULL. ⚠️ Nouvelle surface d'écriture → garde `GITHUB_ACTIONS` (leçon `ci_e2e_writes_prod`).
+- **Body comeback type-aware** (`comebacks.ts:101`) : différencier MV (« New MV — watch it now ») / release (« New album/single out today ») ; option heure (« drops at 18:00 KST ») seulement si `confirmed` et non-TBA.
+- **Weekly digest sans dates** : préfixer les labels par le jour (« Tue · aespa — KISS N TELL »). Mineur.
+- **Notification de bienvenue locale** post-subscribe (`reg.showNotification`, pas un push) : confirmer que ça marche au lieu d'un silence jusqu'au prochain cron. Mineur.
+- **Logos — mineurs consignés sans action** (audit 2026-07-17) : `purpose "any maskable"` combiné dans le manifest (entrées séparées recommandées), `themeColor` figé sombre en mode clair, pas de splash screen iOS.
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.
