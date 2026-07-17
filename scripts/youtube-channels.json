@@ -1336,5 +1336,32 @@
         "url": "https://www.youtube.com/@8turn.official"
       }
     ]
+  },
+  {
+    "slug": "trendz",
+    "channels": [
+      {
+        "name": "TRENDZ · TRENDZ (discovery 2026-07-17)",
+        "url": "https://www.youtube.com/@trendz_offcl"
+      }
+    ]
+  },
+  {
+    "slug": "uau",
+    "channels": [
+      {
+        "name": "UAU — Dreamcatcher official (chaîne compagnie, discovery 2026-07-17)",
+        "url": "https://www.youtube.com/@dreamcatcherofficial"
+      }
+    ]
+  },
+  {
+    "slug": "omega-x",
+    "channels": [
+      {
+        "name": "OMEGA X · OMEGA X (discovery 2026-07-17)",
+        "url": "https://www.youtube.com/@omegaxofficial"
+      }
+    ]
   }
 ]
