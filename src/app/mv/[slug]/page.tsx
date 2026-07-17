@@ -15,7 +15,6 @@ import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
 import { getGroupMvs } from '@/lib/events/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
-import { relativeTime } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { BackButton } from '@/components/back-button'
 import { JsonLd } from '@/components/seo/json-ld'
@@ -166,7 +165,7 @@ export default async function MvPage({
                   ) : null}
                   {group?.name}
                 </Link>
-                <span aria-hidden>·</span> MV · dropped {relativeTime(event.start_at)} · {dateLabel}
+                <span aria-hidden>·</span> MV · {dateLabel}
               </p>
             </div>
             <LikeButton
