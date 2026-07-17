@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { kstToUtcISO, kstDayKey } from './date'
+import { kstToUtcISO, localDayKey } from './date'
 import type { UpcomingEvent } from './queries'
 
 // Génère les events "anniversaire" à la volée (pas de table dédiée) :
@@ -133,10 +133,14 @@ export function generateAnniversaries(
   return out.sort((a, b) => a.start_at.localeCompare(b.start_at))
 }
 
-/** Anniversaires à venir pour des groupes suivis, prêts à fusionner au feed. */
+/** Anniversaires à venir pour des groupes suivis, prêts à fusionner au feed.
+ * `timeZone` = fuseau du viewer : « aujourd'hui » est SON jour civil — un
+ * anniversaire du 17 doit rester visible toute la journée du 17 à Paris, pas
+ * disparaître à 17 h quand Séoul passe au 18 (dates pures, cf. eventDayKey). */
 export async function getUpcomingAnniversaries(
   groupIds: string[],
   days = 90,
+  timeZone = 'Asia/Seoul',
 ): Promise<UpcomingEvent[]> {
   if (groupIds.length === 0) return []
   const supabase = await createClient()
@@ -150,7 +154,7 @@ export async function getUpcomingAnniversaries(
     supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
   ])
   return generateAnniversaries(groups ?? [], members ?? [], {
-    todayKey: kstDayKey(new Date().toISOString()),
+    todayKey: localDayKey(new Date().toISOString(), timeZone),
     days,
   })
 }
@@ -160,6 +164,7 @@ export async function getUpcomingAnniversaries(
 export async function getUpcomingAnniversaryCountsByGroup(
   groupIds: string[],
   days = 90,
+  timeZone = 'Asia/Seoul',
 ): Promise<Map<string, number>> {
   if (groupIds.length === 0) return new Map()
   const supabase = await createClient()
@@ -167,7 +172,7 @@ export async function getUpcomingAnniversaryCountsByGroup(
     .from('members')
     .select('group_id, birthday')
     .in('group_id', groupIds)
-  const [ty, tm, td] = kstDayKey(new Date().toISOString()).split('-').map(Number)
+  const [ty, tm, td] = localDayKey(new Date().toISOString(), timeZone).split('-').map(Number)
   const today = { y: ty, m: tm, d: td }
   const counts = new Map<string, number>()
   for (const m of members ?? []) {

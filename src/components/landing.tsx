@@ -44,6 +44,7 @@ export function Landing({
   eventsCount,
   sourcesStatus,
   subscriberCounts,
+  timeZone,
 }: {
   groups: GroupSummary[]
   previewEvents: UpcomingEvent[]
@@ -51,6 +52,8 @@ export function Landing({
   sourcesStatus: SourcesStatus | null
   /** Popularité (max subs YouTube par groupe) — tri du mur visuel. */
   subscriberCounts?: Map<string, number>
+  /** Fuseau du viewer (cookie tz pour l'anonyme, KST au tout 1er rendu). */
+  timeZone: string
 }) {
   const nextDrop = previewEvents[0] ?? null
   const previewRows = previewEvents.slice(1, 4)
@@ -182,7 +185,7 @@ export function Landing({
             />
             <div className="divide-y">
               {previewRows.map((event) => (
-                <QueueRow key={event.id} event={event} />
+                <QueueRow key={event.id} event={event} timeZone={timeZone} />
               ))}
             </div>
           </Panel>

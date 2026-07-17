@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
-import { formatDDay, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
+import { eventDDay, eventDayKey, kstTime24h, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, eventTypeTint } from '@/lib/events/labels'
 import { displayEventTitle } from '@/lib/events/title'
 import { eventHref, isExternalHref } from '@/lib/events/href'
@@ -17,12 +17,14 @@ import { LocalTime } from '@/components/local-time'
 // fiche groupe et search. Hauteur de contenu 40px + padding → hit ≥44px.
 export function QueueRow({
   event,
-  timeZone = 'Asia/Seoul',
+  timeZone,
   showThumb = false,
   withCountdown = false,
 }: {
   event: GroupedUpcomingEvent
-  timeZone?: string
+  // Fuseau du viewer — REQUIS : un défaut KST silencieux a déjà produit des
+  // D-day KST à côté d'une grille en fuseau viewer (bug du 2026-07-17).
+  timeZone: string
   showThumb?: boolean
   // Countdown inline « in 07:22:14 » (teal) pour les events du soir (§7.2).
   withCountdown?: boolean
@@ -36,10 +38,13 @@ export function QueueRow({
   // Slot synthétique (show-slots.ts) : pas de groupe → son « lieu » est le
   // jour dans le calendrier, comme un épisode groupé.
   const slot = isSyntheticSlot(event)
-  const dayKey = lineup || slot ? localDayKey(event.start_at, timeZone) : null
+  const dayKey = lineup || slot ? eventDayKey(event, timeZone) : null
   const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
   const external = isExternalHref(href)
-  const dday = formatDDay(event.start_at, timeZone)
+  const dday = eventDDay(event, timeZone)
+  // Anniversaire = date pure : aucune heure à afficher (le « 00:00 KST » de
+  // l'ancrage technique n'est pas une heure d'événement).
+  const allDay = event.type === 'anniversary'
 
   return (
     <Link
@@ -113,7 +118,7 @@ export function QueueRow({
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         {/* Heure LOCALE en avant (R5), KST en référence dessous — aligné sur
             event-card (décision « heure locale en avant »). */}
-        {isTimeTBA(event) ? (
+        {allDay ? null : isTimeTBA(event) ? (
           <span className="tabular text-muted-foreground text-[10px]">Time TBA</span>
         ) : (
           <>
@@ -130,7 +135,7 @@ export function QueueRow({
             </span>
           </>
         )}
-        {withCountdown && dday === 'D-DAY' && !isTimeTBA(event) && (
+        {withCountdown && dday === 'D-DAY' && !allDay && !isTimeTBA(event) && (
           <Countdown targetIso={event.start_at} variant="inline" />
         )}
       </span>

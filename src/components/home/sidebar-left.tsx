@@ -7,6 +7,7 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import { getProfile } from '@/lib/profiles/queries'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { createClient } from '@/lib/supabase/server'
 
 // Cap d'affichage des groupes suivis dans le rail (au-delà : lien « + N more »
@@ -29,11 +30,12 @@ export async function SidebarLeft({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  const timeZone = await getViewerTimeZone()
   const [profile, { data: countRows }, counts, annivCounts] = await Promise.all([
     user ? getProfile(user.id) : Promise.resolve(null),
     supabase.rpc('group_follow_counts'),
     getUpcomingEventCountsByGroup([...followedIds]),
-    getUpcomingAnniversaryCountsByGroup([...followedIds]),
+    getUpcomingAnniversaryCountsByGroup([...followedIds], 90, timeZone),
   ])
   const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
   // Tri des groupes suivis : popularité (nb de follows) décroissante, puis alpha.

@@ -45,15 +45,17 @@ export default async function Home({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    const [groups, previewRaw, eventsCount, sourcesStatus, subscriberCounts] = await Promise.all([
-      getGroupsCached(),
-      // limit 12 puis groupement : un épisode multi-groupes ne doit pas manger
-      // les 4 slots du preview avant de se replier en 1 carte.
-      getUpcomingEvents({ limit: 12 }),
-      getEventsCount(),
-      getSourcesStatus(),
-      getGroupSubscriberCounts(),
-    ])
+    const [groups, previewRaw, eventsCount, sourcesStatus, subscriberCounts, anonTimeZone] =
+      await Promise.all([
+        getGroupsCached(),
+        // limit 12 puis groupement : un épisode multi-groupes ne doit pas manger
+        // les 4 slots du preview avant de se replier en 1 carte.
+        getUpcomingEvents({ limit: 12 }),
+        getEventsCount(),
+        getSourcesStatus(),
+        getGroupSubscriberCounts(),
+        getViewerTimeZone(),
+      ])
     const previewEvents = groupMusicShowEpisodes(previewRaw)
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -63,6 +65,7 @@ export default async function Home({
           eventsCount={eventsCount}
           sourcesStatus={sourcesStatus}
           subscriberCounts={subscriberCounts}
+          timeZone={anonTimeZone}
         />
       </div>
     )
@@ -79,7 +82,9 @@ export default async function Home({
   const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
     await Promise.all([
       ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
-      ids.length > 0 && wantAnniversaries ? getUpcomingAnniversaries(ids, 90) : Promise.resolve([]),
+      ids.length > 0 && wantAnniversaries
+        ? getUpcomingAnniversaries(ids, 90, timeZone)
+        : Promise.resolve([]),
       ids.length > 0 ? getAllMvs({ groupIds: ids, limit: 4 }) : Promise.resolve([]),
       getAllMvs({ limit: 4 }),
       // Ticker : annonces globales « qui tapent » (tous types, suivi ou non).
@@ -128,7 +133,9 @@ export default async function Home({
 
   // Ticker global : un event par groupe, groupes les plus suivis d'abord.
   const followCounts = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
-  const tickerItems = buildTickerItems(pickTickerEvents(globalEvents, followCounts, 8))
+  const tickerItems = buildTickerItems(pickTickerEvents(globalEvents, followCounts, 8), {
+    timeZone,
+  })
 
   // Week glance : complétée par les slots hebdo synthétiques des 6 shows
   // (P0.8) — dédupliqués contre les épisodes réels GLOBAUX (pas seulement

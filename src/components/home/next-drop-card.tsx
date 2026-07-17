@@ -20,12 +20,13 @@ export function NextDropCard({
   isAuthed = false,
   latestMvImage = null,
   latestMvFallback = null,
-  timeZone = 'Asia/Seoul',
+  timeZone,
 }: {
   event: GroupedUpcomingEvent | null
   isFollowing?: boolean
   isAuthed?: boolean
-  timeZone?: string
+  // Fuseau du viewer — requis (cf. QueueRow : plus de défaut KST silencieux).
+  timeZone: string
   // Thumbnail maxres du dernier MV du groupe : le visuel le plus FRAIS
   // disponible (les fanarts TheAudioDB datent — aespa servait un backdrop 2021).
   latestMvImage?: string | null
