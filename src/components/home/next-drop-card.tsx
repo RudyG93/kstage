@@ -5,7 +5,7 @@ import { HeroBackdrop } from './hero-backdrop'
 import { NotifyCta } from './notify-cta'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displayEventTitle } from '@/lib/events/title'
-import { eventHref, isExternalHref } from '@/lib/events/href'
+import { episodeHref, eventHref, isExternalHref } from '@/lib/events/href'
 import { formatDDay, formatKst, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
@@ -40,7 +40,10 @@ export function NextDropCard({
   const lineup = event.lineup && event.lineup.length >= 2 ? event.lineup : null
   const title = displayEventTitle(event.title, lineup ? undefined : group?.name, null, event.type)
   const dayKey = lineup ? localDayKey(event.start_at, timeZone) : null
-  const href = dayKey ? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}` : eventHref(event)
+  // Épisode groupé → page épisode (Lot N), repli jour du calendrier.
+  const href = dayKey
+    ? (episodeHref(event) ?? `/calendar?month=${dayKey.slice(0, 7)}&day=${dayKey}`)
+    : eventHref(event)
   const external = isExternalHref(href)
   const hex = group?.color_hex ?? 'var(--primary)'
   // Fond : banner admin > thumbnail du dernier MV (ère en cours) > landscape ;

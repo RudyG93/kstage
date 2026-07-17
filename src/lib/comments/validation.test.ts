@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import {
   BODY_MAX,
   parseCommentInput,
@@ -34,6 +34,31 @@ describe('parseCommentInput — mur de texte', () => {
   })
 })
 
+describe('parseCommentInput — cible event OU épisode (Lot N 2026-07-17)', () => {
+  it('cible épisode seule : valide, eventId null', () => {
+    const r = parseCommentInput({ episodeId: UUID2, body: 'great episode' })
+    expect(r).toHaveProperty('value')
+    if ('value' in r) {
+      expect(r.value.episodeId).toBe(UUID2)
+      expect(r.value.eventId).toBeNull()
+    }
+  })
+
+  it('les DEUX cibles fournies : rejet (miroir du check DB)', () => {
+    expect(parseCommentInput({ eventId: UUID, episodeId: UUID2, body: 'x' })).toHaveProperty(
+      'error',
+    )
+  })
+
+  it('aucune cible : rejet', () => {
+    expect(parseCommentInput({ body: 'x' })).toHaveProperty('error')
+  })
+
+  it('episodeId non-uuid : rejet', () => {
+    expect(parseCommentInput({ episodeId: 'nope', body: 'x' })).toHaveProperty('error')
+  })
+})
+
 describe('containsBlockedContent', () => {
   it('détecte le spam de la blocklist', () => {
     expect(containsBlockedContent('cheap viagra here')).toBe(true)
@@ -55,18 +80,18 @@ describe('parseCommentInput — blocklist', () => {
 describe('parseCommentInput', () => {
   it('accepte eventId UUID + body trim', () => {
     const r = parseCommentInput({ eventId: UUID, body: '  hello  ' })
-    expect(r).toEqual({ value: { eventId: UUID, parentId: null, body: 'hello' } })
+    expect(r).toEqual({ value: { eventId: UUID, episodeId: null, parentId: null, body: 'hello' } })
   })
   it('accepte parentId UUID optionnel', () => {
     const r = parseCommentInput({ eventId: UUID, parentId: UUID2, body: 'reply' })
-    expect(r).toEqual({ value: { eventId: UUID, parentId: UUID2, body: 'reply' } })
+    expect(r).toEqual({ value: { eventId: UUID, episodeId: null, parentId: UUID2, body: 'reply' } })
   })
   it('parentId vide ou null → null', () => {
     expect(parseCommentInput({ eventId: UUID, parentId: '', body: 'x' })).toEqual({
-      value: { eventId: UUID, parentId: null, body: 'x' },
+      value: { eventId: UUID, episodeId: null, parentId: null, body: 'x' },
     })
     expect(parseCommentInput({ eventId: UUID, parentId: null, body: 'x' })).toEqual({
-      value: { eventId: UUID, parentId: null, body: 'x' },
+      value: { eventId: UUID, episodeId: null, parentId: null, body: 'x' },
     })
   })
   it('rejette eventId non UUID', () => {
@@ -93,7 +118,9 @@ describe('parseCommentInput', () => {
   })
   it('normalise CRLF en LF', () => {
     const r = parseCommentInput({ eventId: UUID, body: 'line1\r\nline2' })
-    expect(r).toEqual({ value: { eventId: UUID, parentId: null, body: 'line1\nline2' } })
+    expect(r).toEqual({
+      value: { eventId: UUID, episodeId: null, parentId: null, body: 'line1\nline2' },
+    })
   })
 })
 

@@ -289,6 +289,9 @@ export async function getRecentlyCommentedEvents(limit = 12) {
   const { data: recent, error } = await supabase
     .from('comments')
     .select('event_id, created_at')
+    // Les commentaires d'ÉPISODE (episode_id, Lot N) ont event_id null — la
+    // sidebar Recent discussions reste orientée MV/events.
+    .not('event_id', 'is', null)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(300)
@@ -297,7 +300,7 @@ export async function getRecentlyCommentedEvents(limit = 12) {
   // Ordre desc déjà appliqué → la 1re occurrence d'un event = son dernier commentaire.
   const lastByEvent = new Map<string, string>()
   for (const c of recent ?? []) {
-    if (!lastByEvent.has(c.event_id)) lastByEvent.set(c.event_id, c.created_at)
+    if (c.event_id && !lastByEvent.has(c.event_id)) lastByEvent.set(c.event_id, c.created_at)
   }
   const ids = [...lastByEvent.keys()].slice(0, limit)
   if (ids.length === 0) return []
@@ -312,7 +315,7 @@ export async function getRecentlyCommentedEvents(limit = 12) {
   ])
   const countByEvent = new Map<string, number>()
   for (const r of countsRes.data ?? []) {
-    countByEvent.set(r.event_id, (countByEvent.get(r.event_id) ?? 0) + 1)
+    if (r.event_id) countByEvent.set(r.event_id, (countByEvent.get(r.event_id) ?? 0) + 1)
   }
   const eventById = new Map((eventsRes.data ?? []).map((e) => [e.id, e]))
 

@@ -196,7 +196,8 @@ export type Database = {
           body: string
           created_at: string
           deleted_at: string | null
-          event_id: string
+          episode_id: string | null
+          event_id: string | null
           id: string
           parent_id: string | null
           updated_at: string
@@ -206,7 +207,8 @@ export type Database = {
           body: string
           created_at?: string
           deleted_at?: string | null
-          event_id: string
+          episode_id?: string | null
+          event_id?: string | null
           id?: string
           parent_id?: string | null
           updated_at?: string
@@ -216,7 +218,8 @@ export type Database = {
           body?: string
           created_at?: string
           deleted_at?: string | null
-          event_id?: string
+          episode_id?: string | null
+          event_id?: string | null
           id?: string
           parent_id?: string | null
           updated_at?: string
@@ -544,6 +547,33 @@ export type Database = {
           id?: string
           sent_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      show_episodes: {
+        Row: {
+          created_at: string
+          episode_number: number | null
+          id: string
+          kst_day: string
+          show_title: string
+          start_at: string
+        }
+        Insert: {
+          created_at?: string
+          episode_number?: number | null
+          id?: string
+          kst_day: string
+          show_title: string
+          start_at: string
+        }
+        Update: {
+          created_at?: string
+          episode_number?: number | null
+          id?: string
+          kst_day?: string
+          show_title?: string
+          start_at?: string
         }
         Relationships: []
       }

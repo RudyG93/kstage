@@ -6,8 +6,14 @@ import { BODY_MAX } from '@/lib/comments/validation'
 import { cn } from '@/lib/utils'
 
 interface Props {
-  eventId: string
-  slug: string
+  /** Cible MV (event). Exactement une des deux cibles avec episodeId. */
+  eventId?: string
+  /** Cible épisode de music show (Lot N 2026-07-17). */
+  episodeId?: string
+  /** Slug MV pour la revalidation /mv/[slug] (cible event). */
+  slug?: string
+  /** Chemin /show/... à revalider (cible épisode). */
+  path?: string
   parentId?: string | null
   /** Focus le textarea au mount via ref (pas via prop autoFocus, qui a11y-warn). */
   focusOnMount?: boolean
@@ -22,8 +28,10 @@ interface Props {
  * Reset auto du textarea après succès. Compteur de chars en aria-live.
  */
 export function CommentCompose({
-  eventId,
-  slug,
+  eventId = '',
+  episodeId = '',
+  slug = '',
+  path = '',
   parentId,
   focusOnMount,
   onCancel,
@@ -56,7 +64,9 @@ export function CommentCompose({
   return (
     <form ref={formRef} action={formAction} className="space-y-2">
       <input type="hidden" name="eventId" value={eventId} />
+      <input type="hidden" name="episodeId" value={episodeId} />
       <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="path" value={path} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
       <textarea
         ref={taRef}

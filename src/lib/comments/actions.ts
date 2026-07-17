@@ -18,6 +18,9 @@ function revalidateSlug(formData: FormData) {
   const slug = String(formData.get('slug') ?? '').trim()
   // Whitelist anti revalidatePath arbitraire (pattern rating-actions:47).
   if (/^[a-z0-9-]+$/.test(slug)) revalidatePath(`/mv/${slug}`)
+  // Page épisode de music show (Lot N 2026-07-17) — même principe whitelist.
+  const path = String(formData.get('path') ?? '').trim()
+  if (/^\/show\/[a-z0-9-]+\/\d{4}-\d{2}-\d{2}$/.test(path)) revalidatePath(path)
 }
 
 /** Post un commentaire (root si parentId vide, sinon reply). */
@@ -30,6 +33,7 @@ export async function postComment(_prev: CommentState, formData: FormData): Prom
 
   const parsed = parseCommentInput({
     eventId: String(formData.get('eventId') ?? ''),
+    episodeId: String(formData.get('episodeId') ?? ''),
     parentId: String(formData.get('parentId') ?? ''),
     body: String(formData.get('body') ?? ''),
   })
@@ -49,6 +53,9 @@ export async function postComment(_prev: CommentState, formData: FormData): Prom
     .from('comments')
     .insert({
       event_id: parsed.value.eventId,
+      // Omis quand null : le chemin MV reste valide même si la migration 0060
+      // (colonne episode_id) n'est pas encore appliquée.
+      ...(parsed.value.episodeId ? { episode_id: parsed.value.episodeId } : {}),
       parent_id: parsed.value.parentId,
       user_id: user.id,
       body: parsed.value.body,

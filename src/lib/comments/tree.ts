@@ -5,7 +5,8 @@ export interface CommentAuthor {
 
 export interface FlatComment {
   id: string
-  event_id: string
+  /** null pour les commentaires d'ÉPISODE de music show (episode_id, Lot N). */
+  event_id: string | null
   user_id: string
   parent_id: string | null
   body: string

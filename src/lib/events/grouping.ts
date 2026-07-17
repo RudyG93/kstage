@@ -80,8 +80,10 @@ function dedupePerGroupEpisode(events: readonly UpcomingEvent[]): UpcomingEvent[
       out.push(e)
       continue
     }
-    // Doublon : préférer la row au href externe (stage enrichi).
-    if (isExternalHref(eventHref(e)) && !isExternalHref(eventHref(out[at]))) {
+    // Doublon : préférer la row ENRICHIE (stage_url posé). Critère direct sur
+    // la colonne — l'ancien test « href externe » ne discrimine plus depuis
+    // que tous les music_show routent vers la page épisode (Lot N 2026-07-17).
+    if (e.stage_url && !out[at].stage_url) {
       out[at] = e
     }
   }
@@ -93,6 +95,10 @@ export function groupMusicShowEpisodes(events: readonly UpcomingEvent[]): Groupe
   const out: GroupedUpcomingEvent[] = []
 
   for (const e of dedupePerGroupEpisode(events)) {
+    // Depuis la page épisode (Lot N 2026-07-17), TOUTES les rows music_show
+    // routent en interne — les rows à stage_url ne sortent plus du groupe
+    // (leur vidéo vit dans la page épisode). L'exclusion href-externe ne garde
+    // que le repli des shows inconnus du descripteur.
     if (e.type !== 'music_show' || isExternalHref(eventHref(e))) {
       out.push(e)
       continue

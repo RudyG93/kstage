@@ -7,7 +7,9 @@ import { voteComment } from '@/lib/comments/actions'
 
 interface Props {
   commentId: string
-  slug: string
+  slug?: string
+  /** Chemin /show/... à revalider (commentaires d'épisode, Lot N). */
+  path?: string
   initialScore: number
   initialUserVote: -1 | 1 | null
   isAuthed: boolean
@@ -20,7 +22,14 @@ type OptimisticState = { score: number; userVote: -1 | 1 | null }
  * Click sur la même valeur que le vote actuel → toggle (annule).
  * Click sur l'opposé → swap (+2 ou -2 sur le score).
  */
-export function VoteButtons({ commentId, slug, initialScore, initialUserVote, isAuthed }: Props) {
+export function VoteButtons({
+  commentId,
+  slug = '',
+  path = '',
+  initialScore,
+  initialUserVote,
+  isAuthed,
+}: Props) {
   const [, startTransition] = useTransition()
   const [opt, setOpt] = useOptimistic<OptimisticState, -1 | 1>(
     { score: initialScore, userVote: initialUserVote },
@@ -42,6 +51,7 @@ export function VoteButtons({ commentId, slug, initialScore, initialUserVote, is
       const fd = new FormData()
       fd.set('commentId', commentId)
       fd.set('slug', slug)
+      fd.set('path', path)
       fd.set('value', String(value))
       await voteComment(null, fd)
     })

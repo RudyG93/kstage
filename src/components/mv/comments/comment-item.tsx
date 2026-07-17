@@ -24,8 +24,12 @@ import type { CommentNode } from '@/lib/comments/tree'
 
 interface Props {
   node: CommentNode
-  eventId: string
-  slug: string
+  // Cible : event (MV) OU épisode de music show (Lot N 2026-07-17).
+  eventId?: string
+  episodeId?: string
+  // Revalidation : slug MV (/mv/[slug]) OU chemin /show/... complet.
+  slug?: string
+  path?: string
   viewerId: string | null
   isAuthed: boolean
   depth?: number
@@ -48,8 +52,10 @@ const MAX_INDENT_DEPTH = 6
 
 export function CommentItem({
   node,
-  eventId,
-  slug,
+  eventId = '',
+  episodeId = '',
+  slug = '',
+  path = '',
   viewerId,
   isAuthed,
   depth = 0,
@@ -187,7 +193,7 @@ export function CommentItem({
         {isDeleted ? (
           <p className="text-muted-foreground text-sm italic">[deleted]</p>
         ) : showEdit ? (
-          <EditForm node={node} slug={slug} onDone={() => setShowEdit(false)} />
+          <EditForm node={node} slug={slug} path={path} onDone={() => setShowEdit(false)} />
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
         )}
@@ -197,6 +203,7 @@ export function CommentItem({
             <VoteButtons
               commentId={node.id}
               slug={slug}
+              path={path}
               initialScore={node.score}
               initialUserVote={node.userVote}
               isAuthed={isAuthed}
@@ -219,7 +226,7 @@ export function CommentItem({
                 >
                   Edit
                 </button>
-                <DeleteButton commentId={node.id} slug={slug} />
+                <DeleteButton commentId={node.id} slug={slug} path={path} />
               </>
             ) : (
               isAuthed && <ReportButton commentId={node.id} />
@@ -231,7 +238,9 @@ export function CommentItem({
           <div className="pt-2">
             <CommentCompose
               eventId={eventId}
+              episodeId={episodeId}
               slug={slug}
+              path={path}
               parentId={node.id}
               focusOnMount
               onCancel={() => setShowReply(false)}
@@ -268,7 +277,9 @@ export function CommentItem({
                   <CommentItem
                     node={child}
                     eventId={eventId}
+                    episodeId={episodeId}
                     slug={slug}
+                    path={path}
                     viewerId={viewerId}
                     isAuthed={isAuthed}
                     depth={depth + 1}
@@ -438,7 +449,17 @@ function HistoryModal({
   )
 }
 
-function EditForm({ node, slug, onDone }: { node: CommentNode; slug: string; onDone: () => void }) {
+function EditForm({
+  node,
+  slug,
+  path,
+  onDone,
+}: {
+  node: CommentNode
+  slug: string
+  path: string
+  onDone: () => void
+}) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(editComment, null)
   const [chars, setChars] = useState(node.body.length)
   const tooLong = chars > BODY_MAX
@@ -455,6 +476,7 @@ function EditForm({ node, slug, onDone }: { node: CommentNode; slug: string; onD
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="commentId" value={node.id} />
       <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="path" value={path} />
       <textarea
         name="body"
         required
@@ -501,12 +523,21 @@ function EditForm({ node, slug, onDone }: { node: CommentNode; slug: string; onD
   )
 }
 
-function DeleteButton({ commentId, slug }: { commentId: string; slug: string }) {
+function DeleteButton({
+  commentId,
+  slug,
+  path,
+}: {
+  commentId: string
+  slug: string
+  path: string
+}) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(deleteComment, null)
   return (
     <form action={formAction} className="inline">
       <input type="hidden" name="commentId" value={commentId} />
       <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="path" value={path} />
       <button
         type="submit"
         disabled={pending}
