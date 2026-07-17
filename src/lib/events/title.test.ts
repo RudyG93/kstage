@@ -58,14 +58,14 @@ describe('displaySongTitle', () => {
     ).toBe('WDA (Whole Different Animal) (Feat. G-DRAGON)')
   })
 
-  it('chanson hangul avec parens, groupe en hangul aussi : strip groupe, garde chanson', () => {
+  it('chanson hangul avec glose latine : la glose est préférée (romanisation 2026-07-17)', () => {
     expect(
       displaySongTitle("(여자)아이들((G)I-DLE) - '클락션 (Klaxon)' Official Music Video"),
-    ).toBe('클락션 (Klaxon)')
+    ).toBe('Klaxon')
   })
 
-  it('chanson hangul simple', () => {
-    expect(displaySongTitle("BABYMONSTER - '춤 (CHOOM)' M/V")).toBe('춤 (CHOOM)')
+  it('chanson hangul simple avec glose : la glose est préférée', () => {
+    expect(displaySongTitle("BABYMONSTER - '춤 (CHOOM)' M/V")).toBe('CHOOM')
   })
 
   it('chanson mono-mot', () => {
@@ -99,6 +99,44 @@ describe('displaySongTitle', () => {
 
   it("fallback avec séparateur classique : '-' fonctionne comme displayEventTitle", () => {
     expect(displaySongTitle('aespa - Hot Mess Official MV', 'aespa')).toBe('Hot Mess')
+  })
+})
+
+describe('displaySongTitle — romanisation « hangul (LATIN) » (retour Rudy 2026-07-17)', () => {
+  it('cas Yena : 네모네모 (NEMONEMO) → NEMONEMO', () => {
+    expect(displaySongTitle('YENA (최예나) - 네모네모 (NEMONEMO) MV', 'YENA')).toBe('NEMONEMO')
+  })
+
+  it('glose collée sans espace : 날라리(LALALAY) → LALALAY (cas Sunmi)', () => {
+    expect(displaySongTitle('선미(SUNMI) - 날라리(LALALAY) Music Video', 'Sunmi')).toBe('LALALAY')
+  })
+
+  it('glose multi-mots : 놓지않을게(TEARS) → TEARS (cas Mamamoo)', () => {
+    expect(displaySongTitle('[MV] 마마무(MAMAMOO) - 놓지않을게(TEARS)', 'Mamamoo')).toBe('TEARS')
+  })
+
+  it("glose dans des quotes : '중독(Overdose)' → Overdose (cas EXO)", () => {
+    expect(displaySongTitle("EXO-K 엑소케이 '중독(Overdose)' MV", 'EXO')).toBe('Overdose')
+  })
+
+  it('SEVENTEEN 만세(MANSAE) → MANSAE', () => {
+    expect(displaySongTitle('[M/V] SEVENTEEN(세븐틴) - 만세(MANSAE)', 'Seventeen')).toBe('MANSAE')
+  })
+
+  it('hangul SANS glose : intact (rien à préférer, cas Younha)', () => {
+    expect(displaySongTitle('윤하(YOUNHA) - 포인트 니모 M/V', 'Younha')).toBe('포인트 니모')
+  })
+
+  it('un crédit (feat. …) n’est pas une glose : conservé tel quel', () => {
+    expect(displaySongTitle("BLACKPINK - '마지막처럼 (feat. Nobody)' M/V", 'Blackpink')).toBe(
+      '마지막처럼 (feat. Nobody)',
+    )
+  })
+
+  it('chanson déjà latine avec parens : intacte (pas de hangul hors parens)', () => {
+    expect(displaySongTitle("aespa 'WDA (Whole Different Animal)' MV", 'aespa')).toBe(
+      'WDA (Whole Different Animal)',
+    )
   })
 })
 
@@ -161,8 +199,8 @@ describe('displaySongTitle — classes du balayage R6 (168 titres prod mal rendu
   it('doubles courbes JYP (ITZY)', () => {
     expect(displaySongTitle('ITZY “LOCO” M/V @ITZY', 'ITZY')).toBe('LOCO')
   })
-  it("chanson entre crochets DSP (KARD) — pas d'over-strip vers vide", () => {
-    expect(displaySongTitle('KARD - [밤밤(Bomb Bomb)] M/V', 'KARD')).toBe('밤밤(Bomb Bomb)')
+  it("chanson entre crochets DSP (KARD) — pas d'over-strip, glose latine préférée", () => {
+    expect(displaySongTitle('KARD - [밤밤(Bomb Bomb)] M/V', 'KARD')).toBe('Bomb Bomb')
   })
   it('’ courbe fermante utilisée en ouvrante (THE BOYZ)', () => {
     expect(displaySongTitle('THE BOYZ(더보이즈) ’Nectar’ MV', 'THE BOYZ')).toBe('Nectar')
