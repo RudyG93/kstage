@@ -55,6 +55,22 @@ const TRAILING_MV_RE =
   /\s*[—–\-:]?\s*(Official Music Video|Music Video|Official MV|Official Video|MV|M\/V)\s*$/i
 
 /**
+ * « 네모네모 (NEMONEMO) » → « NEMONEMO » : quand la CHANSON résiduelle est
+ * non-latine (hangul) avec une glose latine entre parenthèses, préférer la
+ * glose (retour Rudy 2026-07-17 — romaji/latin partout où le titre le permet ;
+ * renversement assumé de l'ancienne politique « hangul + glose »).
+ * Sans glose (« 포인트 니모 ») : intact, rien à préférer. Les crédits
+ * « (feat. X) » ne sont pas des gloses — conservés tels quels.
+ */
+function preferLatinGloss(t: string): string {
+  const m = t.match(/^[^()]*[가-힣][^()]*\(([^)]*[A-Za-z][^)]*)\)$/)
+  if (!m) return t
+  const gloss = m[1].trim()
+  if (/^(feat|ft|with|prod)[.\s]/i.test(gloss)) return t
+  return gloss
+}
+
+/**
  * Extrait uniquement le titre de la chanson depuis un titre scrapé YouTube.
  *
  * Priorité 1 — quotes greedy : capture le contenu entre la PREMIÈRE quote
@@ -85,7 +101,7 @@ export function displaySongTitle(title: string, groupName?: string | null): stri
     // vu sur NAVILLERA, R6) : en dernier recours, n'importe quelle ouvrante
     // avec n'importe quelle fermante.
     title.match(/[‘'"“’](.+)[’'"”]/) // ’ ouvrant : THE BOYZ « ’Nectar’ »
-  if (m) return m[1].trim()
+  if (m) return preferLatinGloss(m[1].trim())
 
   let t = displayEventTitle(title, groupName)
   // Tags de tête « [MV] », « [Let's Play MCND] », « (MV) »… (conventions
@@ -113,9 +129,9 @@ export function displaySongTitle(title: string, groupName?: string | null): stri
     .replace(TRAILING_MV_RE, '')
     .replace(/^[\s—–\-:·|]+/, '')
     .trim()
-  if (stripped) return stripped
+  if (stripped) return preferLatinGloss(stripped)
   // Sur-strip : chez DSP la CHANSON est entre crochets (« KARD - [밤밤(Bomb
   // Bomb)] M/V ») — si tout a été mangé, c'est elle qu'il fallait garder.
   const bracket = /\[([^\]]+)\]/.exec(title)
-  return bracket ? bracket[1].trim() : stripped
+  return bracket ? preferLatinGloss(bracket[1].trim()) : stripped
 }
