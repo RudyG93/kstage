@@ -81,10 +81,12 @@ function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): D
   const listed = labels.slice(0, MAX_LISTED).join(' · ')
   const more = n > MAX_LISTED ? ` · +${n - MAX_LISTED} more` : ''
   // Titre quotidien parlant (« 3 upcoming events » était sec et sans marque).
+  // « Today & tomorrow » : la fenêtre daily est de 48 h — « Today » seul
+  // mentait sur le compte (audit notifs 2026-07-17).
   const title =
     edition === 'weekly'
       ? `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`
-      : `Today in k-pop: ${n} event${n > 1 ? 's' : ''}`
+      : `Today & tomorrow in k-pop: ${n} event${n > 1 ? 's' : ''}`
   // Deep link : le digest liste des events datés → le calendrier est la
   // destination utile (la home re-priorise le hero, pas la liste).
   // tag : le digest du jour REMPLACE celui d'hier au lieu de s'empiler.

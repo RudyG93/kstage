@@ -12,6 +12,7 @@ import {
 } from '@/lib/notifications/digest'
 import { sendPush } from '@/lib/notifications/send'
 import { disabledTypesByUser } from '@/lib/notifications/prefs'
+import { displayEventTitle } from '@/lib/events/title'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 const DAILY_WINDOW_MS = 48 * 60 * 60 * 1000
@@ -94,7 +95,10 @@ export async function GET(req: Request) {
       .map(
         (e): DigestEvent => ({
           groupId: e.group_id,
-          title: e.title,
+          // Titre nettoyé comme le flux comeback : le brut donnait
+          // « fromis_9 — fromis_9 2nd Album – Glow ME (2026) » dans le body
+          // (groupe dupliqué + année parasite, audit notifs 2026-07-17).
+          title: displayEventTitle(e.title, e.groups?.name, null, e.type),
           startAt: e.start_at,
           groupName: e.groups?.name,
           type: e.type,
