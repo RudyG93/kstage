@@ -162,6 +162,14 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
   - **me:I** non ajouté (titre fandom différent).
 - **Roster — catch-up automatique** : le gate backfillé (796 pages 2023-2026) crée ~12 groupes populaires/jour via le cron `scrape-comebacks`. Surveiller `/admin/debuts`. `ingestNamedGroups` pour tout ajout ciblé.
 
+## Restes du round de retours #2 2026-07-17 (cf. JOURNAL)
+
+- **⚠️ OPS PRIORITAIRE — migrations 0059 + 0060 à appliquer en prod** (MCP Supabase indisponible en fin de session) : SQL Editor Supabase → contenu de `supabase/migrations/0059_lineup_unmatched.sql` puis `0060_show_episodes.sql`, dans l'ordre. Ensuite : merger la branche `feat/show-episode-page` (poussée, tests/build verts), `workflow_dispatch scrape-music-shows` (upsert des épisodes), vérifier `/show/inkigayo/2026-07-19`. Le code mergé est tolérant à l'absence des tables (persistance best-effort, insert MV sans episode_id).
+- **idntt : 20 membres captés** (l'infobox fandom a sur-capté, probablement current+former) → élaguer via /admin ou SQL.
+- **Sweep --thin à poursuivre** : ~28 groupes ≤ 1 MV restants (passes `--limit=20`, ~4 100 unités/passe).
+- **Échecs fandom du one-shot** : Hat:q, GABEE, Ayumu Imazu (no-infobox-match) — remonteront dans la file « Lineup unmatched » après la migration ; création manuelle de repli sinon.
+- **Page épisode V2 (idées non demandées, à valider)** : rating/like d'épisode, embeds inline au clic, lien depuis la page groupe.
+
 ## Restes du round de retours 2026-07-17 (7 lots livrés — cf. JOURNAL)
 
 - **31 groupes à ≤ 1 MV visible** restants après le sweep (82MAJOR/8TURN/YENA traités) : passes `npx tsx scripts/discover-mv-channels.ts --thin --limit=20` (~4 100 unités/passe, quota 10 000/j) puis review → youtube-channels.json → seed + backfill. Le cron discover-channels élargi (rotation hebdo, 3 groupes/lundi) fait le fond de tâche en continu.
