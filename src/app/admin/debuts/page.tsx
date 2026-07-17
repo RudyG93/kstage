@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
-import { getDebutCandidates } from '@/lib/debuts/actions'
+import { getDebutCandidates, getLineupUnmatched } from '@/lib/debuts/actions'
 import { DebutAdminList } from '@/components/debuts/debut-admin-list'
+import { LineupUnmatchedList } from '@/components/debuts/lineup-unmatched-list'
 
 export const metadata = { title: 'Debut candidates' }
 
@@ -16,7 +17,10 @@ export default async function AdminDebutsPage() {
   if (!user) redirect('/login')
   if (!isAdmin(user.email)) redirect('/')
 
-  const candidates = await getDebutCandidates()
+  const [candidates, lineupUnmatched] = await Promise.all([
+    getDebutCandidates(),
+    getLineupUnmatched(),
+  ])
   const pending = candidates.filter((c) => c.status === 'pending').length
 
   return (
@@ -28,7 +32,18 @@ export default async function AdminDebutsPage() {
             {candidates.length} détectés · {pending} en attente
           </p>
         </div>
-        <DebutAdminList items={candidates} />
+        {/* Artistes des lineups music-show absents du roster (2026-07-17) :
+            triés par récurrence, alimentés par le cron scrape-music-shows. */}
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">
+            Lineup unmatched — {lineupUnmatched.length} pending
+          </h2>
+          <LineupUnmatchedList items={lineupUnmatched} />
+        </section>
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">Fandom debut scan</h2>
+          <DebutAdminList items={candidates} />
+        </section>
       </div>
     </div>
   )

@@ -9,7 +9,11 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
-import { createFromPayload, type DebutCandidatePayload } from '@/lib/scrapers/debuts/ingest'
+import {
+  createFromPayload,
+  ingestNamedGroups,
+  type DebutCandidatePayload,
+} from '@/lib/scrapers/debuts/ingest'
 
 function serviceClient() {
   return createServiceClient<Database>(
@@ -87,6 +91,74 @@ export async function dismissDebutCandidate(id: string): Promise<{ error?: strin
     .from('debut_candidates')
     .update({ status: 'dismissed', decided_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('status', 'pending')
+  revalidatePath('/admin/debuts')
+  return {}
+}
+
+// ——— File « artistes de lineup hors-app » (retour Rudy 2026-07-17) ————————
+// Alimentée par le cron scrape-music-shows (table lineup_unmatched, deny-all
+// RLS) ; l'admin crée via le pipeline fandom complet ou ignore le bruit.
+
+export interface LineupUnmatchedRow {
+  name_norm: string
+  display_name: string
+  shows: string[]
+  occurrences: number
+  last_seen: string
+}
+
+export async function getLineupUnmatched(): Promise<LineupUnmatchedRow[]> {
+  if (!(await requireAdmin())) return []
+  const { data } = await serviceClient()
+    .from('lineup_unmatched')
+    .select('name_norm, display_name, shows, occurrences, last_seen')
+    .eq('status', 'pending')
+    .order('occurrences', { ascending: false })
+    .order('last_seen', { ascending: false })
+    .limit(50)
+  return data ?? []
+}
+
+export async function createLineupArtist(nameNorm: string): Promise<{ error?: string }> {
+  if (!(await requireAdmin())) return { error: 'Unauthorized' }
+  const supabase = serviceClient()
+  const { data: row } = await supabase
+    .from('lineup_unmatched')
+    .select('name_norm, display_name, status')
+    .eq('name_norm', nameNorm)
+    .maybeSingle()
+  if (!row || row.status !== 'pending') return { error: 'Entrée introuvable ou déjà décidée' }
+
+  const { created, skipped } = await ingestNamedGroups(supabase, [row.display_name], {
+    youtubeKey: process.env.YOUTUBE_API_KEY,
+  })
+  if (created.length === 0) {
+    const reason = skipped[0]?.reason ?? 'unknown'
+    if (reason === 'already-in-db') {
+      // Variante de nom d'un groupe existant : rien à créer, on sort de la file.
+      await supabase
+        .from('lineup_unmatched')
+        .update({ status: 'ignored' })
+        .eq('name_norm', nameNorm)
+      revalidatePath('/admin/debuts')
+      return { error: 'Déjà en base (variante de nom probable) — entrée ignorée' }
+    }
+    // Échec fandom (no-infobox-match, search-failed…) : l'entrée RESTE pending
+    // pour une création manuelle de repli.
+    return { error: `Création impossible (${reason}) — à créer manuellement` }
+  }
+  await supabase.from('lineup_unmatched').update({ status: 'created' }).eq('name_norm', nameNorm)
+  revalidatePath('/admin/debuts')
+  return {}
+}
+
+export async function ignoreLineupUnmatched(nameNorm: string): Promise<{ error?: string }> {
+  if (!(await requireAdmin())) return { error: 'Unauthorized' }
+  await serviceClient()
+    .from('lineup_unmatched')
+    .update({ status: 'ignored' })
+    .eq('name_norm', nameNorm)
     .eq('status', 'pending')
   revalidatePath('/admin/debuts')
   return {}
