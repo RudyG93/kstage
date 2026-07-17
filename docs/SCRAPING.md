@@ -305,6 +305,22 @@ Trois défauts distincts trouvés sur le SEUL épisode M Countdown EP.936 (09/07
 
 **Fix** : le `.neq('source_id')` est retiré — la fenêtre ±3 j par `(group_id, type='release')` couvre toute source, y compris la même. Tradeoff assumé : deux vraies releases d'un même groupe à < 3 j seraient fusionnées (rare ; déjà accepté cross-source). Purge one-shot des 2 cas connus dans la migration 0040.
 
+### 3.20 — Couverture music-shows non datée : un lineup PÉRIMÉ masque le fallback (découvert et corrigé 2026-07-17)
+
+**Symptôme** : l'Inkigayo #1318 du 19/07 restait « Lineup TBA » dans l'app alors que le board SBS le publiait déjà en texte. Le fallback `sbs-inkigayo` n'était jamais consulté.
+
+**Cause** : `aggregateLineups.wellCovered` (aggregator.ts) validait un show dès qu'UN lineup avait ≥ `MIN_LINEUP` (3) artistes — **sans regarder la date**. Le carrd primaire traînait encore l'épisode de la semaine PASSÉE (1317, ≥3 artistes) → le show paraissait couvert → les 6 fallbacks broadcasters ignorés.
+
+**Fix** : `wellCovered` exige désormais un lineup ≥ MIN_LINEUP **ET daté d'aujourd'hui-KST ou plus tard** (`kstDayKey(l.startAtIso) >= kstDayKey(now)`). L'épisode du JOUR compte couvert (le run post-diffusion 22:00 KST ne doit pas re-déclencher les 6 fallbacks). Au passage : `aggregateLineups` prend des **sources injectables** — les tests exercent la VRAIE logique (l'ancien helper dupliqué dans le fichier de test avait divergé, sans MIN_LINEUP ni remplacement same-day). Piège connexe : le fetch d'un board broadcaster peut revenir **silencieusement vide** (Jina transitoire, ni erreur ni `fallbacksUsed`) — re-runner le cron, ça passe au run suivant.
+
+### 3.21 — Source seedée sans backfill profond reste à 0 MV (leçon récurrente 2026-07-17)
+
+**Symptôme** : 82MAJOR / 8TURN scrapés quotidiennement par le cron mais toujours à **0 MV visible**.
+
+**Cause** : le cron quotidien `scrape-youtube` ne pagine que la **tête** de la playlist uploads (fenêtre récente). Une chaîne fraîchement seedée dont les MVs sont anciens/enfouis n'est jamais atteinte par le cron seul.
+
+**Fix** : après tout `seed-youtube-sources.ts`, lancer **`backfill-youtube.ts --slugs=X --max-pages=0`** (pleine profondeur) pour l'onboarding. Piège PowerShell : la virgule de `--slugs=a,b` est mangée par le shell → **quoter l'argument** (`"--slugs=a,b"`) ou lancer un slug à la fois.
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)
@@ -407,6 +423,20 @@ Le script existe : **`scripts/discover-mv-channels.ts slug1,slug2`** (histogramm
 3. `backfill-youtube.ts --slugs=… --max-pages=0` : l'**attribution est par filtre-titre** (`matchesGroup`, §3.10) — pas de flag `is_shared`, le même `@JYPEntertainment` sert N groupes, chacun ne garde que ses titres. Le `pageCache` partage la playlist umbrella entre sources d'un run (JYP paginé 1×, KickFlip = 2 units). **65 MVs** récoltés en R11.
 
 ⚠️ **Couplage nom-de-groupe ↔ matching MV** (piège R11) : `matchesGroup` exige que **le nom DB du groupe apparaisse dans le titre du MV**. Renommer un groupe dont les MVs portent un autre libellé casse l'ingestion future — ex. « NOWZ » renommé alors que les clips sont titrés « NOWADAYS(나우어데이즈) » → `matchesGroup` échoue, futurs MVs manqués. Avant de renommer un groupe : vérifier que le nouveau nom est un sous-mot des titres de ses MVs, sinon prévoir un alias.
+
+⚠️ **`discover-mv-channels.ts` prend des SLUGS, pas des noms** (passer « TRENDZ » au lieu de « trendz » retourne 0 candidat silencieusement).
+
+### Mode `--thin` : balayage des groupes à catalogue fin (2026-07-17)
+
+`discover-mv-channels.ts --thin --limit=N` cible **automatiquement** les groupes à ≤ 1 MV visible (les ~34 identifiés au 2026-07-17). ~205 unités quota/groupe → `--limit=20` ≈ 4 100 u (quota jour 10 000, le scrape quotidien en prend ~500). Sortie = candidats à REVIEW humaine (jamais d'auto-seed) → mapping dans `youtube-channels.json` → seed + backfill. Le cron hebdo `discover-channels` (lundi) fait le fond de tâche en continu (pool élargi à tout catalogue fin + rotation déterministe).
+
+### File « Lineup unmatched » : artistes des music-shows hors roster (2026-07-17)
+
+Table `lineup_unmatched` (migration 0059, deny-all RLS) alimentée par le cron `scrape-music-shows` (collecteur PUR anti-bruit `unmatched.ts` : rejette `~`, préfixes `**`, segments MC/special-stage, parenthèses tronquées ; +1 occurrence/run, union des shows). Surfacée dans **/admin/debuts** (section « Lineup unmatched », tri par récurrence) : bouton **Create via fandom** (`ingestNamedGroups` = dossier complet) / **Ignore**. `already-in-db` sort de la file auto ; échec fandom reste `pending` pour création manuelle.
+
+### Enrichissement MusicBrainz du dossier (2026-07-17)
+
+`createFromPayload` appelle `fetchMbEnrichment` (best-effort) : réseaux/streaming officiels (13 clés `LinksBar` par domaine) + membres/birthdays. **Noms membres MB en hangul → romanisé dans `sort-name`** ; match strict score ≥ 90. Détails et pièges : [[reference_musicbrainz_enrichment]].
 
 ### Extraction fiable des membres depuis fandom (piège R11)
 
