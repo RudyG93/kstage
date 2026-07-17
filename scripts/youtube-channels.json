@@ -525,6 +525,10 @@
       {
         "name": "YENA · YENA",
         "url": "https://www.youtube.com/@YENA_official"
+      },
+      {
+        "name": "YENA — Stone Music (Hate Rodrigo, 2023)",
+        "url": "https://www.youtube.com/@officialstonemusic"
       }
     ]
   },
@@ -1312,6 +1316,24 @@
       {
         "name": "Candy Shop · Brave Entertainment",
         "url": "https://www.youtube.com/@braveentertainment"
+      }
+    ]
+  },
+  {
+    "slug": "82major",
+    "channels": [
+      {
+        "name": "82MAJOR · 82MAJOR (sweep --thin 2026-07-17)",
+        "url": "https://www.youtube.com/@82major_official"
+      }
+    ]
+  },
+  {
+    "slug": "8turn",
+    "channels": [
+      {
+        "name": "8TURN · 8TURN (sweep --thin 2026-07-17)",
+        "url": "https://www.youtube.com/@8turn.official"
       }
     ]
   }
