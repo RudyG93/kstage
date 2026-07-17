@@ -19,11 +19,16 @@ export function Avatar({
 }) {
   if (avatarUrl) {
     // Hosts externes (kprofiles, Deezer, up.kpop.re…) bloquent parfois le
-    // hotlinking → proxy Cloudinary + centrage visage. Les avatars users
-    // (Supabase Storage) restent bruts (déjà servis correctement).
-    const src = avatarUrl.includes('/storage/v1/object/')
-      ? avatarUrl
-      : faceCrop(avatarUrl, size * 2, size * 2)
+    // hotlinking → proxy Cloudinary + centrage visage. Les avatars USERS
+    // (Supabase Storage, bucket avatars) restent bruts (déjà servis
+    // correctement) — mais les photos MEMBRES self-hostées (bucket
+    // member-photos, 98 % du roster depuis R4) doivent être recadrées aussi :
+    // servies brutes, le picker bias chargeait 60+ photos pleine résolution
+    // (retour Rudy 2026-07-17, listes lentes).
+    const src =
+      avatarUrl.includes('/storage/v1/object/') && !avatarUrl.includes('/member-photos/')
+        ? avatarUrl
+        : faceCrop(avatarUrl, size * 2, size * 2)
     return (
       <Image
         src={src}
