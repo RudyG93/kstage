@@ -123,10 +123,33 @@ export const allGroupsForClient = unstable_cache(
       if (!row.group_id || row.subscriber_count == null) continue
       subs.set(row.group_id, Math.max(subs.get(row.group_id) ?? 0, row.subscriber_count))
     }
+    // Solistes : résoudre le membre canonique (slug /artists/ + photo self-host)
+    // — un soliste apparaissait en DOUBLE (groupe + membre) dans le dropdown,
+    // avec deux photos et deux hrefs vers la même page (retour Rudy 2026-07-17).
+    const soloIds = (groups ?? []).filter((g) => g.is_solo).map((g) => g.id)
+    const { data: soloMembers } = soloIds.length
+      ? await supabase
+          .from('members')
+          .select('group_id, slug, photo_url')
+          .in('group_id', soloIds)
+          .is('canonical_id', null)
+          .not('slug', 'is', null)
+      : { data: [] as { group_id: string; slug: string | null; photo_url: string | null }[] }
+    const soloByGroup = new Map((soloMembers ?? []).map((m) => [m.group_id, m]))
     return (groups ?? [])
       .map((g) => ({ g, subs: subs.get(g.id) ?? 0 }))
       .sort((a, b) => b.subs - a.subs)
-      .map(({ g }) => ({ slug: g.slug, name: g.name, image: g.image_url, isSolo: g.is_solo }))
+      .map(({ g }) => {
+        const solo = g.is_solo ? soloByGroup.get(g.id) : undefined
+        return {
+          slug: g.slug,
+          name: g.name,
+          image: solo?.photo_url ?? g.image_url,
+          isSolo: g.is_solo,
+          // Href canonique d'un soliste (/groups/[slug] redirige déjà dessus).
+          artistSlug: solo?.slug ?? null,
+        }
+      })
   },
   ['all-groups-client'],
   { revalidate: 3600, tags: ['groups'] },

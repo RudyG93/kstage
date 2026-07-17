@@ -26,12 +26,20 @@ async function requireAdmin(): Promise<boolean> {
   return !!user && isAdmin(user.email)
 }
 
+/**
+ * Les rows auto-écartées par le gate (already-in-db, no-infobox) portent un
+ * payload MINIMAL `{reason}` (cf. ingest.ts), pas un DebutCandidatePayload
+ * complet — l'ancien cast le masquait et la page crashait sur
+ * `payload.members` (bug 2026-07-17, row BOYNEXTDOOR).
+ */
+export type DismissedReasonPayload = { reason: string }
+
 export interface DebutCandidateRow {
   id: string
   page_title: string
   status: string
   detected_at: string
-  payload: DebutCandidatePayload | null
+  payload: DebutCandidatePayload | DismissedReasonPayload | null
   /** Tier de confiance du groupe créé (Phase 3 Lot 2) — null si pas créé. */
   group_confidence: string | null
 }
@@ -45,7 +53,7 @@ export async function getDebutCandidates(): Promise<DebutCandidateRow[]> {
     .limit(100)
   return (data ?? []).map(({ groups, ...row }) => ({
     ...row,
-    payload: row.payload as unknown as DebutCandidatePayload | null,
+    payload: row.payload as unknown as DebutCandidatePayload | DismissedReasonPayload | null,
     group_confidence: groups?.confidence ?? null,
   }))
 }
