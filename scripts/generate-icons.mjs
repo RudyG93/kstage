@@ -4,7 +4,7 @@
 // so Android maskable icons keep no transparent corners. iOS rounds the
 // apple-icon itself, so full-bleed is correct there too.
 import sharp from 'sharp'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const targets = [
@@ -45,3 +45,37 @@ for (const { size, out, badge } of targets) {
     .toFile(file)
   console.log(`✓ ${out}`)
 }
+
+// favicon.ico : Safari macOS ignore les favicons SVG et les crawlers/unfurlers
+// GET /favicon.ico en aveugle (404 en prod avant ça). Conteneur ICO à entrées
+// PNG (16/32/48) — supporté par tous les navigateurs actuels.
+const icoSizes = [16, 32, 48]
+const pngs = await Promise.all(
+  icoSizes.map((size) =>
+    sharp(Buffer.from(markup(size)))
+      .png()
+      .toBuffer(),
+  ),
+)
+const header = Buffer.alloc(6)
+header.writeUInt16LE(0, 0) // réservé
+header.writeUInt16LE(1, 2) // type 1 = icône
+header.writeUInt16LE(pngs.length, 4)
+const entries = []
+let offset = 6 + 16 * pngs.length
+pngs.forEach((png, i) => {
+  const entry = Buffer.alloc(16)
+  entry.writeUInt8(icoSizes[i] === 256 ? 0 : icoSizes[i], 0) // largeur
+  entry.writeUInt8(icoSizes[i] === 256 ? 0 : icoSizes[i], 1) // hauteur
+  entry.writeUInt8(0, 2) // palette
+  entry.writeUInt8(0, 3) // réservé
+  entry.writeUInt16LE(1, 4) // plans
+  entry.writeUInt16LE(32, 6) // bits/pixel
+  entry.writeUInt32LE(png.length, 8)
+  entry.writeUInt32LE(offset, 12)
+  entries.push(entry)
+  offset += png.length
+})
+const icoPath = path.resolve('src/app/favicon.ico')
+await writeFile(icoPath, Buffer.concat([header, ...entries, ...pngs]))
+console.log(`✓ src/app/favicon.ico`)
