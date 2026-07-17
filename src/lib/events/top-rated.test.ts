@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { bucketByReleaseWindow, type RatedEventAgg } from './top-rated'
-import { bucketScores } from './rating-distribution'
 
 // Sémantique 2026-07-11 : les périodes fenêtrent la date de SORTIE du MV
 // (start_at), pas la date de pose des notes. Fixtures calquées sur l'état
@@ -70,16 +69,5 @@ describe('bucketByReleaseWindow', () => {
   })
 })
 
-describe('bucketScores', () => {
-  it('rounds half-scores up and clamps 0 into the first bucket', () => {
-    const buckets = bucketScores([0, 0.5, 1, 7.5, 10])
-    expect(buckets[0]).toBe(3) // 0, 0.5 et 1 → bucket 1
-    expect(buckets[7]).toBe(1) // 7.5 → bucket 8
-    expect(buckets[9]).toBe(1) // 10 → bucket 10
-    expect(buckets.reduce((a, b) => a + b, 0)).toBe(5)
-  })
-
-  it('returns 10 empty buckets for no scores', () => {
-    expect(bucketScores([])).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-  })
-})
+// Les tests de bucketScores vivent désormais avec le module :
+// src/lib/events/rating-distribution.test.ts (20 buckets demi-points, 2026-07-17).
