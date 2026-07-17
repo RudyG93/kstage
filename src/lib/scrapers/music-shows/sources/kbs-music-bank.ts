@@ -12,10 +12,10 @@
 
 import { kstDateTimeToIso } from '../slots'
 import type { ParsedLineup, SourceScraper } from '../types'
+import { fetchViaJina } from '../jina-fetch'
 
 export const SOURCE_URL = 'https://program.kbs.co.kr/2tv/enter/musicbank/pc/index.html'
 const SOURCE_LABEL = 'kbs-music-bank'
-const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
 /** Pure : extrait le lineup depuis le markdown brut. */
 export function parseKbsMusicBank(markdown: string): {
@@ -58,11 +58,7 @@ export function parseKbsMusicBank(markdown: string): {
  * via le helper slots.
  */
 export async function fetchKbsMusicBank(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const res = await fetch(JINA_URL, {
-    headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
-  })
-  if (!res.ok) throw new Error(`KBS Music Bank fetch failed: HTTP ${res.status}`)
-  const markdown = await res.text()
+  const markdown = await fetchViaJina(SOURCE_URL)
 
   const parsed = parseKbsMusicBank(markdown)
   if (!parsed) return []
@@ -97,6 +93,7 @@ export async function fetchKbsMusicBank(now: Date = new Date()): Promise<ParsedL
 
 export const kbsMusicBankSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: SOURCE_URL,
   shows: ['music-bank'],
   fetch: fetchKbsMusicBank,
 }

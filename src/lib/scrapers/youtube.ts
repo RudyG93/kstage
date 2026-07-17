@@ -276,7 +276,15 @@ export async function scrapeGroup(
   source: { id: string; url: string; group_id: string },
   apiKey: string,
   supabase: SupabaseClient,
-  opts: { maxPages?: number; pageCache?: Map<string, UploadItem[]> } = {},
+  opts: {
+    maxPages?: number
+    pageCache?: Map<string, UploadItem[]>
+    /** Uploads INJECTÉS (Phase 3 Lot 4, chaînes impaginables type 1theK
+     * > 20k uploads) : bypass de la pagination playlist, tout le reste du
+     * pipeline (gates titre/durée, dédup ±14 j, slug, mv_kind) inchangé —
+     * cf. scripts/backfill-mv-search.ts. */
+    uploads?: UploadItem[]
+  } = {},
 ): Promise<ScrapeResult> {
   // 2 pages = 100 uploads les plus récents : large pour un run quotidien (un
   // nouveau MV est toujours en tête de playlist). Le backfill d'onboarding
@@ -322,7 +330,7 @@ export async function scrapeGroup(
   // (backfill multi-sources) évite de re-paginer une playlist partagée par
   // plusieurs sources du run (HYBE LABELS ×12, SMTOWN ×10 — §3.19) ; valable
   // uniquement à maxPages constant sur le run, ce que le script garantit.
-  const cached = opts.pageCache?.get(channel.uploadsPlaylistId)
+  const cached = opts.uploads ?? opts.pageCache?.get(channel.uploadsPlaylistId)
   let items: UploadItem[]
   if (cached) {
     items = cached

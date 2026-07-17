@@ -25,10 +25,10 @@
 
 import { kstDateTimeToIso, nextWeeklySlotIso } from '../slots'
 import type { ParsedLineup, SourceScraper } from '../types'
+import { fetchViaJina } from '../jina-fetch'
 
 export const SOURCE_URL = 'https://m.imbc.com/program/1003864100000100000'
 const SOURCE_LABEL = 'show-champion'
-const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
 export interface ParsedShowChampion {
   artistsRaw: string[]
@@ -97,11 +97,7 @@ export function parseShowChampion(markdown: string): ParsedShowChampion | null {
 }
 
 export async function fetchShowChampion(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const res = await fetch(JINA_URL, {
-    headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
-  })
-  if (!res.ok) throw new Error(`imbc Show Champion fetch failed: HTTP ${res.status}`)
-  const markdown = await res.text()
+  const markdown = await fetchViaJina(SOURCE_URL)
   const parsed = parseShowChampion(markdown)
   if (!parsed) return []
 
@@ -133,6 +129,7 @@ export async function fetchShowChampion(now: Date = new Date()): Promise<ParsedL
 
 export const showChampionSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: SOURCE_URL,
   shows: ['show-champion'],
   fetch: fetchShowChampion,
 }

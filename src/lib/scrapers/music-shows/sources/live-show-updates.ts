@@ -18,10 +18,10 @@
  */
 
 import type { ParsedLineup, ShowId, SourceScraper } from '../types'
+import { fetchViaJina } from '../jina-fetch'
 
 export const SOURCE_URL = 'https://liveshowupdatess.carrd.co/'
 const SOURCE_LABEL = 'live-show-updates'
-const JINA_URL = `https://r.jina.ai/${SOURCE_URL}`
 
 interface SectionPattern {
   id: ShowId
@@ -266,16 +266,13 @@ export function withStartAt(lineups: RawLineup[], now: Date): ParsedLineup[] {
 
 /** Fetch + parse. Renvoie les lineups avec date ISO calculée. */
 export async function fetchAllLineups(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const res = await fetch(JINA_URL, {
-    headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
-  })
-  if (!res.ok) throw new Error(`liveshowupdatess fetch failed: HTTP ${res.status}`)
-  const markdown = await res.text()
+  const markdown = await fetchViaJina(SOURCE_URL)
   return withStartAt(parseLineups(markdown), now)
 }
 
 export const liveShowUpdatesSource: SourceScraper = {
   label: SOURCE_LABEL,
+  sourceUrl: SOURCE_URL,
   shows: ['the-show', 'show-champion', 'm-countdown', 'music-bank', 'music-core', 'inkigayo'],
   fetch: fetchAllLineups,
 }
