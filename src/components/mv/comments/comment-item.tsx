@@ -112,16 +112,16 @@ export function CommentItem({
     )
   }
 
-  // Fil Reddit v2 (R5, capture fournie par Rudy) : plus AUCUN rail pleine
-  // hauteur le long du commentaire. Les connecteurs vivent dans le conteneur
-  // des réponses : un tronc vertical sous le [−] du parent qui S'ARRÊTE au
-  // coude arrondi 90° du dernier item (réponse ou bouton « Show N replies »).
-  // Le tronc reste cliquable (repli du sous-arbre) via une bande invisible ;
-  // le [−] du header couvre le clavier. Au-delà de MAX_INDENT_DEPTH : à plat.
+  // Fil v3 (retour Rudy 2026-07-17) : UN rail continu sur TOUTE la hauteur du
+  // bloc réponses — le fil matérialise exactement la zone repliable (la
+  // hit-area cliquable est déjà pleine hauteur, le visuel v2 « tronc qui
+  // s'arrête au dernier coude » disparaissait carrément quand une racine ne
+  // montre qu'une réponse, cas par défaut REPLY_PREVIEW_ROOT=1). Les coudes
+  // arrondis relient le rail à chaque réponse. Au-delà de MAX_INDENT_DEPTH :
+  // à plat.
   const showThread = depth < MAX_INDENT_DEPTH
   const previewTail = childCount > 0 && !repliesOpen && childCount > replyPreview
   const limitTail = childCount > 0 && repliesOpen && !showAllReplies && childCount > REPLY_LIMIT
-  const hasTail = previewTail || limitTail
   // Coude arrondi reliant le tronc vertical (x=10px, sous l'avatar parent) à
   // l'avatar de chaque réponse. `group-hover/thread` : tout le fil s'éclaire
   // légèrement quand on survole la zone (le halo de fond a été retiré, R7).
@@ -243,30 +243,28 @@ export function CommentItem({
         {childCount > 0 && (
           <div className={showThread ? 'group/thread relative pt-1 pl-5' : 'pt-1'}>
             {showThread && (
-              // Zone cliquable = le trait (hit area 16px), SANS fond au survol
-              // (retour Rudy R7 : « le halo est trop gros »). Le clic replie ce
-              // commentaire ; le survol éclaire le fil via group/thread.
-              <button
-                type="button"
-                onClick={() => setCollapsed(true)}
-                aria-label="Collapse thread"
-                className="focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
-              />
+              <>
+                {/* Rail continu pleine hauteur : le visuel du fil = la zone
+                    repliable. Aligné sur l'origine des coudes (x = 10px). */}
+                <span
+                  aria-hidden
+                  className="bg-muted-foreground/30 group-hover/thread:bg-muted-foreground/55 pointer-events-none absolute top-0 bottom-0 left-[10px] w-px transition-colors"
+                />
+                {/* Zone cliquable = le rail (hit area 16px), SANS fond au survol
+                    (retour Rudy R7 : « le halo est trop gros »). Le clic replie ce
+                    commentaire ; le survol éclaire le fil via group/thread. */}
+                <button
+                  type="button"
+                  onClick={() => setCollapsed(true)}
+                  aria-label="Collapse thread"
+                  className="focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
+                />
+              </>
             )}
             <div className="space-y-3">
-              {visibleChildren.map((child, i) => (
+              {visibleChildren.map((child) => (
                 <div key={child.id} className="relative">
-                  {showThread && (
-                    <>
-                      {elbow}
-                      {!(i === visibleChildren.length - 1 && !hasTail) && (
-                        <span
-                          aria-hidden
-                          className="bg-muted-foreground/30 group-hover/thread:bg-muted-foreground/55 pointer-events-none absolute top-0 -bottom-3 -left-[10px] w-px transition-colors"
-                        />
-                      )}
-                    </>
-                  )}
+                  {showThread && elbow}
                   <CommentItem
                     node={child}
                     eventId={eventId}
