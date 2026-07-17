@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+﻿import { describe, it, expect } from 'vitest'
 import { buildDigest, type DigestEvent, type DigestFollow, type DigestSubscription } from './digest'
 
 const sub = (userId: string, endpoint = `ep-${userId}`): DigestSubscription => ({
@@ -24,7 +24,7 @@ describe('buildDigest — gate de confiance (Phase 3 Lot 2)', () => {
       { ...ev('g1', 'Real drop', '2026-05-26T02:00:00Z', 'aespa'), confidence: 'verified' },
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 1 event')
     expect(message.payload.body).not.toContain('Ambiguous drop')
   })
 
@@ -44,7 +44,7 @@ describe('buildDigest — gate de confiance (Phase 3 Lot 2)', () => {
       },
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 1 event')
     expect(message.payload.body).toContain('Confirmed')
   })
 
@@ -80,7 +80,7 @@ describe('buildDigest', () => {
     expect(messages).toHaveLength(1)
     expect(messages[0].subscription.userId).toBe('u1')
     expect(messages[0].payload).toEqual({
-      title: 'Today in k-pop: 1 event',
+      title: 'Today & tomorrow in k-pop: 1 event',
       tag: 'digest',
       body: 'aespa — New single',
       // ?src=push = attribution des ouvertures (audit §10.3).
@@ -98,7 +98,7 @@ describe('buildDigest', () => {
       ev('g1', 'Comeback', '2026-05-26T09:00:00Z', 'aespa'),
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('Today in k-pop: 2 events')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 2 events')
     expect(message.payload.body).toBe('aespa — Comeback · ILLIT — Music show')
   })
 
@@ -111,7 +111,7 @@ describe('buildDigest', () => {
       ev('g1', 'E4', '2026-05-26T04:00:00Z'),
     ]
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('Today in k-pop: 4 events')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 4 events')
     expect(message.payload.body).toBe('E1 · E2 · E3 · +1 more')
   })
 
@@ -123,7 +123,7 @@ describe('buildDigest', () => {
       type: 'music_show',
     }))
     const [message] = buildDigest([sub('u1')], follows, events)
-    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 1 event')
     expect(message.payload.body).toBe('Music Bank (5 artists)')
   })
 
@@ -175,7 +175,7 @@ describe('buildDigest', () => {
       [{ userId: 'u1', groupId: 'g1' }],
       [ev('g1', 'Comeback', '2026-05-26T00:00:00Z')],
     )
-    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 1 event')
   })
 
   it('prefs : type désactivé exclu du corps ET du compte', () => {
@@ -186,7 +186,7 @@ describe('buildDigest', () => {
     ]
     const disabled = new Map([['u1', new Set(['music_show'])]])
     const [message] = buildDigest([sub('u1')], follows, events, 'daily', disabled)
-    expect(message.payload.title).toBe('Today in k-pop: 1 event')
+    expect(message.payload.title).toBe('Today & tomorrow in k-pop: 1 event')
     expect(message.payload.body).toBe('aespa — Comeback')
   })
 
@@ -215,8 +215,8 @@ describe('buildDigest', () => {
     const disabled = new Map([['u1', new Set(['mv'])]])
     const messages = buildDigest([sub('u1'), sub('u2')], follows, events, 'daily', disabled)
     const byUser = new Map(messages.map((m) => [m.subscription.userId, m.payload]))
-    expect(byUser.get('u1')?.title).toBe('Today in k-pop: 1 event') // l'untyped reste
-    expect(byUser.get('u2')?.title).toBe('Today in k-pop: 2 events')
+    expect(byUser.get('u1')?.title).toBe('Today & tomorrow in k-pop: 1 event') // l'untyped reste
+    expect(byUser.get('u2')?.title).toBe('Today & tomorrow in k-pop: 2 events')
   })
 
   it('only notifies the subscriptions of users with matching events', () => {
