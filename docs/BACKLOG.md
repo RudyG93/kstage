@@ -164,7 +164,7 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 
 ## Restes du round de retours #2 2026-07-17 (cf. JOURNAL)
 
-- **⚠️ OPS PRIORITAIRE — migrations 0059 + 0060 à appliquer en prod** (MCP Supabase indisponible en fin de session) : SQL Editor Supabase → contenu de `supabase/migrations/0059_lineup_unmatched.sql` puis `0060_show_episodes.sql`, dans l'ordre. Ensuite : merger la branche `feat/show-episode-page` (poussée, tests/build verts), `workflow_dispatch scrape-music-shows` (upsert des épisodes), vérifier `/show/inkigayo/2026-07-19`. Le code mergé est tolérant à l'absence des tables (persistance best-effort, insert MV sans episode_id).
+- ~~⚠️ OPS PRIORITAIRE — migrations 0059 + 0060~~ → **FAIT (2026-07-17 soir)** : 0059 appliquée par Rudy (SQL Editor), 0060 appliquée via MCP au retour du connecteur (32 épisodes backfillés dont Inkigayo #1318), branche `feat/show-episode-page` mergée (`d87d464`), page épisode vérifiée en prod.
 - **idntt : 20 membres captés** (l'infobox fandom a sur-capté, probablement current+former) → élaguer via /admin ou SQL.
 - **Sweep --thin à poursuivre** : ~28 groupes ≤ 1 MV restants (passes `--limit=20`, ~4 100 unités/passe).
 - **Échecs fandom du one-shot** : Hat:q, GABEE, Ayumu Imazu (no-infobox-match) — remonteront dans la file « Lineup unmatched » après la migration ; création manuelle de repli sinon.
