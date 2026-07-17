@@ -135,9 +135,9 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 
 ## Prévention découverte de chaînes (R7, 2026-07-13)
 
-- **MVs sur chaîne d'agence** : les groupes debut auto-créés sont seedés avec leur seule chaîne perso — or les labels hébergent souvent les MVs (VAYONN→iNKODE corrigé + 6 autres). **À terme** : découverte périodique de chaînes pour tout groupe à catalogue fin (<3 MVs, debut_date récent) via `scripts/discover-mv-channels.ts`, seed auto des chaînes vérifiées (garde title-match). Pour l'instant : manuel quand signalé.
+- ~~**MVs sur chaîne d'agence** : découverte périodique de chaînes pour tout groupe à catalogue fin~~ → **FAIT Phase 3 Lot 3 (2026-07-17)** : cron hebdo `/api/cron/discover-channels` (lundi 11:00 UTC, budget 3 groupes/run, seed auto si ≥ 2 MVs title-matchés, promotion candidate→monitored, backfill immédiat) ; `scripts/discover-mv-channels.ts` reste pour les passes manuelles (affiche sans seeder).
   - ✅ **R11 (2026-07-14)** : passe manuelle sur les 8 nouveaux groupes à 0 MV → `discover-mv-channels` puis seed umbrella (`youtube-channels.json`) + backfill = **65 MVs** (NEXZ/KickFlip→JYP, YOUNITE→BRANDNEW, POW→GRID, BADVILLAIN→BPM, Nowadays→NOWZ, n.SSign→propre, Candy Shop→Brave). Confirme que la découverte auto pour groupe à catalogue fin vaut le coup d'être automatisée.
-- **Cas non résolus** (documentés) : CHASER (nom trop générique, aucune chaîne fiable au discover) ; SUCTION (MVs seulement sur 1theK dont la playlist uploads dépasse le cap API 20k — impaginables) ; MiiWAN (idole virtuelle, pas de chaîne officielle claire) ; AEN (pré-debut, 0 MV normal jusqu'au 05/08).
+- **Cas non résolus** (documentés) : CHASER (nom trop générique, aucune chaîne fiable au discover) ; SUCTION → **outillé Phase 3 Lot 4** : `scripts/backfill-mv-search.ts suction <channelId-1theK>` après avoir posé la row `sources` à la main (cf. SCRAPING §7) ; MiiWAN (idole virtuelle, pas de chaîne officielle claire) ; AEN (pré-debut, 0 MV normal jusqu'au 05/08).
 
 ## Restes du round 8 (2026-07-14) — reportés en rounds dédiés
 
