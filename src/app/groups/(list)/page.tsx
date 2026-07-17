@@ -1,32 +1,19 @@
-import Link from 'next/link'
-import { GroupCard } from '@/components/group-card'
-import { GroupsGrid } from '@/components/groups-grid'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
-import { GroupSort } from '@/components/home/group-sort'
-import { TrendingList, type TrendingEntry } from '@/components/group/trending-list'
+import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
+import type { TrendingEntry } from '@/components/group/trending-list'
 import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
 import { getNextEventForGroups, getRecentReleasesForGroups } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { pickTrending } from '@/lib/groups/trending'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { createClient } from '@/lib/supabase/server'
-import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Groups' }
 
-type TabKey = 'groups' | 'solo'
 type SortKey = 'az' | 'za' | 'pop_desc' | 'pop_asc'
 
 const SORT_KEYS: readonly SortKey[] = ['az', 'za', 'pop_desc', 'pop_asc']
-
-function buildHref(tab: TabKey, sort: SortKey): string {
-  const params = new URLSearchParams()
-  if (tab === 'solo') params.set('tab', 'solo')
-  if (sort !== 'az') params.set('sort', sort)
-  const qs = params.toString()
-  return qs ? `/groups?${qs}` : '/groups'
-}
 
 export default async function GroupsPage({
   searchParams,
@@ -34,23 +21,28 @@ export default async function GroupsPage({
   searchParams: Promise<{ tab?: string; sort?: string }>
 }) {
   const sp = await searchParams
-  const activeTab: TabKey = sp.tab === 'solo' ? 'solo' : 'groups'
+  const initialTab: TabKey = sp.tab === 'solo' ? 'solo' : 'groups'
   const activeSort: SortKey = (SORT_KEYS as string[]).includes(sp.sort ?? '')
     ? (sp.sort as SortKey)
     : 'az'
 
   const supabase = await createClient()
+  // Les DEUX jeux (groupes + solos) sont chargés d'un coup : la bascule
+  // d'onglet est 100 % client (retour Rudy 2026-07-17 — la nav ?tab=
+  // re-rendait toute la page). ~172 items au total, coût marginal.
   const [
     {
       data: { user },
     },
-    items,
+    groupItems,
+    soloItems,
     followedIds,
     { data: countRows },
     timeZone,
   ] = await Promise.all([
     supabase.auth.getUser(),
-    activeTab === 'solo' ? getSoloArtists() : getNonSoloGroups(),
+    getNonSoloGroups(),
+    getSoloArtists(),
     getFollowedGroupIds(),
     supabase.rpc('group_follow_counts'),
     getViewerTimeZone(),
@@ -59,51 +51,58 @@ export default async function GroupsPage({
   const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const popOf = (id: string) => followCount.get(id) ?? 0
 
-  const sorted = [...items].sort((a, b) => {
-    switch (activeSort) {
-      case 'za':
-        return b.name.localeCompare(a.name)
-      case 'pop_desc':
-        return popOf(b.id) - popOf(a.id) || a.name.localeCompare(b.name)
-      case 'pop_asc':
-        return popOf(a.id) - popOf(b.id) || a.name.localeCompare(b.name)
-      default:
-        return a.name.localeCompare(b.name)
-    }
-  })
-
-  const followedItems = sorted.filter((g) => followedIds.has(g.id))
-
-  // Trending = signal DU MOMENT (reproche Rudy 2026-07-11 : le tri par follows
-  // cumulés n'est pas du trending). Score = imminence d'un event futur
-  // (horizon 45 j, poids 3) + récence d'une sortie (fenêtre 30 j, poids 2) ;
-  // les follows ne servent plus que de départage. Un fetch .in() global pour
-  // les deux signaux (81 groupes, coût négligeable) — sert aussi la ligne
-  // statut des tuiles.
-  const allIds = items.map((g) => g.id)
+  // Trending = signal DU MOMENT (reproche Rudy 2026-07-11) : imminence d'un
+  // event futur + récence d'une sortie. Un fetch .in() sur l'UNION des deux
+  // onglets — sert aussi la ligne statut des tuiles.
+  const allIds = [...groupItems, ...soloItems].map((g) => g.id)
   const [nextEvents, recentReleases] = await Promise.all([
-    getNextEventForGroups([...new Set([...followedItems.map((g) => g.id), ...allIds])]),
+    getNextEventForGroups(allIds),
     getRecentReleasesForGroups(allIds, 30),
   ])
 
-  // nowMs = undefined → défaut Date.now() DANS la lib (le lint purity interdit
-  // l'appel direct dans le render RSC).
-  const trending = pickTrending(items, nextEvents, recentReleases, popOf, 5, undefined, timeZone)
+  const sortItems = <T extends { id: string; name: string }>(items: readonly T[]): T[] =>
+    [...items].sort((a, b) => {
+      switch (activeSort) {
+        case 'za':
+          return b.name.localeCompare(a.name)
+        case 'pop_desc':
+          return popOf(b.id) - popOf(a.id) || a.name.localeCompare(b.name)
+        case 'pop_asc':
+          return popOf(a.id) - popOf(b.id) || a.name.localeCompare(b.name)
+        default:
+          return a.name.localeCompare(b.name)
+      }
+    })
 
-  const toGridItem = (item: (typeof sorted)[number]) => ({
-    group: item,
-    isFollowing: followedIds.has(item.id),
-    isAuthed: !!user,
-    href: 'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
-    nextEvent: nextEvents.get(item.id) ?? null,
-  })
+  const toTabData = (items: typeof groupItems | typeof soloItems, countNoun: string) => {
+    const sorted = sortItems(items)
+    const toGridItem = (item: (typeof sorted)[number]) => ({
+      group: item,
+      isFollowing: followedIds.has(item.id),
+      isAuthed: !!user,
+      href: 'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
+      nextEvent: nextEvents.get(item.id) ?? null,
+    })
+    // nowMs = undefined → défaut Date.now() DANS la lib (purity lint RSC).
+    const trending = pickTrending(items, nextEvents, recentReleases, popOf, 5, undefined, timeZone)
+    const trendingEntries: TrendingEntry[] = trending.map(({ item, reason }) => ({
+      group: item,
+      follows: popOf(item.id),
+      isFollowing: followedIds.has(item.id),
+      reason,
+    }))
+    return {
+      followedItems: sorted.filter((g) => followedIds.has(g.id)).map(toGridItem),
+      trendingEntries,
+      items: sorted.map(toGridItem),
+      countNoun,
+    } satisfies GroupsTabData
+  }
 
-  const trendingEntries: TrendingEntry[] = trending.map(({ item, reason }) => ({
-    group: item,
-    follows: popOf(item.id),
-    isFollowing: followedIds.has(item.id),
-    reason,
-  }))
+  const tabs: Record<TabKey, GroupsTabData> = {
+    groups: toTabData(groupItems, 'groups'),
+    solo: toTabData(soloItems, 'soloists'),
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
@@ -112,44 +111,14 @@ export default async function GroupsPage({
           <SidebarLeft showFilters={false} />
         </aside>
 
-        <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Groups</h1>
-            <div className="flex items-center gap-2">
-              <nav
-                aria-label="Filter by kind"
-                className="bg-secondary inline-flex gap-0.5 rounded-md border p-0.5"
-              >
-                <SegmentLink href={buildHref('groups', activeSort)} active={activeTab === 'groups'}>
-                  Groups
-                </SegmentLink>
-                <SegmentLink href={buildHref('solo', activeSort)} active={activeTab === 'solo'}>
-                  Solo
-                </SegmentLink>
-              </nav>
-              <GroupSort value={activeSort} />
-            </div>
-          </div>
-
-          {followedItems.length > 0 && (
-            <section className="space-y-2">
-              <span className="label-data">Following — {followedItems.length}</span>
-              <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
-                {followedItems.map((item) => (
-                  <GroupCard key={item.slug} {...toGridItem(item)} timeZone={timeZone} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <TrendingList entries={trendingEntries} isAuthed={!!user} />
-
-          <section className="space-y-2">
-            <span className="label-data">
-              All {activeTab === 'solo' ? 'soloists' : 'groups'} — {sorted.length}
-            </span>
-            <GroupsGrid items={sorted.map(toGridItem)} timeZone={timeZone} />
-          </section>
+        <div className="order-1 min-w-0 flex-1 lg:order-2">
+          <GroupsTabs
+            initialTab={initialTab}
+            sort={activeSort}
+            timeZone={timeZone}
+            isAuthed={!!user}
+            tabs={tabs}
+          />
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">
@@ -157,28 +126,5 @@ export default async function GroupsPage({
         </aside>
       </div>
     </div>
-  )
-}
-
-function SegmentLink({
-  href,
-  active,
-  children,
-}: {
-  href: string
-  active: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      className={cn(
-        'label-data-inline focus-visible:ring-ring/50 rounded-sm px-2.5 py-1.5 text-[9px] transition-colors outline-none focus-visible:ring-2',
-        active ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {children}
-    </Link>
   )
 }
