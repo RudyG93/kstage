@@ -16,6 +16,7 @@
  *   officiels prennent le relais.
  */
 
+import { kstDayKey } from '@/lib/events/date'
 import { kbsMusicBankSource } from './sources/kbs-music-bank'
 import { liveShowUpdatesSource } from './sources/live-show-updates'
 import { mbcMusicCoreSource } from './sources/mbc-music-core'
@@ -54,28 +55,45 @@ async function tryFetch(
   }
 }
 
-export async function aggregateLineups(now: Date = new Date()): Promise<AggregateResult> {
+export async function aggregateLineups(
+  now: Date = new Date(),
+  // Sources injectables : les tests exercent la VRAIE logique avec des mocks
+  // (le helper dupliqué du fichier de test avait déjà divergé — gap 2026-06-12).
+  {
+    primary = PRIMARY_SOURCE,
+    fallbacks = FALLBACK_SOURCES,
+  }: { primary?: SourceScraper; fallbacks?: SourceScraper[] } = {},
+): Promise<AggregateResult> {
   const errors: { source: string; error: string }[] = []
   const fallbacksUsed: { source: string; show: ShowId }[] = []
 
-  const primaryRes = await tryFetch(PRIMARY_SOURCE, now)
+  const primaryRes = await tryFetch(primary, now)
   let lineups: ParsedLineup[] = []
   let primaryOk = false
   if (primaryRes.ok) {
     primaryOk = true
     lineups = primaryRes.data
   } else {
-    errors.push({ source: PRIMARY_SOURCE.label, error: primaryRes.error })
+    errors.push({ source: primary.label, error: primaryRes.error })
   }
 
   // Un show est BIEN couvert si au moins un de ses lineups a MIN_LINEUP
   // artistes — en dessous, c'est une section en cours d'édition (le carrd a
-  // servi « inkigayo matched:0 » 4 jours de suite en juillet avec status ok).
+  // servi « inkigayo matched:0 » 4 jours de suite en juillet avec status ok) —
+  // ET date d'aujourd'hui-KST ou plus tard : un lineup de la semaine PASSÉE
+  // (le carrd traîne parfois) masquait le board broadcaster qui publie déjà
+  // l'épisode suivant (Inkigayo 1318 invisible le 2026-07-17). L'épisode du
+  // jour compte couvert : le run post-diffusion (22:00 KST) ne doit pas
+  // déclencher les 6 fallbacks pour rien.
   const MIN_LINEUP = 3
+  const todayKey = kstDayKey(now.toISOString())
   const wellCovered = (show: ShowId) =>
-    lineups.some((l) => l.show === show && l.artistsRaw.length >= MIN_LINEUP)
+    lineups.some(
+      (l) =>
+        l.show === show && l.artistsRaw.length >= MIN_LINEUP && kstDayKey(l.startAtIso) >= todayKey,
+    )
 
-  for (const fb of FALLBACK_SOURCES) {
+  for (const fb of fallbacks) {
     const missing = fb.shows.filter((s) => !wellCovered(s))
     if (missing.length === 0) continue
     const fbRes = await tryFetch(fb, now)
