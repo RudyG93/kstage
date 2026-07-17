@@ -33,9 +33,15 @@ interface TickerSourceEvent {
  */
 export function buildTickerItems(
   events: readonly TickerSourceEvent[],
-  { max = 8, nowIso }: { max?: number; nowIso?: string } = {},
+  // timeZone = fuseau du viewer : « LIVE TONIGHT » et les D-day doivent dire la
+  // même chose que la queue en dessous (l'heure affichée reste étiquetée KST).
+  {
+    max = 8,
+    nowIso,
+    timeZone = 'Asia/Seoul',
+  }: { max?: number; nowIso?: string; timeZone?: string } = {},
 ): TickerItem[] {
-  const todayKey = localDayKey(nowIso ?? new Date().toISOString(), 'Asia/Seoul')
+  const todayKey = localDayKey(nowIso ?? new Date().toISOString(), timeZone)
   const items: TickerItem[] = []
   const seen = new Set<string>()
   const push = (item: TickerItem) => {
@@ -45,7 +51,7 @@ export function buildTickerItems(
   }
   for (const e of events) {
     if (items.length >= max) break
-    const isToday = localDayKey(e.start_at, 'Asia/Seoul') === todayKey
+    const isToday = localDayKey(e.start_at, timeZone) === todayKey
     const group = e.groups?.name?.toUpperCase()
     const color = EVENT_TYPE_COLORS[e.type]
     if (isToday) {
@@ -61,7 +67,7 @@ export function buildTickerItems(
       const song = displayEventTitle(e.title, e.groups?.name, null, e.type).toUpperCase()
       const what = song && song !== group ? `· ${song}` : 'COMEBACK'
       push({
-        text: `${group ?? 'COMEBACK'} ${what} ${formatDDay(e.start_at, 'Asia/Seoul', nowIso)}`,
+        text: `${group ?? 'COMEBACK'} ${what} ${formatDDay(e.start_at, timeZone, nowIso)}`,
         live: false,
         color,
       })
@@ -69,7 +75,7 @@ export function buildTickerItems(
       const label = EVENT_TYPE_LABELS[e.type].toUpperCase()
       const subject = e.type === 'music_show' ? e.title.toUpperCase() : `${group ?? ''} ${label}`
       push({
-        text: `${subject.trim()} ${formatDDay(e.start_at, 'Asia/Seoul', nowIso)}`,
+        text: `${subject.trim()} ${formatDDay(e.start_at, timeZone, nowIso)}`,
         live: false,
         color,
       })

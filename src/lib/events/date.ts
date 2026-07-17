@@ -97,6 +97,37 @@ export function groupEventsByKstDay<T extends { start_at: string }>(
   return groupEventsByDay(events, 'Asia/Seoul')
 }
 
+/**
+ * Clé de jour d'un EVENT, consciente de sa sémantique :
+ * - `anniversary` = DATE PURE (l'anniversaire de Wonwoo est le 17 juillet dans
+ *   tous les fuseaux). Les générateurs l'ancrent à minuit KST → la lire en KST
+ *   retrouve la date civile ; la lire dans le fuseau du viewer la ferait
+ *   glisser à J-1 partout à l'ouest de Séoul (bug du 2026-07-17).
+ * - tout le reste = instant réel → jour local du viewer (cohérent avec l'heure
+ *   locale mise en avant et le day_of des push).
+ */
+export function eventDayKey(
+  event: { start_at: string; type?: string | null },
+  timeZone: string,
+): string {
+  return localDayKey(event.start_at, event.type === 'anniversary' ? 'Asia/Seoul' : timeZone)
+}
+
+/** Regroupe des events par jour, dates pures (anniversaires) comprises. */
+export function groupEventsByEventDay<T extends { start_at: string; type?: string | null }>(
+  events: readonly T[],
+  timeZone: string,
+): Map<string, T[]> {
+  const map = new Map<string, T[]>()
+  for (const event of events) {
+    const key = eventDayKey(event, timeZone)
+    const bucket = map.get(key)
+    if (bucket) bucket.push(event)
+    else map.set(key, [event])
+  }
+  return map
+}
+
 export function formatEventDate(iso: string, timezone: string) {
   return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
@@ -166,8 +197,25 @@ export function monthYear(iso: string, timeZone = 'UTC'): string {
  * Passé → « D+n » (ne devrait pas s'afficher : les queues sont future-only).
  */
 export function formatDDay(iso: string, timeZone: string, nowIso?: string): string {
-  const eventKey = localDayKey(iso, timeZone)
-  const todayKey = localDayKey(nowIso ?? new Date().toISOString(), timeZone)
+  return ddayFromKeys(
+    localDayKey(iso, timeZone),
+    localDayKey(nowIso ?? new Date().toISOString(), timeZone),
+  )
+}
+
+/** D-day d'un EVENT : date civile pour les anniversaires, jour local sinon (cf. eventDayKey). */
+export function eventDDay(
+  event: { start_at: string; type?: string | null },
+  timeZone: string,
+  nowIso?: string,
+): string {
+  return ddayFromKeys(
+    eventDayKey(event, timeZone),
+    localDayKey(nowIso ?? new Date().toISOString(), timeZone),
+  )
+}
+
+function ddayFromKeys(eventKey: string, todayKey: string): string {
   // Les clés YYYY-MM-DD se comparent en jours via Date.UTC (pas d'heure → pas de DST).
   const days = Math.round((Date.parse(eventKey) - Date.parse(todayKey)) / 86_400_000)
   if (days === 0) return 'D-DAY'

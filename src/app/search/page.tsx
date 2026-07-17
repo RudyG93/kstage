@@ -14,6 +14,7 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { createClient } from '@/lib/supabase/server'
+import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { trackEvent } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
@@ -40,6 +41,7 @@ export default async function SearchPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  const timeZone = await getViewerTimeZone()
 
   const [groups, members, mvs, events, followedIds] = q
     ? await Promise.all([
@@ -289,7 +291,7 @@ export default async function SearchPage({
                 <PanelHeader label="Events" />
                 <div className="divide-y">
                   {groupMusicShowEpisodes(events).map((event) => (
-                    <QueueRow key={event.id} event={event} showThumb />
+                    <QueueRow key={event.id} event={event} timeZone={timeZone} showThumb />
                   ))}
                 </div>
               </Panel>

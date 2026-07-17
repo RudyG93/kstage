@@ -4,10 +4,13 @@ import {
   kstDayKey,
   kstDayBounds,
   groupEventsByKstDay,
+  groupEventsByEventDay,
   formatEventDate,
   formatKst,
   kstTime24h,
   formatDDay,
+  eventDayKey,
+  eventDDay,
   relativeTime,
   kstToUtcISO,
   isTimeTBA,
@@ -128,6 +131,53 @@ describe('formatDDay', () => {
 
   it('labels past days with D+', () => {
     expect(formatDDay('2026-06-30T03:00:00Z', 'Asia/Seoul', now)).toBe('D+2')
+  })
+})
+
+describe('eventDayKey / eventDDay — anniversaires = dates pures', () => {
+  // Cas réel du bug 2026-07-17 : anniversaires ancrés à minuit KST, viewer à Paris.
+  // Wonwoo (17/07) → start_at 2026-07-16T15:00Z ; Taemin (18/07) → 2026-07-17T15:00Z.
+  const wonwoo = { start_at: kstToUtcISO(2026, 6, 17), type: 'anniversary' }
+  const taemin = { start_at: kstToUtcISO(2026, 6, 18), type: 'anniversary' }
+  // Music Bank le 17/07 à 17:00 KST (08:00Z) : un instant réel.
+  const musicBank = { start_at: '2026-07-17T08:00:00Z', type: 'music_show' }
+  // now = 17/07 02:40 à Paris (00:40Z) — le 17 dans les deux fuseaux.
+  const now = '2026-07-17T00:40:00Z'
+
+  it("un anniversaire garde sa date civile dans tous les fuseaux (pas de glissement à J-1 à l'ouest de Séoul)", () => {
+    expect(eventDayKey(wonwoo, 'Europe/Paris')).toBe('2026-07-17')
+    expect(eventDayKey(wonwoo, 'America/New_York')).toBe('2026-07-17')
+    expect(eventDayKey(wonwoo, 'Asia/Seoul')).toBe('2026-07-17')
+  })
+
+  it('un event à heure réelle reste lu dans le fuseau du viewer', () => {
+    expect(eventDayKey(musicBank, 'Europe/Paris')).toBe('2026-07-17')
+    // 15:30Z = 00:30 KST le lendemain : le jour dépend bien du fuseau.
+    const lateShow = { start_at: '2026-07-17T15:30:00Z', type: 'music_show' }
+    expect(eventDayKey(lateShow, 'Asia/Seoul')).toBe('2026-07-18')
+    expect(eventDayKey(lateShow, 'Europe/Paris')).toBe('2026-07-17')
+  })
+
+  it('le 17/07 à Paris : music show du 17 ET anniversaire du 17 → D-DAY ; anniversaire du 18 → D-1', () => {
+    expect(eventDDay(musicBank, 'Europe/Paris', now)).toBe('D-DAY')
+    expect(eventDDay(wonwoo, 'Europe/Paris', now)).toBe('D-DAY')
+    expect(eventDDay(taemin, 'Europe/Paris', now)).toBe('D-1')
+  })
+
+  it("l'anniversaire reste D-DAY jusqu'à minuit local (23:30 à Paris = déjà le 18 en KST)", () => {
+    expect(eventDDay(wonwoo, 'Europe/Paris', '2026-07-17T21:30:00Z')).toBe('D-DAY')
+  })
+})
+
+describe('groupEventsByEventDay', () => {
+  it('place les anniversaires sur leur date civile et les instants sur le jour local', () => {
+    const events = [
+      { id: 'bday', start_at: kstToUtcISO(2026, 6, 17), type: 'anniversary' },
+      { id: 'show', start_at: '2026-07-17T08:00:00Z', type: 'music_show' },
+    ]
+    const paris = groupEventsByEventDay(events, 'Europe/Paris')
+    expect(paris.get('2026-07-17')?.map((e) => e.id)).toEqual(['bday', 'show'])
+    expect(paris.get('2026-07-16')).toBeUndefined()
   })
 })
 

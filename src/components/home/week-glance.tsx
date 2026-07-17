@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { QueueRow } from '@/components/events/queue-row'
-import { localDayKey } from '@/lib/events/date'
+import { eventDayKey, localDayKey } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { cn } from '@/lib/utils'
 import type { UpcomingEvent } from '@/lib/events/queries'
@@ -26,7 +26,7 @@ export function WeekGlance({
   const now = new Date()
   const eventsByDay = new Map<string, UpcomingEvent[]>()
   for (const e of events) {
-    const key = localDayKey(e.start_at, timeZone)
+    const key = eventDayKey(e, timeZone)
     const list = eventsByDay.get(key) ?? []
     list.push(e)
     eventsByDay.set(key, list)

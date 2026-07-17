@@ -58,6 +58,9 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   }
 
   const supabase = await createClient()
+  // getViewerTimeZone est memoïsé (React cache) — l'await précoce ne coûte
+  // qu'un aller ; il alimente la fenêtre anniversaires ET les rangées.
+  const timeZone = await getViewerTimeZone()
   const [
     {
       data: { user },
@@ -71,7 +74,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   ] = await Promise.all([
     supabase.auth.getUser(),
     getUpcomingEvents({ groupSlug: slug, limit: 20 }),
-    getUpcomingAnniversaries([group.id], 90),
+    getUpcomingAnniversaries([group.id], 90, timeZone),
     getGroupMvs(slug, 48),
     getFollowedGroupIds(),
     getMembersForGroup(group.id),
@@ -101,7 +104,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     biasMemberId = viewerProfile?.bias_member_id ?? null
   }
   const signedIn = user != null
-  const timeZone = await getViewerTimeZone()
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
   // par les labels à chaque ère) remplace le hqdefault 480px flou du dernier
@@ -237,7 +239,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
             ) : (
               <div className="divide-y">
                 {events.slice(0, 8).map((event) => (
-                  <QueueRow key={event.id} event={event} />
+                  <QueueRow key={event.id} event={event} timeZone={timeZone} />
                 ))}
               </div>
             )}

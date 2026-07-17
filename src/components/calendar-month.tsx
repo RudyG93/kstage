@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { groupEventsByDay, localDayKey } from '@/lib/events/date'
+import { groupEventsByEventDay, localDayKey } from '@/lib/events/date'
 import { clusterByGroup } from '@/lib/events/grouping'
 import { EVENT_TYPE_COLORS } from '@/lib/events/labels'
 import { Panel } from '@/components/ui/panel'
@@ -42,7 +42,7 @@ export function CalendarMonth({
   // Chronologie + clustering par groupe (R6) : deux events du même groupe le
   // même jour se suivent dans la liste.
   const byDay = new Map(
-    [...groupEventsByDay(events, timeZone)].map(([k, v]) => [k, clusterByGroup(v)]),
+    [...groupEventsByEventDay(events, timeZone)].map(([k, v]) => [k, clusterByGroup(v)]),
   )
 
   const monthPrefix = `${year}-${pad(month)}`
@@ -219,7 +219,13 @@ export function CalendarMonth({
               <Panel>
                 <div className="divide-y">
                   {dayEvents.map((event) => (
-                    <QueueRow key={event.id} event={event} showThumb withCountdown />
+                    <QueueRow
+                      key={event.id}
+                      event={event}
+                      timeZone={timeZone}
+                      showThumb
+                      withCountdown
+                    />
                   ))}
                 </div>
               </Panel>
