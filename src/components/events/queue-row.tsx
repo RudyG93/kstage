@@ -20,6 +20,7 @@ export function QueueRow({
   timeZone,
   showThumb = false,
   withCountdown = false,
+  lineupDisplay = 'truncate',
 }: {
   event: GroupedUpcomingEvent
   // Fuseau du viewer — REQUIS : un défaut KST silencieux a déjà produit des
@@ -28,6 +29,9 @@ export function QueueRow({
   showThumb?: boolean
   // Countdown inline « in 07:22:14 » (teal) pour les events du soir (§7.2).
   withCountdown?: boolean
+  // 'full' : lineup complet multi-ligne (liste de jour du calendrier = la
+  // fiche épisode de facto) ; 'truncate' : « A, B, C & N more » (home, search).
+  lineupDisplay?: 'truncate' | 'full'
 }) {
   const color = EVENT_TYPE_COLORS[event.type]
   const group = event.groups
@@ -104,9 +108,15 @@ export function QueueRow({
           )}
         </span>
         {lineup ? (
-          <span className="text-muted-foreground block truncate text-[10px]">
-            {lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))}
-          </span>
+          lineupDisplay === 'full' ? (
+            <span className="text-muted-foreground block text-[10px] leading-relaxed whitespace-normal">
+              {lineup.map((e) => e.groups?.name ?? '?').join(', ')}
+            </span>
+          ) : (
+            <span className="text-muted-foreground block truncate text-[10px]">
+              {lineupLabel(lineup.map((e) => e.groups?.name ?? '?'))}
+            </span>
+          )
         ) : slot ? (
           <span className="text-muted-foreground block truncate text-[10px]">Lineup TBA</span>
         ) : (

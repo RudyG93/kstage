@@ -225,6 +225,7 @@ export function CalendarMonth({
                       timeZone={timeZone}
                       showThumb
                       withCountdown
+                      lineupDisplay="full"
                     />
                   ))}
                 </div>

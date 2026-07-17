@@ -118,10 +118,11 @@ export function groupMusicShowEpisodes(events: readonly UpcomingEvent[]): Groupe
   return out
 }
 
-/** « ATEEZ, RIIZE, izna +2 » — au plus `max` noms, puis le reste en +N. */
+/** « ATEEZ, RIIZE, izna & 2 more » — au plus `max` noms, puis le reste en
+ * « & N more » (le « +N » sec faisait peu sérieux — retour Rudy 2026-07-17). */
 export function lineupLabel(names: readonly string[], max = 3): string {
   const listed = names.slice(0, max).join(', ')
-  const more = names.length > max ? ` +${names.length - max}` : ''
+  const more = names.length > max ? ` & ${names.length - max} more` : ''
   return listed + more
 }
 
