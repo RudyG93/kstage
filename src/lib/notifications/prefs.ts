@@ -3,6 +3,15 @@
 // (.eq('enabled', false) — seules les rows OFF existent en volume minuscule,
 // absence de row = type activé par défaut).
 
+/**
+ * Heure d'envoi UTC des deux crons de notification — ⚠️ MIROIR de
+ * `.github/workflows/crons.yml` (send-digest 10:30, notify-comebacks 10:45) :
+ * toute modification là-bas doit être répercutée ici. Sert l'affichage
+ * « around HH:MM » (heure locale) du bloc explicatif de /account.
+ */
+export const DIGEST_SEND_UTC = { hour: 10, minute: 30 } as const
+export const COMEBACK_SEND_UTC = { hour: 10, minute: 45 } as const
+
 export type DisabledPrefRow = { user_id: string; event_type: string }
 
 export function disabledTypesByUser(rows: readonly DisabledPrefRow[]): Map<string, Set<string>> {

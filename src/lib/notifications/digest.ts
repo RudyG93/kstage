@@ -4,6 +4,7 @@
 // Deux éditions : 'daily' (fenêtre 48 h) et 'weekly' (lundi, fenêtre 7 j,
 // titre « Your k-pop week ») — le choix de l'édition vient du cron.
 
+import { localDayKey } from '@/lib/events/date'
 import { withPushSrc } from './push-url'
 import { passesConfidenceGate } from './comebacks'
 
@@ -41,12 +42,13 @@ export type DigestEdition = 'daily' | 'weekly'
 const MAX_LISTED = 3
 
 /**
- * Labels du corps : un même music show posé sur N groupes (title+startAt
+ * Entrées du digest : un même music show posé sur N groupes (title+startAt
  * identiques) devient UNE entrée « Music Bank (5 artists) » au lieu de N
  * lignes redondantes — même logique que groupMusicShowEpisodes à l'affichage.
+ * Chaque entrée garde son startAt pour l'étiquette de jour.
  */
-function digestLabels(events: readonly DigestEvent[]): string[] {
-  const labels: string[] = []
+function digestEntries(events: readonly DigestEvent[]): { label: string; startAt: string }[] {
+  const entries: { label: string; startAt: string }[] = []
   const episodes = new Map<string, { title: string; names: string[]; index: number }>()
   for (const e of events) {
     if (e.type === 'music_show') {
@@ -56,41 +58,87 @@ function digestLabels(events: readonly DigestEvent[]): string[] {
         ep.names.push(e.groupName ?? '?')
         continue
       }
-      episodes.set(key, { title: e.title, names: [e.groupName ?? '?'], index: labels.length })
-      labels.push('') // rempli après, une fois le lineup complet connu
+      episodes.set(key, { title: e.title, names: [e.groupName ?? '?'], index: entries.length })
+      entries.push({ label: '', startAt: e.startAt }) // rempli après, lineup complet connu
       continue
     }
-    labels.push(e.groupName ? `${e.groupName} — ${e.title}` : e.title)
+    entries.push({
+      label: e.groupName ? `${e.groupName} — ${e.title}` : e.title,
+      startAt: e.startAt,
+    })
   }
   for (const ep of episodes.values()) {
-    labels[ep.index] =
+    entries[ep.index].label =
       ep.names.length === 1
         ? `${ep.names[0]} — ${ep.title}`
         : ep.names.length === 2
           ? `${ep.title} (${ep.names[0]}, ${ep.names[1]})`
           : `${ep.title} (${ep.names.length} artists)`
   }
-  return labels
+  return entries
 }
 
-function buildPayload(events: readonly DigestEvent[], edition: DigestEdition): DigestPayload {
-  const labels = digestLabels(events)
-  const n = labels.length
-  // « · » : plus lisible que la virgule dans le body système (retour Rudy
-  // 2026-07-12, audit notifs).
-  const listed = labels.slice(0, MAX_LISTED).join(' · ')
-  const more = n > MAX_LISTED ? ` · +${n - MAX_LISTED} more` : ''
-  // Titre quotidien parlant (« 3 upcoming events » était sec et sans marque).
-  // « Today & tomorrow » : la fenêtre daily est de 48 h — « Today » seul
-  // mentait sur le compte (audit notifs 2026-07-17).
-  const title =
-    edition === 'weekly'
-      ? `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`
-      : `Today & tomorrow in k-pop: ${n} event${n > 1 ? 's' : ''}`
-  // Deep link : le digest liste des events datés → le calendrier est la
-  // destination utile (la home re-priorise le hero, pas la liste).
-  // tag : le digest du jour REMPLACE celui d'hier au lieu de s'empiler.
-  return { title, body: listed + more, url: withPushSrc('/calendar'), tag: 'digest' }
+/** « today » / « tomorrow » / « Sat » — jour de l'event dans le fuseau de l'abonné. */
+function dayTag(startAt: string, timeZone: string, nowIso: string): string {
+  const eventKey = localDayKey(startAt, timeZone)
+  const todayKey = localDayKey(nowIso, timeZone)
+  if (eventKey === todayKey) return 'today'
+  // Comparaison de clés YYYY-MM-DD en jours (pas d'heure → pas de DST).
+  const diff = Math.round((Date.parse(eventKey) - Date.parse(todayKey)) / 86_400_000)
+  if (diff === 1) return 'tomorrow'
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(new Date(startAt))
+}
+
+/**
+ * Wording event-led (retour Rudy 2026-07-17) : l'OS affiche déjà « from
+ * KStage », nos titres ne re-citent ni la marque ni « in k-pop ». Le titre
+ * porte l'event LE PLUS PROCHE avec son jour ; le body liste la suite avec
+ * l'étiquette de jour de chaque entrée (« Tomorrow: … »). Jours calculés dans
+ * le fuseau de l'abonné.
+ */
+function buildPayload(
+  events: readonly DigestEvent[],
+  edition: DigestEdition,
+  timeZone: string,
+  nowIso: string,
+): DigestPayload {
+  const entries = digestEntries(events)
+  const n = entries.length
+  const tagOf = (e: { startAt: string }) => dayTag(e.startAt, timeZone, nowIso)
+
+  // Body : « · » plus lisible que la virgule (retour Rudy 2026-07-12) ;
+  // l'étiquette de jour n'est répétée que quand elle change (Capitalisée).
+  const bodyOf = (list: readonly { label: string; startAt: string }[], skipped: number) => {
+    let lastTag = ''
+    const parts = list.map((e) => {
+      const t = tagOf(e)
+      const prefix = t === lastTag ? '' : `${t[0].toUpperCase()}${t.slice(1)}: `
+      lastTag = t
+      return `${prefix}${e.label}`
+    })
+    const more = skipped > 0 ? ` · +${skipped} more` : ''
+    return parts.join(' · ') + more
+  }
+
+  if (edition === 'weekly') {
+    return {
+      title: `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`,
+      body: bodyOf(entries.slice(0, MAX_LISTED), n - Math.min(n, MAX_LISTED)),
+      url: withPushSrc('/calendar'),
+      tag: 'digest', // le digest du jour REMPLACE celui d'hier au lieu de s'empiler
+    }
+  }
+
+  // Daily : entrée la plus proche en titre, la suite dans le body.
+  const [first, ...rest] = entries
+  const title = `${first.label} · ${tagOf(first)}`
+  const listed = rest.slice(0, MAX_LISTED)
+  return {
+    title,
+    body: bodyOf(listed, rest.length - listed.length),
+    url: withPushSrc('/calendar'),
+    tag: 'digest',
+  }
 }
 
 export function buildDigest(
@@ -101,6 +149,11 @@ export function buildDigest(
   // Types désactivés par user (user_notification_settings enabled=false).
   // Optionnel : sans la map, comportement historique (tout passe).
   disabledTypes?: ReadonlyMap<string, ReadonlySet<string>>,
+  // Fuseau IANA par user (profiles.timezone, validé côté route) — sert les
+  // étiquettes de jour du payload. Défaut KST (référence k-pop).
+  timeZones?: ReadonlyMap<string, string>,
+  // Instant du run, injectable pour des tests déterministes.
+  nowIso: string = new Date().toISOString(),
 ): DigestMessage[] {
   const groupsByUser = new Map<string, Set<string>>()
   for (const f of follows) {
@@ -125,7 +178,8 @@ export function buildDigest(
         followed.has(e.groupId) && passesConfidenceGate(e) && !(e.type && disabled?.has(e.type)),
     )
     if (userEvents.length === 0) continue
-    messages.push({ subscription, payload: buildPayload(userEvents, edition) })
+    const timeZone = timeZones?.get(subscription.userId) ?? 'Asia/Seoul'
+    messages.push({ subscription, payload: buildPayload(userEvents, edition, timeZone, nowIso) })
   }
   return messages
 }
