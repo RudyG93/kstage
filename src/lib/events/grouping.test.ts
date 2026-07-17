@@ -138,12 +138,12 @@ describe('lineupLabel', () => {
   it('1 nom → tel quel', () => {
     expect(lineupLabel(['ATEEZ'])).toBe('ATEEZ')
   })
-  it('3 noms → liste complète sans +N', () => {
+  it('3 noms → liste complète sans suffixe', () => {
     expect(lineupLabel(['ATEEZ', 'RIIZE', 'izna'])).toBe('ATEEZ, RIIZE, izna')
   })
-  it('5 noms → 3 listés +2', () => {
+  it('5 noms → 3 listés & 2 more', () => {
     expect(lineupLabel(['ATEEZ', 'RIIZE', 'izna', 'MEOVV', 'Hearts2Hearts'])).toBe(
-      'ATEEZ, RIIZE, izna +2',
+      'ATEEZ, RIIZE, izna & 2 more',
     )
   })
 })
