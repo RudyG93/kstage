@@ -13,6 +13,7 @@
 //   (SuA Dreamcatcher/UAU).
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { isSamePerson, normalizeName } from '@/lib/members/matching'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -42,12 +43,7 @@ const STAGE_WINDOW_DAYS = 4
 
 // ── Helpers purs (testés) ────────────────────────────────────────────────────
 
-export function normalizeName(s: string | null | undefined): string {
-  return (s ?? '')
-    .normalize('NFC')
-    .toLowerCase()
-    .replace(/[\s\-_.']/g, '')
-}
+export { normalizeName }
 
 /** Titre d'event générique posé par l'ingest debuts (« {groupe} debut »). */
 export function isPlaceholderTitle(title: string, groupName: string): boolean {
@@ -104,12 +100,9 @@ export type MemberRow = {
 }
 
 /**
- * Candidats « même personne dans deux groupes » non canonical-liés. Preuve
- * exigée (jamais le stage name seul — Sua de MW:MEU ≠ Moon Sua de Billlie) :
- *   - real_name normalisé égal, les deux non-nuls ; OU
- *   - birthday égal non-nul ET stage_name normalisé égal (cas UAU : les rows
- *     créées par lineup n'ont pas de real_name, mais MusicBrainz a posé le
- *     birthday).
+ * Candidats « même personne dans deux groupes » non canonical-liés. La preuve
+ * vit dans `isSamePerson` (src/lib/members/matching.ts) — source unique
+ * partagée avec l'auto-lien de l'ingest, garde anti-homonymes incluse.
  */
 export function findDuplicatePersonCandidates(members: readonly MemberRow[]): string[] {
   const out: string[] = []
@@ -120,13 +113,7 @@ export function findDuplicatePersonCandidates(members: readonly MemberRow[]): st
       const b = members[j]
       if (a.group_id === b.group_id) continue
       if (a.canonical_id != null || b.canonical_id != null) continue
-      const realMatch =
-        !!a.real_name && !!b.real_name && normalizeName(a.real_name) === normalizeName(b.real_name)
-      const birthdayMatch =
-        !!a.birthday &&
-        a.birthday === b.birthday &&
-        normalizeName(a.stage_name) === normalizeName(b.stage_name)
-      if (!realMatch && !birthdayMatch) continue
+      if (!isSamePerson(a, b)) continue
       const key = [a.id, b.id].sort().join('|')
       if (seen.has(key)) continue
       seen.add(key)
