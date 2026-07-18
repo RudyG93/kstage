@@ -4,12 +4,10 @@ import { GroupFilter } from '@/components/home/group-filter'
 import { FilterChips } from '@/components/calendar/filter-chips'
 import { MobileGroupFilter } from '@/components/calendar/mobile-group-filter'
 import { CalendarFilterProvider, CalendarEvents } from '@/components/calendar/calendar-filters'
-import { getEventsForMonth } from '@/lib/events/queries'
-import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
-import { generateShowSlots } from '@/lib/events/show-slots'
+import { getCalendarMonthEvents } from '@/lib/events/calendar-month'
 import { getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
-import { kstDayKey, getKstMonthRange, isFutureDate } from '@/lib/events/date'
+import { kstDayKey, isFutureDate } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { TrackView } from '@/components/analytics/track-view'
 
@@ -40,23 +38,14 @@ export default async function CalendarPage({
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
 
-  const [groups, followedIds, dbEvents, anniversaries, timeZone] = await Promise.all([
+  const [groups, followedIds, events, timeZone] = await Promise.all([
     getGroupsCached(),
     getFollowedGroupIds(),
-    getEventsForMonth({ year, month }),
-    getAnniversariesForMonth({ year, month }),
+    // Assemblage partagé avec /api/calendar/month (nav de mois client).
+    getCalendarMonthEvents(year, month),
     getViewerTimeZone(),
   ])
   const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
-
-  // Slots hebdo synthétiques (P0.8) : générés globalement — le provider les
-  // masque dès qu'un filtre de groupes est actif (un slot n'a pas de groupe).
-  const { startISO, endISO } = getKstMonthRange(year, month)
-  const showSlots = generateShowSlots({ fromIso: startISO, toIso: endISO, existing: dbEvents })
-
-  const events = [...dbEvents, ...anniversaries, ...showSlots].sort((a, b) =>
-    a.start_at.localeCompare(b.start_at),
-  )
 
   // North-star (audit §10.2) : /calendar compte comme « calendrier perso »
   // dès que le viewer a ≥1 follow ; « prêt » = ≥1 event FUTUR d'un groupe suivi
@@ -69,6 +58,7 @@ export default async function CalendarPage({
   return (
     <CalendarFilterProvider
       events={events}
+      initialMonth={{ year, month }}
       followedSlugs={followedSlugs}
       initialSlugs={sp.group ? sp.group.split(',').filter(Boolean) : undefined}
     >
@@ -95,7 +85,7 @@ export default async function CalendarPage({
               <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
             </MobileGroupFilter>
             <FilterChips />
-            <CalendarEvents year={year} month={month} timeZone={timeZone} />
+            <CalendarEvents timeZone={timeZone} />
           </div>
           <aside className="order-3 shrink-0 lg:w-80">
             <SidebarRight />

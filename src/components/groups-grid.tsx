@@ -49,16 +49,28 @@ export function GroupsGrid({ items, timeZone }: { items: GroupGridItem[]; timeZo
         <p className="text-muted-foreground py-12 text-center text-sm">No group matches “{q}”.</p>
       ) : (
         <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
-          {filtered.map((it) => (
-            <GroupCard
+          {filtered.map((it, i) => (
+            // Sous la fold (~12 tuiles visibles) : content-visibility saute le
+            // rendu hors-écran des ~150 tuiles images — petites configs (round
+            // 2026-07-18). contain-intrinsic-size réserve la hauteur (pas de
+            // saut de scrollbar).
+            <div
               key={it.group.slug}
-              group={it.group}
-              isFollowing={it.isFollowing}
-              isAuthed={it.isAuthed}
-              timeZone={timeZone}
-              href={it.href}
-              nextEvent={it.nextEvent}
-            />
+              className={
+                i >= 12
+                  ? '[contain-intrinsic-size:auto_280px] [content-visibility:auto]'
+                  : undefined
+              }
+            >
+              <GroupCard
+                group={it.group}
+                isFollowing={it.isFollowing}
+                isAuthed={it.isAuthed}
+                timeZone={timeZone}
+                href={it.href}
+                nextEvent={it.nextEvent}
+              />
+            </div>
           ))}
         </div>
       )}
