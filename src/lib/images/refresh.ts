@@ -15,6 +15,7 @@
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { parseSpotifyArtistId, spotifyArtistById, spotifyNameMatches } from '@/lib/spotify'
+import { optimizeImageBuffer } from '@/lib/images/optimize'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -261,16 +262,10 @@ interface FandomQueryResponse {
 }
 
 const PHOTO_BUCKET = 'member-photos'
-const EXT_BY_TYPE: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/avif': 'avif',
-}
 
 export async function refreshMemberPhotos(
   supabase: SupabaseClient,
-  opts: { batch?: number; staleOnly?: boolean } = {},
+  opts: { batch?: number; staleOnly?: boolean; groupId?: string } = {},
 ): Promise<MemberPhotosSummary> {
   const batchSize = opts.batch ?? 100
   // `staleOnly` : ne traiter que les membres JAMAIS sourcés fandom
@@ -284,6 +279,9 @@ export async function refreshMemberPhotos(
       'id, stage_name, real_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)',
     )
   if (opts.staleOnly) mq = mq.is('photo_source_key', null)
+  // Ciblage d'un groupe précis : photos immédiates à la création (round
+  // 2026-07-18 — un nouveau groupe attendait la rotation ~100/j, avatars vides).
+  if (opts.groupId) mq = mq.eq('group_id', opts.groupId)
   const { data: members, error } = await mq
     .order('photo_checked_at', { ascending: true, nullsFirst: true })
     .limit(batchSize)
@@ -515,11 +513,14 @@ export async function refreshMemberPhotos(
         if (!dl.ok || !type.startsWith('image/')) throw new Error(`HTTP ${dl.status} ${type}`)
         const bytes = await dl.arrayBuffer()
         if (bytes.byteLength < 1024) throw new Error('image trop petite')
-        const ext = EXT_BY_TYPE[type] ?? 'jpg'
-        const path = `${m.id}.${ext}`
+        // Les originaux fandom peuvent peser >10 Mo (cas SuA 17 Mo) : toujours
+        // normaliser (≤800 px, webp) avant le bucket — Cloudinary fetch refuse
+        // les sources trop lourdes et l'avatar s'affiche cassé.
+        const optimized = await optimizeImageBuffer(bytes)
+        const path = `${m.id}.webp`
         const { error: upErr } = await supabase.storage
           .from(PHOTO_BUCKET)
-          .upload(path, bytes, { contentType: type, upsert: true })
+          .upload(path, optimized, { contentType: 'image/webp', upsert: true })
         if (upErr) throw new Error(upErr.message)
         const { data: pub } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path)
         // `?v=cb` : upsert = même chemin, le CDN servirait l'ancienne version.
