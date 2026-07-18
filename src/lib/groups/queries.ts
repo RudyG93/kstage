@@ -105,3 +105,14 @@ export const getGroupBySlug = cache(async (slug: string) => {
 
 export type GroupSummary = Awaited<ReturnType<typeof getNonSoloGroups>>[number]
 export type SoloArtistSummary = Awaited<ReturnType<typeof getSoloArtists>>[number]
+
+/**
+ * Compteurs de follows par groupe (RPC SECURITY DEFINER publique), mémoïsés
+ * par requête — le RPC brut tournait 2× par render sur home et /groups
+ * (page + SidebarLeft, Lot A perf 2026-07-18). Renvoie une Map group_id→follows.
+ */
+export const getGroupFollowCounts = cache(async (): Promise<Map<string, number>> => {
+  const supabase = await createClient()
+  const { data } = await supabase.rpc('group_follow_counts')
+  return new Map((data ?? []).map((r) => [r.group_id, r.follows]))
+})

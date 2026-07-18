@@ -2,12 +2,11 @@ import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
 import type { TrendingEntry } from '@/components/group/trending-list'
-import { getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
+import { getGroupFollowCounts, getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
 import { getNextEventForGroups, getRecentReleasesForGroups } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { pickTrending } from '@/lib/groups/trending'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
-import { createClient } from '@/lib/supabase/server'
 import { getViewer } from '@/lib/supabase/viewer'
 
 export const metadata = { title: 'Groups' }
@@ -27,21 +26,18 @@ export default async function GroupsPage({
     ? (sp.sort as SortKey)
     : 'az'
 
-  const supabase = await createClient()
   // Les DEUX jeux (groupes + solos) sont chargés d'un coup : la bascule
   // d'onglet est 100 % client (retour Rudy 2026-07-17 — la nav ?tab=
   // re-rendait toute la page). ~172 items au total, coût marginal.
-  const [{ user }, groupItems, soloItems, followedIds, { data: countRows }, timeZone] =
-    await Promise.all([
-      getViewer(),
-      getNonSoloGroups(),
-      getSoloArtists(),
-      getFollowedGroupIds(),
-      supabase.rpc('group_follow_counts'),
-      getViewerTimeZone(),
-    ])
+  const [{ user }, groupItems, soloItems, followedIds, followCount, timeZone] = await Promise.all([
+    getViewer(),
+    getNonSoloGroups(),
+    getSoloArtists(),
+    getFollowedGroupIds(),
+    getGroupFollowCounts(),
+    getViewerTimeZone(),
+  ])
 
-  const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const popOf = (id: string) => followCount.get(id) ?? 0
 
   // Trending = signal DU MOMENT (reproche Rudy 2026-07-11) : imminence d'un

@@ -12,12 +12,11 @@ import { ProfileStats } from '@/components/profile/profile-stats'
 import { PushBell } from '@/components/notifications/push-bell'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { createClient } from '@/lib/supabase/server'
 import { getViewer } from '@/lib/supabase/viewer'
 import { getProfileByUsername, getProfileStats } from '@/lib/profiles/queries'
 import { setBias, setFavoriteGroup } from '@/lib/profiles/actions'
 import { getAllMembers } from '@/lib/members/queries'
-import { getGroups, type GroupSummary } from '@/lib/groups/queries'
+import { getGroupFollowCounts, getGroups, type GroupSummary } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getLikedMvs } from '@/lib/events/queries'
 import { getRatingsForEvents, getUserRatings } from '@/lib/events/community'
@@ -35,7 +34,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const profile = await getProfileByUsername(decodeURIComponent(username))
   if (!profile) notFound()
 
-  const supabase = await createClient()
   const { user } = await getViewer()
   const isOwner = user?.id === profile.id
 
@@ -57,12 +55,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   let followedGroups: GroupSummary[] = []
   if (isOwner && user) {
     admin = isAdmin(user.email)
-    const [pending, members, groups, followedIds, countRes] = await Promise.all([
+    const [pending, members, groups, followedIds, followCount] = await Promise.all([
       admin ? getPendingSuggestionsCount() : Promise.resolve(0),
       getAllMembers(),
       getGroups(),
       getFollowedGroupIds(),
-      supabase.rpc('group_follow_counts'),
+      getGroupFollowCounts(),
     ])
     pendingCount = pending
     memberItems = members.map((m) => ({
@@ -72,7 +70,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       subtitle: one(m.groups)?.name,
     }))
     groupItems = groups.map((g) => ({ id: g.id, name: g.name, avatar: g.image_url }))
-    const followCount = new Map((countRes.data ?? []).map((r) => [r.group_id, r.follows]))
     followedGroups = groups
       .filter((g) => followedIds.has(g.id))
       .sort(

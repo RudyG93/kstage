@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getNonSoloGroups } from '@/lib/groups/queries'
+import { getGroupFollowCounts, getNonSoloGroups } from '@/lib/groups/queries'
 import { getGroupEventCounts } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { OnboardingGrid } from '@/components/onboarding/onboarding-grid'
@@ -22,12 +22,11 @@ export default async function OnboardingPage() {
   const followed = await getFollowedGroupIds()
   if (followed.size > 0) redirect('/')
 
-  const [groups, { data: counts }, eventCounts] = await Promise.all([
+  const [groups, pop, eventCounts] = await Promise.all([
     getNonSoloGroups(),
-    supabase.rpc('group_follow_counts'),
+    getGroupFollowCounts(),
     getGroupEventCounts(),
   ])
-  const pop = new Map((counts ?? []).map((r) => [r.group_id, r.follows]))
   // P0.6 : on met en avant en priorité les groupes au calendrier non vide (events
   // ou catalogue MV) — sinon un nouveau compte suit des groupes qui n'afficheront
   // rien. Tri : follows ↓ (utile dès qu'il y a des users), puis volume de contenu

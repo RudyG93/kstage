@@ -29,6 +29,9 @@ export function ArtistHero({
           aria-hidden
           fill
           unoptimized
+          // Bannière = élément LCP des pages groupe/artiste (above the fold) :
+          // priority désactive le lazy-load par défaut de next/image.
+          priority
           sizes="(min-width: 768px) 672px, 100vw"
           className="object-cover object-center"
         />

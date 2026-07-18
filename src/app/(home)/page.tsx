@@ -10,7 +10,7 @@ import { IosInstallHint } from '@/components/notifications/ios-install-hint'
 import { QueueRow } from '@/components/events/queue-row'
 import { Ticker } from '@/components/ticker'
 import { Panel, PanelHeader } from '@/components/ui/panel'
-import { getGroupsCached } from '@/lib/groups/queries'
+import { getGroupFollowCounts, getGroupsCached } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import {
   getUpcomingEvents,
@@ -28,7 +28,6 @@ import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
 import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { findHeroEventIndex } from '@/lib/events/hero'
 import { parseTypesParam } from '@/lib/events/filters'
-import { createClient } from '@/lib/supabase/server'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { TrackView } from '@/components/analytics/track-view'
 
@@ -40,7 +39,6 @@ export default async function Home({
 }: {
   searchParams: Promise<{ type?: string; src?: string }>
 }) {
-  const supabase = await createClient()
   const { user } = await getViewer()
 
   if (!user) {
@@ -78,7 +76,7 @@ export default async function Home({
   // que 2 allers-retours séquentiels sur la page connectée la plus chargée.
   const [timeZone, followedIds] = await Promise.all([getViewerTimeZone(), getFollowedGroupIds()])
   const ids = [...followedIds]
-  const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, { data: countRows }] =
+  const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, followCounts] =
     await Promise.all([
       ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
       ids.length > 0 && wantAnniversaries
@@ -88,7 +86,7 @@ export default async function Home({
       getAllMvs({ limit: 4 }),
       // Ticker : annonces globales « qui tapent » (tous types, suivi ou non).
       getUpcomingEvents({ limit: 40 }),
-      supabase.rpc('group_follow_counts'),
+      getGroupFollowCounts(),
     ])
 
   // Fresh drops : les MVs des groupes suivis d'abord, complétés au global (4 max).
@@ -131,7 +129,6 @@ export default async function Home({
   )
 
   // Ticker global : un event par groupe, groupes les plus suivis d'abord.
-  const followCounts = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const tickerItems = buildTickerItems(pickTickerEvents(globalEvents, followCounts, 8), {
     timeZone,
   })

@@ -33,13 +33,16 @@ export function YouTubeEmbed({ videoId, title }: { videoId: string; title: strin
       className="group bg-muted relative aspect-video w-full overflow-hidden rounded-xl"
       aria-label={`Play ${title}`}
     >
-      {/* Thumbnail YouTube : eslint-disable car YT n'est pas dans next.config images */}
+      {/* Thumbnail YouTube : eslint-disable car YT n'est pas dans next.config images.
+          C'est l'élément LCP de la page MV (above the fold) — jamais lazy, et
+          fetchpriority=high pour que le navigateur le charge en premier
+          (Lighthouse : LCP 4-7 s attribué aux posters non priorisés). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={thumb}
         alt=""
         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        loading="lazy"
+        fetchPriority="high"
       />
       <span
         className="pointer-events-none absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35"

@@ -2,13 +2,12 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { getGroups } from '@/lib/groups/queries'
+import { getGroupFollowCounts, getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
-import { createClient } from '@/lib/supabase/server'
 
 // Cap d'affichage des groupes suivis dans le rail (au-delà : lien « + N more »
 // vers le profil). Limite d'affichage neutre, indépendante du compte.
@@ -28,16 +27,13 @@ export async function SidebarLeft({
   // « +X more » pointe vers le profil (où vit la liste des groupes suivis).
   // getViewer() réutilise l'aller-retour auth déjà payé par le layout.
   const { profile } = await getViewer()
-  const supabase = await createClient()
   const timeZone = await getViewerTimeZone()
-  const [{ data: countRows }, counts, annivCounts] = await Promise.all([
-    supabase.rpc('group_follow_counts'),
+  const [followCount, counts, annivCounts] = await Promise.all([
+    getGroupFollowCounts(),
     getUpcomingEventCountsByGroup([...followedIds]),
     getUpcomingAnniversaryCountsByGroup([...followedIds], 90, timeZone),
   ])
   const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
-  // Tri des groupes suivis : popularité (nb de follows) décroissante, puis alpha.
-  const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const followed = groups
     .filter((g) => followedIds.has(g.id))
     .sort(
