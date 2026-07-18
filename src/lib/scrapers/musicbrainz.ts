@@ -32,7 +32,14 @@ type Json = Record<string, unknown>
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Json) : {})
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 
-/** Match STRICT du résultat de recherche : score ≥ 90 ET nom normalisé égal. */
+/**
+ * Match STRICT du résultat de recherche : score ≥ 90 ET nom normalisé égal ET
+ * pays compatible Corée. Un homonyme étranger score 100 sur son propre nom —
+ * cas réel (round 2026-07-18) : le groupe eurodance italien « Antares » a
+ * fourni 4 « membres » italiens au boys group k-pop ANTARES. Un `country`
+ * présent et ≠ KR disqualifie ; absent → accepté (beaucoup d'artistes k-pop
+ * n'ont pas le champ renseigné).
+ */
 export function pickArtistMatch(
   searchJson: unknown,
   wantedName: string,
@@ -43,6 +50,8 @@ export function pickArtistMatch(
     const a = obj(raw)
     const score = typeof a.score === 'number' ? a.score : 0
     if (score < 90) continue
+    const country = str(a.country)
+    if (country && country !== 'KR') continue
     const name = str(a.name)
     const aliases = ((a.aliases as unknown[] | undefined) ?? []).map((al) => str(obj(al).name))
     if (

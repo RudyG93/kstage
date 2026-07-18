@@ -34,6 +34,7 @@ export const MONITORED_SOURCES: readonly SourceSpec[] = [
   { source: 'youtube', label: 'YouTube MVs', cadenceHours: 24, critical: true },
   { source: 'wikipedia', label: 'Comebacks (Wikipedia)', cadenceHours: 24, critical: false },
   { source: 'fandom_debuts', label: 'Debuts (fandom)', cadenceHours: 24, critical: false },
+  { source: 'roster_watch', label: 'Roster watch (pre-debuts)', cadenceHours: 24, critical: false },
   { source: 'refresh_images', label: 'Images', cadenceHours: 24, critical: false },
   { source: 'notify_comebacks', label: 'Push comebacks', cadenceHours: 24, critical: true },
   { source: 'send_digest', label: 'Push digest', cadenceHours: 24, critical: true },

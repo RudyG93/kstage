@@ -161,3 +161,31 @@ describe('parsePerson', () => {
     ).toBeNull()
   })
 })
+
+describe('pickArtistMatch — garde pays (round 2026-07-18)', () => {
+  it("rejette l'homonyme étranger même à score 100 (cas réel ANTARES italien)", () => {
+    const search = {
+      artists: [
+        {
+          id: 'it-1',
+          name: 'Antares',
+          'sort-name': 'Antares',
+          type: 'Group',
+          score: 100,
+          country: 'IT',
+        },
+      ],
+    }
+    expect(pickArtistMatch(search, 'ANTARES')).toBeNull()
+  })
+  it('accepte un artiste KR ou sans pays renseigné', () => {
+    const kr = {
+      artists: [{ id: 'kr-1', name: 'ANTARES', type: 'Group', score: 100, country: 'KR' }],
+    }
+    const noCountry = {
+      artists: [{ id: 'x-1', name: 'ANTARES', type: 'Group', score: 100 }],
+    }
+    expect(pickArtistMatch(kr, 'ANTARES')?.id).toBe('kr-1')
+    expect(pickArtistMatch(noCountry, 'ANTARES')?.id).toBe('x-1')
+  })
+})

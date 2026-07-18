@@ -23,6 +23,17 @@ async function api<T>(
   return { data: (await res.json()) as T, blocked: false }
 }
 
+/** Pageids par recherche plein-texte (résolution d'un groupe déjà en base). */
+export async function searchPageIds(term: string, limit = 5): Promise<number[]> {
+  const { data } = await api<{ query?: { search?: { pageid: number }[] } }>({
+    action: 'query',
+    list: 'search',
+    srsearch: term,
+    srlimit: String(limit),
+  })
+  return data?.query?.search?.map((s) => s.pageid) ?? []
+}
+
 export interface CategoryMember {
   pageid: number
   title: string
