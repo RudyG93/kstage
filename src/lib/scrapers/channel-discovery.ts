@@ -24,7 +24,13 @@ type SupabaseClient = ReturnType<typeof createClient<Database>>
 const MV_MARKER = /\bmv\b|\bm\/v\b|music video/i
 const DERIVATIVE = /teaser|behind|reaction|cover|dance practice|live|fancam|직캠|리액션/i
 
-export type SearchHit = { videoId: string; title: string; channelId: string; channelTitle: string }
+export type SearchHit = {
+  videoId: string
+  title: string
+  channelId: string
+  channelTitle: string
+  publishedAt?: string
+}
 
 /** Hits « vrais MVs du groupe » — pur, testable (title-match + marqueur MV + blacklist). */
 export function filterMvSearchHits(hits: readonly SearchHit[], groupName: string): SearchHit[] {
@@ -39,6 +45,10 @@ export type ChannelCandidate = {
   url: string
   hits: string[] // titres des MVs matchés
   subs: number | null
+  // Date de publication la plus récente parmi les hits — sert la garde
+  // anti-homonyme (round 2026-07-18 : « Our Birthday » AMV de 2025 seedé sur
+  // le girl group OURBIRTHDAY né en 2026).
+  latestHitAt: string | null
 }
 
 async function yt(path: string, params: Record<string, string>, apiKey: string) {
@@ -58,24 +68,35 @@ export async function discoverChannelsForGroup(
   apiKey: string,
 ): Promise<{ candidates: ChannelCandidate[]; units: number }> {
   let units = 0
-  const byChannel = new Map<string, { channelTitle: string; hits: string[] }>()
+  const byChannel = new Map<
+    string,
+    { channelTitle: string; hits: string[]; latestHitAt: string | null }
+  >()
   for (const q of [`"${group.name}" MV`, `"${group.name}" official music video`]) {
     const d = await yt('search', { part: 'snippet', type: 'video', maxResults: '10', q }, apiKey)
     units += 100
     const hits: SearchHit[] = (d.items ?? []).map(
       (it: {
         id?: { videoId?: string }
-        snippet: { title: string; channelId: string; channelTitle: string }
+        snippet: { title: string; channelId: string; channelTitle: string; publishedAt?: string }
       }) => ({
         videoId: it.id?.videoId ?? '',
         title: String(it.snippet.title),
         channelId: it.snippet.channelId,
         channelTitle: String(it.snippet.channelTitle),
+        publishedAt: it.snippet.publishedAt,
       }),
     )
     for (const hit of filterMvSearchHits(hits, group.name)) {
-      const c = byChannel.get(hit.channelId) ?? { channelTitle: hit.channelTitle, hits: [] }
+      const c = byChannel.get(hit.channelId) ?? {
+        channelTitle: hit.channelTitle,
+        hits: [],
+        latestHitAt: null,
+      }
       if (!c.hits.includes(hit.title)) c.hits.push(hit.title)
+      if (hit.publishedAt && (!c.latestHitAt || hit.publishedAt > c.latestHitAt)) {
+        c.latestHitAt = hit.publishedAt
+      }
       byChannel.set(hit.channelId, c)
     }
   }
@@ -112,6 +133,7 @@ export async function discoverChannelsForGroup(
           : `https://www.youtube.com/channel/${channelId}`,
         hits: c.hits,
         subs: m?.subs ?? null,
+        latestHitAt: c.latestHitAt,
       }
     })
     .sort((a, b) => b.hits.length - a.hits.length)
@@ -128,7 +150,7 @@ export type SeedResult =
  */
 export async function seedAndBackfillChannel(
   supabase: SupabaseClient,
-  group: { id: string; name: string; confidence: string },
+  group: { id: string; name: string; confidence: string; debut_date?: string | null },
   candidate: ChannelCandidate,
   apiKey: string,
 ): Promise<SeedResult> {
@@ -136,6 +158,19 @@ export async function seedAndBackfillChannel(
   // (compilation, chaîne fan) → revue humaine via scrape_log.details.review.
   if (candidate.hits.length < 2) {
     return { seeded: false, reason: `1 seul MV matché (${candidate.channelTitle})` }
+  }
+  // Garde anti-homonyme (round 2026-07-18) : si TOUS les hits datent d'avant
+  // le debut du groupe (marge 180 j pour les pre-releases), la chaîne parle
+  // d'autre chose — cas réel « Our Birthday » AMV 2025 seedé sur OURBIRTHDAY
+  // (debut 2026-07-22).
+  if (group.debut_date && candidate.latestHitAt) {
+    const debutMs = Date.parse(group.debut_date)
+    if (Date.parse(candidate.latestHitAt) < debutMs - 180 * 86_400_000) {
+      return {
+        seeded: false,
+        reason: `hits antérieurs au debut (${candidate.latestHitAt.slice(0, 10)} < ${group.debut_date})`,
+      }
+    }
   }
 
   const { data: existing } = await supabase
