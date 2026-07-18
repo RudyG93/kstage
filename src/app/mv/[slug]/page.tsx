@@ -72,16 +72,17 @@ export default async function MvPage({
 
   const group = event.groups
 
-  const [rating, { user: viewer }] = await Promise.all([
-    getEventRatingSummary(event.id),
-    getViewer(),
-  ])
+  // Vagues réduites 5 → 3 (Lot A perf 2026-07-18) : getViewer (mémoïsé, déjà
+  // payé par le layout) fournit viewerId, puis TOUT le contenu part en un seul
+  // Promise.all — getLikeSummary vivait seul dans sa propre vague.
+  const { user: viewer } = await getViewer()
   const viewerId = viewer?.id ?? null
   const isAuthed = viewer != null
   const videoId = extractYouTubeId(event.source_url)
-  const like = await getLikeSummary(event.id, viewerId)
 
-  const [flatComments, groupMvs, timeZone] = await Promise.all([
+  const [rating, like, flatComments, groupMvs, timeZone] = await Promise.all([
+    getEventRatingSummary(event.id),
+    getLikeSummary(event.id, viewerId),
     getCommentsForEvent(event.id, viewerId),
     group?.slug ? getGroupMvs(group.slug, 9) : Promise.resolve([]),
     getViewerTimeZone(),

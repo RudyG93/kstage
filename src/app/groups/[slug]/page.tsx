@@ -9,7 +9,7 @@ import { ArtistHero } from '@/components/group/artist-hero'
 import { StatsStrip } from '@/components/group/stats-strip'
 import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
-import { getGroupBySlug } from '@/lib/groups/queries'
+import { getGroupBySlug, getGroupFollowCounts } from '@/lib/groups/queries'
 import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
@@ -20,7 +20,6 @@ import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
-import { createClient } from '@/lib/supabase/server'
 import { getViewer } from '@/lib/supabase/viewer'
 
 export async function generateMetadata({
@@ -58,7 +57,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     if (memberSlug) redirect(`/artists/${memberSlug}`)
   }
 
-  const supabase = await createClient()
   // getViewerTimeZone est memoïsé (React cache) — l'await précoce ne coûte
   // qu'un aller ; il alimente la fenêtre anniversaires ET les rangées.
   const timeZone = await getViewerTimeZone()
@@ -69,7 +67,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     mvs,
     followedIds,
     members,
-    { data: countRows },
+    followCounts,
   ] = await Promise.all([
     getViewer(),
     getUpcomingEvents({ groupSlug: slug, limit: 20 }),
@@ -77,7 +75,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     getGroupMvs(slug, 48),
     getFollowedGroupIds(),
     getMembersForGroup(group.id),
-    supabase.rpc('group_follow_counts'),
+    getGroupFollowCounts(),
   ])
   // Anniversaires des membres fusionnés au flux : une page groupe sans event
   // programmé n'est pas un dead-end (contenu plancher P0.6).
@@ -102,7 +100,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   const bannerSrc = groupBannerSrc(group)
 
   const links = group.links as Record<string, string> | null
-  const followers = (countRows ?? []).find((r) => r.group_id === group.id)?.follows ?? 0
+  const followers = followCounts.get(group.id) ?? 0
 
   // Avg score du catalogue MV (moyenne pondérée par le nombre de votes).
   let weightedSum = 0

@@ -234,18 +234,19 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
   // R10 — contenu unique : MVs solo (mv_kind='member', jusque-là jamais affichés)
   // + « groupmates » (les autres membres actifs du groupe) pour que la page ne
-  // soit plus un cul-de-sac maigre.
-  const memberMvs = await getMemberMvs(member.id)
+  // soit plus un cul-de-sac maigre. Les 3 fetchs indépendants partent ENSEMBLE
+  // (4 vagues série → 2, Lot A perf 2026-07-18) ; seuls les ratings dépendent
+  // des MVs.
+  const [memberMvs, groupmatesRaw, { user: viewerM }] = await Promise.all([
+    getMemberMvs(member.id),
+    group ? getMembersForGroup(group.id) : Promise.resolve([]),
+    getViewer(),
+  ])
   const memberRatings =
     memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
-  const groupmates = group
-    ? (await getMembersForGroup(group.id)).filter(
-        (m) => m.id !== member.id && m.status === 'active',
-      )
-    : []
+  const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
 
   // Rail « My groups » (R10) — affiché seulement si le viewer est connecté.
-  const { user: viewerM } = await getViewer()
   const signedIn = viewerM != null
 
   return (

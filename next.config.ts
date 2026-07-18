@@ -43,6 +43,9 @@ const nextConfig: NextConfig = {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }]
   },
   images: {
+    // v16 : defaut qualities=[75] — sans cette liste, le quality={70} du hero
+    // (hero-backdrop.tsx) etait silencieusement force a 75.
+    qualities: [70, 75],
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
