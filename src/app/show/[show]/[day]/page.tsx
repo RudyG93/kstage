@@ -1,3 +1,4 @@
+import { cache, Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -13,6 +14,7 @@ import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { BackButton } from '@/components/back-button'
 import { Panel, PanelHeader } from '@/components/ui/panel'
+import { Skeleton } from '@/components/ui/skeleton'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 import { LocalTime } from '@/components/local-time'
 
@@ -55,78 +57,52 @@ export async function generateMetadata({
   }
 }
 
-export default async function ShowEpisodePage({
-  params,
-}: {
-  params: Promise<{ show: string; day: string }>
-}) {
-  const { show, day } = await params
-  const loaded = await loadEpisode(show, day)
-  if (!loaded) notFound()
-  const { descriptor, episode } = loaded
+type Loaded = NonNullable<Awaited<ReturnType<typeof loadEpisode>>>
+type Episode = Loaded['episode']
 
+// Lineup du jour, partagé header/corps — cache() dédoublonne (même référence
+// `episode` passée aux deux composants streamés).
+const getEpisodeLineup = cache(async (episode: Episode) => {
   const supabase = await createClient()
+  const { from, to } = kstDayBounds(episode.start_at)
+  const { data: rows } = await supabase
+    .from('events')
+    .select('id, title, start_at, stage_url, groups!inner(slug, name, image_url)')
+    .eq('type', 'music_show')
+    .eq('title', episode.show_title)
+    .eq('hidden', false)
+    .gte('start_at', from)
+    .lt('start_at', to)
+    .order('start_at', { ascending: true })
+  return rows ?? []
+})
+
+/** Ligne des noms du header — streamée (fallback null, aucun shift : elle
+ * s'ajoute sous la date). */
+async function LineupNames({ episode }: { episode: Episode }) {
+  const lineup = await getEpisodeLineup(episode)
+  if (lineup.length === 0) return null
+  return (
+    <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+      {lineup.map((e) => e.groups?.name ?? '?').join(', ')}
+    </p>
+  )
+}
+
+/** Lineup + commentaires — streamés après le header (Lot G, route 3/5). Le
+ * statut HTTP est déjà décidé (loadEpisode + notFound dans la page). */
+async function EpisodeBody({ episode, path }: { episode: Episode; path: string }) {
   const { user } = await getViewer()
   const viewerId = user?.id ?? null
 
-  // Rows events du jour = lineup + stages (mêmes bornes KST que le scraper).
-  const { from, to } = kstDayBounds(episode.start_at)
-  const [{ data: rows }, flatComments] = await Promise.all([
-    supabase
-      .from('events')
-      .select('id, title, start_at, stage_url, groups!inner(slug, name, image_url)')
-      .eq('type', 'music_show')
-      .eq('title', episode.show_title)
-      .eq('hidden', false)
-      .gte('start_at', from)
-      .lt('start_at', to)
-      .order('start_at', { ascending: true }),
+  const [lineup, flatComments] = await Promise.all([
+    getEpisodeLineup(episode),
     getCommentsForTarget({ episodeId: episode.id }, viewerId),
   ])
-  const lineup = rows ?? []
   const commentRoots = sortTree(buildCommentTree(flatComments), 'top')
 
-  const label = episode.episode_number
-    ? `${episode.show_title} #${episode.episode_number}`
-    : episode.show_title
-  const path = `/show/${descriptor.id}/${episode.kst_day}`
-  const dateLabel = formatKst(episode.start_at, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6">
-      <BackButton fallbackHref="/calendar" />
-
-      <header className="flex items-start gap-3">
-        <Image
-          src={descriptor.iconUrl}
-          alt=""
-          width={56}
-          height={56}
-          unoptimized
-          className="size-14 shrink-0 rounded-lg object-cover"
-          aria-hidden
-        />
-        <div className="min-w-0">
-          <h1 className="font-heading text-xl leading-tight font-extrabold tracking-[-0.02em]">
-            {label}
-          </h1>
-          <p className="text-muted-foreground mt-0.5 text-[11px] font-medium">
-            {dateLabel} · <LocalTime iso={episode.start_at} withZone={false} fallback="—" /> local ·{' '}
-            {kstTime24h(episode.start_at)} KST
-          </p>
-          {lineup.length > 0 && (
-            <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              {lineup.map((e) => e.groups?.name ?? '?').join(', ')}
-            </p>
-          )}
-        </div>
-      </header>
-
+    <>
       <Panel>
         <PanelHeader label={`Stages — ${lineup.length}`} />
         {lineup.length === 0 ? (
@@ -204,7 +180,6 @@ export default async function ShowEpisodePage({
           </div>
         )}
       </Panel>
-
       <CommentSection
         episodeId={episode.id}
         path={path}
@@ -213,6 +188,70 @@ export default async function ShowEpisodePage({
         roots={commentRoots}
         initialSort="top"
       />
+    </>
+  )
+}
+
+export default async function ShowEpisodePage({
+  params,
+}: {
+  params: Promise<{ show: string; day: string }>
+}) {
+  const { show, day } = await params
+  // Lot G — invariant soft-404 : seul await bloquant = check d'existence.
+  const loaded = await loadEpisode(show, day)
+  if (!loaded) notFound()
+  const { descriptor, episode } = loaded
+
+  const label = episode.episode_number
+    ? `${episode.show_title} #${episode.episode_number}`
+    : episode.show_title
+  const path = `/show/${descriptor.id}/${episode.kst_day}`
+  const dateLabel = formatKst(episode.start_at, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6">
+      <BackButton fallbackHref="/calendar" />
+
+      <header className="flex items-start gap-3">
+        <Image
+          src={descriptor.iconUrl}
+          alt=""
+          width={56}
+          height={56}
+          unoptimized
+          className="size-14 shrink-0 rounded-lg object-cover"
+          aria-hidden
+        />
+        <div className="min-w-0">
+          <h1 className="font-heading text-xl leading-tight font-extrabold tracking-[-0.02em]">
+            {label}
+          </h1>
+          <p className="text-muted-foreground mt-0.5 text-[11px] font-medium">
+            {dateLabel} · <LocalTime iso={episode.start_at} withZone={false} fallback="—" /> local ·{' '}
+            {kstTime24h(episode.start_at)} KST
+          </p>
+          <Suspense fallback={null}>
+            <LineupNames episode={episode} />
+          </Suspense>
+        </div>
+      </header>
+
+      <Suspense
+        fallback={
+          <div className="space-y-3" aria-hidden>
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+          </div>
+        }
+      >
+        <EpisodeBody episode={episode} path={path} />
+      </Suspense>
     </div>
   )
 }
