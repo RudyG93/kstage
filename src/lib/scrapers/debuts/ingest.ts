@@ -108,7 +108,7 @@ export interface DebutIngestResult {
   errors: string[]
 }
 
-const slugify = (s: string) =>
+export const slugify = (s: string) =>
   s
     .toLowerCase()
     .normalize('NFKD')
@@ -382,8 +382,13 @@ export async function createFromPayload(
         group_id: groupId,
         type: 'release',
         title: `${payload.name} debut`,
+        // 18:00 KST = heure standard des sorties digitales coréennes (réforme
+        // Gaon 2017) — mais elle est SYNTHÉTIQUE ici (l'infobox n'a que la
+        // date) → `tentative` : quand kpopofficial annonce l'heure réelle, la
+        // fusion near-dup peut promouvoir start_at/status/titre (round
+        // 2026-07-18 — en confirmed, l'upgrade ne se déclenchait jamais).
         start_at: kstToUtcISO(y, m - 1, d, 18, 0),
-        status: 'confirmed',
+        status: 'tentative',
         source_url: payload.fandomUrl,
       })
       if (eErr) stepErrors.push(`event: ${eErr.message}`)

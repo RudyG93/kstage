@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveNearDup, type NearDupRow } from './comeback-ingest'
+import { resolveNearDup, shouldUpgradeTitle, type NearDupRow } from './comeback-ingest'
 
 const DAY = 86_400_000
 const WINDOW = 3 * DAY
@@ -9,7 +9,24 @@ const near = (over: Partial<NearDupRow> = {}): NearDupRow => ({
   t: Date.parse('2026-08-01T15:00:00Z'),
   status: 'tentative',
   imageUrl: null,
+  title: 'Some Single',
   ...over,
+})
+
+// Upgrade de titre (round 2026-07-18, cas OURBIRTHDAY) : le placeholder
+// « {groupe} debut » prend le vrai nom du single quand la source l'apporte.
+describe('shouldUpgradeTitle', () => {
+  it('upgrade un placeholder vers un vrai titre', () => {
+    expect(shouldUpgradeTitle('OURBIRTHDAY debut', 'Candy Bomb', 'OURBIRTHDAY')).toBe(true)
+  })
+  it('ne touche jamais un titre déjà réel', () => {
+    expect(shouldUpgradeTitle('Candy Bomb', 'Autre Titre', 'OURBIRTHDAY')).toBe(false)
+  })
+  it("n'upgrade pas placeholder → placeholder ni vers un titre vide", () => {
+    expect(shouldUpgradeTitle('OURBIRTHDAY debut', 'ourbirthday Debut', 'OURBIRTHDAY')).toBe(false)
+    expect(shouldUpgradeTitle('OURBIRTHDAY debut', '', 'OURBIRTHDAY')).toBe(false)
+    expect(shouldUpgradeTitle('OURBIRTHDAY debut', null, 'OURBIRTHDAY')).toBe(false)
+  })
 })
 
 // Fusion des annonces plus précises (Phase 3 Lot 4) : une tentative (minuit

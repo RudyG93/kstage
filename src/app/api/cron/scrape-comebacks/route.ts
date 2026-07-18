@@ -5,6 +5,7 @@ import type { Database } from '@/types/database'
 import { scrapeComebacks } from '@/lib/scrapers/kpopofficial'
 import { scrapeWikipediaReleases } from '@/lib/scrapers/wikipedia-releases'
 import { ingestDebuts } from '@/lib/scrapers/debuts/ingest'
+import { refreshRecentRosters } from '@/lib/scrapers/debuts/roster-watch'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
@@ -135,11 +136,49 @@ export async function GET(req: Request) {
     }
   }
 
+  // --- Étage 4 : roster watch des (pre)debuts récents (round 2026-07-18) —
+  // append-only, best-effort. Les reveals de membres post-création (cas
+  // OURBIRTHDAY : 3ᵉ membre annoncé après coup) arrivent en base tout seuls.
+  let rosterResult: unknown = null
+  {
+    const startedRoster = new Date().toISOString()
+    try {
+      const result = await refreshRecentRosters(supabase)
+      rosterResult = result
+      await logScrapeRun(supabase, {
+        source: 'roster_watch',
+        status: result.blocked || result.errors.length > 0 ? 'partial' : 'ok',
+        startedAt: startedRoster,
+        errorMsg: result.blocked
+          ? 'fandom api.php 403'
+          : result.errors.length > 0
+            ? result.errors.slice(0, 3).join(' ; ')
+            : null,
+        details: { ...result },
+      })
+    } catch (err) {
+      rosterResult = { error: String(err) }
+      await logScrapeRun(supabase, {
+        source: 'roster_watch',
+        status: 'error',
+        startedAt: startedRoster,
+        errorMsg: String(err),
+      })
+    }
+  }
+
   // Le cron échoue (500, visible dans Vercel Crons) uniquement si la primaire est
   // inexploitable. Wikipedia et les debuts sont des filets : leur état vit dans
   // scrape_log.
   if (primaryStatus === 'error') {
     return NextResponse.json({ ok: false, kpopResult, wikiResult, debutResult }, { status: 500 })
   }
-  return NextResponse.json({ ok: true, primaryStatus, kpopResult, wikiResult, debutResult })
+  return NextResponse.json({
+    ok: true,
+    primaryStatus,
+    kpopResult,
+    wikiResult,
+    debutResult,
+    rosterResult,
+  })
 }

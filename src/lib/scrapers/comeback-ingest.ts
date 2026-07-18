@@ -4,6 +4,7 @@
 // dupliquer la logique ni risquer une dérive de taxonomie.
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { isPlaceholderTitle } from '@/lib/health/checks'
 
 type EventStatus = Database['public']['Enums']['event_status']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -103,7 +104,30 @@ export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupR
  * à < N jours seraient fusionnées (rare, déjà accepté cross-source).
  */
 /** Row near-dup existante, pour la décision de fusion. */
-export type NearDupRow = { id: string; t: number; status: string; imageUrl: string | null }
+export type NearDupRow = {
+  id: string
+  t: number
+  status: string
+  imageUrl: string | null
+  title: string
+}
+
+/**
+ * Upgrade de TITRE (round 2026-07-18, cas OURBIRTHDAY) : l'ingest debuts pose
+ * « {groupe} debut » en placeholder ; quand la source apporte le vrai nom du
+ * single, l'event existant doit le prendre — avant ce fix, la fusion near-dup
+ * ne touchait jamais title et le placeholder restait pour toujours (6 events
+ * en prod : V8, Keyveatz, ASCENDER, VAYONN, OURBIRTHDAY, AEN). Pur, testé.
+ */
+export function shouldUpgradeTitle(
+  nearTitle: string,
+  cbTitle: string | null | undefined,
+  groupName: string,
+): boolean {
+  return (
+    !!cbTitle && isPlaceholderTitle(nearTitle, groupName) && !isPlaceholderTitle(cbTitle, groupName)
+  )
+}
 
 /**
  * Décision near-dup (Phase 3 Lot 4, « fusion des annonces plus précises ») —
@@ -181,7 +205,7 @@ export async function ingestComebacks(
       const hi = new Date(Math.max(...times) + ms).toISOString()
       const { data: nearRows } = await supabase
         .from('events')
-        .select('id, group_id, start_at, status, image_url')
+        .select('id, group_id, start_at, status, image_url, title')
         .eq('type', 'release')
         // Pas de filtre source : la fenêtre couvre aussi les entrées de la
         // MÊME source sous une autre URL (placeholder vs album finalisé,
@@ -191,7 +215,13 @@ export async function ingestComebacks(
         .lte('start_at', hi)
       for (const r of nearRows ?? []) {
         const list = nearByGroup.get(r.group_id) ?? []
-        list.push({ id: r.id, t: Date.parse(r.start_at), status: r.status, imageUrl: r.image_url })
+        list.push({
+          id: r.id,
+          t: Date.parse(r.start_at),
+          status: r.status,
+          imageUrl: r.image_url,
+          title: r.title,
+        })
         nearByGroup.set(r.group_id, list)
       }
     }
@@ -212,6 +242,23 @@ export async function ingestComebacks(
       const nears = nearByGroup.get(group.id) ?? []
       const decision = resolveNearDup(cb, nears, ms)
       if (decision === 'skip') {
+        // Même en skip, un near au titre PLACEHOLDER prend le vrai titre de la
+        // source (« OURBIRTHDAY debut » → nom officiel du single). Nécessaire
+        // ici car le debut ingest pose status confirmed → jamais d'upgrade
+        // start_at/status, donc jamais l'occasion de corriger le titre.
+        const t = Date.parse(cb.startAt)
+        const near = nears.find((n) => n.id && Math.abs(n.t - t) <= ms)
+        if (near && shouldUpgradeTitle(near.title, cb.title, group.name)) {
+          const { error: tErr } = await supabase
+            .from('events')
+            .update({ title: cb.title })
+            .eq('id', near.id)
+          if (tErr) console.error(`comeback-ingest title upgrade ${near.id}: ${tErr.message}`)
+          else {
+            near.title = cb.title
+            upgraded++
+          }
+        }
         skipped++
         continue
       }
@@ -220,12 +267,16 @@ export async function ingestComebacks(
         // tentative existante. source_url INTOUCHÉ (clé d'idempotence, leçon
         // 0040) — l'event garde l'URL de sa source d'origine. L'échec (ex.
         // start_at cible déjà pris par l'unique) → skip loggé, pas de crash.
+        const nearRow = nears.find((n) => n.id === decision.upgradeId)
         const { error: upErr } = await supabase
           .from('events')
           .update({
             start_at: cb.startAt,
             status: 'confirmed',
             ...(decision.imageUrl === null && cb.imageUrl ? { image_url: cb.imageUrl } : {}),
+            ...(nearRow && shouldUpgradeTitle(nearRow.title, cb.title, group.name)
+              ? { title: cb.title }
+              : {}),
           })
           .eq('id', decision.upgradeId)
         if (upErr) {
@@ -243,7 +294,13 @@ export async function ingestComebacks(
         }
         continue
       }
-      nears.push({ id: '', t: Date.parse(cb.startAt), status: cb.status, imageUrl: null })
+      nears.push({
+        id: '',
+        t: Date.parse(cb.startAt),
+        status: cb.status,
+        imageUrl: null,
+        title: cb.title,
+      })
       nearByGroup.set(group.id, nears)
     }
     existing.add(`${cb.sourceUrl}|${group.id}`)
