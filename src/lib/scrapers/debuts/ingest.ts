@@ -15,6 +15,8 @@
 import type { createClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database'
 import { kstToUtcISO } from '@/lib/events/date'
+import { optimizeImageBuffer } from '@/lib/images/optimize'
+import { refreshMemberPhotos } from '@/lib/images/refresh'
 import { normalize } from '@/lib/scrapers/group-match'
 import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
 import { fetchDebutCategory, fetchInfobox, resolveImageUrl } from './fandom'
@@ -144,11 +146,13 @@ async function selfHostGroupImage(
     if (!res.ok || !type.startsWith('image/')) return null
     const bytes = await res.arrayBuffer()
     if (bytes.byteLength < 1024) return null
-    const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
-    const path = `${slug}.${ext}`
+    // Normalisation systématique (≤800 px, webp) : les originaux fandom
+    // dépassaient parfois 10 Mo → Cloudinary fetch cassé à l'affichage.
+    const optimized = await optimizeImageBuffer(bytes)
+    const path = `${slug}.webp`
     const { error } = await supabase.storage
       .from(GROUP_PHOTO_BUCKET)
-      .upload(path, bytes, { contentType: type, upsert: true })
+      .upload(path, optimized, { contentType: 'image/webp', upsert: true })
     if (error) return null
     return supabase.storage.from(GROUP_PHOTO_BUCKET).getPublicUrl(path).data.publicUrl
   } catch {
@@ -345,6 +349,16 @@ export async function createFromPayload(
       })
       if (eErr) stepErrors.push(`event: ${eErr.message}`)
     }
+  }
+
+  // Photos membres IMMÉDIATES (best-effort, round 2026-07-18) : sans ça, un
+  // nouveau groupe attend la rotation quotidienne (~100/j) et s'affiche avec
+  // des avatars vides pendant des jours (cas idntt). Échec ≠ échec création —
+  // la rotation refresh-images reste le filet de sécurité.
+  try {
+    await refreshMemberPhotos(supabase, { groupId, batch: 30 })
+  } catch (e) {
+    stepErrors.push(`photos: ${String(e)}`)
   }
 
   return { groupId, resumed, stepErrors }
