@@ -47,6 +47,9 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-space-grotesk',
   subsets: ['latin'],
   weight: ['500', '600', '700'],
+  // Lot E CLS : famille d'accent (chiffres) — `optional` supprime tout layout
+  // shift de swap (le fallback ajuste reste si la police n'arrive pas a temps).
+  display: 'optional',
 })
 
 const instrument = Instrument_Serif({
@@ -54,6 +57,9 @@ const instrument = Instrument_Serif({
   subsets: ['latin'],
   weight: ['400'],
   style: ['normal', 'italic'],
+  // Accent du wordmark uniquement : jamais critique → optional + pas de preload.
+  display: 'optional',
+  preload: false,
 })
 
 // Data Desk : Archivo variable (axe wdth) pour les labels condensés
@@ -62,6 +68,8 @@ const archivo = Archivo({
   variable: '--font-archivo',
   subsets: ['latin'],
   axes: ['wdth'],
+  // Labels condenses (.label-data) : optional — zero shift de swap.
+  display: 'optional',
 })
 
 const SITE_DESCRIPTION =
