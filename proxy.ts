@@ -1,7 +1,10 @@
 import type { NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
+// v16 : `middleware.ts` est deprecie au profit de `proxy.ts` (runtime Node —
+// requis par cacheComponents, Lot I). La logique session Supabase (getClaims
+// local) vit inchangee dans src/lib/supabase/middleware.ts.
+export async function proxy(request: NextRequest) {
   return await updateSession(request)
 }
 
