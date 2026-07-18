@@ -17,7 +17,8 @@ export function ArtistHero({
   image: string | null
   colorHex?: string | null
   tags?: ReactNode
-  meta?: string | null
+  // string OU noeud (Lot G : la page groupe streame la meta complete dans un Suspense).
+  meta?: ReactNode
   follow?: ReactNode
 }) {
   return (
