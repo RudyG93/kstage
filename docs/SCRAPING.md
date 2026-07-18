@@ -319,7 +319,25 @@ Trois défauts distincts trouvés sur le SEUL épisode M Countdown EP.936 (09/07
 
 **Cause** : le cron quotidien `scrape-youtube` ne pagine que la **tête** de la playlist uploads (fenêtre récente). Une chaîne fraîchement seedée dont les MVs sont anciens/enfouis n'est jamais atteinte par le cron seul.
 
-**Fix** : après tout `seed-youtube-sources.ts`, lancer **`backfill-youtube.ts --slugs=X --max-pages=0`** (pleine profondeur) pour l'onboarding. Piège PowerShell : la virgule de `--slugs=a,b` est mangée par le shell → **quoter l'argument** (`"--slugs=a,b"`) ou lancer un slug à la fois.
+**Fix** : après tout `seed-youtube-sources.ts`, lancer **`backfill-youtube.ts --slugs=X --max-pages=0`** (pleine profondeur) pour l'onboarding. Piège PowerShell : la virgule de `--slugs=a,b` est mangée par le shell → **quoter l'argument** (`"--slugs=a,b"`) ou lancer un slug à la fois. **Soldé structurellement (2026-07-18, 0062)** : le cron fait désormais un deep re-scan rotatif (les N sources les plus anciennement `last_deep_scan_at` sont re-paginées à fond à chaque run, cycle ~hebdo).
+
+### 3.22 — Numéros d'épisodes du carrd décalés : l'autorité = Wikipedia « Chart winners » (découvert et corrigé 2026-07-18)
+
+**Symptôme** : Music Bank du 2026-07-17 affiché « #1295 » — c'était l'épisode **1299** ; Inkigayo 07-12 « #1317 » = 1318 ; conflit arithmétique visible (« #1294 » au 05/06 + 5 épisodes hebdo entre = impossible).
+
+**Cause** : `episode_number` parsé du carrd, non fiable (décalage constaté ~4). Aucune source ne vérifiait.
+
+**Fix** : `scripts/backfill-episode-numbers.ts` — pages « List of {show} Chart winners (YYYY) » (en.wikipedia, paires `! scope="row" | 1,299` + `{{dts|July 17}}`) = autorité ; validateur qui REFUSE une autorité incohérente en interne (cas réel : Music Core #952 dupliqué → non appliquée) ; le cron **ne peut plus écraser** un `episode_number` existant (le carrd ne comble que le null). Re-lancer le script après chaque lundi pour les épisodes frais. Le check santé `episode_numbering_conflicts` surveille en continu. Corollaire découvert : les épisodes MB des 19/26 juin (0 stage, hors autorité, 0 upload KBS) sont vraisemblablement des lineups fantômes du carrd (show en pause).
+
+### 3.23 — Facturation hangul/membre dans les titres broadcasters : aliases par groupe (découvert et corrigé 2026-07-18, migration 0061)
+
+**Symptôme** : 3 stages du Music Bank 1295 jamais liés — « Forever July - 선미 » (hangul seul), « So Good - 기현 (몬스타엑스) » (membre + groupe hangul), « Ice Cream - 연준 » (membre solo, AUCUNE mention du groupe TXT).
+
+**Fix** : colonne `groups.name_aliases text[]` (hangul officiel, rebrand, **membre facturé**), seedée par `scripts/seed-group-aliases.ts` (39 groupes), consommée par `matchesGroup(text, name, aliases)` dans stage-links ET `matchGroup` des lineups. Ajouter l'alias à chaque nouveau cas (le check santé `episodes_missing_stages` les révèle).
+
+### 3.24 — Discovery : homonymes et doublons de chaîne (découvert et corrigé 2026-07-18)
+
+**Deux pièges du seed auto** : ① une chaîne étrangère homonyme passe le gate ≥2 hits (« Our Birthday » AMV 2025 seedée sur le girl group OURBIRTHDAY né en 2026) → garde : hits tous antérieurs au debut (marge 180 j) = pas de seed ; ② la même chaîne existe sous `/channel/UC…` ET `/@handle` → le check « déjà présente » par URL seul a créé des sources doublons (7 paires purgées) → dédup par `channel_id` EN PLUS de l'URL. Même classe côté MusicBrainz : l'artiste eurodance italien « Antares » (score 100) a fourni 4 faux membres au boys group k-pop → `pickArtistMatch` rejette un `country` présent ≠ KR.
 
 ---
 
