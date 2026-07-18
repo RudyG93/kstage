@@ -173,11 +173,15 @@ export async function seedAndBackfillChannel(
     }
   }
 
+  // Dédup par channel_id ET par URL : la même chaîne existe sous deux formes
+  // d'URL (`/channel/UC…` vs `/@handle`) — le check URL seul a créé une source
+  // doublon UNIS au round 2026-07-18.
   const { data: existing } = await supabase
     .from('sources')
     .select('id')
     .eq('group_id', group.id)
-    .eq('url', candidate.url)
+    .or(`url.eq.${candidate.url},channel_id.eq.${candidate.channelId}`)
+    .limit(1)
     .maybeSingle()
   if (existing) return { seeded: false, reason: 'source déjà présente' }
 
