@@ -13,6 +13,7 @@ import { PushBell } from '@/components/notifications/push-bell'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 import { getProfileByUsername, getProfileStats } from '@/lib/profiles/queries'
 import { setBias, setFavoriteGroup } from '@/lib/profiles/actions'
 import { getAllMembers } from '@/lib/members/queries'
@@ -35,9 +36,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   if (!profile) notFound()
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getViewer()
   const isOwner = user?.id === profile.id
 
   const [stats, likedMvs, userRatings, timeZone] = await Promise.all([

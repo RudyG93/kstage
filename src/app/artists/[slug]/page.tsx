@@ -23,7 +23,7 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
-import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -134,16 +134,8 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   // ── Artiste solo : même traitement que la page groupe (bandeau, follow, liens,
   // events, MVs via le groupe is_solo). ──────────────────────────────────────
   if (group?.is_solo) {
-    const supabase = await createClient()
-    const [
-      {
-        data: { user },
-      },
-      events,
-      mvs,
-      followedIds,
-    ] = await Promise.all([
-      supabase.auth.getUser(),
+    const [{ user }, events, mvs, followedIds] = await Promise.all([
+      getViewer(),
       getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
       getGroupMvs(group.slug, 48),
       getFollowedGroupIds(),
@@ -253,10 +245,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     : []
 
   // Rail « My groups » (R10) — affiché seulement si le viewer est connecté.
-  const supabaseM = await createClient()
-  const {
-    data: { user: viewerM },
-  } = await supabaseM.auth.getUser()
+  const { user: viewerM } = await getViewer()
   const signedIn = viewerM != null
 
   return (

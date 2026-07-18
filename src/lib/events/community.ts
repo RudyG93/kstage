@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 
 export interface RatingSummary {
   avg: number | null // moyenne /10, null si aucun vote
@@ -15,9 +16,7 @@ export interface RatingSummary {
  */
 export async function getEventRatingSummary(eventId: string): Promise<RatingSummary> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getViewer()
 
   // Toutes les notes de l'event (RLS permet le select public).
   const { data: ratings } = await supabase

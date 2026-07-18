@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 import {
   getEventBySlug,
   getEventRatingSummary,
@@ -70,15 +70,12 @@ export default async function MvPage({
 
   const group = event.groups
 
-  const [rating, userRes] = await Promise.all([
+  const [rating, { user: viewer }] = await Promise.all([
     getEventRatingSummary(event.id),
-    (async () => {
-      const supabase = await createClient()
-      return supabase.auth.getUser()
-    })(),
+    getViewer(),
   ])
-  const viewerId = userRes.data.user?.id ?? null
-  const isAuthed = Boolean(userRes.data.user)
+  const viewerId = viewer?.id ?? null
+  const isAuthed = viewer != null
   const videoId = extractYouTubeId(event.source_url)
   const like = await getLikeSummary(event.id, viewerId)
 

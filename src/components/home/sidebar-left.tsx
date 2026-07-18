@@ -6,8 +6,8 @@ import { getGroups } from '@/lib/groups/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
-import { getProfile } from '@/lib/profiles/queries'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
+import { getViewer } from '@/lib/supabase/viewer'
 import { createClient } from '@/lib/supabase/server'
 
 // Cap d'affichage des groupes suivis dans le rail (au-delà : lien « + N more »
@@ -26,13 +26,11 @@ export async function SidebarLeft({
   const followedIds = await getFollowedGroupIds()
   const groups = await getGroups()
   // « +X more » pointe vers le profil (où vit la liste des groupes suivis).
+  // getViewer() réutilise l'aller-retour auth déjà payé par le layout.
+  const { profile } = await getViewer()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
   const timeZone = await getViewerTimeZone()
-  const [profile, { data: countRows }, counts, annivCounts] = await Promise.all([
-    user ? getProfile(user.id) : Promise.resolve(null),
+  const [{ data: countRows }, counts, annivCounts] = await Promise.all([
     supabase.rpc('group_follow_counts'),
     getUpcomingEventCountsByGroup([...followedIds]),
     getUpcomingAnniversaryCountsByGroup([...followedIds], 90, timeZone),

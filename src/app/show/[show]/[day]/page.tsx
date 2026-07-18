@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 import { getCommentsForTarget } from '@/lib/comments/queries'
 import { buildCommentTree, sortTree } from '@/lib/comments/tree'
 import { kstDayBounds, kstTime24h, formatKst } from '@/lib/events/date'
@@ -65,9 +66,7 @@ export default async function ShowEpisodePage({
   const { descriptor, episode } = loaded
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getViewer()
   const viewerId = user?.id ?? null
 
   // Rows events du jour = lineup + stages (mêmes bornes KST que le scraper).

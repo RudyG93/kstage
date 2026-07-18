@@ -8,6 +8,7 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { pickTrending } from '@/lib/groups/trending'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 
 export const metadata = { title: 'Groups' }
 
@@ -30,23 +31,15 @@ export default async function GroupsPage({
   // Les DEUX jeux (groupes + solos) sont chargés d'un coup : la bascule
   // d'onglet est 100 % client (retour Rudy 2026-07-17 — la nav ?tab=
   // re-rendait toute la page). ~172 items au total, coût marginal.
-  const [
-    {
-      data: { user },
-    },
-    groupItems,
-    soloItems,
-    followedIds,
-    { data: countRows },
-    timeZone,
-  ] = await Promise.all([
-    supabase.auth.getUser(),
-    getNonSoloGroups(),
-    getSoloArtists(),
-    getFollowedGroupIds(),
-    supabase.rpc('group_follow_counts'),
-    getViewerTimeZone(),
-  ])
+  const [{ user }, groupItems, soloItems, followedIds, { data: countRows }, timeZone] =
+    await Promise.all([
+      getViewer(),
+      getNonSoloGroups(),
+      getSoloArtists(),
+      getFollowedGroupIds(),
+      supabase.rpc('group_follow_counts'),
+      getViewerTimeZone(),
+    ])
 
   const followCount = new Map((countRows ?? []).map((r) => [r.group_id, r.follows]))
   const popOf = (id: string) => followCount.get(id) ?? 0
