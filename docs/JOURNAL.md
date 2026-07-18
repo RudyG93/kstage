@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-18 (nuit) — Programme « Normes modernes » : Lot F + Lot G (3 routes/5)
+
+**Branche/commit** : `perf/streaming-rails-shell` (merge `3995706`) + `perf/streaming-detail-pages` (merge `b76925e`, un commit par route) → `main`.
+
+**Quoi** : ① **Lot F** : `PageRails` auto-suspendu (gate viewer interne pour SidebarLeft, SidebarRight sous Suspense, `RailSkeleton` à espace réservé) — le fan-out des sidebars ne bloque plus le premier octet ; sidebars des 4 pages listes idem ; **layout racine SYNCHRONE** (cluster user extrait en `HeaderViewer` async sous Suspense, fallback dimensionné) — le shell ne dépend plus d'aucune donnée, forme requise par cacheComponents. ② **Lot G routes 1-3** — patron anti-soft-404 : le SEUL await bloquant = check d'existence (mémoïsé, partagé avec generateMetadata), `notFound()` AVANT tout streaming, corps sous `<Suspense>` : `/mv/[slug]` (shell player immédiat ; catalogue = `getRailData` cache() partagé rail/mobile), `/groups/[slug]` (hero immédiat à slots streamés — ComebackTag, HeroMeta upgradée, GroupFollow ; `getGroupPageData` cache() ; `ArtistHero.meta` élargi à ReactNode), `/show/[show]/[day]` (`getEpisodeLineup` cache() partagé header/corps).
+
+**Vérification** : matrice curl par route (slug bidon → **404**, réel → 200, contenu streamé présent dans le HTML, redirect solo 307 intact) ; 27/28 e2e verts en build prod (golden path auth inclus) ; rituel CI-mode. ⚠️ Conclusions CI GitHub des 2 merges à confirmer (rate limit API en fin de session).
+
+**Restes du Lot G** : `/artists/[slug]` (2 branches) et `/u/[username]` ; ensuite Lot I (flip `cacheComponents` — prérequis structurels tous en place), Lot J optionnel, C-1/C-2 clés après trempage (≥ 20/07).
+
 ## 2026-07-18 (soir) — Programme « Normes modernes » : tranche 1/2 (Lots A, B, D, E, H sur 10)
 
 **Branche/commit** : 5 merges → `main` : `perf/lcp-images-waves` (`f7adf45`), `chore/typed-routes` (`c14fae8`), `sec/supply-chain-admin-docs` (`6006636`), `chore/middleware-to-proxy` (`4290cdb`), `perf/fonts-cls` (`66307f8`). Plan complet (10 lots A→J, basé docs officielles `node_modules/next/dist/docs` + doc Supabase) dans le plan-file — la tranche 2 (F rails/shell Suspense, G streaming pages détail, I flip `cacheComponents`, C clés API après action Rudy, J React Compiler optionnel) suit.
