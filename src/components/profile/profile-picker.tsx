@@ -91,7 +91,7 @@ export function ProfilePicker({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-card hover:bg-muted/40 flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-colors"
+        className="bg-card hover:bg-hover flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-colors"
       >
         {value ? (
           <>
@@ -144,7 +144,7 @@ export function ProfilePicker({
                     <button
                       type="button"
                       onClick={() => pick(item)}
-                      className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-left"
+                      className="hover:bg-hover flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors"
                     >
                       <Avatar username={item.name} avatarUrl={item.avatar} size={32} />
                       <span className="min-w-0">

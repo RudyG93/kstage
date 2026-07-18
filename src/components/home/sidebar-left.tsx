@@ -87,7 +87,7 @@ export async function SidebarLeft({
                 <li key={group.id}>
                   <Link
                     href={`/groups/${group.slug}`}
-                    className="hover:bg-muted/40 -mx-2 flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors"
+                    className="hover:bg-hover -mx-2 flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors"
                   >
                     {group.image_url ? (
                       <Image

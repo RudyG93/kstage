@@ -163,7 +163,7 @@ export function Landing({
             {remaining > 0 && (
               <Link
                 href="/groups"
-                className="bg-secondary hover:bg-muted focus-visible:ring-ring/50 flex aspect-square items-center justify-center rounded-lg border outline-none focus-visible:ring-2"
+                className="bg-secondary hover:bg-hover focus-visible:ring-ring/50 flex aspect-square items-center justify-center rounded-lg border outline-none focus-visible:ring-2"
               >
                 <span className="tabular text-muted-foreground text-lg font-bold">
                   +{remaining}

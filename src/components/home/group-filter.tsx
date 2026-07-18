@@ -43,7 +43,7 @@ export function GroupFilter({ groups }: { groups: { slug: string; name: string }
                   type="button"
                   onClick={() => toggleSlug(g.slug)}
                   aria-pressed={checked}
-                  className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-xs"
+                  className="hover:bg-hover flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-xs transition-colors"
                 >
                   <span
                     className={cn(

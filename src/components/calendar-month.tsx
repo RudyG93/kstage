@@ -109,7 +109,7 @@ export function CalendarMonth({
   }
 
   const arrowClass =
-    'hover:bg-muted focus-visible:ring-ring/50 inline-flex size-7 items-center justify-center rounded-sm outline-none focus-visible:ring-2'
+    'hover:bg-hover focus-visible:ring-ring/50 inline-flex size-7 items-center justify-center rounded-sm outline-none focus-visible:ring-2'
 
   return (
     <div className="space-y-3">
@@ -192,7 +192,7 @@ export function CalendarMonth({
                   'focus-visible:ring-ring/50 flex h-11 flex-col items-center rounded-[7px] pt-1.5 outline-none focus-visible:ring-2',
                   isToday
                     ? 'bg-primary/12 border-primary/60 border'
-                    : 'bg-secondary hover:bg-muted border border-transparent',
+                    : 'bg-secondary hover:bg-hover border border-transparent',
                   isSelected && 'ring-primary/60 ring-2',
                   hasComeback && !isToday && !isSelected && 'ring-primary/35 ring-1 ring-inset',
                 )}

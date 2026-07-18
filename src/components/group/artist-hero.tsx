@@ -59,7 +59,7 @@ export function ArtistHero({
         }}
         aria-hidden
       />
-      <BackButton className="absolute top-3 left-3 z-10" />
+      <BackButton className="absolute top-3 left-3 z-10" fallbackHref="/groups" />
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3">
         <div className="min-w-0">
           {tags && <div className="flex flex-wrap items-center gap-1.5">{tags}</div>}

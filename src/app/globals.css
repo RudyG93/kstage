@@ -52,6 +52,7 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-hover: var(--hover);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -86,6 +87,9 @@
   --secondary-foreground: oklch(0.209 0.01 268);
   --muted: oklch(0.944 0.004 272);
   --muted-foreground: oklch(0.501 0.024 262); /* texte secondaire (#5c6472) */
+  /* Survol d'item LISIBLE (round 2026-07-18) : --muted ≈ --card rendait les
+     hover:bg-muted/30-40 quasi invisibles sur les deux thèmes. */
+  --hover: oklch(0.912 0.012 277);
 
   --accent: oklch(0.94 0.026 286); /* lilas très pâle (chips actifs) */
   --accent-foreground: oklch(0.519 0.23 276);
@@ -141,6 +145,8 @@
   --secondary-foreground: oklch(0.94 0.013 271);
   --muted: oklch(0.196 0.015 267);
   --muted-foreground: oklch(0.716 0.03 268); /* texte secondaire (#9ba3b7) */
+  /* Survol d'item lisible (vs card L 0.187 — lift net mais pas criard). */
+  --hover: oklch(0.263 0.022 270);
 
   --accent: oklch(0.252 0.042 277); /* lilas sombre (chips actifs) (#1d2036) */
   --accent-foreground: oklch(0.78 0.13 282);

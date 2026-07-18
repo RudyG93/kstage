@@ -24,7 +24,7 @@ function DiscussionLine({ row }: { row: CommentedEvent }) {
     <li>
       <Link
         href={eventHref(row)}
-        className="hover:bg-muted/30 -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
+        className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
       >
         {row.image_url ? (
           <Image
@@ -81,7 +81,7 @@ export async function SidebarRight() {
                 <li key={cb.id}>
                   <Link
                     href={eventHref(cb)}
-                    className="hover:bg-muted/30 -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
+                    className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
                   >
                     {cb.image_url ? (
                       <Image

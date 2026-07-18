@@ -125,7 +125,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <Link
                 href="/account"
                 aria-label="Account settings"
-                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2"
+                className="text-muted-foreground hover:text-foreground hover:bg-hover focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2"
               >
                 <Settings className="size-5" aria-hidden />
               </Link>

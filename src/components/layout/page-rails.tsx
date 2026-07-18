@@ -12,9 +12,12 @@ import { SidebarRight } from '@/components/home/sidebar-right'
  */
 export function PageRails({
   signedIn = false,
+  right,
   children,
 }: {
   signedIn?: boolean
+  /** Rail droit custom (ex. catalogue du groupe sur /mv) — défaut SidebarRight. */
+  right?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -28,9 +31,7 @@ export function PageRails({
           </aside>
         )}
         <div className="min-w-0 flex-1">{children}</div>
-        <aside className="hidden shrink-0 lg:block lg:w-80">
-          <SidebarRight />
-        </aside>
+        <aside className="hidden shrink-0 lg:block lg:w-80">{right ?? <SidebarRight />}</aside>
       </div>
     </div>
   )
