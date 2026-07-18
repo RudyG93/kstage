@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { getViewer } from '@/lib/supabase/viewer'
 import { Landing } from '@/components/landing'
+import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { WeekGlance } from '@/components/home/week-glance'
 import { FreshDrops } from '@/components/home/fresh-drops'
@@ -177,7 +179,9 @@ export default async function Home({
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-            <SidebarLeft showFilters={false} />
+            <Suspense fallback={<RailSkeleton />}>
+              <SidebarLeft showFilters={false} />
+            </Suspense>
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
             {/* 0 follow : la home affiche des replis globaux — le dire, et
@@ -233,7 +237,9 @@ export default async function Home({
           {/* Recent comebacks + Recent discussions (retour Rudy 2026-07-03) :
               sidebar en desktop, sections empilées sous le centre en mobile. */}
           <aside className="order-3 shrink-0 lg:w-80">
-            <SidebarRight />
+            <Suspense fallback={<RailSkeleton />}>
+              <SidebarRight />
+            </Suspense>
           </aside>
         </div>
       </div>

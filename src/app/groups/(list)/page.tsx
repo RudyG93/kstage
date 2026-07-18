@@ -1,6 +1,8 @@
 import type { Route } from 'next'
+import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
 import type { TrendingEntry } from '@/components/group/trending-list'
 import { getGroupFollowCounts, getNonSoloGroups, getSoloArtists } from '@/lib/groups/queries'
@@ -101,7 +103,9 @@ export default async function GroupsPage({
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft showFilters={false} />
+          <Suspense fallback={<RailSkeleton />}>
+            <SidebarLeft showFilters={false} />
+          </Suspense>
         </aside>
 
         <div className="order-1 min-w-0 flex-1 lg:order-2">
@@ -115,7 +119,9 @@ export default async function GroupsPage({
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">
-          <SidebarRight />
+          <Suspense fallback={<RailSkeleton />}>
+            <SidebarRight />
+          </Suspense>
         </aside>
       </div>
     </div>
