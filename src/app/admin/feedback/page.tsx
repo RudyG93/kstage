@@ -1,18 +1,11 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { getFeedbackList } from '@/lib/feedback/actions'
 import { FeedbackAdminList } from '@/components/feedback/feedback-admin-list'
 
 export const metadata = { title: 'User feedback' }
 
 export default async function AdminFeedbackPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
+  await requireAdminPage()
 
   const feedback = await getFeedbackList()
   const unread = feedback.filter((f) => f.status === 'new').length

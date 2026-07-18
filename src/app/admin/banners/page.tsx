@@ -1,17 +1,12 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { BannerAdminGrid } from '@/components/admin/banner-admin-grid'
 
 export const metadata = { title: 'Banners' }
 
 export default async function AdminBannersPage() {
+  await requireAdminPage()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
 
   const { data: groups } = await supabase
     .from('groups')

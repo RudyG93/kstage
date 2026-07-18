@@ -1,8 +1,7 @@
-import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import type { Route } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
 import { getSourceHealth } from '@/lib/monitoring/queries'
 import { getActivationStats } from '@/lib/analytics/admin'
 import { relativeTime } from '@/lib/events/date'
@@ -35,12 +34,8 @@ const STATUS_STYLE: Record<string, string> = {
 }
 
 export default async function AdminHub() {
+  await requireAdminPage()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
 
   // Même évaluation que /api/cron/monitor : la carte montre ce que le monitor
   // verrait à l'instant T (fraîcheur PAR FAMILLE — audit §7.6).

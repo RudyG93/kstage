@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { getDebutCandidates, getLineupUnmatched } from '@/lib/debuts/actions'
 import { DebutAdminList } from '@/components/debuts/debut-admin-list'
 import { LineupUnmatchedList } from '@/components/debuts/lineup-unmatched-list'
@@ -10,12 +8,7 @@ export const metadata = { title: 'Debut candidates' }
 // File de revue des debuts détectés (R4-I) : les candidats hors gate
 // automatique attendent ici — un coup d'œil par jour suffit.
 export default async function AdminDebutsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
+  await requireAdminPage()
 
   const [candidates, lineupUnmatched] = await Promise.all([
     getDebutCandidates(),

@@ -1,0 +1,22 @@
+# Hygiène supply-chain (Lot D 2026-07-18) : PRs hebdo groupées — mineures/patch
+# ensemble (un merge par semaine), majeures séparées. La CI complète (vitest,
+# build, contrats) sert de gate sur chaque PR Dependabot.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    groups:
+      minor-and-patch:
+        update-types: ['minor', 'patch']
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

@@ -1,19 +1,12 @@
-import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { ModerationList } from '@/components/suggestions/moderation-list'
 import { ArtistModerationList } from '@/components/suggestions/artist-moderation-list'
-import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
 import { getPendingSuggestions, getPendingArtistSuggestions } from '@/lib/suggestions/queries'
 
 export const metadata = { title: 'Moderate suggestions' }
 
 export default async function AdminSuggestionsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
+  await requireAdminPage()
 
   const [pending, artists] = await Promise.all([
     getPendingSuggestions(),

@@ -1,17 +1,12 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { MemberImageEditor } from '@/components/admin/member-image-editor'
 
 export const metadata = { title: 'Images' }
 
 export default async function AdminImagesPage() {
+  await requireAdminPage()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
 
   const { data: members } = await supabase
     .from('members')
