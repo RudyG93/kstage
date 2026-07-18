@@ -624,6 +624,7 @@ export type Database = {
           is_solo: boolean
           links: Json
           name: string
+          name_aliases: string[]
           slug: string
           spotify_followers: number | null
         }
@@ -643,6 +644,7 @@ export type Database = {
           is_solo?: boolean
           links?: Json
           name: string
+          name_aliases?: string[]
           slug: string
           spotify_followers?: number | null
         }
@@ -662,6 +664,7 @@ export type Database = {
           is_solo?: boolean
           links?: Json
           name?: string
+          name_aliases?: string[]
           slug?: string
           spotify_followers?: number | null
         }

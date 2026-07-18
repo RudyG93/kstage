@@ -37,6 +37,8 @@ interface GroupRef {
   id: string
   slug: string
   name: string
+  // groups.name_aliases (0061) : hangul officiel, rebrand, membre facturé.
+  aliases: readonly string[]
 }
 
 function matchGroup(artistName: string, groups: readonly GroupRef[]): GroupRef | null {
@@ -44,6 +46,7 @@ function matchGroup(artistName: string, groups: readonly GroupRef[]): GroupRef |
   if (!key) return null
   for (const g of groups) {
     if (normalize(g.name) === key || normalize(g.slug) === key) return g
+    if (g.aliases.some((a) => normalize(a) === key)) return g
   }
   const aliasSlug = GROUP_ALIASES[key]
   if (aliasSlug) return groups.find((g) => g.slug === aliasSlug) ?? null
@@ -121,12 +124,13 @@ export async function GET(req: Request) {
 
   const { data: groups, error: groupsError } = await supabase
     .from('groups')
-    .select('id, slug, name')
+    .select('id, slug, name, name_aliases')
   if (groupsError) return NextResponse.json({ error: groupsError.message }, { status: 500 })
   const groupRefs: GroupRef[] = (groups ?? []).map((g) => ({
     id: g.id,
     slug: g.slug,
     name: g.name,
+    aliases: g.name_aliases ?? [],
   }))
   const groupById = new Map(groupRefs.map((g) => [g.id, g]))
 

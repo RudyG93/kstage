@@ -175,3 +175,66 @@ describe('rankStageCandidates — contenus non-stage (2026-07-11)', () => {
     }
   })
 })
+
+describe('rankStageCandidates — aliases hangul/membre facturé (0061, MB 1295 2026-07-17)', () => {
+  const AIR_MB = '2026-07-17T08:10:00Z'
+  it('lie le stage Sunmi titré en hangul seul via alias 선미', () => {
+    const uploads = [
+      upload({
+        videoId: 'sunmi1295a',
+        title: 'Forever July - 선미 [뮤직뱅크/Music Bank] | KBS 260717 방송',
+        publishedAt: '2026-07-17T12:00:00Z',
+      }),
+    ]
+    expect(rankStageCandidates(uploads, 'Sunmi', 'music-bank', AIR_MB)).toHaveLength(0)
+    expect(
+      rankStageCandidates(uploads, 'Sunmi', 'music-bank', AIR_MB, [], ['선미']).map(
+        (u) => u.videoId,
+      ),
+    ).toEqual(['sunmi1295a'])
+  })
+  it('lie le slot MONSTA X performé par 기현 (groupe en hangul dans le titre)', () => {
+    const uploads = [
+      upload({
+        videoId: 'kihyun1295a',
+        title: 'So Good - 기현 (몬스타엑스) [뮤직뱅크/Music Bank] | KBS 260717 방송',
+        publishedAt: '2026-07-17T12:00:00Z',
+      }),
+    ]
+    expect(
+      rankStageCandidates(
+        uploads,
+        'MONSTA X',
+        'music-bank',
+        AIR_MB,
+        [],
+        ['몬스타엑스', '기현'],
+      ).map((u) => u.videoId),
+    ).toEqual(['kihyun1295a'])
+  })
+  it('lie le slot TXT performé par 연준 SANS aucune mention du groupe', () => {
+    const uploads = [
+      upload({
+        videoId: 'yeonjun1295',
+        title: 'Ice Cream - 연준 [뮤직뱅크/Music Bank] | KBS 260717 방송',
+        publishedAt: '2026-07-17T12:00:00Z',
+      }),
+      upload({
+        videoId: 'yeonjunfanc',
+        title:
+          "[4K] 연준 'Ice Cream' 뮤직뱅크 1위 앵콜직캠(YEONJUN Encore Facecam) @뮤직뱅크(Music Bank) 260717",
+        publishedAt: '2026-07-17T13:00:00Z',
+      }),
+    ]
+    const ranked = rankStageCandidates(
+      uploads,
+      'TXT',
+      'music-bank',
+      AIR_MB,
+      [],
+      ['투모로우바이투게더', '연준'],
+    )
+    // Le vrai stage passe, le fancam (직캠) reste filtré.
+    expect(ranked.map((u) => u.videoId)).toEqual(['yeonjun1295'])
+  })
+})

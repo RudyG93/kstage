@@ -86,13 +86,17 @@ export function rankStageCandidates(
   showId: ShowId,
   eventStartAtIso: string,
   otherGroupNames: readonly string[] = [],
+  // groups.name_aliases (0061) : hangul officiel, membre facturé — sans eux,
+  // « Forever July - 선미 » ou « Ice Cream - 연준 » (slot TXT) ne matchent
+  // jamais le nom DB latin (3 stages manquants du MB 1295, round 2026-07-18).
+  aliases: readonly string[] = [],
 ): UploadItem[] {
   const marker = STAGE_TITLE_MARKERS[showId]
   const airTime = new Date(eventStartAtIso).getTime()
   const scored: { upload: UploadItem; score: number; published: number }[] = []
   for (const u of uploads) {
     if (!marker.test(u.title)) continue
-    if (!matchesGroup(u.title, groupName)) continue
+    if (!matchesGroup(u.title, groupName, aliases)) continue
     const published = new Date(u.publishedAt).getTime()
     if (Number.isNaN(published)) continue
     if (published < airTime - BEFORE_MS || published > airTime + AFTER_MS) continue
@@ -139,7 +143,7 @@ export async function enrichStageLinks(
   const now = new Date().toISOString()
   const { data: pending } = await supabase
     .from('events')
-    .select('id, title, start_at, stage_url, groups!inner(name)')
+    .select('id, title, start_at, stage_url, groups!inner(name, name_aliases)')
     .eq('type', 'music_show')
     .gte('start_at', since)
     .lte('start_at', now)
@@ -199,6 +203,7 @@ export async function enrichStageLinks(
         showId,
         event.start_at,
         allGroupNames,
+        event.groups?.name_aliases ?? [],
       ).slice(0, 3)
       if (ranked.length === 0) continue
       candidatesByEvent.set(event.id, ranked)
