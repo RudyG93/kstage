@@ -61,7 +61,7 @@ export function PushBell() {
       aria-pressed={enabled}
       aria-label={enabled ? 'Disable notifications' : 'Enable notifications'}
       className={cn(
-        'hover:bg-muted/50 focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2 disabled:opacity-50',
+        'hover:bg-hover focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2 disabled:opacity-50',
         enabled ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
       )}
     >

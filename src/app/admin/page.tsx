@@ -182,7 +182,7 @@ export default async function AdminHub() {
           <Link
             key={s.href}
             href={s.href}
-            className="bg-card hover:bg-muted/40 rounded-xl border p-4 transition-colors"
+            className="bg-card hover:bg-hover rounded-xl border p-4 transition-colors"
           >
             <p className="font-medium">{s.title}</p>
             <p className="text-muted-foreground mt-0.5 text-xs">{s.desc}</p>
