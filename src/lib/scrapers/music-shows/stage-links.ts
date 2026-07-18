@@ -130,17 +130,31 @@ export interface StageLinkResult {
   byShow: Record<string, { pending: number; linked: number }>
 }
 
+export interface StageLinkOptions {
+  // Fenêtre d'events à enrichir. Défaut : les 10 derniers jours (cron).
+  sinceMs?: number
+  untilMs?: number
+  // Pages d'uploads par chaîne (50/page). Défaut 2 (cron) ; le BACKFILL des
+  // épisodes anciens (round 2026-07-18 : 3 juil. 5/9, 10 juil. 1/8, pré-0040
+  // jamais enrichis) monte à ~40 — les chaînes postent 20-40 vidéos/jour, un
+  // épisode de J-15 vit ~600 uploads en profondeur. Early-stop dès que la page
+  // dépasse la fenêtre du plus vieil event en attente.
+  maxPages?: number
+}
+
 /**
- * Enrichit les events music_show récents (10 jours) encore liés au carrd avec
- * la vidéo YouTube du passage. Quota : ~3 units par show actif (1 channels.list
- * + 2 playlistItems), seulement pour les shows ayant des events en attente.
+ * Enrichit les events music_show de la fenêtre (défaut : 10 jours) encore
+ * sans stage avec la vidéo YouTube du passage. Quota : ~(1 + pages) units par
+ * show actif, seulement pour les shows ayant des events en attente.
  */
 export async function enrichStageLinks(
   supabase: SupabaseClient,
   apiKey: string,
+  opts: StageLinkOptions = {},
 ): Promise<StageLinkResult> {
-  const since = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-  const now = new Date().toISOString()
+  const since = new Date(opts.sinceMs ?? Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date(opts.untilMs ?? Date.now()).toISOString()
+  const maxPages = opts.maxPages ?? 2
   const { data: pending } = await supabase
     .from('events')
     .select('id, title, start_at, stage_url, groups!inner(name, name_aliases)')
@@ -173,12 +187,16 @@ export async function enrichStageLinks(
       const channel = await resolveChannel(STAGE_CHANNELS[showId], apiKey)
       uploads = []
       let pageToken: string | undefined
-      // 2 pages = 100 uploads récents — ces chaînes postent ~20-40 vidéos/jour,
-      // ça couvre largement la fenêtre de 4 jours des events en attente.
-      for (let page = 0; page < 2; page++) {
+      // maxPages × 50 uploads, du plus récent au plus ancien. Early-stop dès
+      // que la page passe sous [plus vieil event − 12 h] : tout ce qui suit est
+      // trop ancien pour matcher la fenêtre de publication.
+      const oldestAirMs = Math.min(...showEvents.map((e) => Date.parse(e.start_at)))
+      for (let page = 0; page < maxPages; page++) {
         result.units++
         const res = await fetchUploadsPage(channel.uploadsPlaylistId, apiKey, pageToken)
         uploads.push(...res.items)
+        const last = res.items[res.items.length - 1]
+        if (last && Date.parse(last.publishedAt) < oldestAirMs - BEFORE_MS) break
         if (!res.nextPageToken) break
         pageToken = res.nextPageToken
       }

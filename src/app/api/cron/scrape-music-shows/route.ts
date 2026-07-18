@@ -170,15 +170,26 @@ export async function GET(req: Request) {
 
     // Entité épisode (Lot N 2026-07-17) : une row stable par (show, jour KST)
     // — ancre des pages /show/[show]/[day] et de leurs commentaires. Upsert
-    // best-effort : le time-shift met start_at à jour, episode_number n'est
-    // écrit que quand la source le fournit (ne pas écraser par null).
+    // best-effort : le time-shift met start_at à jour. Le numéro carrd ne
+    // COMBLE que le null — un numéro existant est l'autorité (backfill
+    // Wikipedia, round 2026-07-18 : le carrd s'est avéré décalé, « 1295 » du
+    // 17/07 = épisode 1299) et ne doit jamais être ré-écrasé.
     try {
+      const kstDay = kstDayKey(lineup.startAtIso)
+      const { data: existingEp } = await supabase
+        .from('show_episodes')
+        .select('episode_number')
+        .eq('show_title', showLabel)
+        .eq('kst_day', kstDay)
+        .maybeSingle()
       await supabase.from('show_episodes').upsert(
         {
           show_title: showLabel,
-          kst_day: kstDayKey(lineup.startAtIso),
+          kst_day: kstDay,
           start_at: lineup.startAtIso,
-          ...(lineup.episodeNumber != null ? { episode_number: lineup.episodeNumber } : {}),
+          ...(lineup.episodeNumber != null && existingEp?.episode_number == null
+            ? { episode_number: lineup.episodeNumber }
+            : {}),
         },
         { onConflict: 'show_title,kst_day' },
       )
@@ -221,7 +232,7 @@ export async function GET(req: Request) {
       const { from: dayFrom, to: dayTo } = kstDayBounds(lineup.startAtIso)
       const { data: existingRows } = await supabase
         .from('events')
-        .select('id, start_at')
+        .select('id, start_at, episode_number')
         .eq('group_id', group.id)
         .eq('type', 'music_show')
         .eq('title', showLabel)
@@ -255,7 +266,11 @@ export async function GET(req: Request) {
           .from('events')
           .update({
             start_at: lineup.startAtIso,
-            episode_number: lineup.episodeNumber,
+            // Même règle que show_episodes : le carrd ne comble que le null
+            // (et ne peut plus NULLIFIER un numéro existant — bug corrigé).
+            ...(sameDay[0].episode_number == null && lineup.episodeNumber != null
+              ? { episode_number: lineup.episodeNumber }
+              : {}),
             source_id: sourceIdByLabel.get(lineup.sourceLabel) ?? source.id,
           })
           .eq('id', sameDay[0].id)
