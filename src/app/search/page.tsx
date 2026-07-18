@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import type { Route } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Star } from 'lucide-react'
@@ -79,7 +80,7 @@ export default async function SearchPage({
           {SEGMENTS.map((s) => (
             <Link
               key={s}
-              href={segHref(s)}
+              href={segHref(s) as Route}
               aria-current={seg === s ? 'true' : undefined}
               className={cn(
                 'label-data-inline rounded-sm px-2.5 py-1.5 text-[9px] transition-colors',

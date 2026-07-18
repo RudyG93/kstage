@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
@@ -84,7 +85,8 @@ export function CalendarMonth({
     const params = new URLSearchParams(searchParams.toString())
     params.set('month', `${targetYear}-${pad(targetMonth)}`)
     params.delete('day')
-    return `${pathname}?${params.toString()}`
+    // Base = usePathname() (string) → cast : la query preserve la route courante.
+    return `${pathname}?${params.toString()}` as Route
   }
 
   const prev = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 }

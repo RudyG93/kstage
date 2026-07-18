@@ -39,6 +39,8 @@ const SECURITY_HEADERS = [
 ]
 
 const nextConfig: NextConfig = {
+  // Liens internes types (stable v16) : un href casse = erreur de compilation.
+  typedRoutes: true,
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }]
   },

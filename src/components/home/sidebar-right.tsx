@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
+import type { Route } from 'next'
 import Link from 'next/link'
 import {
   getRecentComebacks,
@@ -23,7 +24,7 @@ function DiscussionLine({ row }: { row: CommentedEvent }) {
   return (
     <li>
       <Link
-        href={eventHref(row)}
+        href={eventHref(row) as Route}
         className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
       >
         {row.image_url ? (
@@ -80,7 +81,7 @@ export async function SidebarRight() {
               {recentComebacks.map((cb) => (
                 <li key={cb.id}>
                   <Link
-                    href={eventHref(cb)}
+                    href={eventHref(cb) as Route}
                     className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
                   >
                     {cb.image_url ? (

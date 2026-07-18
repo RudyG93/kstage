@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { buttonVariants } from '@/components/ui/button'
@@ -17,7 +18,7 @@ export function EmptyState({
   icon?: ReactNode
   title: string
   description?: string
-  action?: { label: string; href: string }
+  action?: { label: string; href: Route }
   className?: string
 }) {
   return (

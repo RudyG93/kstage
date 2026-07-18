@@ -1,5 +1,7 @@
 'use client'
 
+import type { Route } from 'next'
+
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -31,7 +33,7 @@ export function OnboardingGrid({ groups }: { groups: OnboardingGroup[] }) {
     })
   }
 
-  function exit(to: string = '/') {
+  function exit(to: Route = '/') {
     router.push(to)
     router.refresh()
   }

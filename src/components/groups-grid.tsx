@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
+import type { Route } from 'next'
 import { GroupCard, type NextEventInfo } from '@/components/group-card'
 import type { GroupSummary } from '@/lib/groups/queries'
 
@@ -9,7 +10,7 @@ export type GroupGridItem = {
   group: GroupSummary
   isFollowing: boolean
   isAuthed: boolean
-  href?: string
+  href?: Route
   nextEvent?: NextEventInfo | null
 }
 

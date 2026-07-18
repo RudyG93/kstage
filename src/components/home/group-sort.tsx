@@ -1,5 +1,7 @@
 'use client'
 
+import type { Route } from 'next'
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const OPTIONS = [
@@ -20,7 +22,7 @@ export function GroupSort({ value }: { value: string }) {
     if (v && v !== 'az') params.set('sort', v)
     else params.delete('sort')
     const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
+    router.push((qs ? `${pathname}?${qs}` : pathname) as Route)
   }
 
   return (

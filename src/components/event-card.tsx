@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { LocalTime } from '@/components/local-time'
@@ -26,7 +27,7 @@ export function EventCard({ event }: { event: UpcomingEvent }) {
 
   return (
     <Link
-      href={href}
+      href={href as Route}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className="group/event bg-card hover:border-primary/40 focus-visible:ring-primary/40 relative flex items-stretch gap-3.5 overflow-hidden rounded-xl border pr-4 pl-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
     >
