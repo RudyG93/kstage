@@ -31,6 +31,11 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  await supabase.auth.getUser()
+  // getClaims (Lot 1bis, 2026-07-18) : le projet signe en ECC P-256 asymétrique
+  // → vérification LOCALE du JWT (JWKS caché par instance), plus d'aller-retour
+  // Auth par requête comme le faisait getUser(). Le refresh d'un token expiré
+  // continue de passer par le réseau (≈ 1×/h/user) et réécrit les cookies via
+  // setAll. Les écritures sensibles (server actions, admin) gardent getUser().
+  await supabase.auth.getClaims()
   return response
 }
