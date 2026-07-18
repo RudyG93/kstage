@@ -16,10 +16,13 @@ const WEBP_QUALITY = 80
  */
 export async function optimizeImageBuffer(
   input: ArrayBuffer | Buffer,
-  opts: { maxSide?: number } = {},
+  opts: { maxSide?: number; maxSourceBytes?: number } = {},
 ): Promise<Buffer> {
   const buf = Buffer.isBuffer(input) ? input : Buffer.from(input)
-  if (buf.byteLength > MAX_SOURCE_BYTES) {
+  // `maxSourceBytes` relevable UNIQUEMENT pour retraiter nos propres objets
+  // déjà en bucket (reprocess) — les fetches externes gardent le cap 10 Mo.
+  const cap = opts.maxSourceBytes ?? MAX_SOURCE_BYTES
+  if (buf.byteLength > cap) {
     throw new Error(`image source ${(buf.byteLength / 1_000_000).toFixed(1)} MB > cap 10 MB`)
   }
   const maxSide = opts.maxSide ?? DEFAULT_MAX_SIDE
