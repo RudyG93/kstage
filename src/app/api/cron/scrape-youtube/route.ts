@@ -11,6 +11,12 @@ import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 // tenir le wall-clock sans latence de rotation, et on relève maxDuration.
 export const maxDuration = 300
 const CONCURRENCY = 6
+// Rotation de re-scan PROFOND (0062, round 2026-07-18) : chaque run re-pagine
+// à fond les N sources les plus anciennement deep-scannées (cycle ~hebdo sur
+// ~120 sources) — les MVs anciens / trous d'historique ne restent plus
+// invisibles. Coût : ~DEEP_MAX_PAGES units × DEEP_PER_RUN ≈ 300/jour.
+const DEEP_PER_RUN = 15
+const DEEP_MAX_PAGES = 20
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
 export async function GET(req: Request) {
@@ -28,11 +34,19 @@ export async function GET(req: Request) {
 
   const { data: sources, error } = await supabase
     .from('sources')
-    .select('id, url, group_id')
+    .select('id, url, group_id, last_deep_scan_at')
     .eq('type', 'youtube_api')
     .not('group_id', 'is', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Sélection deep du run : jamais scannées d'abord (null), puis plus anciennes.
+  const deepIds = new Set(
+    [...(sources ?? [])]
+      .sort((a, b) => (a.last_deep_scan_at ?? '').localeCompare(b.last_deep_scan_at ?? ''))
+      .slice(0, DEEP_PER_RUN)
+      .map((s) => s.id),
+  )
 
   const startedAt = new Date().toISOString()
   const results: Record<
@@ -48,18 +62,32 @@ export async function GET(req: Request) {
     const batch = sourceList.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
       batch.map((source) =>
-        scrapeGroup(source as { id: string; url: string; group_id: string }, apiKey, supabase),
+        scrapeGroup(
+          source as { id: string; url: string; group_id: string },
+          apiKey,
+          supabase,
+          deepIds.has(source.id) ? { maxPages: DEEP_MAX_PAGES } : {},
+        ),
       ),
     )
+    const deepDone: string[] = []
     settled.forEach((res, j) => {
       const source = batch[j]
       if (res.status === 'fulfilled') {
         results[source.id] = res.value
+        if (deepIds.has(source.id)) deepDone.push(source.id)
       } else {
         results[source.id] = { error: String(res.reason) }
         if (res.reason instanceof QuotaExceededError) quotaExhausted = true
       }
     })
+    // Stamp APRÈS succès seulement : un deep-scan raté repassera en tête.
+    if (deepDone.length > 0) {
+      await supabase
+        .from('sources')
+        .update({ last_deep_scan_at: new Date().toISOString() })
+        .in('id', deepDone)
+    }
   }
 
   // P0.3 observabilité (SCRAPING.md §6) : avant, la route renvoyait 200

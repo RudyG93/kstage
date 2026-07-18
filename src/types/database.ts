@@ -968,6 +968,7 @@ export type Database = {
           created_at: string
           group_id: string | null
           id: string
+          last_deep_scan_at: string | null
           last_scraped_at: string | null
           name: string
           subscriber_count: number | null
@@ -979,6 +980,7 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          last_deep_scan_at?: string | null
           last_scraped_at?: string | null
           name: string
           subscriber_count?: number | null
@@ -990,6 +992,7 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          last_deep_scan_at?: string | null
           last_scraped_at?: string | null
           name?: string
           subscriber_count?: number | null
