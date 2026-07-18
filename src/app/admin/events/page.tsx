@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { EventAdminList, type AdminEvent } from '@/components/admin/event-admin-list'
 
 export const metadata = { title: 'Events' }
@@ -10,12 +9,8 @@ export default async function AdminEventsPage({
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
+  await requireAdminPage()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
 
   const { q } = await searchParams
   const query = (q ?? '').trim()

@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
 import { runDataHealthChecks } from '@/lib/health/checks'
 import type { Database } from '@/types/database'
 
@@ -12,12 +10,7 @@ export const metadata = { title: 'Data health' }
 // de personnes…) est un check qui remonte tout seul — burn-down visible, plus
 // de redécouverte surface par surface.
 export default async function AdminHealthPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
+  await requireAdminPage()
 
   // Les checks lisent des tables sans policy publique (lineup_unmatched,
   // scrape_log) + Storage → service role, APRÈS la garde admin.

@@ -1,18 +1,11 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/auth/admin'
+import { requireAdminPage } from '@/lib/auth/require-admin'
 import { getOpenReports } from '@/lib/comments/moderation'
 import { ReportsList } from '@/components/mv/comments/reports-list'
 
 export const metadata = { title: 'Moderate reports' }
 
 export default async function AdminReportsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-  if (!isAdmin(user.email)) redirect('/')
+  await requireAdminPage()
 
   const reports = await getOpenReports()
 
