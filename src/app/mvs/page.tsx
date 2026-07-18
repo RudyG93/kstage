@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { HeroBackdrop } from '@/components/home/hero-backdrop'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { MvChart } from '@/components/mv/mv-chart'
@@ -66,7 +68,9 @@ export default async function MvsPage({
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <SidebarLeft showFilters={false} />
+          <Suspense fallback={<RailSkeleton />}>
+            <SidebarLeft showFilters={false} />
+          </Suspense>
         </aside>
 
         <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">
@@ -138,7 +142,9 @@ export default async function MvsPage({
         </div>
 
         <aside className="order-3 shrink-0 lg:w-80">
-          <SidebarRight />
+          <Suspense fallback={<RailSkeleton />}>
+            <SidebarRight />
+          </Suspense>
         </aside>
       </div>
     </div>

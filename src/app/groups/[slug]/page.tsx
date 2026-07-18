@@ -92,7 +92,6 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   // Bias du viewer → ring dorée dans le rail membres (§7.6.5). Rail « My groups »
   // (R10) affiché seulement si le viewer est connecté.
   const biasMemberId = viewerProfile?.bias_member_id ?? null
-  const signedIn = user != null
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
   // par les labels à chaque ère) remplace le hqdefault 480px flou du dernier
@@ -121,7 +120,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   ].filter(Boolean)
 
   return (
-    <PageRails signedIn={signedIn}>
+    <PageRails>
       <JsonLd
         data={{
           '@context': 'https://schema.org',

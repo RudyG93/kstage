@@ -7,22 +7,22 @@ import {
   Instrument_Serif,
   Archivo,
 } from 'next/font/google'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { SITE_URL } from '@/lib/site'
-import { BellIcon, SearchIcon } from 'lucide-react'
+import { SearchIcon } from 'lucide-react'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteNav } from '@/components/site-nav'
 import { HeaderSearch } from '@/components/search/header-search'
-import { AuthMenu } from '@/components/auth/auth-menu'
 import { Footer } from '@/components/footer'
 import { TimezoneCookie } from '@/components/timezone-cookie'
 import { NotificationOpenTracker } from '@/components/analytics/notification-open-tracker'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { getViewer } from '@/lib/supabase/viewer'
+import { HeaderViewer } from '@/components/layout/header-viewer'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -102,16 +102,14 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default async function RootLayout({
+// Lot F (2026-07-18) : layout SYNCHRONE — l'auth vit dans <HeaderViewer/>
+// (Suspense). Le shell (header/nav/footer) ne depend plus d'aucune donnee :
+// forme requise par le futur shell cache (cacheComponents, Lot I).
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // profile alimente l'avatar du header (entrée profil — Data Desk §6).
-  // getViewer() est mémoïsé par requête : timezone/sidebars réutilisent le même
-  // aller-retour auth au lieu d'en refaire chacun un.
-  const { user, profile } = await getViewer()
-
   return (
     <html
       lang="en"
@@ -174,22 +172,11 @@ export default async function RootLayout({
                 {/* Visible aussi en mobile depuis R4-G : le bloc Settings du
                     profil (ex-seul accès mobile au thème) est supprimé. */}
                 <ThemeToggle />
-                {user && (
-                  <Link
-                    href="/account"
-                    aria-label="Notification settings"
-                    className="text-muted-foreground hover:text-foreground relative shrink-0 p-1 transition-colors"
-                  >
-                    {/* Pas de dot : il suggérait une notification en attente
-                        alors qu'il était décoratif (audit UX 2026-07-04). */}
-                    <BellIcon className="size-[18px]" />
-                  </Link>
-                )}
-                <AuthMenu
-                  email={user?.email ?? null}
-                  username={profile?.username ?? null}
-                  avatarUrl={profile?.avatar_url ?? null}
-                />
+                {/* Lot F : le seul morceau viewer-dependant du shell — async
+                    sous Suspense, le reste du header ne l'attend plus. */}
+                <Suspense fallback={<span className="inline-block size-8" aria-hidden />}>
+                  <HeaderViewer />
+                </Suspense>
               </div>
             </div>
           </header>

@@ -109,7 +109,6 @@ export default async function MvPage({
     // groups à gauche (connecté), catalogue du groupe à droite ; le contenu
     // central garde sa largeur de lecture.
     <PageRails
-      signedIn={isAuthed}
       right={
         railMvs.length > 0 && group?.slug ? (
           <MvRightRail

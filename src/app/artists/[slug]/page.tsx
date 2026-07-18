@@ -237,20 +237,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   // soit plus un cul-de-sac maigre. Les 3 fetchs indépendants partent ENSEMBLE
   // (4 vagues série → 2, Lot A perf 2026-07-18) ; seuls les ratings dépendent
   // des MVs.
-  const [memberMvs, groupmatesRaw, { user: viewerM }] = await Promise.all([
+  const [memberMvs, groupmatesRaw] = await Promise.all([
     getMemberMvs(member.id),
     group ? getMembersForGroup(group.id) : Promise.resolve([]),
-    getViewer(),
   ])
   const memberRatings =
     memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
   const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
 
-  // Rail « My groups » (R10) — affiché seulement si le viewer est connecté.
-  const signedIn = viewerM != null
-
   return (
-    <PageRails signedIn={signedIn}>
+    <PageRails>
       <div className="space-y-6 px-4 md:px-0">
         <header className="flex items-start gap-4">
           <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-xl">
