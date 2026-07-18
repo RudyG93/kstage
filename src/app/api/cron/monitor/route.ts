@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAuthorizedCron } from '@/lib/cron/auth'
+import { runDataHealthChecks, summarizeReport } from '@/lib/health/checks'
 import { evaluateSourceHealth } from '@/lib/monitoring/health'
+import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 import type { Database } from '@/types/database'
 
 // Monitoring actif (Phase 1 Lot 5, audit §6.3) : lit scrape_log et évalue le
@@ -36,8 +38,32 @@ export async function GET(req: Request) {
   }
 
   const { checks, alerts } = evaluateSourceHealth(data ?? [], new Date())
-  if (alerts.length > 0) {
-    return NextResponse.json({ ok: false, alerts, checks }, { status: 500 })
+
+  // Data-health (round 2026-07-18) : les classes d'erreur data connues, en
+  // résumé quotidien dans scrape_log (historique/burn-down — détail sur
+  // /admin/health). Best-effort : un échec ici n'alerte pas et ne casse pas le
+  // monitor, et les counts ne déclenchent pas de 500 (backlog ≠ incident).
+  let dataHealth: Record<string, number> | null = null
+  const startedAt = new Date().toISOString()
+  try {
+    dataHealth = summarizeReport(await runDataHealthChecks(supabase))
+    await logScrapeRun(supabase, {
+      source: 'data_health',
+      status: 'ok',
+      startedAt,
+      details: dataHealth,
+    })
+  } catch (e) {
+    await logScrapeRun(supabase, {
+      source: 'data_health',
+      status: 'error',
+      startedAt,
+      errorMsg: String(e),
+    })
   }
-  return NextResponse.json({ ok: true, checks })
+
+  if (alerts.length > 0) {
+    return NextResponse.json({ ok: false, alerts, checks, dataHealth }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true, checks, dataHealth })
 }
