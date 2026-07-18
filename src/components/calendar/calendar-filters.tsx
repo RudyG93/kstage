@@ -133,7 +133,6 @@ export function CalendarFilterProvider({
       void fetchMonth(next.y, next.m)
     }, 600)
     return () => window.clearTimeout(t)
-     
   }, [currentMonth])
 
   // Précédence au montage (reprise de l'ancien GroupFilter §3.2) : deep-link

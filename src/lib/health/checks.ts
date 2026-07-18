@@ -319,6 +319,7 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       .from('events')
       .select('title, start_at, groups!inner(name)')
       .eq('type', 'release')
+      .eq('hidden', false)
       .gte('start_at', since)
       .lte('start_at', until)
     const placeholders = (releases ?? []).filter((e) =>

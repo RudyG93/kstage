@@ -57,8 +57,9 @@ test.describe('Calendar', () => {
     // h1 « Calendar » (Data Desk) + pager de mois « ‹ JUL 2026 › ».
     await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible()
     await expect(page.getByText(MONTH_PAGER)).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Next month' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Previous month' })).toBeVisible()
+    // Boutons (plus des liens) depuis la nav de mois 100 % client (2026-07-18).
+    await expect(page.getByRole('button', { name: 'Next month' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Previous month' })).toBeVisible()
   })
 
   // Teste le câblage réel de la navigation (Next/Prev re-rendent le mois), pas
@@ -70,11 +71,12 @@ test.describe('Calendar', () => {
     const initial = (await pager.textContent())?.trim() ?? ''
     expect(initial).not.toBe('')
 
-    await page.getByRole('link', { name: 'Next month' }).click()
+    await page.getByRole('button', { name: 'Next month' }).click()
+    // Nav client : l'URL est maintenue par history.replaceState (deep-link).
     await expect(page).toHaveURL(/[?&]month=\d{4}-\d{2}/)
     await expect(pager).not.toHaveText(initial) // le mois affiché a changé
 
-    await page.getByRole('link', { name: 'Previous month' }).click()
+    await page.getByRole('button', { name: 'Previous month' }).click()
     await expect(pager).toHaveText(initial) // retour au mois de départ
   })
 })

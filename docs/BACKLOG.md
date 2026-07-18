@@ -165,15 +165,15 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 ## Restes du round de retours #2 2026-07-17 (cf. JOURNAL)
 
 - ~~⚠️ OPS PRIORITAIRE — migrations 0059 + 0060~~ → **FAIT (2026-07-17 soir)** : 0059 appliquée par Rudy (SQL Editor), 0060 appliquée via MCP au retour du connecteur (32 épisodes backfillés dont Inkigayo #1318), branche `feat/show-episode-page` mergée (`d87d464`), page épisode vérifiée en prod.
-- **idntt : 20 membres captés** (l'infobox fandom a sur-capté, probablement current+former) → élaguer via /admin ou SQL.
-- **Sweep --thin à poursuivre** : ~28 groupes ≤ 1 MV restants (passes `--limit=20`, ~4 100 unités/passe).
+- ~~idntt : 20 membres captés (sur-capté ?)~~ → **VÉRIFIÉ FAUX (2026-07-18)** : l'infobox fandom liste bien 20 membres _current_ (groupe MODHAUS type tripleS) — roster correct, rien à élaguer.
+- ~~Sweep --thin à poursuivre~~ → **FAIT (2026-07-18, Lot 8)** : sweep one-shot budgété (12 groupes seedés, ex. Catch The Young +13 MVs), cron discover-channels relevé 3→10 groupes/lundi (seuil ≤5), deep re-scan rotatif des sources (0062) — le pool restant (~65) se draine en continu.
 - **Échecs fandom du one-shot** : Hat:q, GABEE, Ayumu Imazu (no-infobox-match) — remonteront dans la file « Lineup unmatched » après la migration ; création manuelle de repli sinon.
 - **Page épisode V2 (idées non demandées, à valider)** : rating/like d'épisode, embeds inline au clic, lien depuis la page groupe.
 
 ## Restes du round de retours 2026-07-17 (7 lots livrés — cf. JOURNAL)
 
-- **31 groupes à ≤ 1 MV visible** restants après le sweep (82MAJOR/8TURN/YENA traités) : passes `npx tsx scripts/discover-mv-channels.ts --thin --limit=20` (~4 100 unités/passe, quota 10 000/j) puis review → youtube-channels.json → seed + backfill. Le cron discover-channels élargi (rotation hebdo, 3 groupes/lundi) fait le fond de tâche en continu.
-- **Matching hangul-only** : dans les lineups SBS, « 선미 » (Sunmi) ou « 기현 (몬스타엑스) » ne matchent pas — `matchesGroup` exige le nom latin. Piste : colonne alias hangul par groupe (mécanisme d'alias déjà envisagé pour NOWZ).
+- ~~31 groupes à ≤ 1 MV visible~~ → **FAIT (2026-07-18, Lot 8)** : cf. section ci-dessus (sweep + cron ×10 + deep re-scan 0062).
+- ~~Matching hangul-only~~ → **FAIT (2026-07-18, Lot 5)** : colonne `groups.name_aliases` (0061), 39 groupes seedés (hangul + membre facturé « 연준 »→TXT), branchée dans le matching lineups ET stage-links — Music Bank 1295 passé 12/15 → 15/15 stages.
 - **Fetch broadcaster silencieusement vide** : `fetchSbsBoardLatestPost` → null = ni erreur ni usage loggés (constaté au run de 10:21 le 17/07 — l'épisode 1318 est passé au run suivant). Optionnel : logguer un `warning` dans scrape_log.details pour l'observabilité.
 - **Cartes solo dans l'onglet Groups préchargé** : payload RSC ×2 (~172 items) assumé ; à surveiller si le roster dépasse ~400.
 
