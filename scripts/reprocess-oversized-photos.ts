@@ -107,7 +107,11 @@ async function main() {
           .from(job.bucket)
           .download(obj.name)
         if (dlErr || !blob) throw new Error(dlErr?.message ?? 'download vide')
-        const optimized = await optimizeImageBuffer(await blob.arrayBuffer())
+        // Nos propres objets peuvent dépasser le cap fetch de 10 Mo (c'est
+        // précisément ce qu'on répare) — cap relevé pour le reprocess.
+        const optimized = await optimizeImageBuffer(await blob.arrayBuffer(), {
+          maxSourceBytes: 64 * 1024 * 1024,
+        })
         const base = obj.name.replace(/\.[a-z0-9]+$/i, '')
         const newName = `${base}.webp`
         const { error: upErr } = await supabase.storage
