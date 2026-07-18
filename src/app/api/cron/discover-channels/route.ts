@@ -17,8 +17,13 @@ import type { Database } from '@/types/database'
 // MAX_GROUPS_PER_RUN = 3 ≈ 650 unités sur les 10 000/jour (le scrape quotidien
 // en consomme ~500). Hebdo (lundi 11:00 UTC) — cf. crons.yml.
 
-const MAX_GROUPS_PER_RUN = 3
-const THIN_CATALOG_MVS = 3
+// Débit relevé 3→10 (round 2026-07-18) : à 3/semaine, les 41 groupes ≤1 MV
+// mettaient des mois à se drainer. ~205 units/groupe × 10 ≈ 2 050/lundi — tient
+// dans les 10 000/jour avec le scrape quotidien (~500) et le deep re-scan (~300).
+const MAX_GROUPS_PER_RUN = 10
+// Seuil « fin » élargi 3→5 : sous 5 MVs, une page groupe paraît vide (aligné
+// sur le check santé thin_mv_catalogs).
+const THIN_CATALOG_MVS = 5
 
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
@@ -43,18 +48,22 @@ export async function GET(req: Request) {
     .order('debut_date', { ascending: false, nullsFirst: false })
   if (poolErr) return NextResponse.json({ error: poolErr.message }, { status: 500 })
 
-  // Catalogue fin = < 3 MVs (count par groupe en une requête).
-  const ids = (pool ?? []).map((g) => g.id)
-  const { data: mvRows } = ids.length
-    ? await supabase
-        .from('events')
-        .select('group_id')
-        .eq('type', 'mv')
-        .eq('hidden', false)
-        .in('group_id', ids)
-    : { data: [] }
+  // Catalogue fin = < THIN_CATALOG_MVS MVs. ⚠️ Fetch PAGINÉ : le select simple
+  // plafonnait silencieusement à 1000 rows (>2400 MVs en base) → counts faux et
+  // pool « thin » pollué (bug préexistant repéré au round 2026-07-18).
   const mvCount = new Map<string, number>()
-  for (const r of mvRows ?? []) mvCount.set(r.group_id, (mvCount.get(r.group_id) ?? 0) + 1)
+  for (let from = 0; ; from += 1000) {
+    const { data: mvRows } = await supabase
+      .from('events')
+      .select('group_id')
+      .eq('type', 'mv')
+      .eq('hidden', false)
+      .range(from, from + 999)
+    for (const r of mvRows ?? []) {
+      if (r.group_id) mvCount.set(r.group_id, (mvCount.get(r.group_id) ?? 0) + 1)
+    }
+    if (!mvRows || mvRows.length < 1000) break
+  }
 
   const thin = (pool ?? []).filter((g) => (mvCount.get(g.id) ?? 0) < THIN_CATALOG_MVS)
   // Rotation hebdo déterministe sur le pool élargi : sans elle, les 3 mêmes
