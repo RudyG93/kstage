@@ -17,6 +17,7 @@ import type { Database, Json } from '@/types/database'
 import { kstToUtcISO } from '@/lib/events/date'
 import { optimizeImageBuffer } from '@/lib/images/optimize'
 import { refreshMemberPhotos } from '@/lib/images/refresh'
+import { findCanonicalMatch, type PersonEvidence } from '@/lib/members/matching'
 import { normalize } from '@/lib/scrapers/group-match'
 import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
 import { fetchDebutCategory, fetchInfobox, resolveImageUrl } from './fandom'
@@ -326,6 +327,44 @@ export async function createFromPayload(
     }
   } catch (e) {
     stepErrors.push(`musicbrainz: ${String(e)}`)
+  }
+
+  // Dédup de personnes cross-groupe (round 2026-07-18, cas SuA/JiU/Yoohyeon
+  // recréées par la création du sub-unit UAU) : chaque nouveau membre est
+  // canonical-lié à sa row d'origine si la preuve est FORTE (real_name, ou
+  // birthday posé par MusicBrainz + stage name) et UNIQUE — l'ambigu reste
+  // NULL et remonte dans /admin/health. Placé APRÈS l'enrichissement MB (qui
+  // fournit les birthdays). Best-effort.
+  try {
+    const { data: groupMembers } = await supabase
+      .from('members')
+      .select('id, stage_name, real_name, birthday, canonical_id, group_id')
+      .eq('group_id', groupId)
+      .is('canonical_id', null)
+    if (groupMembers && groupMembers.length > 0) {
+      // Tout le reste du roster, paginé (cap PostgREST 1000 rows).
+      const others: PersonEvidence[] = []
+      for (let from = 0; ; from += 1000) {
+        const { data: page } = await supabase
+          .from('members')
+          .select('id, stage_name, real_name, birthday, canonical_id, group_id')
+          .neq('group_id', groupId)
+          .range(from, from + 999)
+        others.push(...(page ?? []))
+        if (!page || page.length < 1000) break
+      }
+      for (const m of groupMembers) {
+        const target = findCanonicalMatch(m, others)
+        if (!target) continue
+        const { error: cErr } = await supabase
+          .from('members')
+          .update({ canonical_id: target })
+          .eq('id', m.id)
+        if (cErr) stepErrors.push(`canonical ${m.stage_name}: ${cErr.message}`)
+      }
+    }
+  } catch (e) {
+    stepErrors.push(`canonical: ${String(e)}`)
   }
 
   // Event debut (release) — idempotent par (source_url, group_id), comme
