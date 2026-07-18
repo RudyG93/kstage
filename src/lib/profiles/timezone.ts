@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 
 // KST = référence historique du fandom + fallback quand on ne connaît pas encore
 // le fuseau du viewer (1er rendu anonyme avant que le cookie soit posé).
@@ -25,14 +25,9 @@ export function isValidTimeZone(tz: string | null | undefined): tz is string {
  * navigateur, post-hydratation).
  */
 export const getViewerTimeZone = cache(async (): Promise<string> => {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (user) {
-    const { data } = await supabase.from('profiles').select('timezone').eq('id', user.id).single()
-    if (isValidTimeZone(data?.timezone)) return data.timezone
-  }
+  const { profile } = await getViewer()
+  const profileTz = profile?.timezone
+  if (isValidTimeZone(profileTz)) return profileTz
   const cookieTz = (await cookies()).get('tz')?.value
   return isValidTimeZone(cookieTz) ? cookieTz : DEFAULT_TIME_ZONE
 })

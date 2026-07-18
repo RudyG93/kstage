@@ -13,7 +13,7 @@ import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { trackEvent } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
@@ -37,10 +37,7 @@ export default async function SearchPage({
   const q = (sp.q ?? '').trim()
   const seg: Segment = SEGMENTS.includes(sp.seg as Segment) ? (sp.seg as Segment) : 'all'
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getViewer()
   const timeZone = await getViewerTimeZone()
 
   const [groups, members, mvs, events, followedIds] = q

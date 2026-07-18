@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getViewer } from '@/lib/supabase/viewer'
 import { Landing } from '@/components/landing'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
@@ -40,9 +41,7 @@ export default async function Home({
   searchParams: Promise<{ type?: string; src?: string }>
 }) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getViewer()
 
   if (!user) {
     const [groups, previewRaw, eventsCount, sourcesStatus, subscriberCounts, anonTimeZone] =

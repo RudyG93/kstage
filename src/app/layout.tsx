@@ -21,7 +21,8 @@ import { Footer } from '@/components/footer'
 import { TimezoneCookie } from '@/components/timezone-cookie'
 import { NotificationOpenTracker } from '@/components/analytics/notification-open-tracker'
 import { Analytics } from '@vercel/analytics/next'
-import { createClient } from '@/lib/supabase/server'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { getViewer } from '@/lib/supabase/viewer'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -98,15 +99,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   // profile alimente l'avatar du header (entrée profil — Data Desk §6).
-  const { data: profile } = user
-    ? await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).maybeSingle()
-    : { data: null }
+  // getViewer() est mémoïsé par requête : timezone/sidebars réutilisent le même
+  // aller-retour auth au lieu d'en refaire chacun un.
+  const { user, profile } = await getViewer()
 
   return (
     <html
@@ -205,6 +201,7 @@ export default async function RootLayout({
           <NotificationOpenTracker />
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

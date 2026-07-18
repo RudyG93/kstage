@@ -21,6 +21,7 @@ import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
 import { createClient } from '@/lib/supabase/server'
+import { getViewer } from '@/lib/supabase/viewer'
 
 export async function generateMetadata({
   params,
@@ -62,9 +63,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
   // qu'un aller ; il alimente la fenêtre anniversaires ET les rangées.
   const timeZone = await getViewerTimeZone()
   const [
-    {
-      data: { user },
-    },
+    { user, profile: viewerProfile },
     dbEvents,
     anniversaries,
     mvs,
@@ -72,7 +71,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     members,
     { data: countRows },
   ] = await Promise.all([
-    supabase.auth.getUser(),
+    getViewer(),
     getUpcomingEvents({ groupSlug: slug, limit: 20 }),
     getUpcomingAnniversaries([group.id], 90, timeZone),
     getGroupMvs(slug, 48),
@@ -94,15 +93,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
 
   // Bias du viewer → ring dorée dans le rail membres (§7.6.5). Rail « My groups »
   // (R10) affiché seulement si le viewer est connecté.
-  let biasMemberId: string | null = null
-  if (user) {
-    const { data: viewerProfile } = await supabase
-      .from('profiles')
-      .select('bias_member_id')
-      .eq('id', user.id)
-      .maybeSingle()
-    biasMemberId = viewerProfile?.bias_member_id ?? null
-  }
+  const biasMemberId = viewerProfile?.bias_member_id ?? null
   const signedIn = user != null
 
   // Hero : chaîne bannière unifiée (R4-B) — banner_yt_url (2560px, rafraîchie
