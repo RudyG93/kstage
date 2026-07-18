@@ -37,6 +37,10 @@ interface CalendarFilterState {
   toggleType: (type: string | null) => void
   /** Events du mois filtrés + music shows regroupés par épisode. */
   events: GroupedUpcomingEvent[]
+  /** Mois affiché + navigation 100 % client (round 2026-07-18). */
+  month: { year: number; month: number }
+  navigateMonth: (year: number, month: number) => void
+  monthLoading: boolean
 }
 
 const Ctx = createContext<CalendarFilterState | null>(null)
@@ -47,14 +51,19 @@ export function useCalendarFilters(): CalendarFilterState {
   return ctx
 }
 
+const monthKey = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}`
+
 export function CalendarFilterProvider({
   events,
+  initialMonth,
   followedSlugs,
   initialSlugs,
   children,
 }: {
   /** Mois ENTIER non filtré (db + anniversaires + slots synthétiques). */
   events: UpcomingEvent[]
+  /** Mois du rendu initial SSR (?month= ou mois courant). */
+  initialMonth: { year: number; month: number }
   followedSlugs: string[]
   /** Deep-link ?group=<csv> (liens « Calendar → » des pages groupe). */
   initialSlugs?: string[]
@@ -63,6 +72,69 @@ export function CalendarFilterProvider({
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(initialSlugs ?? []))
   const [activeTypes, setActiveTypes] = useState<readonly string[]>([])
   const hydratedFromStorage = useRef(false)
+
+  // Navigation de mois 100 % CLIENT (round 2026-07-18, demande explicite —
+  // « éviter les changements via l'URL ») : cache mémoire par mois, fetch
+  // /api/calendar/month (payload public, CDN 5 min), prefetch des mois
+  // adjacents à l'idle, deep-link ?month= maintenu via history.replaceState.
+  const [currentMonth, setCurrentMonth] = useState(initialMonth)
+  const [monthEvents, setMonthEvents] = useState<UpcomingEvent[]>(events)
+  const [monthLoading, setMonthLoading] = useState(false)
+  // Seed dans l'initialiseur (pas d'accès .current pendant le render —
+  // react-hooks/refs) : le mois SSR initial est déjà en cache.
+  const monthCache = useRef(
+    new Map<string, UpcomingEvent[]>([[monthKey(initialMonth.year, initialMonth.month), events]]),
+  )
+
+  const fetchMonth = async (y: number, m: number): Promise<UpcomingEvent[] | null> => {
+    const key = monthKey(y, m)
+    const cached = monthCache.current.get(key)
+    if (cached) return cached
+    try {
+      const res = await fetch(`/api/calendar/month?month=${key}`)
+      if (!res.ok) return null
+      const data = (await res.json()) as { events: UpcomingEvent[] }
+      monthCache.current.set(key, data.events)
+      return data.events
+    } catch {
+      return null
+    }
+  }
+
+  const navigateMonth = (y: number, m: number) => {
+    setCurrentMonth({ year: y, month: m })
+    const params = new URLSearchParams(window.location.search)
+    params.set('month', monthKey(y, m))
+    params.delete('day')
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
+    const cached = monthCache.current.get(monthKey(y, m))
+    if (cached) {
+      setMonthEvents(cached)
+      return
+    }
+    setMonthLoading(true)
+    void fetchMonth(y, m).then((evts) => {
+      setMonthLoading(false)
+      // Ne pose le résultat que si le viewer est resté sur ce mois.
+      setCurrentMonth((cur) => {
+        if (cur.year === y && cur.month === m && evts) setMonthEvents(evts)
+        return cur
+      })
+    })
+  }
+
+  // Prefetch idle des mois adjacents : la flèche suivante est instantanée.
+  useEffect(() => {
+    const { year, month } = currentMonth
+    const prev = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 }
+    const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 }
+    const t = window.setTimeout(() => {
+      void fetchMonth(prev.y, prev.m)
+      void fetchMonth(next.y, next.m)
+    }, 600)
+    return () => window.clearTimeout(t)
+     
+  }, [currentMonth])
 
   // Précédence au montage (reprise de l'ancien GroupFilter §3.2) : deep-link
   // URL > dernier choix mémorisé > groupes suivis. '' mémorisé = « All
@@ -110,7 +182,7 @@ export function CalendarFilterProvider({
     },
     events: useMemo(() => {
       const bySlug = selected.size > 0
-      const filtered = events.filter((e) => {
+      const filtered = monthEvents.filter((e) => {
         if (activeTypes.length > 0 && !activeTypes.includes(e.type)) return false
         if (!bySlug) return true
         // Slots synthétiques : pas de groupe → visibles seulement sans filtre
@@ -119,22 +191,29 @@ export function CalendarFilterProvider({
         return e.groups?.slug ? selected.has(e.groups.slug) : false
       })
       return groupMusicShowEpisodes(filtered)
-    }, [events, selected, activeTypes]),
+    }, [monthEvents, selected, activeTypes]),
+    month: currentMonth,
+    navigateMonth,
+    monthLoading,
   }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
-/** Pont : le mois rendu avec les events filtrés du contexte. */
-export function CalendarEvents({
-  year,
-  month,
-  timeZone,
-}: {
-  year: number
-  month: number
-  timeZone: string
-}) {
-  const { events } = useCalendarFilters()
-  return <CalendarMonth year={year} month={month} events={events} timeZone={timeZone} />
+/** Pont : le mois rendu avec les events filtrés + la navigation du contexte. */
+export function CalendarEvents({ timeZone }: { timeZone: string }) {
+  const { events, month, navigateMonth, monthLoading } = useCalendarFilters()
+  return (
+    // key : remonte le composant à chaque mois — la sélection de jour (state
+    // interne dérivé de ?day) ne fuit pas d'un mois à l'autre.
+    <CalendarMonth
+      key={`${month.year}-${month.month}`}
+      year={month.year}
+      month={month.month}
+      events={events}
+      timeZone={timeZone}
+      onNavigate={navigateMonth}
+      loading={monthLoading}
+    />
+  )
 }

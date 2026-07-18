@@ -31,11 +31,17 @@ export function CalendarMonth({
   month,
   events,
   timeZone,
+  onNavigate,
+  loading = false,
 }: {
   year: number
   month: number
   events: UpcomingEvent[]
   timeZone: string
+  /** Navigation de mois 100 % client (round 2026-07-18) — sans lui, repli
+   * sur les <Link ?month=> historiques (tests unitaires, usages isolés). */
+  onNavigate?: (year: number, month: number) => void
+  loading?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -110,15 +116,41 @@ export function CalendarMonth({
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Calendar</h1>
         <div className="bg-secondary flex items-center gap-0.5 rounded-md border p-0.5">
-          <Link href={monthHref(prev.y, prev.m)} aria-label="Previous month" className={arrowClass}>
-            <ChevronLeftIcon className="size-[13px]" />
-          </Link>
-          <span className="tabular px-1.5 text-xs font-semibold">
+          {onNavigate ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(prev.y, prev.m)}
+              aria-label="Previous month"
+              className={arrowClass}
+            >
+              <ChevronLeftIcon className="size-[13px]" />
+            </button>
+          ) : (
+            <Link
+              href={monthHref(prev.y, prev.m)}
+              aria-label="Previous month"
+              className={arrowClass}
+            >
+              <ChevronLeftIcon className="size-[13px]" />
+            </Link>
+          )}
+          <span className={`tabular px-1.5 text-xs font-semibold ${loading ? 'opacity-60' : ''}`}>
             {monthShort} {year}
           </span>
-          <Link href={monthHref(next.y, next.m)} aria-label="Next month" className={arrowClass}>
-            <ChevronRightIcon className="size-[13px]" />
-          </Link>
+          {onNavigate ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(next.y, next.m)}
+              aria-label="Next month"
+              className={arrowClass}
+            >
+              <ChevronRightIcon className="size-[13px]" />
+            </button>
+          ) : (
+            <Link href={monthHref(next.y, next.m)} aria-label="Next month" className={arrowClass}>
+              <ChevronRightIcon className="size-[13px]" />
+            </Link>
+          )}
         </div>
       </div>
 
