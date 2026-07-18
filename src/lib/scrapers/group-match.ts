@@ -81,16 +81,26 @@ const NAME_ALIASES: Record<string, string[]> = {
  * Comparaison après normalisation, donc tolérante aux variantes typographiques
  * courantes : "AESPA", "aespa", "(G)I-DLE", "BABYMONSTER (베이비몬스터)"...
  * Les crédits de featuring entre parenthèses sont ignorés (cf. FEATURING_RE).
- * Le nom DB est testé avec ses alias connus (rebrand, cf. NAME_ALIASES).
+ * Le nom DB est testé avec ses alias connus (rebrand, cf. NAME_ALIASES) et les
+ * `extraAliases` fournis par l'appelant (colonne groups.name_aliases,
+ * migration 0061 : hangul officiel « 선미 », membre facturé « 연준 »…).
  *
  * Renvoie false si `groupName` est vide ou si la normalisation produit une
  * chaîne vide (sinon n'importe quel texte matcherait).
  */
-export function matchesGroup(text: string, groupName: string | null | undefined): boolean {
+export function matchesGroup(
+  text: string,
+  groupName: string | null | undefined,
+  extraAliases: readonly string[] = [],
+): boolean {
   if (!groupName) return false
   const needle = normalize(groupName)
   if (!needle) return false
-  const needles = [needle, ...(NAME_ALIASES[needle] ?? [])]
+  const needles = [
+    needle,
+    ...(NAME_ALIASES[needle] ?? []),
+    ...extraAliases.map(normalize).filter(Boolean),
+  ]
   // 1) Titre éditorial (hashtags retirés, crédits feat. ignorés).
   const editorial = normalize(stripHashtags(text).replace(FEATURING_RE, ' '))
   if (needles.some((n) => editorial.includes(n))) return true
