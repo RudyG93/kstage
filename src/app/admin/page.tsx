@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/auth/admin'
@@ -181,7 +182,7 @@ export default async function AdminHub() {
         {SECTIONS.map((s) => (
           <Link
             key={s.href}
-            href={s.href}
+            href={s.href as Route}
             className="bg-card hover:bg-hover rounded-xl border p-4 transition-colors"
           >
             <p className="font-medium">{s.title}</p>

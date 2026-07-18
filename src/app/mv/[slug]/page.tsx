@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -159,7 +160,7 @@ export default async function MvPage({
             )}
             <BackButton
               className="absolute top-3 left-3 z-10"
-              fallbackHref={group?.slug ? `/groups/${group.slug}` : '/'}
+              fallbackHref={group?.slug ? (`/groups/${group.slug}` as Route) : '/'}
             />
           </div>
 

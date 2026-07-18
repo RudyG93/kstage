@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import { SidebarLeft } from '@/components/home/sidebar-left'
 import { SidebarRight } from '@/components/home/sidebar-right'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
@@ -69,7 +70,10 @@ export default async function GroupsPage({
       group: item,
       isFollowing: followedIds.has(item.id),
       isAuthed: !!user,
-      href: 'memberSlug' in item && item.memberSlug ? `/artists/${item.memberSlug}` : undefined,
+      href:
+        'memberSlug' in item && item.memberSlug
+          ? (`/artists/${item.memberSlug}` as Route)
+          : undefined,
       nextEvent: nextEvents.get(item.id) ?? null,
     })
     // nowMs = undefined → défaut Date.now() DANS la lib (purity lint RSC).

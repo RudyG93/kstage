@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
@@ -59,7 +60,7 @@ export function QueueRow({
 
   return (
     <Link
-      href={href}
+      href={href as Route}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className="hover:bg-secondary/60 focus-visible:ring-primary/40 flex min-h-[44px] items-center gap-2.5 border-l-2 py-1.5 pr-3 pl-2.5 transition-colors outline-none focus-visible:ring-2"
       style={{ borderLeftColor: color }}

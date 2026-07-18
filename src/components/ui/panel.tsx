@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +27,7 @@ export function PanelHeader({
    * affiche un repli GLOBAL au lieu du contenu suivi (audit §8.4 : les
    * fallbacks silencieux rendaient le comportement illisible). */
   note?: string
-  action?: { label: string; href: string }
+  action?: { label: string; href: Route }
   /** Slot libre à droite (segmented control…) — exclusif avec `action`. */
   right?: ReactNode
   className?: string

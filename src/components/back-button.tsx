@@ -1,5 +1,6 @@
 'use client'
 
+import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
 import { ArrowLeftIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,7 +15,7 @@ export function BackButton({
   fallbackHref = '/',
 }: {
   className?: string
-  fallbackHref?: string
+  fallbackHref?: Route
 }) {
   const router = useRouter()
   return (

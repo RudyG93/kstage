@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { Countdown } from './countdown'
 import { HeroBackdrop } from './hero-backdrop'
@@ -102,7 +103,7 @@ export function NextDropCard({
               </div>
               <h2 className="font-heading mt-1.5 text-xl leading-tight font-extrabold tracking-[-0.02em] text-balance">
                 <Link
-                  href={href}
+                  href={href as Route}
                   {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   className="hover:text-primary focus-visible:ring-primary/40 rounded transition-colors outline-none focus-visible:ring-2"
                 >

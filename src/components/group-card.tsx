@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -30,7 +31,7 @@ export function GroupCard({
   isFollowing: boolean
   isAuthed: boolean
   timeZone: string
-  href?: string
+  href?: Route
   nextEvent?: NextEventInfo | null
 }) {
   const img = group.image_url ? faceCrop(group.image_url, 600, 600) : null

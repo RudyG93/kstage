@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -33,7 +34,7 @@ export async function SidebarLeft({
     getUpcomingEventCountsByGroup([...followedIds]),
     getUpcomingAnniversaryCountsByGroup([...followedIds], 90, timeZone),
   ])
-  const profileHref = profile?.username ? `/u/${profile.username}` : '/account'
+  const profileHref = (profile?.username ? `/u/${profile.username}` : '/account') as Route
   const followed = groups
     .filter((g) => followedIds.has(g.id))
     .sort(
