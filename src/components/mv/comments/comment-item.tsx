@@ -118,205 +118,194 @@ export function CommentItem({
     )
   }
 
-  // Fil v3 (retour Rudy 2026-07-17) : UN rail continu sur TOUTE la hauteur du
-  // bloc réponses — le fil matérialise exactement la zone repliable (la
-  // hit-area cliquable est déjà pleine hauteur, le visuel v2 « tronc qui
-  // s'arrête au dernier coude » disparaissait carrément quand une racine ne
-  // montre qu'une réponse, cas par défaut REPLY_PREVIEW_ROOT=1). Les coudes
-  // arrondis relient le rail à chaque réponse. Au-delà de MAX_INDENT_DEPTH :
-  // à plat.
+  // Fil v4 « Reddit » (retour Rudy 2026-07-18) : le rail ne vit plus SOUS le
+  // commentaire (v3 : il ne longeait que le bloc réponses) — il part sous
+  // l'AVATAR du commentaire et longe TOUT son contenu, réponses comprises.
+  // Deux colonnes : [avatar + rail cliquable] | [header/body/actions/enfants].
+  // Cliquer le rail replie CE commentaire. Les coudes disparaissent (modèle
+  // Reddit : indentation + rails continus suffisent). Au-delà de
+  // MAX_INDENT_DEPTH : les réponses sortent de la colonne (à plat, padding
+  // cumulé impossible sur mobile).
   const showThread = depth < MAX_INDENT_DEPTH
   const previewTail = childCount > 0 && !repliesOpen && childCount > replyPreview
   const limitTail = childCount > 0 && repliesOpen && !showAllReplies && childCount > REPLY_LIMIT
-  // Coude arrondi reliant le tronc vertical (x=10px, sous l'avatar parent) à
-  // l'avatar de chaque réponse. `group-hover/thread` : tout le fil s'éclaire
-  // légèrement quand on survole la zone (le halo de fond a été retiré, R7).
-  const elbow = (
-    <span
-      aria-hidden
-      className="border-muted-foreground/30 group-hover/thread:border-muted-foreground/55 pointer-events-none absolute top-0 -left-[10px] h-3 w-2.5 rounded-bl-[8px] border-b border-l transition-colors"
-    />
+
+  const childrenBlock = childCount > 0 && (
+    <div className="space-y-3 pt-2">
+      {visibleChildren.map((child) => (
+        <CommentItem
+          key={child.id}
+          node={child}
+          eventId={eventId}
+          episodeId={episodeId}
+          slug={slug}
+          path={path}
+          viewerId={viewerId}
+          isAuthed={isAuthed}
+          depth={depth + 1}
+          ratingsByUser={ratingsByUser}
+        />
+      ))}
+      {previewTail && (
+        <button
+          type="button"
+          onClick={() => setRepliesOpen(true)}
+          className="text-primary block text-xs hover:underline"
+        >
+          Show {childCount - replyPreview} repl
+          {childCount - replyPreview === 1 ? 'y' : 'ies'}
+        </button>
+      )}
+      {limitTail && (
+        <button
+          type="button"
+          onClick={() => setShowAllReplies(true)}
+          className="text-primary block text-xs hover:underline"
+        >
+          Show {childCount - REPLY_LIMIT} more repl
+          {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+        </button>
+      )}
+    </div>
   )
 
   return (
     <article id={`comment-${node.id}`} className="scroll-mt-20" aria-label={`Comment by ${author}`}>
-      <div className="min-w-0 space-y-1.5">
-        {/* Plus de [−] ici (R7) : le repli passe par le trait vertical cliquable
-            du bloc réponses, pour ne pas encombrer chaque en-tête. */}
-        <header className="text-muted-foreground flex items-center gap-2 text-xs">
+      <div className="flex gap-2">
+        {/* Colonne fil : avatar en tête, rail cliquable pleine hauteur dessous
+            (modèle Reddit) — le clic replie ce commentaire entier. */}
+        <div className="flex w-5 shrink-0 flex-col items-center">
           {username ? (
-            <Link
-              href={`/u/${username}`}
-              className="text-foreground flex items-center gap-1.5 font-medium hover:underline"
-            >
+            <Link href={`/u/${username}`} aria-label={`Profile of ${author}`} className="shrink-0">
               <Avatar username={username} avatarUrl={node.author?.avatar_url ?? null} size={20} />
-              {author}
             </Link>
           ) : (
-            <span className="text-foreground flex items-center gap-1.5 font-medium">
+            <span className="shrink-0">
               <Avatar username={author} avatarUrl={null} size={20} />
-              {author}
             </span>
           )}
-          {authorScore !== undefined && !isDeleted && (
-            <span
-              className="tabular bg-amber/15 text-amber rounded-[4px] px-1 py-0.5 text-[10px] font-bold"
-              title={`Rated this drop ${authorScore}/10`}
-            >
-              {authorScore}
-            </span>
-          )}
-          <span aria-hidden>·</span>
-          {/* Permalink (modèle Reddit) : le timestamp pointe l'ancre du
-                commentaire — copiable/partageable, highlight via :target. */}
-          <Link
-            href={`#comment-${node.id}`}
-            className="hover:text-foreground hover:underline"
-            title="Link to this comment"
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label={`Collapse comment by ${author}`}
+            aria-expanded
+            className="group/rail focus-visible:ring-ring/50 flex w-full flex-1 cursor-pointer justify-center rounded pt-1 outline-none focus-visible:ring-2"
           >
-            <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
-          </Link>
-          {isEdited && (
-            <>
-              <span aria-hidden>·</span>
-              <button
-                type="button"
-                onClick={() => setHistoryOpen(true)}
-                className="italic hover:underline"
-              >
-                edited
-              </button>
-            </>
-          )}
-        </header>
-
-        {isDeleted ? (
-          <p className="text-muted-foreground text-sm italic">[deleted]</p>
-        ) : showEdit ? (
-          <EditForm node={node} slug={slug} path={path} onDone={() => setShowEdit(false)} />
-        ) : (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
-        )}
-
-        {!isDeleted && !showEdit && (
-          <div className="flex items-center gap-3 text-xs">
-            <VoteButtons
-              commentId={node.id}
-              slug={slug}
-              path={path}
-              initialScore={node.score}
-              initialUserVote={node.userVote}
-              isAuthed={isAuthed}
+            <span
+              aria-hidden
+              className="bg-muted-foreground/30 group-hover/rail:bg-muted-foreground/55 h-full w-px transition-colors"
             />
-            {isAuthed && (
-              <button
-                type="button"
-                onClick={() => setShowReply((v) => !v)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {showReply ? 'Cancel' : 'Reply'}
-              </button>
+          </button>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <header className="text-muted-foreground flex items-center gap-2 text-xs">
+            {username ? (
+              <Link href={`/u/${username}`} className="text-foreground font-medium hover:underline">
+                {author}
+              </Link>
+            ) : (
+              <span className="text-foreground font-medium">{author}</span>
             )}
-            {isOwn ? (
+            {authorScore !== undefined && !isDeleted && (
+              <span
+                className="tabular bg-amber/15 text-amber rounded-[4px] px-1 py-0.5 text-[10px] font-bold"
+                title={`Rated this drop ${authorScore}/10`}
+              >
+                {authorScore}
+              </span>
+            )}
+            <span aria-hidden>·</span>
+            {/* Permalink (modèle Reddit) : le timestamp pointe l'ancre du
+                commentaire — copiable/partageable, highlight via :target. */}
+            <Link
+              href={`#comment-${node.id}`}
+              className="hover:text-foreground hover:underline"
+              title="Link to this comment"
+            >
+              <time dateTime={node.created_at}>{relativeTime(node.created_at)}</time>
+            </Link>
+            {isEdited && (
               <>
+                <span aria-hidden>·</span>
                 <button
                   type="button"
-                  onClick={() => setShowEdit(true)}
+                  onClick={() => setHistoryOpen(true)}
+                  className="italic hover:underline"
+                >
+                  edited
+                </button>
+              </>
+            )}
+          </header>
+
+          {isDeleted ? (
+            <p className="text-muted-foreground text-sm italic">[deleted]</p>
+          ) : showEdit ? (
+            <EditForm node={node} slug={slug} path={path} onDone={() => setShowEdit(false)} />
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{node.body}</p>
+          )}
+
+          {!isDeleted && !showEdit && (
+            <div className="flex items-center gap-3 text-xs">
+              <VoteButtons
+                commentId={node.id}
+                slug={slug}
+                path={path}
+                initialScore={node.score}
+                initialUserVote={node.userVote}
+                isAuthed={isAuthed}
+              />
+              {isAuthed && (
+                <button
+                  type="button"
+                  onClick={() => setShowReply((v) => !v)}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Edit
+                  {showReply ? 'Cancel' : 'Reply'}
                 </button>
-                <DeleteButton commentId={node.id} slug={slug} path={path} />
-              </>
-            ) : (
-              isAuthed && <ReportButton commentId={node.id} />
-            )}
-          </div>
-        )}
-
-        {showReply && (
-          <div className="pt-2">
-            <CommentCompose
-              eventId={eventId}
-              episodeId={episodeId}
-              slug={slug}
-              path={path}
-              parentId={node.id}
-              focusOnMount
-              onCancel={() => setShowReply(false)}
-              placeholder={`Reply to ${author}…`}
-            />
-          </div>
-        )}
-
-        {childCount > 0 && (
-          <div className={showThread ? 'group/thread relative pt-1 pl-5' : 'pt-1'}>
-            {showThread && (
-              <>
-                {/* Rail continu pleine hauteur : le visuel du fil = la zone
-                    repliable. Aligné sur l'origine des coudes (x = 10px). */}
-                <span
-                  aria-hidden
-                  className="bg-muted-foreground/30 group-hover/thread:bg-muted-foreground/55 pointer-events-none absolute top-0 bottom-0 left-[10px] w-px transition-colors"
-                />
-                {/* Zone cliquable = le rail (hit area 16px), SANS fond au survol
-                    (retour Rudy R7 : « le halo est trop gros »). Le clic replie ce
-                    commentaire ; le survol éclaire le fil via group/thread. */}
-                <button
-                  type="button"
-                  onClick={() => setCollapsed(true)}
-                  aria-label="Collapse thread"
-                  className="focus-visible:ring-ring/50 absolute inset-y-0 left-0 z-10 w-4 cursor-pointer rounded outline-none focus-visible:ring-2"
-                />
-              </>
-            )}
-            <div className="space-y-3">
-              {visibleChildren.map((child) => (
-                <div key={child.id} className="relative">
-                  {showThread && elbow}
-                  <CommentItem
-                    node={child}
-                    eventId={eventId}
-                    episodeId={episodeId}
-                    slug={slug}
-                    path={path}
-                    viewerId={viewerId}
-                    isAuthed={isAuthed}
-                    depth={depth + 1}
-                    ratingsByUser={ratingsByUser}
-                  />
-                </div>
-              ))}
-              {previewTail && (
-                <div className="relative">
-                  {showThread && elbow}
-                  <button
-                    type="button"
-                    onClick={() => setRepliesOpen(true)}
-                    className="text-primary text-xs hover:underline"
-                  >
-                    Show {childCount - replyPreview} repl
-                    {childCount - replyPreview === 1 ? 'y' : 'ies'}
-                  </button>
-                </div>
               )}
-              {limitTail && (
-                <div className="relative">
-                  {showThread && elbow}
+              {isOwn ? (
+                <>
                   <button
                     type="button"
-                    onClick={() => setShowAllReplies(true)}
-                    className="text-primary text-xs hover:underline"
+                    onClick={() => setShowEdit(true)}
+                    className="text-muted-foreground hover:text-foreground"
                   >
-                    Show {childCount - REPLY_LIMIT} more repl
-                    {childCount - REPLY_LIMIT === 1 ? 'y' : 'ies'}
+                    Edit
                   </button>
-                </div>
+                  <DeleteButton commentId={node.id} slug={slug} path={path} />
+                </>
+              ) : (
+                isAuthed && <ReportButton commentId={node.id} />
               )}
             </div>
-          </div>
-        )}
+          )}
+
+          {showReply && (
+            <div className="pt-2">
+              <CommentCompose
+                eventId={eventId}
+                episodeId={episodeId}
+                slug={slug}
+                path={path}
+                parentId={node.id}
+                focusOnMount
+                onCancel={() => setShowReply(false)}
+                placeholder={`Reply to ${author}…`}
+              />
+            </div>
+          )}
+
+          {/* Réponses DANS la colonne de contenu (indentation naturelle Reddit :
+            chaque niveau = la largeur de la colonne avatar du parent). */}
+          {showThread && childrenBlock}
+        </div>
       </div>
+
+      {/* Au-delà du cap d'indentation : réponses à plat, hors colonne. */}
+      {!showThread && childrenBlock}
 
       {historyOpen && (
         <HistoryModal
