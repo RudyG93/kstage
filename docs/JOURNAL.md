@@ -4,13 +4,23 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-19 — Programme « Normes modernes » : Lot G clos (routes 4-5/5 : artists + profil)
+
+**Branche/commit** : `perf/streaming-artists-profile` (merge `7692571`) → `main`.
+
+**Quoi** : patron anti-soft-404 appliqué aux 2 dernières routes détail. ① `getMemberBySlug` wrappé `cache()` (partagé generateMetadata/page — parité avec `getGroupBySlug`/`getEventBySlug`). ② `/artists/[slug]` : les DEUX branches streamées — solo : hero + agency/liens + fiche immédiats depuis la row, follow (viewer) en slot `fallback=null`, corps (events, MVs, carrière) en `SoloBody` sous Suspense ; membre : header + fiche immédiats, corps (solo releases, carrière, groupmates) en `MemberBody` sous Suspense. Seuls awaits bloquants = existence + résolution du redirect canonique. ③ `/u/[username]` : header identité immédiat depuis la row profile ; avatar owner (uploadable) en slot à fallback = Avatar statique 64 px (zéro shift), actions owner (Admin, PushBell, réglages) en slot `fallback=null` re-vérifiant le viewer côté serveur, corps (stats, pickers, notes, liked MVs, followed groups) en `ProfileBody` sous Suspense.
+
+**Vérification** : tsc + prettier + vitest 758 (mode CI) + build ; matrice curl en build prod : bogus → **404**, `taemin` (solo) → 200 events/MVs streamés, `babymonster-ahyeon` (membre) → 200 groupmates streamés dans le HTML final, `blackpink-lisa` → 307 `/artists/lisa`, `/u/bogus` → 404, `/u/RemilioTest` → 200 Liked MVs ; e2e CI=1 : 27 passed / 1 skipped ; review adversariale multi-agents (3 lentilles → réfutation 2 votes/finding) : **0 finding confirmé** (l'unique soulevé — skeleton pouvant s'effondrer sur un corps membre vide — réfuté : dernier élément du layout, aucun contenu décalé). CI GitHub du merge : verte (vérifiée via l'API).
+
+**Restes du programme** : Lot I (flip `cacheComponents` — prérequis structurels tous en place), Lot J optionnel (React Compiler), C-1/C-2 clés après trempage (≥ 20/07).
+
 ## 2026-07-18 (nuit) — Programme « Normes modernes » : Lot F + Lot G (3 routes/5)
 
 **Branche/commit** : `perf/streaming-rails-shell` (merge `3995706`) + `perf/streaming-detail-pages` (merge `b76925e`, un commit par route) → `main`.
 
 **Quoi** : ① **Lot F** : `PageRails` auto-suspendu (gate viewer interne pour SidebarLeft, SidebarRight sous Suspense, `RailSkeleton` à espace réservé) — le fan-out des sidebars ne bloque plus le premier octet ; sidebars des 4 pages listes idem ; **layout racine SYNCHRONE** (cluster user extrait en `HeaderViewer` async sous Suspense, fallback dimensionné) — le shell ne dépend plus d'aucune donnée, forme requise par cacheComponents. ② **Lot G routes 1-3** — patron anti-soft-404 : le SEUL await bloquant = check d'existence (mémoïsé, partagé avec generateMetadata), `notFound()` AVANT tout streaming, corps sous `<Suspense>` : `/mv/[slug]` (shell player immédiat ; catalogue = `getRailData` cache() partagé rail/mobile), `/groups/[slug]` (hero immédiat à slots streamés — ComebackTag, HeroMeta upgradée, GroupFollow ; `getGroupPageData` cache() ; `ArtistHero.meta` élargi à ReactNode), `/show/[show]/[day]` (`getEpisodeLineup` cache() partagé header/corps).
 
-**Vérification** : matrice curl par route (slug bidon → **404**, réel → 200, contenu streamé présent dans le HTML, redirect solo 307 intact) ; 27/28 e2e verts en build prod (golden path auth inclus) ; rituel CI-mode. ⚠️ Conclusions CI GitHub des 2 merges à confirmer (rate limit API en fin de session).
+**Vérification** : matrice curl par route (slug bidon → **404**, réel → 200, contenu streamé présent dans le HTML, redirect solo 307 intact) ; 27/28 e2e verts en build prod (golden path auth inclus) ; rituel CI-mode. CI GitHub des 2 merges : **vertes** (confirmées via l'API le 19/07).
 
 **Restes du Lot G** : `/artists/[slug]` (2 branches) et `/u/[username]` ; ensuite Lot I (flip `cacheComponents` — prérequis structurels tous en place), Lot J optionnel, C-1/C-2 clés après trempage (≥ 20/07).
 
@@ -20,7 +30,7 @@
 
 **Quoi** : ① **Lot A quick wins mesurés** : le poster YouTube de la page MV (élément LCP !) chargeait en `loading="lazy"` → `fetchpriority="high"` ; `priority` sur la bannière ArtistHero ; `images.qualities [70,75]` (le `quality={70}` du hero était silencieusement forcé à 75 par le défaut v16) ; vagues série réduites (/mv 5→3, /artists membre 4→2) ; `getGroupFollowCounts()` mémoïsé (le RPC tournait 2×/render sur home et /groups, 6 call sites) ; comments-realtime ne refresh plus les onglets cachés. ② **Lot B** : `typedRoutes: true` (stable v16) — props partagées typées `Route`, casts aux constructions dynamiques ; un href interne cassé = erreur tsc. ③ **Lot D** : Dependabot (npm hebdo groupé + github-actions) + step CI `npm audit` report-only ; **gate admin central** `src/app/admin/layout.tsx` (`requireAdminPage()`, les 9 pages passent au helper, gardes conservées = défense en profondeur) ; `SECURITY_AUDIT.md` rafraîchi (4 items « ouverts » corrigés depuis juin). ④ **Lot H** : `middleware.ts` → `proxy.ts` (dépréciation v16 soldée, runtime Node = prérequis cacheComponents) — golden path auth vérifié en build prod. ⑤ **Lot E** : `display: 'optional'` sur les 3 familles décoratives (Space Grotesk/Instrument Serif/Archivo — familles intouchées, seule la stratégie de chargement change) → zéro layout-shift de swap ; arbitre CLS = Speed Insights J+3.
 
-**Vérification** : rituel CI-mode par lot (`GITHUB_ACTIONS=true TZ=UTC` vitest + tsc + build) ; auth e2e prod-build sur H. ⚠️ Conclusion CI GitHub des 5 merges à confirmer (rate limit API au moment du merge — à re-vérifier).
+**Vérification** : rituel CI-mode par lot (`GITHUB_ACTIONS=true TZ=UTC` vitest + tsc + build) ; auth e2e prod-build sur H. CI GitHub des 5 merges (+ `8697b2b` Lot 1bis) : **vertes** (confirmées via l'API le 19/07).
 
 **Aussi (après-midi)** : Lot 1bis livré (`8697b2b` — getClaims local, les signing keys étaient DÉJÀ ECC) ; décisions Rudy exécutées : solos = page SOLO canonique (Lisa/Jennie/Taemin/Hwasa/Solar, 307 vérifiés), suction-mj→astro-mj + NCT liés (`duplicate_person_candidates` = 0), épisodes fantômes MB 19/26 juin masqués (404 vérifié).
 
