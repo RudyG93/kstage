@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-19 — Lot I `cacheComponents` : NO-GO documenté (l'invariant soft-404 prime)
+
+**Branche/commit** : `feat/cache-components` (`b209d59`, **parquée non mergée** — l'essai complet y est committé). `main` intact.
+
+**Quoi (l'essai)** : flip `cacheComponents: true` + conversions `unstable_cache` → `'use cache'` + `cacheLife('hours')`/`cacheTag` (getGroupsCached, getAllMembers, searchGroupList, allGroupsForClient, allGroupRefs) + footer caché (`new Date()` interdit dans un shell prerendu) + exemptions `unstable_instant = false` sur 15 routes bloquantes (5 détail = invariant 404, privées/auth, browse tissées viewer). **Build vert 49/49**, routes détail en Partial Prerender, pages statiques (about/login/signup/terms/privacy) avec vrais shells.
+
+**NO-GO (matrice curl, build prod local)** : slug bidon → **200** + UI not-found streamée + `noindex` sur les 5 routes détail — le soft-404 canonique proscrit par l'audit 2026-07-10 ; et le redirect canonique (`blackpink-lisa`) → 200 client-side au lieu de 307. Mécanisme (source Next lue : `dynamic-rendering.js`, `create-component-tree.js`, `instant-config.js`) : le shell fallback PPR (layout + chrome) est servi AVANT le check d'existence → le statut HTTP est committé ; `unstable_instant = false` n'exempte que la **validation de build**, pas le serving du shell ; `dynamic = 'force-dynamic'` postpone le segment sans supprimer le shell. Le critère d'ABORT du plan (« si le flip force un boundary au-dessus du check d'existence → revert, l'invariant prime ») s'applique → abandon propre.
+
+**Conditions de reprise** : (a) décision produit d'accepter le 404 streamé (200 + noindex) sur les pages détail, OU (b) un mécanisme Next de statut-avant-shell par route (fallback shell désactivable), OU (c) espace de slugs fermé (`generateStaticParams` + `dynamicParams=false` — incompatible avec des groupes ajoutés en continu). La branche parquée rebuild verte telle quelle si retenté.
+
+**Décisions** : programme « Normes modernes » : Lots A→H livrés, Lot I = no-go assumé (pas un échec du plan : le gate a joué son rôle), Lot J (React Compiler) reste optionnel et indépendant du flip.
+
 ## 2026-07-19 — Programme « Normes modernes » : Lot G clos (routes 4-5/5 : artists + profil)
 
 **Branche/commit** : `perf/streaming-artists-profile` (merge `7692571`) → `main`.
