@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
@@ -11,8 +12,11 @@ import type { Database } from '@/types/database'
  * `canonical_id` non-null signifie que cette row est un membership historique
  * (ex. ILLIT Youngseo pre_debut). Le caller (route /artists/[slug]) redirige
  * vers la canonique dans ce cas.
+ *
+ * `cache()` request-scoped : la route /artists/[slug] l'appelle à la fois
+ * dans generateMetadata et dans la page — une seule exécution par requête.
  */
-export async function getMemberBySlug(slug: string) {
+export const getMemberBySlug = cache(async (slug: string) => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('members')
@@ -23,7 +27,7 @@ export async function getMemberBySlug(slug: string) {
     .maybeSingle()
   if (error) throw error
   return data
-}
+})
 
 /**
  * Lookup d'un slug par id — utilisé par la route pour résoudre la redirection
