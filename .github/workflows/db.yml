@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Épinglé = la version qui a généré config.toml (un `latest` plus
           # récent peut rejeter des clés de config).
