@@ -39,6 +39,10 @@ const SECURITY_HEADERS = [
 ]
 
 const nextConfig: NextConfig = {
+  // Lot J : memoisation automatique des composants client (React Compiler,
+  // stable v16) — remplace les useMemo/useCallback manuels ; SWC ne passe le
+  // plugin Babel que sur les fichiers pertinents (JSX/hooks).
+  reactCompiler: true,
   // Liens internes types (stable v16) : un href casse = erreur de compilation.
   typedRoutes: true,
   async headers() {
