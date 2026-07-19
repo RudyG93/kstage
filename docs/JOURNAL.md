@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-19 — Lot J React Compiler : programme « Normes modernes » clos
+
+**Branche/commit** : `perf/react-compiler` (merge `6b64939`) → `main`.
+
+**Quoi** : `reactCompiler: true` (stable v16) + `babel-plugin-react-compiler` (devDep) — mémoisation automatique des composants client, remplace les `useMemo`/`useCallback` manuels au fil de l'eau. Le pré-filtre SWC de Next ne passe le plugin Babel que sur les fichiers JSX/hooks → coût de build localisé.
+
+**Vérification** : build 8,7 s (référence 8,6 s — impact nul), 758 vitest (mode CI), e2e prod 27 passed / 1 skipped (identique à la référence) ; le golden path auth (surfaces optimistes follow/like) est couvert par la CI GitHub post-merge. Arbitre INP : Speed Insights à J+7.
+
+**Bilan du programme (10 lots, 2026-07-18 → 19)** : A (LCP/quick wins), B (typedRoutes), C-0 (clés API, trempage → C-1/C-2 ≥ 20/07), D (supply chain + gate admin), E (fonts), F (rails/shell Suspense), G (5 routes détail streamées anti-soft-404), H (proxy.ts), J (React Compiler) **livrés** ; I (cacheComponents) **no-go documenté** (entrée ci-dessous).
+
 ## 2026-07-19 — Lot I `cacheComponents` : NO-GO documenté (l'invariant soft-404 prime)
 
 **Branche/commit** : `feat/cache-components` (`b209d59`, **parquée non mergée** — l'essai complet y est committé). `main` intact.
