@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -12,6 +13,7 @@ import { ProfileStats } from '@/components/profile/profile-stats'
 import { PushBell } from '@/components/notifications/push-bell'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
 import { getViewer } from '@/lib/supabase/viewer'
 import { getProfileByUsername, getProfileStats } from '@/lib/profiles/queries'
 import { setBias, setFavoriteGroup } from '@/lib/profiles/actions'
@@ -29,11 +31,66 @@ import { getPendingSuggestionsCount } from '@/lib/suggestions/queries'
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
 
-export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params
-  const profile = await getProfileByUsername(decodeURIComponent(username))
-  if (!profile) notFound()
+type Profile = NonNullable<Awaited<ReturnType<typeof getProfileByUsername>>>
 
+/** Avatar du header — l'owner reçoit la version uploadable ; le fallback du
+ * slot est l'Avatar statique identique (64px, zéro shift) pendant la
+ * résolution du viewer (Lot G). */
+async function HeaderAvatar({ profile }: { profile: Profile }) {
+  const { user } = await getViewer()
+  if (user?.id !== profile.id) {
+    return (
+      <Avatar username={profile.username ?? undefined} avatarUrl={profile.avatar_url} size={64} />
+    )
+  }
+  return (
+    <ProfileAvatar
+      email={user.email ?? null}
+      username={profile.username}
+      avatarUrl={profile.avatar_url}
+    />
+  )
+}
+
+/** Actions owner du header (Admin, cloche push, réglages) — dépendent du
+ * viewer, streamées dans leur slot (fallback null, Lot G). */
+async function OwnerActions({ profile }: { profile: Profile }) {
+  const { user } = await getViewer()
+  if (user?.id !== profile.id) return null
+  const admin = isAdmin(user.email)
+  const pendingCount = admin ? await getPendingSuggestionsCount() : 0
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {admin && (
+        <Link href="/admin" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+          Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+        </Link>
+      )}
+      <PushBell />
+      <Link
+        href="/account"
+        aria-label="Account settings"
+        className="text-muted-foreground hover:text-foreground hover:bg-hover focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2"
+      >
+        <Settings className="size-5" aria-hidden />
+      </Link>
+    </div>
+  )
+}
+
+function ProfileBodySkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      <Skeleton className="h-16 w-full rounded-lg" />
+      <Skeleton className="h-40 w-full rounded-lg" />
+      <Skeleton className="h-48 w-full rounded-lg" />
+    </div>
+  )
+}
+
+/** Corps du profil (stats, pickers, notes, liked MVs, followed groups) —
+ * streamé après le header (Lot G). */
+async function ProfileBody({ profile }: { profile: Profile }) {
   const { user } = await getViewer()
   const isOwner = user?.id === profile.id
 
@@ -48,21 +105,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const bias = one(profile.bias)
   const favorite = one(profile.favorite)
 
-  let admin = false
-  let pendingCount = 0
   let memberItems: PickerItem[] = []
   let groupItems: PickerItem[] = []
   let followedGroups: GroupSummary[] = []
   if (isOwner && user) {
-    admin = isAdmin(user.email)
-    const [pending, members, groups, followedIds, followCount] = await Promise.all([
-      admin ? getPendingSuggestionsCount() : Promise.resolve(0),
+    const [members, groups, followedIds, followCount] = await Promise.all([
       getAllMembers(),
       getGroups(),
       getFollowedGroupIds(),
       getGroupFollowCounts(),
     ])
-    pendingCount = pending
     memberItems = members.map((m) => ({
       id: m.id,
       name: m.stage_name,
@@ -80,28 +132,140 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   }
 
   return (
+    <>
+      {stats && (
+        <ProfileStats
+          following={stats.followed}
+          rated={stats.rated}
+          avg={userRatings.avg}
+          likes={stats.liked}
+        />
+      )}
+
+      {isOwner && (
+        <div className="flex gap-3">
+          <ProfilePicker
+            label="Bias"
+            current={bias ? { name: bias.stage_name, avatar: bias.photo_url } : null}
+            items={memberItems}
+            onSelect={setBias}
+          />
+          <ProfilePicker
+            label="Favorite"
+            current={favorite ? { name: favorite.name, avatar: favorite.image_url } : null}
+            items={groupItems}
+            onSelect={setFavoriteGroup}
+          />
+        </div>
+      )}
+
+      {/* Dernières notes (§7.8.4). */}
+      {userRatings.recent.length > 0 && (
+        <Panel>
+          <PanelHeader label={isOwner ? 'Your recent ratings' : 'Recent ratings'} />
+          <div className="divide-y">
+            {userRatings.recent.map((r, i) => {
+              const videoId = extractYouTubeId(r.sourceUrl)
+              const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null
+              return (
+                <Link
+                  key={i}
+                  href={r.eventSlug ? `/mv/${r.eventSlug}` : '/mvs'}
+                  className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-1.5 transition-colors"
+                >
+                  {thumb ? (
+                    <Image
+                      src={thumb}
+                      alt=""
+                      width={50}
+                      height={28}
+                      unoptimized
+                      className="h-7 w-[50px] shrink-0 rounded-sm object-cover"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className="bg-muted h-7 w-[50px] shrink-0 rounded-sm" aria-hidden />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold">
+                      {displaySongTitle(r.eventTitle, r.groupName ?? undefined)}
+                    </span>
+                    <span className="text-muted-foreground block truncate text-[10px]">
+                      {r.groupName} · {shortDate(r.createdAt, 'UTC')}
+                    </span>
+                  </span>
+                  <span className="tabular bg-amber/15 text-amber shrink-0 rounded-[4px] px-1.5 py-0.5 text-xs font-bold">
+                    {r.score}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </Panel>
+      )}
+
+      {/* Ordre voulu (retour Rudy 2026-07-17) : ratings → Liked MVs → Followed groups. */}
+      <section className="space-y-2">
+        <span className="label-data">Liked MVs</span>
+        {likedMvs.length === 0 ? (
+          <EmptyState
+            title="No liked MVs yet"
+            description={
+              isOwner
+                ? 'Tap the heart on a music video to keep it here.'
+                : "This user hasn't liked any MV yet."
+            }
+            action={isOwner ? { label: 'Explore MVs', href: '/mvs' } : undefined}
+          />
+        ) : (
+          <MvsGrid mvs={likedMvs} ratings={ratings} timeZone={timeZone} />
+        )}
+      </section>
+
+      {isOwner && followedGroups.length > 0 && (
+        <section className="space-y-2">
+          <span className="label-data">Followed groups — {followedGroups.length}</span>
+          <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
+            {followedGroups.map((g) => (
+              <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
+
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params
+  // Lot G — invariant soft-404 : le SEUL await bloquant est ce check
+  // d'existence. notFound() tombe AVANT tout streaming.
+  const profile = await getProfileByUsername(decodeURIComponent(username))
+  if (!profile) notFound()
+
+  return (
     <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
-        {/* Identité (§7.8.2) : avatar 64 ring primary, @user, fan since, EDIT.
+        {/* SHELL : identité (§7.8.2) depuis la row profile — avatar 64 ring
+            primary, @user, fan since. Les morceaux dépendant du viewer (avatar
+            uploadable owner, actions owner) streament dans leurs slots (Lot G).
             `flex` sur le wrapper : sans lui l'avatar (inline) laissait un
             interstice de baseline → ring décentré (retour Rudy 2026-07-12).
             Taille unifiée 64 owner/visiteur (l'owner rendait 112 dans un ring
             calibré 64). */}
         <header className="flex items-center gap-4">
           <div className="ring-primary flex shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-[var(--page)]">
-            {isOwner ? (
-              <ProfileAvatar
-                email={user?.email ?? null}
-                username={profile.username}
-                avatarUrl={profile.avatar_url}
-              />
-            ) : (
-              <Avatar
-                username={profile.username ?? undefined}
-                avatarUrl={profile.avatar_url}
-                size={64}
-              />
-            )}
+            <Suspense
+              fallback={
+                <Avatar
+                  username={profile.username ?? undefined}
+                  avatarUrl={profile.avatar_url}
+                  size={64}
+                />
+              }
+            >
+              <HeaderAvatar profile={profile} />
+            </Suspense>
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="font-heading truncate text-xl font-extrabold tracking-[-0.01em]">
@@ -111,124 +275,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               Fan since {monthYear(profile.created_at)}
             </p>
           </div>
-          {isOwner && (
-            <div className="flex shrink-0 items-center gap-1">
-              {admin && (
-                <Link href="/admin" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                  Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
-                </Link>
-              )}
-              <PushBell />
-              <Link
-                href="/account"
-                aria-label="Account settings"
-                className="text-muted-foreground hover:text-foreground hover:bg-hover focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2"
-              >
-                <Settings className="size-5" aria-hidden />
-              </Link>
-            </div>
-          )}
+          <Suspense fallback={null}>
+            <OwnerActions profile={profile} />
+          </Suspense>
         </header>
 
-        {stats && (
-          <ProfileStats
-            following={stats.followed}
-            rated={stats.rated}
-            avg={userRatings.avg}
-            likes={stats.liked}
-          />
-        )}
-
-        {isOwner && (
-          <div className="flex gap-3">
-            <ProfilePicker
-              label="Bias"
-              current={bias ? { name: bias.stage_name, avatar: bias.photo_url } : null}
-              items={memberItems}
-              onSelect={setBias}
-            />
-            <ProfilePicker
-              label="Favorite"
-              current={favorite ? { name: favorite.name, avatar: favorite.image_url } : null}
-              items={groupItems}
-              onSelect={setFavoriteGroup}
-            />
-          </div>
-        )}
-
-        {/* Dernières notes (§7.8.4). */}
-        {userRatings.recent.length > 0 && (
-          <Panel>
-            <PanelHeader label={isOwner ? 'Your recent ratings' : 'Recent ratings'} />
-            <div className="divide-y">
-              {userRatings.recent.map((r, i) => {
-                const videoId = extractYouTubeId(r.sourceUrl)
-                const thumb = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null
-                return (
-                  <Link
-                    key={i}
-                    href={r.eventSlug ? `/mv/${r.eventSlug}` : '/mvs'}
-                    className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-1.5 transition-colors"
-                  >
-                    {thumb ? (
-                      <Image
-                        src={thumb}
-                        alt=""
-                        width={50}
-                        height={28}
-                        unoptimized
-                        className="h-7 w-[50px] shrink-0 rounded-sm object-cover"
-                        aria-hidden
-                      />
-                    ) : (
-                      <span className="bg-muted h-7 w-[50px] shrink-0 rounded-sm" aria-hidden />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-semibold">
-                        {displaySongTitle(r.eventTitle, r.groupName ?? undefined)}
-                      </span>
-                      <span className="text-muted-foreground block truncate text-[10px]">
-                        {r.groupName} · {shortDate(r.createdAt, 'UTC')}
-                      </span>
-                    </span>
-                    <span className="tabular bg-amber/15 text-amber shrink-0 rounded-[4px] px-1.5 py-0.5 text-xs font-bold">
-                      {r.score}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          </Panel>
-        )}
-
-        {/* Ordre voulu (retour Rudy 2026-07-17) : ratings → Liked MVs → Followed groups. */}
-        <section className="space-y-2">
-          <span className="label-data">Liked MVs</span>
-          {likedMvs.length === 0 ? (
-            <EmptyState
-              title="No liked MVs yet"
-              description={
-                isOwner
-                  ? 'Tap the heart on a music video to keep it here.'
-                  : "This user hasn't liked any MV yet."
-              }
-              action={isOwner ? { label: 'Explore MVs', href: '/mvs' } : undefined}
-            />
-          ) : (
-            <MvsGrid mvs={likedMvs} ratings={ratings} timeZone={timeZone} />
-          )}
-        </section>
-
-        {isOwner && followedGroups.length > 0 && (
-          <section className="space-y-2">
-            <span className="label-data">Followed groups — {followedGroups.length}</span>
-            <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
-              {followedGroups.map((g) => (
-                <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
-              ))}
-            </div>
-          </section>
-        )}
+        <Suspense fallback={<ProfileBodySkeleton />}>
+          <ProfileBody profile={profile} />
+        </Suspense>
 
         {/* Bloc Settings supprimé (R4-G) : l'écrou du header de page mène à
             /account et le toggle thème vit dans le header du site (mobile

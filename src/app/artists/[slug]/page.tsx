@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -11,6 +12,7 @@ import { PageRails } from '@/components/layout/page-rails'
 import { EventList } from '@/components/event-list'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FollowButton } from '@/components/follow-button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   getCareerPath,
   getMemberBySlug,
@@ -60,6 +62,7 @@ const statusLabel = {
   deceased: 'In memoriam',
 } as const
 
+type Member = NonNullable<Awaited<ReturnType<typeof getMemberBySlug>>>
 type CareerStep = Awaited<ReturnType<typeof getCareerPath>>[number]
 
 function CareerSection({ career }: { career: CareerStep[] }) {
@@ -113,8 +116,123 @@ type ArtistGroup = {
   image_landscape: string | null
 }
 
+/** Bouton Follow du hero solo — dépend du viewer, streamé dans le slot (Lot G). */
+async function SoloFollow({ group }: { group: ArtistGroup }) {
+  const [{ user }, followedIds] = await Promise.all([getViewer(), getFollowedGroupIds()])
+  return (
+    <FollowButton
+      groupId={group.id}
+      initialFollowing={followedIds.has(group.id)}
+      isAuthed={!!user}
+      iconOnly
+      large
+    />
+  )
+}
+
+function ArtistBodySkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      <Skeleton className="h-28 w-full rounded-lg" />
+      <Skeleton className="h-40 w-full rounded-lg" />
+    </div>
+  )
+}
+
+/** Corps solo (events, MVs, carrière) — streamé après le hero (Lot G). */
+async function SoloBody({ member, group }: { member: Member; group: ArtistGroup }) {
+  const [events, mvs, career, timeZone] = await Promise.all([
+    getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
+    getGroupMvs(group.slug, 48),
+    getCareerPath(member.id),
+    getViewerTimeZone(),
+  ])
+  const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
+
+  return (
+    <>
+      <section className="space-y-3">
+        {/* Lien Calendar au niveau du titre (R5) — pas de ligne en plus. */}
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-medium">Upcoming events</h2>
+          <Link
+            href={`/calendar?group=${group.slug}`}
+            className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
+          >
+            Calendar →
+          </Link>
+        </div>
+        <EventList
+          events={events}
+          scrollAfter={5}
+          empty={
+            <EmptyState
+              title="No upcoming events"
+              description="Nothing scheduled yet. Check the calendar for this artist."
+              action={{ label: 'Open calendar', href: `/calendar?group=${group.slug}` }}
+            />
+          }
+        />
+      </section>
+
+      {mvs.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
+          <CollapsibleMvs mvs={mvs} ratings={ratings} timeZone={timeZone} />
+        </section>
+      )}
+
+      <CareerSection career={career} />
+    </>
+  )
+}
+
+/** Corps membre (solo releases, carrière, groupmates) — streamé après le header (Lot G).
+ * R10 — contenu unique : MVs solo (mv_kind='member', jusque-là jamais affichés)
+ * + « groupmates » (les autres membres actifs du groupe) pour que la page ne
+ * soit plus un cul-de-sac maigre. Les fetchs indépendants partent ENSEMBLE ;
+ * seuls les ratings dépendent des MVs. */
+async function MemberBody({ member, group }: { member: Member; group: ArtistGroup | null }) {
+  const [memberMvs, groupmatesRaw, career, timeZone] = await Promise.all([
+    getMemberMvs(member.id),
+    group ? getMembersForGroup(group.id) : Promise.resolve([]),
+    getCareerPath(member.id),
+    getViewerTimeZone(),
+  ])
+  const memberRatings =
+    memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
+  const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
+
+  return (
+    <>
+      {memberMvs.length > 0 && (
+        <section className="space-y-2">
+          <span className="label-data">Solo releases</span>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {memberMvs.map((mv) => (
+              <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} timeZone={timeZone} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <CareerSection career={career} />
+
+      {groupmates.length > 0 && group && (
+        <section className="space-y-2">
+          <span className="label-data">{group.name} members</span>
+          <MembersGrid members={groupmates} groupColorHex={group.color_hex} />
+        </section>
+      )}
+    </>
+  )
+}
+
 export default async function ArtistPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  // Lot G — invariant soft-404 : les SEULS awaits bloquants sont ce check
+  // d'existence (mémoïsé, partagé avec generateMetadata) et la résolution du
+  // redirect canonique. notFound()/redirect() tombent AVANT tout streaming.
   const member = await getMemberBySlug(slug)
   if (!member) notFound()
 
@@ -128,19 +246,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const groupRaw = (member as { groups: unknown }).groups
   const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw) as ArtistGroup | null
 
-  const career = await getCareerPath(member.id)
-  const timeZone = await getViewerTimeZone()
-
   // ── Artiste solo : même traitement que la page groupe (bandeau, follow, liens,
   // events, MVs via le groupe is_solo). ──────────────────────────────────────
   if (group?.is_solo) {
-    const [{ user }, events, mvs, followedIds] = await Promise.all([
-      getViewer(),
-      getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
-      getGroupMvs(group.slug, 48),
-      getFollowedGroupIds(),
-    ])
-    const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
     const heroSrc = member.photo_url ?? group.image_url
     // Chaîne bannière unifiée (R4-B) — image_url surchargé par heroSrc : pour
     // un solo, la photo du membre est plus représentative que le carré Spotify
@@ -150,17 +258,15 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <div className="space-y-6">
+          {/* SHELL : hero + fiche depuis la row membre/groupe ; le follow
+              (viewer) et le corps (events, MVs, carrière) streament (Lot G). */}
           <ArtistHero
             name={member.stage_name}
             image={bannerSrc}
             follow={
-              <FollowButton
-                groupId={group.id}
-                initialFollowing={followedIds.has(group.id)}
-                isAuthed={!!user}
-                iconOnly
-                large
-              />
+              <Suspense fallback={null}>
+                <SoloFollow group={group} />
+              </Suspense>
             }
           />
 
@@ -188,38 +294,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             </section>
           )}
 
-          <section className="space-y-3">
-            {/* Lien Calendar au niveau du titre (R5) — pas de ligne en plus. */}
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-medium">Upcoming events</h2>
-              <Link
-                href={`/calendar?group=${group.slug}`}
-                className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
-              >
-                Calendar →
-              </Link>
-            </div>
-            <EventList
-              events={events}
-              scrollAfter={5}
-              empty={
-                <EmptyState
-                  title="No upcoming events"
-                  description="Nothing scheduled yet. Check the calendar for this artist."
-                  action={{ label: 'Open calendar', href: `/calendar?group=${group.slug}` }}
-                />
-              }
-            />
-          </section>
-
-          {mvs.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
-              <CollapsibleMvs mvs={mvs} ratings={ratings} timeZone={timeZone} />
-            </section>
-          )}
-
-          <CareerSection career={career} />
+          <Suspense fallback={<ArtistBodySkeleton />}>
+            <SoloBody member={member} group={group} />
+          </Suspense>
         </div>
       </div>
     )
@@ -232,22 +309,11 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const photo = photoRaw ? faceCrop(photoRaw, 192, 192) : null
   const statusText = statusLabel[member.status]
 
-  // R10 — contenu unique : MVs solo (mv_kind='member', jusque-là jamais affichés)
-  // + « groupmates » (les autres membres actifs du groupe) pour que la page ne
-  // soit plus un cul-de-sac maigre. Les 3 fetchs indépendants partent ENSEMBLE
-  // (4 vagues série → 2, Lot A perf 2026-07-18) ; seuls les ratings dépendent
-  // des MVs.
-  const [memberMvs, groupmatesRaw] = await Promise.all([
-    getMemberMvs(member.id),
-    group ? getMembersForGroup(group.id) : Promise.resolve([]),
-  ])
-  const memberRatings =
-    memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
-  const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
-
   return (
     <PageRails>
       <div className="space-y-6 px-4 md:px-0">
+        {/* SHELL : header + fiche depuis la row membre ; le corps (solo
+            releases, carrière, groupmates) streame (Lot G). */}
         <header className="flex items-start gap-4">
           <div className="bg-muted relative size-24 shrink-0 overflow-hidden rounded-xl">
             {photo ? (
@@ -312,30 +378,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </dl>
         </section>
 
-        {memberMvs.length > 0 && (
-          <section className="space-y-2">
-            <span className="label-data">Solo releases</span>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {memberMvs.map((mv) => (
-                <MvCard
-                  key={mv.id}
-                  mv={mv}
-                  rating={memberRatings?.get(mv.id)}
-                  timeZone={timeZone}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        <CareerSection career={career} />
-
-        {groupmates.length > 0 && group && (
-          <section className="space-y-2">
-            <span className="label-data">{group.name} members</span>
-            <MembersGrid members={groupmates} groupColorHex={group.color_hex} />
-          </section>
-        )}
+        <Suspense fallback={<ArtistBodySkeleton />}>
+          <MemberBody member={member} group={group} />
+        </Suspense>
       </div>
     </PageRails>
   )
