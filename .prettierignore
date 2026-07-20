@@ -1,13 +1,14 @@
 node_modules
 .next
 public
-output/
 .superpowers/
 *.log
 package-lock.json
 src/types/database.ts
 src/components/ui/
 docs/email-templates/
+# Archives figées (audits datés, plans exécutés) — conservées telles quelles.
+docs/archive/
 # Artefacts de référence, pas du code produit : bundles design (prototypes
 # HTML) et fixtures de scraping (HTML brut — les reformater casserait les
 # tests de parsing).
