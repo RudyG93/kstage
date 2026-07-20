@@ -62,15 +62,13 @@ export function bucketByReleaseWindow(
   const ranked = [...aggs]
     .filter((a) => a.count >= minCount)
     .sort((a, b) => b.avg - a.avg || b.count - a.count || a.eventId.localeCompare(b.eventId))
-    .map(
-      (a): TopRatedItem => ({
-        ...a,
-        delta:
-          nowMs - Date.parse(a.releaseAt) <= NEW_DAYS * DAY_MS
-            ? { kind: 'new', n: 0 }
-            : { kind: 'same', n: 0 },
-      }),
-    )
+    .map((a): TopRatedItem => ({
+      ...a,
+      delta:
+        nowMs - Date.parse(a.releaseAt) <= NEW_DAYS * DAY_MS
+          ? { kind: 'new', n: 0 }
+          : { kind: 'same', n: 0 },
+    }))
   const within = (days: number) => (i: TopRatedItem) =>
     nowMs - Date.parse(i.releaseAt) <= days * DAY_MS
   return {

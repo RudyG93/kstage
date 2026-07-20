@@ -112,17 +112,16 @@ export async function GET(req: Request) {
   )
 
   const messages = buildComebackNotifications(
-    (subsRes.data ?? []).map(
-      (s): ComebackSubscription => ({
-        userId: s.user_id,
-        endpoint: s.endpoint,
-        p256dh: s.p256dh,
-        auth: s.auth,
-      }),
-    ),
-    (followsRes.data ?? []).map(
-      (f): ComebackFollow => ({ userId: f.user_id, groupId: f.group_id }),
-    ),
+    (subsRes.data ?? []).map((s): ComebackSubscription => ({
+      userId: s.user_id,
+      endpoint: s.endpoint,
+      p256dh: s.p256dh,
+      auth: s.auth,
+    })),
+    (followsRes.data ?? []).map((f): ComebackFollow => ({
+      userId: f.user_id,
+      groupId: f.group_id,
+    })),
     events,
     alreadySent,
     now,

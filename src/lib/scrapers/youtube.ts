@@ -261,9 +261,7 @@ export async function fetchVideoDetails(
     for (const v of data.items ?? []) {
       details.set(v.id, {
         liveBroadcastContent: (v.snippet?.liveBroadcastContent ?? 'none') as
-          | 'none'
-          | 'live'
-          | 'upcoming',
+          'none' | 'live' | 'upcoming',
         scheduledStartTime: v.liveStreamingDetails?.scheduledStartTime ?? null,
         durationSec: parseIsoDuration(v.contentDetails?.duration),
       })

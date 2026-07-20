@@ -6,12 +6,7 @@
  */
 
 export type ShowId =
-  | 'the-show'
-  | 'show-champion'
-  | 'm-countdown'
-  | 'music-bank'
-  | 'music-core'
-  | 'inkigayo'
+  'the-show' | 'show-champion' | 'm-countdown' | 'music-bank' | 'music-core' | 'inkigayo'
 
 export interface ShowDescriptor {
   id: ShowId

@@ -93,34 +93,30 @@ export async function GET(req: Request) {
   }
 
   const built = buildDigest(
-    (subsRes.data ?? []).map(
-      (s): DigestSubscription => ({
-        userId: s.user_id,
-        endpoint: s.endpoint,
-        p256dh: s.p256dh,
-        auth: s.auth,
-      }),
-    ),
+    (subsRes.data ?? []).map((s): DigestSubscription => ({
+      userId: s.user_id,
+      endpoint: s.endpoint,
+      p256dh: s.p256dh,
+      auth: s.auth,
+    })),
     (followsRes.data ?? []).map((f): DigestFollow => ({ userId: f.user_id, groupId: f.group_id })),
     // Défense en profondeur : candidate écarté dès la route (le builder
     // ré-applique le gate — passesConfidenceGate).
     (eventsRes.data ?? [])
       .filter((e) => e.groups?.confidence !== 'candidate')
-      .map(
-        (e): DigestEvent => ({
-          groupId: e.group_id,
-          // Titre nettoyé comme le flux comeback : le brut donnait
-          // « fromis_9 — fromis_9 2nd Album – Glow ME (2026) » dans le body
-          // (groupe dupliqué + année parasite, audit notifs 2026-07-17).
-          title: displayEventTitle(e.title, e.groups?.name, null, e.type),
-          startAt: e.start_at,
-          groupName: e.groups?.name,
-          type: e.type,
-          status: e.status,
-          confidence: e.groups?.confidence ?? null,
-          sourceType: e.sources?.type ?? null,
-        }),
-      ),
+      .map((e): DigestEvent => ({
+        groupId: e.group_id,
+        // Titre nettoyé comme le flux comeback : le brut donnait
+        // « fromis_9 — fromis_9 2nd Album – Glow ME (2026) » dans le body
+        // (groupe dupliqué + année parasite, audit notifs 2026-07-17).
+        title: displayEventTitle(e.title, e.groups?.name, null, e.type),
+        startAt: e.start_at,
+        groupName: e.groups?.name,
+        type: e.type,
+        status: e.status,
+        confidence: e.groups?.confidence ?? null,
+        sourceType: e.sources?.type ?? null,
+      })),
     edition,
     disabledTypesByUser(prefsRes.data ?? []),
     timeZones,
