@@ -43,9 +43,6 @@ yarn-error.log*
 # roster import data dumps (scripts output, not source)
 scripts/roster/out/
 
-# stray local archive (theme bundle export — not source ; cf. INTEGRATION.md)
-/KStage.zip
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -55,4 +52,3 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-Refonte design moderne.zip
