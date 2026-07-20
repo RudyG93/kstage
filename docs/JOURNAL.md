@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-07-20 — Nettoyage : dépendances, code mort, scripts one-shot, triage BACKLOG
+
+**Branche/commit** : direct `main` (`866824b`, `2919122`, `31008f2` + 5 merges Dependabot `c0d10c0`→`60b58b6`).
+
+**Quoi** : ① **8 PRs Dependabot soldées** — 3 GitHub Actions (checkout/setup-node 5→7, setup-cli 1→3, conflit `db.yml` résolu), lint-staged 16→17, et le **groupe minor-and-patch (19 bumps)** : Next 16.2.10, React 19.2.7, sharp 0.35.3, prettier 3.9.5, playwright 1.61… `@vitejs/plugin-react` tenu à 6.0.2 (6.0.3 exige `@babel/core` 8-rc, conflit peer). Le rougissement CI de la PR groupée = prettier 3.9 reformatait 5 fichiers → reformatés (le fix attendu du bump). ② **Code mort retiré** (balayage multi-agents `knip` + contre-vérif grep, puis re-lecture directe — les verify-agents avaient sauté sur la limite de session) : `countUserComments`, `deleteRating`+`UUID_RE`, `SCORE_STEP`, `COMEBACK_SEND_UTC`, `revalidatePath('/')` doublé. ③ **Feature suggestion communautaire démantelée** : l'UI publique (dialog Suggest/Fix) avait été retirée au profit du widget Feedback → `submitSuggestion`/`submitArtistSuggestion`/`getTargetableEvents` + validateurs devenus test-only (`validation.ts`, `artist-validation.ts` + tests) supprimés (**décision Rudy**). Modération admin + tables + rate-limit RPC **conservés**. ④ **25 scripts one-shot** exécutés+périmés supprimés (backfill mai 2026, seeds roster kprofiles/dbkpop, `seed-roster` destructif, purges) — git garde l'historique ; **conservés** : runbooks documentés (`audit-*`, `backfill-mv-search`/`-reclassify-mvs`/`-episode-numbers`), remèdes-si-refire (`link-canonical-members`, `reprocess-oversized-photos`), triggers manuels, `add-named-groups` (42→17 scripts). ⑤ **Artefacts locaux** purgés (KStage.zip, Refonte design moderne.zip, tmp/, .agents/, scripts/roster/out/*.json, .superpowers/sdd/) + `.gitignore` nettoyé. ⑥ **INTEGRATION.md** archivé (`docs/archive/`), audit stratégique 2026-07-15 sorti de `output/` vers `docs/archive/`. ⑦ **Triage BACKLOG** : 4 items « à faire » en fait **déjà livrés** clôturés (nav calendrier client, rails `/mv`, admin hub, revalidatePath doublé) ; vrais restes vérifiés mis en avant : toggle « Birthdays » mort, `name_aliases` non branché au matching des **titres** de MV, warning SBS silencieux. `docs/README.md` rafraîchi.
+
+**Vérification** : typecheck + **727 vitest** (−31 = 2 tests de validation supprimés) + build 44/44 + prettier verts après chaque étape ; imports orphelins tous nettoyés ; aucun import entrant vers les 25 scripts (grep). CI GitHub à confirmer après push.
+
+**Restes ouverts (vérifiés, non-triviaux)** : brancher `name_aliases` sur `matchesGroup` dans `youtube.ts`+`channel-discovery.ts` (les MVs hangul/aliasés ne s'attribuent pas) ; toggle notif « Birthdays » (injecter les anniversaires au digest ou griser) ; `fetchSbsBoardLatestPost` null silencieux (log warning).
+
 ## 2026-07-19 — Lot J React Compiler : programme « Normes modernes » clos
 
 **Branche/commit** : `perf/react-compiler` (merge `6b64939`) → `main`.
