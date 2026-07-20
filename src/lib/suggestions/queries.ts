@@ -1,5 +1,4 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 
 /** Toutes les suggestions en attente (service_role) — appelé uniquement depuis la page admin gardée. */
@@ -50,27 +49,7 @@ export async function getPendingSuggestionsCount(): Promise<number> {
   return count ?? 0
 }
 
-/**
- * Events ciblables par un Suggest-fix : upcoming + récents (dernières 30j),
- * limit 200, triés par date desc. Lecture publique (RLS events = read-all),
- * pas besoin du service role.
- */
-export async function getTargetableEvents() {
-  const supabase = await createClient()
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from('events')
-    .select('id, title, type, start_at, groups!inner(name)')
-    .eq('hidden', false)
-    .gte('start_at', since)
-    .order('start_at', { ascending: false })
-    .limit(200)
-  if (error) throw error
-  return data ?? []
-}
-
 export type PendingSuggestion = Awaited<ReturnType<typeof getPendingSuggestions>>[number]
 export type PendingArtistSuggestion = Awaited<
   ReturnType<typeof getPendingArtistSuggestions>
 >[number]
-export type TargetableEvent = Awaited<ReturnType<typeof getTargetableEvents>>[number]

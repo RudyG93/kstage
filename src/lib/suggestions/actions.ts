@@ -4,14 +4,10 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import type { Database, Json } from '@/types/database'
+import type { Database } from '@/types/database'
 import { isAdmin } from '@/lib/auth/admin'
-import { trackEvent } from '@/lib/analytics/track'
 import { buildEventSlug, generateUniqueSlug, slugify } from '@/lib/events/slug'
-import { parseSuggestionInput, DAILY_SUGGESTION_CAP } from './validation'
-import { parseArtistSuggestionInput } from './artist-validation'
 
-export type SuggestionState = { error: string } | { ok: true } | null
 type ActionResult = { error: string } | { ok: true }
 
 function serviceClient() {
@@ -19,142 +15,6 @@ function serviceClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
-}
-
-export async function submitSuggestion(
-  _prev: SuggestionState,
-  formData: FormData,
-): Promise<SuggestionState> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const parsed = parseSuggestionInput({
-    kind: String(formData.get('kind') ?? 'new'),
-    groupId: String(formData.get('groupId') ?? ''),
-    type: String(formData.get('type') ?? ''),
-    title: String(formData.get('title') ?? ''),
-    startAtLocal: String(formData.get('startAt') ?? ''),
-    sourceUrl: String(formData.get('sourceUrl') ?? ''),
-    description: String(formData.get('description') ?? ''),
-    targetEventId: String(formData.get('targetEventId') ?? ''),
-  })
-  if ('error' in parsed) return { error: parsed.error }
-  const v = parsed.value
-
-  // Rate-limit quotidien combiné (events + artists) : bucket 'suggestion'
-  // partagé avec submitArtistSuggestion, check atomique (RPC advisory lock).
-  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
-    p_action: 'suggestion',
-    p_max: DAILY_SUGGESTION_CAP,
-    p_window_seconds: 24 * 60 * 60,
-  })
-  if (rateErr) return { error: 'Could not submit suggestion. Please try again.' }
-  if (!allowed) {
-    return { error: `Daily limit reached (${DAILY_SUGGESTION_CAP}/day). Try again tomorrow.` }
-  }
-
-  if (v.kind === 'new') {
-    const { error } = await supabase.from('event_suggestions').insert({
-      kind: 'new',
-      user_id: user.id,
-      group_id: v.groupId,
-      type: v.type,
-      title: v.title,
-      description: v.description,
-      start_at: v.startAt,
-      source_url: v.sourceUrl,
-    })
-    if (error)
-      return { error: 'Could not submit suggestion. Please check the group and try again.' }
-  } else {
-    // kind = 'fix' : on copie les colonnes NOT NULL depuis l'event ciblé pour
-    // satisfaire le schéma, puis on stocke ce qui est faux dans `description`.
-    const { data: target, error: readErr } = await supabase
-      .from('events')
-      .select('id, group_id, type, title, start_at')
-      .eq('id', v.targetEventId)
-      .maybeSingle()
-    if (readErr || !target) return { error: 'Target event not found.' }
-
-    const { error } = await supabase.from('event_suggestions').insert({
-      kind: 'fix',
-      user_id: user.id,
-      group_id: target.group_id,
-      type: target.type,
-      title: target.title,
-      start_at: target.start_at,
-      target_event_id: target.id,
-      description: v.description,
-      source_url: v.sourceUrl,
-    })
-    if (error) return { error: 'Could not submit fix suggestion.' }
-  }
-
-  await trackEvent('feedback_submitted', {
-    userId: user.id,
-    props: { kind: v.kind === 'new' ? 'event_suggestion' : 'event_fix' },
-  })
-  revalidatePath('/')
-  return { ok: true }
-}
-
-/** Soumet une suggestion d'artiste (onglet Artist du Contribute). */
-export async function submitArtistSuggestion(
-  _prev: SuggestionState,
-  formData: FormData,
-): Promise<SuggestionState> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const parsed = parseArtistSuggestionInput({
-    name: String(formData.get('name') ?? ''),
-    kind: String(formData.get('kind') ?? ''),
-    agency: String(formData.get('agency') ?? ''),
-    debutDate: String(formData.get('debutDate') ?? ''),
-    fandomName: String(formData.get('fandomName') ?? ''),
-    colorHex: String(formData.get('colorHex') ?? ''),
-    imageUrl: String(formData.get('imageUrl') ?? ''),
-    members: String(formData.get('members') ?? ''),
-    sourceUrl: String(formData.get('sourceUrl') ?? ''),
-  })
-  if ('error' in parsed) return { error: parsed.error }
-  const v = parsed.value
-
-  // Rate-limit quotidien combiné (events + artists) : même bucket 'suggestion'
-  // que submitSuggestion, check atomique (RPC advisory lock).
-  const { data: allowed, error: rateErr } = await supabase.rpc('consume_rate_limit', {
-    p_action: 'suggestion',
-    p_max: DAILY_SUGGESTION_CAP,
-    p_window_seconds: 24 * 60 * 60,
-  })
-  if (rateErr) return { error: 'Could not submit your artist suggestion. Please try again.' }
-  if (!allowed) {
-    return { error: `Daily limit reached (${DAILY_SUGGESTION_CAP}/day). Try again tomorrow.` }
-  }
-
-  const { error } = await supabase.from('artist_suggestions').insert({
-    user_id: user.id,
-    name: v.name,
-    kind: v.kind,
-    agency: v.agency,
-    debut_date: v.debutDate,
-    fandom_name: v.fandomName,
-    color_hex: v.colorHex,
-    image_url: v.imageUrl,
-    members: v.members as unknown as Json,
-    source_url: v.sourceUrl,
-  })
-  if (error) return { error: 'Could not submit your artist suggestion. Please try again.' }
-
-  await trackEvent('feedback_submitted', { userId: user.id, props: { kind: 'artist_suggestion' } })
-  revalidatePath('/')
-  return { ok: true }
 }
 
 async function requireAdminUser() {
@@ -226,7 +86,6 @@ export async function approveSuggestion(id: string): Promise<ActionResult> {
   if (updateErr) return { error: 'Event created but the suggestion status could not be updated.' }
 
   revalidatePath('/admin/suggestions')
-  revalidatePath('/')
   revalidatePath('/')
   return { ok: true }
 }

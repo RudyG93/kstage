@@ -18,17 +18,6 @@ export async function getCommentEditHistory(commentId: string): Promise<CommentE
   return data ?? []
 }
 
-/** Nombre de commentaires (non supprimés) postés par un user — stat de profil. */
-export async function countUserComments(userId: string): Promise<number> {
-  const supabase = await createClient()
-  const { count } = await supabase
-    .from('comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('deleted_at', null)
-  return count ?? 0
-}
-
 /**
  * Récupère tous les commentaires d'un event + agrégats votes + profil auteur.
  *

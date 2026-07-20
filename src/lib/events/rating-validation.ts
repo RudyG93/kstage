@@ -1,6 +1,5 @@
 export const MIN_SCORE = 0
 export const MAX_SCORE = 10
-export const SCORE_STEP = 0.5
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
