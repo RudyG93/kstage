@@ -167,7 +167,7 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
 
   // Jeux partagés par plusieurs checks.
   const [{ data: groups }, { data: members }, mvRows] = await Promise.all([
-    supabase.from('groups').select('id, name, slug, is_solo, debut_date, disbanded_on'),
+    supabase.from('groups').select('id, name, slug, is_solo, debut_date, disbanded_on, image_url'),
     supabase
       .from('members')
       .select(
@@ -198,18 +198,48 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
-  // 2. Objets Storage surdimensionnés (>400 Ko) — pipeline images cassé si ça remonte.
+  // 2. Objets Storage surdimensionnés (>400 Ko), scindés référencés/orphelins
+  // (2026-08-07 : le check comptait 23 orphelins jamais servis — signal pollué,
+  // le remède reprocess-oversized-photos refusait à juste titre d'y toucher).
+  // Référencé = pointé par members.photo_url ou groups.image_url → image
+  // réellement servie trop lourde = pipeline cassé, à corriger vite.
   {
+    const referenced = new Set<string>()
+    const objectName = (url: string | null, bucket: string) => {
+      if (!url) return null
+      const marker = `/object/public/${bucket}/`
+      const i = url.indexOf(marker)
+      if (i === -1) return null
+      return `${bucket}/${decodeURIComponent(url.slice(i + marker.length).split('?')[0])}`
+    }
+    for (const m of members ?? []) {
+      const n = objectName(m.photo_url, 'member-photos')
+      if (n) referenced.add(n)
+    }
+    for (const g of groups ?? []) {
+      const n = objectName(g.image_url, 'group-photos')
+      if (n) referenced.add(n)
+    }
     const oversized = [
       ...(await listBucketOversized(supabase, 'member-photos')),
       ...(await listBucketOversized(supabase, 'group-photos')),
     ].sort((a, b) => b.size - a.size)
+    const served = oversized.filter((o) => referenced.has(o.name))
+    const orphans = oversized.filter((o) => !referenced.has(o.name))
     checks.push({
       id: 'oversized_photos',
-      label: 'Objets Storage surdimensionnés (>400 Ko)',
+      label: 'Objets Storage surdimensionnés SERVIS (>400 Ko, référencés)',
       severity: 'warn',
-      count: oversized.length,
-      sample: oversized
+      count: served.length,
+      sample: served.slice(0, SAMPLE_MAX).map((o) => `${o.name} — ${(o.size / 1e6).toFixed(2)} Mo`),
+    })
+    checks.push({
+      id: 'oversized_orphans',
+      label:
+        'Objets Storage surdimensionnés orphelins (déchet, purge via reprocess --purge-orphans)',
+      severity: 'info',
+      count: orphans.length,
+      sample: orphans
         .slice(0, SAMPLE_MAX)
         .map((o) => `${o.name} — ${(o.size / 1e6).toFixed(2)} Mo`),
     })

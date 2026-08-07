@@ -13,6 +13,11 @@
 //   npx tsx scripts/reprocess-oversized-photos.ts --apply
 //   npx tsx scripts/reprocess-oversized-photos.ts --apply --bucket=group-photos
 //   npx tsx scripts/reprocess-oversized-photos.ts --apply --threshold=1000000
+//   npx tsx scripts/reprocess-oversized-photos.ts --apply --purge-orphans
+//
+// --purge-orphans : supprime aussi les objets surdimensionnés NON référencés
+// par une row (vestiges d'anciens uploads remplacés) — jamais servis, ils
+// polluaient le check data-health `oversized_photos` (2026-08-07).
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/types/database'
@@ -21,6 +26,7 @@ import { optimizeImageBuffer } from '../src/lib/images/optimize'
 loadEnvConfig(process.cwd())
 
 const APPLY = process.argv.includes('--apply')
+const PURGE_ORPHANS = process.argv.includes('--purge-orphans')
 const ONLY_BUCKET = process.argv.find((a) => a.startsWith('--bucket='))?.slice(9) ?? null
 const THRESHOLD = Number(
   process.argv.find((a) => a.startsWith('--threshold='))?.slice(12) ?? '400000',
@@ -95,6 +101,20 @@ async function main() {
       const rowId = rowByObject.get(obj.name)
       if (!rowId) {
         orphans++
+        if (PURGE_ORPHANS) {
+          if (!APPLY) {
+            console.log(`[dry][orphan] ${obj.name} (${(obj.size / 1e6).toFixed(2)} Mo) → purge`)
+          } else {
+            const { error: rmErr } = await supabase.storage.from(job.bucket).remove([obj.name])
+            if (rmErr) {
+              failures++
+              console.error(`[orphan] ${obj.name}: ${rmErr.message}`)
+            } else {
+              savedBytes += obj.size
+              console.log(`[orphan] purgé ${obj.name} (${(obj.size / 1e6).toFixed(2)} Mo)`)
+            }
+          }
+        }
         continue
       }
       if (!APPLY) {
