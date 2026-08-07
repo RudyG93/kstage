@@ -14,6 +14,8 @@ import { sendPush } from '@/lib/notifications/send'
 import { disabledTypesByUser } from '@/lib/notifications/prefs'
 import { isValidTimeZone } from '@/lib/profiles/timezone'
 import { displayEventTitle } from '@/lib/events/title'
+import { generateAnniversaries } from '@/lib/events/anniversaries'
+import { localDayKey } from '@/lib/events/date'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 const DAILY_WINDOW_MS = 48 * 60 * 60 * 1000
@@ -92,6 +94,51 @@ export async function GET(req: Request) {
     if (isValidTimeZone(p.timezone)) timeZones.set(p.id, p.timezone)
   }
 
+  // Anniversaires des groupes suivis par ≥1 abonné : générés à la volée (jamais
+  // en DB) — sans cette injection, le toggle « Birthdays & anniversaries » des
+  // préférences filtrait un type qui n'arrivait jamais (« toggle mort » du
+  // triage BACKLOG 2026-07-20 ; décision Rudy 2026-08-07 : tenir la promesse).
+  // Fenêtre alignée sur l'édition, jours civils KST (référence produit) — les
+  // étiquettes today/tomorrow par fuseau restent au builder.
+  const followedGroupIds = [...new Set((followsRes.data ?? []).map((f) => f.group_id))]
+  let annivEvents: DigestEvent[] = []
+  if (followedGroupIds.length > 0) {
+    const [annivGroupsRes, annivMembersRes] = await Promise.all([
+      supabase
+        .from('groups')
+        .select(
+          'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo, confidence',
+        )
+        .in('id', followedGroupIds),
+      supabase
+        .from('members')
+        .select('group_id, stage_name, birthday')
+        .in('group_id', followedGroupIds),
+    ])
+    const annivErr = annivGroupsRes.error ?? annivMembersRes.error
+    if (annivErr) return NextResponse.json({ error: annivErr.message }, { status: 500 })
+    const confidenceById = new Map((annivGroupsRes.data ?? []).map((g) => [g.id, g.confidence]))
+    annivEvents = generateAnniversaries(annivGroupsRes.data ?? [], annivMembersRes.data ?? [], {
+      todayKey: localDayKey(now.toISOString(), 'Asia/Seoul'),
+      days: edition === 'weekly' ? 7 : 2,
+    })
+      // Défense en profondeur : même écart candidate que les events DB (le
+      // builder ré-applique le gate via `confidence`).
+      .filter((a) => confidenceById.get(a.group_id) !== 'candidate')
+      .map((a): DigestEvent => ({
+        groupId: a.group_id,
+        // Titre annivTitle déjà propre (« Karina — 27 ») — pas de
+        // displayEventTitle (il dédoublonne des préfixes de groupe absents ici).
+        title: a.title,
+        startAt: a.start_at,
+        groupName: a.groups?.name,
+        type: 'anniversary',
+        status: 'confirmed',
+        confidence: confidenceById.get(a.group_id) ?? null,
+        sourceType: null,
+      }))
+  }
+
   const built = buildDigest(
     (subsRes.data ?? []).map((s): DigestSubscription => ({
       userId: s.user_id,
@@ -101,22 +148,26 @@ export async function GET(req: Request) {
     })),
     (followsRes.data ?? []).map((f): DigestFollow => ({ userId: f.user_id, groupId: f.group_id })),
     // Défense en profondeur : candidate écarté dès la route (le builder
-    // ré-applique le gate — passesConfidenceGate).
-    (eventsRes.data ?? [])
-      .filter((e) => e.groups?.confidence !== 'candidate')
-      .map((e): DigestEvent => ({
-        groupId: e.group_id,
-        // Titre nettoyé comme le flux comeback : le brut donnait
-        // « fromis_9 — fromis_9 2nd Album – Glow ME (2026) » dans le body
-        // (groupe dupliqué + année parasite, audit notifs 2026-07-17).
-        title: displayEventTitle(e.title, e.groups?.name, null, e.type),
-        startAt: e.start_at,
-        groupName: e.groups?.name,
-        type: e.type,
-        status: e.status,
-        confidence: e.groups?.confidence ?? null,
-        sourceType: e.sources?.type ?? null,
-      })),
+    // ré-applique le gate — passesConfidenceGate). Les anniversaires générés
+    // rejoignent les events DB — buildDigest trie et filtre par type/prefs.
+    [
+      ...(eventsRes.data ?? [])
+        .filter((e) => e.groups?.confidence !== 'candidate')
+        .map((e): DigestEvent => ({
+          groupId: e.group_id,
+          // Titre nettoyé comme le flux comeback : le brut donnait
+          // « fromis_9 — fromis_9 2nd Album – Glow ME (2026) » dans le body
+          // (groupe dupliqué + année parasite, audit notifs 2026-07-17).
+          title: displayEventTitle(e.title, e.groups?.name, null, e.type),
+          startAt: e.start_at,
+          groupName: e.groups?.name,
+          type: e.type,
+          status: e.status,
+          confidence: e.groups?.confidence ?? null,
+          sourceType: e.sources?.type ?? null,
+        })),
+      ...annivEvents,
+    ],
     edition,
     disabledTypesByUser(prefsRes.data ?? []),
     timeZones,

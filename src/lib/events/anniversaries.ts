@@ -103,6 +103,9 @@ export function generateAnniversaries(
     if (occ.diff < 0 || occ.diff > opts.days) return
     out.push({
       id,
+      // Conformité UpcomingEvent (le cast masquait l'absence) — requis par le
+      // digest push (buildDigest filtre par groupId suivi, 2026-08-07).
+      group_id: g.id,
       title,
       type: 'anniversary',
       start_at: kstToUtcISO(occ.y, occ.month - 1, occ.day, 0, 0),

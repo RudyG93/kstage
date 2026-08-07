@@ -255,4 +255,21 @@ describe('buildDigest', () => {
     const messages = daily(subscriptions, follows, events)
     expect(messages.map((m) => m.subscription.userId)).toEqual(['u1'])
   })
+
+  it("anniversary : inclus par défaut, exclu quand le toggle Birthdays est off (la promesse de l'UI)", () => {
+    // Les anniversaires sont injectés par la route send-digest (générés à la
+    // volée, jamais en DB — 2026-08-07) ; le pref-type 'anniversary' doit les
+    // filtrer réellement, comme la ligne « Birthdays & anniversaries » le promet.
+    const follows = [
+      { userId: 'u1', groupId: 'g1' },
+      { userId: 'u2', groupId: 'g1' },
+    ]
+    const events = [
+      { ...ev('g1', 'Karina — 27', '2026-05-26T00:30:00Z', 'aespa'), type: 'anniversary' },
+    ]
+    const disabled = new Map([['u1', new Set(['anniversary'])]])
+    const messages = daily([sub('u1'), sub('u2')], follows, events, disabled)
+    expect(messages.map((m) => m.subscription.userId)).toEqual(['u2'])
+    expect(messages[0].payload.title).toBe('aespa — Karina — 27 · today')
+  })
 })
