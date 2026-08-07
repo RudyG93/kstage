@@ -87,7 +87,16 @@ export async function fetchSbsBoardLatestPost(
   if (!boardRes.ok) throw new Error(`SBS board fetch failed: HTTP ${boardRes.status}`)
   const boardMd = await boardRes.text()
   const meta = parseBoardLatestPost(boardMd)
-  if (!meta) return null
+  if (!meta) {
+    // Board 200 mais aucune row parsée : cache Jina périmé/anti-bot OU format
+    // de board changé. Sans ce warn, l'échec était indistinguable d'un board
+    // simplement muet (constaté le 17/07 : run silencieusement vide, épisode
+    // récupéré au run suivant — BACKLOG « fetch broadcaster silencieusement vide »).
+    console.warn(
+      `[sbs-board] ${boardUrl} : 200 mais 0 post parsé (markdown ${boardMd.length} o, début : ${JSON.stringify(boardMd.slice(0, 120))})`,
+    )
+    return null
+  }
 
   const postRes = await fetch(`https://r.jina.ai/${meta.postUrl}`, {
     headers: { 'user-agent': 'KStageBot/0.1 (+https://kstage.vercel.app)' },
