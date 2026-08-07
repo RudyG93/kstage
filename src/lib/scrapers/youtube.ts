@@ -293,16 +293,19 @@ export async function scrapeGroup(
   units++
   const channel = await resolveChannel(source.url, apiKey)
 
-  // Charge le slug + name du groupe pour générer les slugs d'events.
+  // Charge le slug + name + aliases du groupe pour générer les slugs d'events.
   // Le name est nécessaire pour dédupliquer les préfixes quand le titre scrapé
-  // commence par le nom du groupe (cf. buildEventSlug).
+  // commence par le nom du groupe (cf. buildEventSlug). Les name_aliases (0061 :
+  // hangul officiel, rebrand NOWADAYS→NOWZ…) participent au title-match — sans
+  // eux, un MV titré sous l'alias ne s'attribue jamais (piège 2026-07-14).
   const { data: group } = await supabase
     .from('groups')
-    .select('slug, name')
+    .select('slug, name, name_aliases')
     .eq('id', source.group_id)
     .maybeSingle()
   const groupSlug = group?.slug ?? null
   const groupName = group?.name ?? null
+  const groupAliases = group?.name_aliases ?? []
 
   // Membres du groupe (pour detectMvVersion). Charge une seule fois par scrape.
   const { data: membersData } = await supabase
@@ -380,7 +383,7 @@ export async function scrapeGroup(
     // description attribuait des MV d'autres artistes au groupe (faux positif
     // Lee Changsub→i-dle, 2026-06-13). Convention k-pop : le titre d'un MV
     // officiel porte toujours l'artiste.
-    if (groupName && !matchesGroup(item.title, groupName)) {
+    if (groupName && !matchesGroup(item.title, groupName, groupAliases)) {
       skipped++
       continue
     }

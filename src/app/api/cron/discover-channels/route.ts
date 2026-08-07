@@ -44,7 +44,7 @@ export async function GET(req: Request) {
   // jamais re-regardée). Les récents restent servis en premier par le tri.
   const { data: pool, error: poolErr } = await supabase
     .from('groups')
-    .select('id, name, slug, confidence, debut_date')
+    .select('id, name, name_aliases, slug, confidence, debut_date')
     .order('debut_date', { ascending: false, nullsFirst: false })
   if (poolErr) return NextResponse.json({ error: poolErr.message }, { status: 500 })
 

@@ -32,10 +32,19 @@ export type SearchHit = {
   publishedAt?: string
 }
 
-/** Hits « vrais MVs du groupe » — pur, testable (title-match + marqueur MV + blacklist). */
-export function filterMvSearchHits(hits: readonly SearchHit[], groupName: string): SearchHit[] {
+/** Hits « vrais MVs du groupe » — pur, testable (title-match + marqueur MV + blacklist).
+ * `aliases` = groups.name_aliases (0061) : un MV titré sous le hangul officiel
+ * ou l'ancien nom (rebrand) compte comme hit du groupe. */
+export function filterMvSearchHits(
+  hits: readonly SearchHit[],
+  groupName: string,
+  aliases: readonly string[] = [],
+): SearchHit[] {
   return hits.filter(
-    (h) => matchesGroup(h.title, groupName) && MV_MARKER.test(h.title) && !DERIVATIVE.test(h.title),
+    (h) =>
+      matchesGroup(h.title, groupName, aliases) &&
+      MV_MARKER.test(h.title) &&
+      !DERIVATIVE.test(h.title),
   )
 }
 
@@ -64,7 +73,7 @@ async function yt(path: string, params: Record<string, string>, apiKey: string) 
  * (2 × search.list à 100 u + channels.list à ~1 u).
  */
 export async function discoverChannelsForGroup(
-  group: { name: string },
+  group: { name: string; name_aliases?: string[] | null },
   apiKey: string,
 ): Promise<{ candidates: ChannelCandidate[]; units: number }> {
   let units = 0
@@ -87,7 +96,7 @@ export async function discoverChannelsForGroup(
         publishedAt: it.snippet.publishedAt,
       }),
     )
-    for (const hit of filterMvSearchHits(hits, group.name)) {
+    for (const hit of filterMvSearchHits(hits, group.name, group.name_aliases ?? [])) {
       const c = byChannel.get(hit.channelId) ?? {
         channelTitle: hit.channelTitle,
         hits: [],

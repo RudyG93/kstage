@@ -38,4 +38,12 @@ describe('filterMvSearchHits', () => {
     ]
     expect(filterMvSearchHits(hits, 'NEXZ')).toEqual([])
   })
+
+  it('name_aliases (0061) : un MV titré sous le hangul officiel compte comme hit', () => {
+    // Sans alias, « 선미 » ne matche pas « Sunmi » — la classe de bug qui
+    // laissait les groupes hangul/rebrandés sans attribution (BACKLOG 2026-07-20).
+    const hits = [hit("선미 'Balloon in Love' MV")]
+    expect(filterMvSearchHits(hits, 'Sunmi')).toEqual([])
+    expect(filterMvSearchHits(hits, 'Sunmi', ['선미'])).toHaveLength(1)
+  })
 })

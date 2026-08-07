@@ -27,7 +27,10 @@ const supabase = createClient<Database>(
 
 /** Slugs des groupes à ≤ 1 MV visible (candidats aux MVs manquants). */
 async function thinSlugs(limit: number): Promise<string[]> {
-  const { data: groups } = await supabase.from('groups').select('id, slug, name').order('name')
+  const { data: groups } = await supabase
+    .from('groups')
+    .select('id, slug, name, name_aliases')
+    .order('name')
   // Compte des MVs visibles par groupe — pagination : le select PostgREST est
   // capé à 1000 rows (leçon supabase-query-gotchas), les events mv en font +2000.
   const counts = new Map<string, number>()
@@ -54,7 +57,10 @@ async function main() {
   const slugs = thin ? await thinSlugs(limit) : (process.argv[2] ?? '').split(',').filter(Boolean)
   if (slugs.length === 0)
     throw new Error('usage: discover-mv-channels.ts slug1,slug2 | --thin --limit=N')
-  const { data: groups } = await supabase.from('groups').select('slug, name').in('slug', slugs)
+  const { data: groups } = await supabase
+    .from('groups')
+    .select('slug, name, name_aliases')
+    .in('slug', slugs)
 
   let totalUnits = 0
   for (const g of groups ?? []) {
