@@ -14,6 +14,11 @@ import {
   ingestNamedGroups,
   type DebutCandidatePayload,
 } from '@/lib/scrapers/debuts/ingest'
+import { sweepStaleReviewQueues } from './stale'
+
+// Garde-fou des actions groupées : la page n'affiche qu'une page de rows,
+// aucune sélection légitime ne dépasse ça.
+const BULK_MAX = 200
 
 function serviceClient() {
   return createServiceClient<Database>(
@@ -96,6 +101,37 @@ export async function dismissDebutCandidate(id: string): Promise<{ error?: strin
   return {}
 }
 
+/** Écarte en masse une sélection de candidats (bulk-triage 2026-08-07). */
+export async function dismissDebutCandidatesBulk(
+  ids: string[],
+): Promise<{ dismissed?: number; error?: string }> {
+  if (!(await requireAdmin())) return { error: 'Unauthorized' }
+  if (ids.length === 0) return { dismissed: 0 }
+  const { data, error } = await serviceClient()
+    .from('debut_candidates')
+    .update({ status: 'dismissed', decided_at: new Date().toISOString() })
+    .in('id', ids.slice(0, BULK_MAX))
+    .eq('status', 'pending')
+    .select('id')
+  if (error) return { error: error.message }
+  revalidatePath('/admin/debuts')
+  return { dismissed: data?.length ?? 0 }
+}
+
+/** Auto-écart du bruit ≥30 j des DEUX files (agit sur toute la DB, pas
+ * seulement la page affichée) — même balayage que le cron quotidien. */
+export async function dismissStaleReviewQueues(): Promise<{
+  dismissed?: number
+  ignored?: number
+  error?: string
+}> {
+  if (!(await requireAdmin())) return { error: 'Unauthorized' }
+  const res = await sweepStaleReviewQueues(serviceClient())
+  if (res.error) return { error: res.error }
+  revalidatePath('/admin/debuts')
+  return { dismissed: res.dismissed, ignored: res.ignored }
+}
+
 // ——— File « artistes de lineup hors-app » (retour Rudy 2026-07-17) ————————
 // Alimentée par le cron scrape-music-shows (table lineup_unmatched, deny-all
 // RLS) ; l'admin crée via le pipeline fandom complet ou ignore le bruit.
@@ -162,4 +198,21 @@ export async function ignoreLineupUnmatched(nameNorm: string): Promise<{ error?:
     .eq('status', 'pending')
   revalidatePath('/admin/debuts')
   return {}
+}
+
+/** Ignore en masse une sélection d'entrées lineup (bulk-triage 2026-08-07). */
+export async function ignoreLineupUnmatchedBulk(
+  names: string[],
+): Promise<{ ignored?: number; error?: string }> {
+  if (!(await requireAdmin())) return { error: 'Unauthorized' }
+  if (names.length === 0) return { ignored: 0 }
+  const { data, error } = await serviceClient()
+    .from('lineup_unmatched')
+    .update({ status: 'ignored' })
+    .in('name_norm', names.slice(0, BULK_MAX))
+    .eq('status', 'pending')
+    .select('name_norm')
+  if (error) return { error: error.message }
+  revalidatePath('/admin/debuts')
+  return { ignored: data?.length ?? 0 }
 }

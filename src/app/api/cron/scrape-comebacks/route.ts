@@ -6,6 +6,7 @@ import { scrapeComebacks } from '@/lib/scrapers/kpopofficial'
 import { scrapeWikipediaReleases } from '@/lib/scrapers/wikipedia-releases'
 import { ingestDebuts } from '@/lib/scrapers/debuts/ingest'
 import { refreshRecentRosters } from '@/lib/scrapers/debuts/roster-watch'
+import { sweepStaleReviewQueues } from '@/lib/debuts/stale'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // Vercel Cron déclenche en GET et ajoute l'en-tête Authorization: Bearer ${CRON_SECRET}.
@@ -167,6 +168,16 @@ export async function GET(req: Request) {
     }
   }
 
+  // Auto-écart du bruit des files de revue (≥30 j pending, 2026-08-07) —
+  // best-effort : le drain quotidien empêche les files de regonfler sans que
+  // l'échec du sweep ne touche jamais le run d'ingestion.
+  let staleSweep: { dismissed: number; ignored: number; error: string | null } | null = null
+  try {
+    staleSweep = await sweepStaleReviewQueues(supabase)
+  } catch (err) {
+    staleSweep = { dismissed: 0, ignored: 0, error: String(err) }
+  }
+
   // Le cron échoue (500, visible dans Vercel Crons) uniquement si la primaire est
   // inexploitable. Wikipedia et les debuts sont des filets : leur état vit dans
   // scrape_log.
@@ -180,5 +191,6 @@ export async function GET(req: Request) {
     wikiResult,
     debutResult,
     rosterResult,
+    staleSweep,
   })
 }
