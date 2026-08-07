@@ -18,7 +18,9 @@
 
 **Décisions (Rudy)** : anniversaires = injecter au digest (pas griser) ; files admin = bulk-triage + auto-écart heuristique (à livrer) ; domaine = brancher `kstage.app` maintenant (config Vercel+OVH côté Rudy, bascule code après vérification).
 
-**Restes de la session** : P2 bulk-triage `/admin/debuts` + heuristique ; P3 bascule domaine (gated config Rudy) ; PR #95 à fermer + #94/#92 à traiter ; C-1/C-2 clés legacy (ensemble) ; E2E compte dédié + Search Console + recrutement bêta (Rudy).
+**P2 livré dans la foulée** (`9e9fc88`, CI verte) : **bulk-triage des files de revue** — `sweepStaleReviewQueues` (pending ≥ 30 j → écarté, sans risque : les crons re-captent tout groupe qui perce), branché au cron quotidien `scrape-comebacks` (best-effort) ET au bouton admin « Auto-écarter ≥30 j » ; sélection multiple + Dismiss/Ignore selected sur les 2 listes de `/admin/debuts` (actions bulk `.in()` cap 200).
+
+**Restes** : P3 bascule domaine `kstage.app` (gated : config Vercel+OVH côté Rudy, guide fourni — je bascule SITE_URL/redirect/sitemap après le ✓) ; PR #95 TS 7 à fermer (2 clics `@dependabot close`) ; #94 react-easy-crop 6 + #92 @types/node à traiter (prochaine session : cropper à tester manuellement, types→22) ; C-1/C-2 clés legacy (ensemble, réversible) ; E2E compte dédié + Search Console + recrutement bêta Phase 4 (Rudy).
 
 ## 2026-07-20 — Nettoyage : dépendances, code mort, scripts one-shot, triage BACKLOG
 
