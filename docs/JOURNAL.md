@@ -4,6 +4,22 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-07 — Reprise après 18 j d'autonomie : vague sécurité Next 16.3 + restes P1 du triage
+
+**Branche/commit** : `chore/security-wave-2026-08` (merge `26470f3`) puis `09f2be7`, `4f359dd`, `d06ee7c`, `91bc483` → `main`. CI verte sur tout.
+
+**État des lieux (18 j sans session, vérifié)** : le pipeline a tenu seul — 209 runs scrape ok / **0 erreur**, 395 events créés, 227 groupes, data-health cœur sain, prod up. MAIS : Next 16.2.10 exposé aux **9 CVE du July 2026 Security Release** (dont DoS High Server Actions), 4 vulns npm high, files humaines gonflées (326 debut candidates, 87 lineup unmatched), 5 profils / 0 nouveau / 2 push (Phase 4 jamais lancée), `kstage.app` acheté (OVH) jamais branché, clés legacy Supabase toujours actives (C-1/C-2 non faits ; coupure Supabase « fin 2026 », désactivation réversible).
+
+**Quoi** : ① **Vague sécurité** : Next 16.2.10 → **16.3.0** (couvre les 9 CVE + gains passifs : Turbopack FS cache par défaut, SSR streams natifs), React 19.2.8, supabase-js 2.112.2 + ssr 0.12.4 (fixes PKCE), lucide 1.28, playwright 1.62 (binaires réinstallés), prettier 3.9.6, `npm audit fix` → **0 vulnérabilité** (PRs #105/#103 mergées, transitives réglées) ; `@vitejs/plugin-react` tenu à 6.0.2 (peer Babel 8-rc vs react-compiler), eslint-config-next aligné 16.3.0. ② **`name_aliases` → matching des titres MV** (`youtube.ts` + `channel-discovery.ts` + les 2 appelants sélectionnent la colonne) — un MV « NOWADAYS(나우어데이즈) » s'attribue enfin à NOWZ ; test hangul 선미→Sunmi. ③ **Warn diagnostique** quand le board SBS parse à vide (taille + échantillon markdown). ④ **`oversized_photos` scindé servis/orphelins** : les 23 objets lourds étaient TOUS orphelins (seed initial remplacé par le pipeline Spotify by-ID — vérifié `image_url` → i.scdn.co) → check croisé avec photo_url/image_url (`oversized_photos` = servis, warn ; `oversized_orphans` = info), script `--purge-orphans` (dry-run par défaut), purge appliquée : 23 objets ~38 Mo, buckets à 0. ⑤ **Anniversaires dans le digest** : la route les génère (generateAnniversaries pur, service-role, fenêtre 2 j/7 j, jours civils KST) et les fusionne aux events — le toggle « Birthdays & anniversaries » filtre enfin réellement ; `group_id` ajouté aux pseudo-events (conformité `UpcomingEvent`).
+
+**Veille (sources officielles, 2026-08-07)** : TS 7.0 GA mais SANS API JS stable → Next ne le détecte pas avant 16.3+flag expérimental, typescript-eslint « not planned » avant 7.1 → **PR #95 rouge structurellement, à fermer, re-évaluer à TS 7.1** ; Vitest 4.1.10/Playwright 1.62 = routine ; clés legacy Supabase : deadline « fin 2026 », pas de date ferme.
+
+**Vérification** : rituel complet à chaque étape (prettier, tsc, vitest — 729 tests dont +2 toggle anniversary, build 44/44, e2e 27/28, npm audit 0) ; CI GitHub verte sur les 3 pushes (golden path auth inclus sur 16.3.0) ; buckets re-scannés à 0 après purge.
+
+**Décisions (Rudy)** : anniversaires = injecter au digest (pas griser) ; files admin = bulk-triage + auto-écart heuristique (à livrer) ; domaine = brancher `kstage.app` maintenant (config Vercel+OVH côté Rudy, bascule code après vérification).
+
+**Restes de la session** : P2 bulk-triage `/admin/debuts` + heuristique ; P3 bascule domaine (gated config Rudy) ; PR #95 à fermer + #94/#92 à traiter ; C-1/C-2 clés legacy (ensemble) ; E2E compte dédié + Search Console + recrutement bêta (Rudy).
+
 ## 2026-07-20 — Nettoyage : dépendances, code mort, scripts one-shot, triage BACKLOG
 
 **Branche/commit** : direct `main` (`866824b`, `2919122`, `31008f2` + 5 merges Dependabot `c0d10c0`→`60b58b6`).
