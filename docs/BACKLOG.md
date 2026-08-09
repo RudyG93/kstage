@@ -96,6 +96,12 @@
 
 ✅ **Fait 2026-07-04** → `docs/RISKS.md` (jina SPOF + règle d'arbitrage, plafonds free tiers + triggers ~45 $/mois, minimum maintenable = 1 check hebdo de 10 min).
 
+## Demandes 2026-08-08
+
+- **KPI dashboard admin** (demande Rudy, conseil d'un ami) : panneau de suivi dans `/admin` — candidats : signups & rétention (profiles/digest_log), DAU/WAU (l'infra analytics `trackEvent` + funnel Phase 2 existe déjà — `/api/e`), follows totaux et par user, push subs actives, digests envoyés/ouverts (`?src=push`), events servis, couverture data (groupes avec events futurs). À cadrer (choix des 6-8 KPI qui comptent) puis page `/admin/kpi` ou section du hub.
+- **Préemptions music-show (결방)** : le board SBS publie des avis officiels « 결방 공지 » (ex. Inkigayo déprogrammé les 2 et 9 août — alerte monitor du 08/08). Parser ces posts → stocker « pas d'épisode le X » → faire taire le check J-1 du monitor ET masquer le slot synthétique du calendrier (aujourd'hui il affiche un épisode fantôme « Lineup TBA »).
+- ✅ **Incident photos cassées** (constaté par Rudy le 08/08) : la purge d'orphelins du 07/08 avait supprimé à tort 8 photos NCT DREAM/ZEROBASEONE — cap silencieux PostgREST 1000 rows sur le croisement (members = 1142 photos bucket depuis fin juillet). Réparé (re-self-host vérifié) + classe corrigée sur 3 surfaces (script reprocess, checks data-health, `getAllMembers` du picker Bias qui perdait ~108 artistes). Cf. JOURNAL 2026-08-08.
+
 ## Gelé — gaté sur audience réelle
 
 - Feed d'activité communautaire ; « j'attends ce comeback » (RSVP + compteur de hype) ; **KStage Wrapped** ; forum/modérateurs ; listes partageables ; reco « à suivre ». Un compteur à zéro est une anti-preuve sociale.
