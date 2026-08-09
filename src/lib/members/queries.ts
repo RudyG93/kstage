@@ -118,20 +118,34 @@ export function ageFromBirthday(
 export const getAllMembers = unstable_cache(
   async () => {
     // Client anon sans cookies (requis par unstable_cache) : members = données
-    // publiques quasi statiques (~675 rows) sérialisées dans le payload du profil
+    // publiques quasi statiques sérialisées dans le payload du profil
     // → cache 1h pour éviter le hit Supabase à chaque visite de profil.
+    // PAGINÉ : les canoniques ont franchi le cap PostgREST de 1000 rows
+    // (1108 au 2026-08-08) — sans .range, le picker Bias perdait ~108 artistes.
     const supabase = createAnonClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
-    const { data, error } = await supabase
-      .from('members')
-      .select('id, slug, stage_name, photo_url, groups!inner(name)')
-      .is('canonical_id', null)
-      .not('slug', 'is', null)
-      .order('stage_name', { ascending: true })
-    if (error) throw error
-    return data ?? []
+    const rows: {
+      id: string
+      slug: string
+      stage_name: string
+      photo_url: string | null
+      groups: { name: string } | null
+    }[] = []
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, slug, stage_name, photo_url, groups!inner(name)')
+        .is('canonical_id', null)
+        .not('slug', 'is', null)
+        .order('stage_name', { ascending: true })
+        .range(from, from + 999)
+      if (error) throw error
+      rows.push(...((data ?? []) as unknown as typeof rows))
+      if (!data || data.length < 1000) break
+    }
+    return rows
   },
   ['all-members'],
   { revalidate: 3600, tags: ['members'] },

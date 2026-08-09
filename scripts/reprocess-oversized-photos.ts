@@ -79,17 +79,24 @@ async function main() {
     const objects = await listAllObjects(supabase, job.bucket)
     const oversized = objects.filter((o) => o.size > THRESHOLD)
 
-    // Rows référençant le bucket (≤ ~850 rows — sous le cap select 1000).
-    const { data: rows, error: rowErr } = await supabase
-      .from(job.table)
-      .select(`id, ${job.urlColumn}`)
-      .like(job.urlColumn, `%/${job.bucket}/%`)
-    if (rowErr) throw new Error(`${job.table} select: ${rowErr.message}`)
+    // Rows référençant le bucket — PAGINÉ : members a franchi le cap PostgREST
+    // de 1000 rows (1142 au 2026-08-08). L'ancien select non paginé (« ≤ ~850
+    // rows ») a fait considérer les ~140 membres les plus récents comme
+    // orphelins → 8 photos NCT DREAM/ZEROBASEONE purgées à tort le 07/08.
     const rowByObject = new Map<string, string>()
-    for (const r of (rows ?? []) as unknown as { id: string; [k: string]: string | null }[]) {
-      const url = r[job.urlColumn]
-      const name = url ? objectNameFromUrl(url, job.bucket) : null
-      if (name) rowByObject.set(name, r.id)
+    for (let from = 0; ; from += 1000) {
+      const { data: rows, error: rowErr } = await supabase
+        .from(job.table)
+        .select(`id, ${job.urlColumn}`)
+        .like(job.urlColumn, `%/${job.bucket}/%`)
+        .range(from, from + 999)
+      if (rowErr) throw new Error(`${job.table} select: ${rowErr.message}`)
+      for (const r of (rows ?? []) as unknown as { id: string; [k: string]: string | null }[]) {
+        const url = r[job.urlColumn]
+        const name = url ? objectNameFromUrl(url, job.bucket) : null
+        if (name) rowByObject.set(name, r.id)
+      }
+      if (!rows || rows.length < 1000) break
     }
 
     let processed = 0

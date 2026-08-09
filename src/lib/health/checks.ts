@@ -143,6 +143,36 @@ async function fetchAllMvEvents(supabase: SupabaseClient) {
   return rows
 }
 
+// members a franchi le cap PostgREST de 1000 rows (1162 au 2026-08-08) : sans
+// pagination, les ~160 derniers étaient absents des checks → le croisement
+// oversized comptait leurs photos comme orphelines (8 purgées à tort le 07/08).
+async function fetchAllMembers(supabase: SupabaseClient) {
+  const rows: {
+    id: string
+    slug: string | null
+    stage_name: string
+    real_name: string | null
+    birthday: string | null
+    canonical_id: string | null
+    group_id: string
+    photo_url: string | null
+    status: string
+    groups: { name: string } | null
+  }[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('members')
+      .select(
+        'id, slug, stage_name, real_name, birthday, canonical_id, group_id, photo_url, status, groups!inner(name)',
+      )
+      .range(from, from + 999)
+    if (error) throw new Error(`members: ${error.message}`)
+    rows.push(...((data ?? []) as unknown as typeof rows))
+    if (!data || data.length < 1000) break
+  }
+  return rows
+}
+
 async function listBucketOversized(supabase: SupabaseClient, bucket: string) {
   const hits: { name: string; size: number }[] = []
   for (let offset = 0; ; offset += 1000) {
@@ -165,14 +195,10 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
   const today = nowIso.slice(0, 10)
   const checks: HealthCheck[] = []
 
-  // Jeux partagés par plusieurs checks.
-  const [{ data: groups }, { data: members }, mvRows] = await Promise.all([
+  // Jeux partagés par plusieurs checks. members est PAGINÉ (cap 1000 franchi).
+  const [{ data: groups }, members, mvRows] = await Promise.all([
     supabase.from('groups').select('id, name, slug, is_solo, debut_date, disbanded_on, image_url'),
-    supabase
-      .from('members')
-      .select(
-        'id, slug, stage_name, real_name, birthday, canonical_id, group_id, photo_url, status, groups!inner(name)',
-      ),
+    fetchAllMembers(supabase),
     fetchAllMvEvents(supabase),
   ])
   const groupById = new Map((groups ?? []).map((g) => [g.id, g]))
