@@ -5,6 +5,7 @@ import { generateAnniversaries } from '@/lib/events/anniversaries'
 import { kstDayKey } from '@/lib/events/date'
 import { isMainOrNonMv } from '@/lib/events/queries'
 import { buildCalendarFeed } from '@/lib/ical/feed'
+import { SITE_URL } from '@/lib/site'
 
 // Feed iCal perso par token-capability (R3). Public par design : le token
 // uuid (122 bits) EST l'authentification — guard de forme + 404 uniforme
@@ -13,7 +14,6 @@ import { buildCalendarFeed } from '@/lib/ical/feed'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const DAY_MS = 24 * 60 * 60 * 1000
-const SITE_URL = 'https://kstage.vercel.app'
 
 const notFound = () => new NextResponse('Not found', { status: 404 })
 

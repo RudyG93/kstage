@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getNotificationPrefs } from '@/lib/notifications/queries'
 import { getProfile } from '@/lib/profiles/queries'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
+import { SITE_URL } from '@/lib/site'
 
 export const metadata = { title: 'Account settings' }
 
@@ -24,9 +25,7 @@ export default async function AccountPage() {
     getNotificationPrefs(),
     supabase.from('calendar_feeds').select('token').maybeSingle(),
   ])
-  const feedUrl = calendarFeed
-    ? `https://kstage.vercel.app/api/ical/${calendarFeed.token}.ics`
-    : null
+  const feedUrl = calendarFeed ? `${SITE_URL}/api/ical/${calendarFeed.token}.ics` : null
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">

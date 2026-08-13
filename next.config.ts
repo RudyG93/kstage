@@ -48,6 +48,20 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }]
   },
+  // kstage.app = domaine canonique depuis le 2026-08-08 : l'ancien host
+  // kstage.vercel.app redirige en 308, SAUF /api — les crons GitHub (PROD_URL)
+  // et les feeds iCal déjà copiés par les users tapent vercel.app en direct et
+  // un curl sans -L casserait sur un redirect.
+  async redirects() {
+    return [
+      {
+        source: '/:path((?!api/).*)',
+        has: [{ type: 'host', value: 'kstage.vercel.app' }],
+        destination: 'https://kstage.app/:path',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     // v16 : defaut qualities=[75] — sans cette liste, le quality={70} du hero
     // (hero-backdrop.tsx) etait silencieusement force a 75.

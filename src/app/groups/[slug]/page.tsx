@@ -23,6 +23,7 @@ import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
 import { getViewer } from '@/lib/supabase/viewer'
+import { SITE_URL } from '@/lib/site'
 
 export async function generateMetadata({
   params,
@@ -263,7 +264,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
           '@context': 'https://schema.org',
           '@type': 'MusicGroup',
           name: group.name,
-          url: `https://kstage.vercel.app/groups/${group.slug}`,
+          url: `${SITE_URL}/groups/${group.slug}`,
           genre: 'K-pop',
           ...(group.image_url ? { image: group.image_url } : {}),
           ...(group.debut_date ? { foundingDate: group.debut_date } : {}),
