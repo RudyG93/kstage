@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-08 — kstage.app devient le domaine canonique + incident photos réparé (cap 1000)
+
+**Branche/commit** : `432f6a2` (fix cap 1000), `61cdb0e` (BACKLOG), `5f97fb7` (bascule domaine) → `main`.
+
+**Domaine** : Rudy a branché `kstage.app` (A record OVH → Vercel, HTTPS 200 vérifié). Bascule code : `SITE_URL` → `https://kstage.app` (metadataBase, sitemap 2193 URLs, robots, OG, emails, feed iCal affiché, JSON-LD groups qui était en dur), redirect **308** `kstage.vercel.app` → `kstage.app` **hors `/api`** — les crons GitHub (`PROD_URL`) et les feeds iCal déjà copiés par les users tapent vercel.app en direct, un redirect les casserait. **Matrice prod vérifiée** : kstage.app 200, vercel.app/groups → 308 kstage.app/groups, /api/search/groups 200 direct, robots/sitemap/og:url sur le nouveau domaine. Reste : CNAME `www` bloqué par la redirection OVH (marche à suivre donnée à Rudy — supprimer l'onglet Redirection puis re-créer le CNAME, plan B = A record 216.198.79.1) ; Search Console après.
+
+**Incident photos (signalé par Rudy — images cassées)** : la purge d'orphelins du 07/08 avait supprimé à tort **8 photos NCT DREAM/ZEROBASEONE**. Cause racine : `members` a franchi le **cap silencieux PostgREST de 1000 rows** (1162, dont 1142 photos bucket) depuis l'écriture du script en juillet (« ~850 rows, sous le cap » en commentaire) — les ~140 rows les plus récentes invisibles du croisement → objets classés orphelins → purgés. **Réparé** : photo_url reset + re-self-host fandom ciblé des 2 groupes (8/8, servies en 200 vérifié). **Classe corrigée (3 surfaces)** : script reprocess (croisement paginé), `checks.ts` (`fetchAllMembers` paginé — les checks tournaient sur 1000/1162), `getAllMembers` (picker Bias : ~108 artistes canoniques sur 1108 invisibles). Leçon ajoutée à la memory `supabase-query-gotchas` : re-vérifier les hypothèses de volume avant de rejouer un script daté ; quand une table franchit 1000 rows, auditer tous ses selects non paginés.
+
+**Aussi** : alerte email « Scheduled scrapers failed » du 08/08 = le monitor faisant son travail — Inkigayo **déprogrammé** les 2 et 9 août (avis 결방 officiel sur le board SBS, vérifié à la source) → « J-1 sans lineup » ×2 → alerte voulue, s'éteint seule au cycle du 16/08. Item BACKLOG « préemptions 결방 » créé (faire taire le check + masquer le slot fantôme du calendrier) + **KPI dashboard admin** (demande Rudy, conseil d'un ami) ajouté au BACKLOG.
+
 ## 2026-08-07 — Reprise après 18 j d'autonomie : vague sécurité Next 16.3 + restes P1 du triage
 
 **Branche/commit** : `chore/security-wave-2026-08` (merge `26470f3`) puis `09f2be7`, `4f359dd`, `d06ee7c`, `91bc483` → `main`. CI verte sur tout.
