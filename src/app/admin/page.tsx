@@ -10,6 +10,12 @@ import { cn } from '@/lib/utils'
 export const metadata = { title: 'Admin' }
 
 const SECTIONS = [
+  { href: '/admin/kpi', title: 'KPI', desc: 'Croissance, engagement, usage, catalogue.' },
+  {
+    href: '/admin/health',
+    title: 'Health',
+    desc: 'Checks data (photos, catalogues, épisodes, doublons…).',
+  },
   {
     href: '/admin/images',
     title: 'Images',
