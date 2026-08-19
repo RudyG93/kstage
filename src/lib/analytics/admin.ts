@@ -131,3 +131,103 @@ export async function getActivationStats(): Promise<ActivationStats | null> {
 
   return { funnel, northStar, emptySearches, notifSent }
 }
+
+// ── KPI dashboard (/admin/kpi, demande Rudy 2026-08-19) ─────────────────────
+// Croissance / engagement / usage / catalogue — les chiffres qu'on regarde
+// chaque semaine, pas les 17 events bruts. Mêmes conventions : requireAdmin,
+// service role, agrégation TS bornée (volumes bêta), fenêtres 7 j / 30 j.
+
+export type KpiStats = {
+  users: { total: number; last7: number; last30: number }
+  engagement: {
+    followsTotal: number
+    usersWithFollow: number
+    pushSubscriptions: number
+    pushUsers: number
+    digestsSent7: number
+  }
+  usage: { wau: number; mau: number }
+  catalog: {
+    groups: number
+    groupsWithUpcoming: number
+    upcomingEvents: number
+    visibleMvs: number
+    members: number
+  }
+}
+
+export async function getKpiStats(): Promise<KpiStats | null> {
+  if (!(await requireAdmin())) return null
+  const admin = serviceClient()
+  const nowIso = new Date().toISOString()
+  const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString()
+  const head = { count: 'exact' as const, head: true }
+
+  const [
+    usersTotal,
+    users7,
+    users30,
+    followsTotal,
+    followRows,
+    pushRows,
+    digest7,
+    activeRows,
+    groupsTotal,
+    upcomingRows,
+    mvsTotal,
+    membersTotal,
+  ] = await Promise.all([
+    admin.from('profiles').select('id', head),
+    admin.from('profiles').select('id', head).gte('created_at', since(7)),
+    admin.from('profiles').select('id', head).gte('created_at', since(30)),
+    admin.from('user_follows').select('user_id', head),
+    // Distincts agrégés en TS — follows/push/events actifs restent des volumes
+    // bêta (< 1000) ; si ça franchit le cap PostgREST, paginer (leçon 08/08).
+    admin.from('user_follows').select('user_id').limit(1000),
+    admin.from('push_subscriptions').select('user_id').limit(1000),
+    admin.from('digest_log').select('user_id', head).gte('day_key', since(7).slice(0, 10)),
+    admin
+      .from('product_events')
+      .select('user_id, created_at')
+      .gte('created_at', since(30))
+      .not('user_id', 'is', null)
+      .limit(1000),
+    admin.from('groups').select('id', head),
+    admin.from('events').select('group_id').eq('hidden', false).gte('start_at', nowIso).limit(1000),
+    admin.from('events').select('id', head).eq('type', 'mv').eq('hidden', false),
+    admin.from('members').select('id', head).is('canonical_id', null),
+  ])
+
+  const cutoff7 = since(7)
+  const wau = new Set<string>()
+  const mau = new Set<string>()
+  for (const r of activeRows.data ?? []) {
+    if (!r.user_id) continue
+    mau.add(r.user_id)
+    if (r.created_at >= cutoff7) wau.add(r.user_id)
+  }
+
+  return {
+    users: {
+      total: usersTotal.count ?? 0,
+      last7: users7.count ?? 0,
+      last30: users30.count ?? 0,
+    },
+    engagement: {
+      followsTotal: followsTotal.count ?? 0,
+      usersWithFollow: new Set((followRows.data ?? []).map((r) => r.user_id)).size,
+      pushSubscriptions: (pushRows.data ?? []).length,
+      pushUsers: new Set((pushRows.data ?? []).map((r) => r.user_id)).size,
+      digestsSent7: digest7.count ?? 0,
+    },
+    usage: { wau: wau.size, mau: mau.size },
+    catalog: {
+      groups: groupsTotal.count ?? 0,
+      groupsWithUpcoming: new Set((upcomingRows.data ?? []).map((r) => r.group_id).filter(Boolean))
+        .size,
+      upcomingEvents: (upcomingRows.data ?? []).length,
+      visibleMvs: mvsTotal.count ?? 0,
+      members: membersTotal.count ?? 0,
+    },
+  }
+}
