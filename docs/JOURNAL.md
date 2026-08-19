@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-19 — Admin gérable (nav + KPI), préemptions 결방, deps soldées
+
+**Branche/commit** : `feat/admin-nav-kpi` (merge `427844f`), `feat/show-preemptions` (merge `edfb7b1`, **migration 0063 appliquée via MCP avant merge**), `chore/deps-cropper-types` (merge `c0b1aca`) → `main`.
+
+**① Admin gérable (demande Rudy)** : nav persistante dans le layout `/admin/*` — Hub · KPI · Health · Debuts · Suggestions · Feedback · Reports · Events · Images · Banners, avec **badges pending** sur les 4 files de revue (`/admin/health` et la nouvelle `/admin/kpi` n'avaient AUCUN accès hors URL tapée). Page **`/admin/kpi`** : croissance (comptes, +7 j/+30 j), engagement (users avec follow, push actifs/appareils, digests 7 j), usage (WAU/MAU via `product_events`), catalogue (groupes + % avec event futur, events futurs, MVs, artistes) — `getKpiStats` suit le pattern `getActivationStats`. Hub : cartes KPI + Health ajoutées.
+
+**② Préemptions music-show (결방)** : suite du faux positif du 08/08 (« J-1 sans lineup: Inkigayo » alors que SBS avait déprogrammé les 2 et 9 août). `parseBoardPreemptions` (pur, 4 tests fixture réelle, wrap décembre→janvier), table `show_preemptions` (0063 : SELECT public, écriture service-role), `syncSbsPreemptions` (boards Inkigayo + The Show) branché best-effort au cron scrape-music-shows AVANT le check J-1 ; le check ignore un jour préempté ; `generateShowSlots({preempted})` → **plus de slot fantôme « Lineup TBA »** au calendrier/home (via `getUpcomingPreemptions` cache()). Vérifié de bout en bout contre le board réel (2 dates du post 768 parsées + upsertées, filtre futur OK). Couverture partielle assumée : seuls les boards SBS exposent ce format.
+
+**③ Deps** : react-easy-crop 5→6.2.2 (breaking = packaging seulement ; la 6.0.1 corrige le sizing sous CSS resets — notre Preflight) + @types/node 20→**22** (aligné runtime CI, pas le 26 de la PR) + `npm audit fix` → 0 vulnérabilité. PRs #94/#92 soldées ; #95 (TS 7) reste à fermer côté Rudy. ⚠️ Vérif visuelle du crop avatar/banner au prochain usage (client, non couvert e2e).
+
+**Vérification** : rituel complet par lot (prettier, tsc, vitest — 735 tests dont +5 préemptions, build, gate admin 307 vérifié en build prod) ; **CI verte sur les 3 merges + job db-repro vert** (1er run réel avec setup-cli v3 sur la migration 0063 — le « à surveiller » du bump de juillet est soldé).
+
 ## 2026-08-08 — kstage.app devient le domaine canonique + incident photos réparé (cap 1000)
 
 **Branche/commit** : `432f6a2` (fix cap 1000), `61cdb0e` (BACKLOG), `5f97fb7` (bascule domaine) → `main`.
