@@ -15,6 +15,7 @@ import {
   type UnmatchedCollector,
 } from '@/lib/scrapers/music-shows/unmatched'
 import { enrichStageLinks } from '@/lib/scrapers/music-shows/stage-links'
+import { syncSbsPreemptions } from '@/lib/scrapers/music-shows/preemptions'
 import {
   SHOW_DESCRIPTORS,
   type ShowDescriptor,
@@ -353,10 +354,21 @@ export async function GET(req: Request) {
     }
   }
 
+  // Préemptions 결방 (2026-08-19) : synchronise les avis officiels des boards
+  // SBS AVANT le check J-1 — best-effort, un échec de sync ne touche pas le run.
+  let preemptions: { upserted: number; errors: string[] }
+  try {
+    preemptions = await syncSbsPreemptions(supabase, kstDayKey(new Date().toISOString()))
+  } catch (e) {
+    preemptions = { upserted: 0, errors: [String(e)] }
+  }
+
   // Alerte J-1 (R4-D) : un show qui diffuse dans < 36 h doit avoir soit un
   // lineup fetché ce run, soit une row en base pour ce jour KST. Sinon la
   // chaîne source de CE show est périmée — signal qui manquait quand le carrd
   // a servi « inkigayo matched:0 » 4 jours de suite avec un status global ok.
+  // Un jour PRÉEMPTÉ (결방) n'alerte pas : il n'y a pas d'épisode à couvrir
+  // (faux positif du 2026-08-08 — Inkigayo déprogrammé les 2 et 9 août).
   const fetchedShows = new Set(aggregateResult.lineups.map((l) => l.show))
   const staleAlerts: string[] = []
   for (const desc of SHOW_DESCRIPTORS) {
@@ -371,7 +383,13 @@ export async function GET(req: Request) {
       .eq('title', desc.displayName)
       .gte('start_at', dayFrom)
       .lt('start_at', dayTo)
-    if (!count) staleAlerts.push(desc.displayName)
+    if (count) continue
+    const { count: preempted } = await supabase
+      .from('show_preemptions')
+      .select('show_title', { count: 'exact', head: true })
+      .eq('show_title', desc.displayName)
+      .eq('kst_day', kstDayKey(slotIso))
+    if (!preempted) staleAlerts.push(desc.displayName)
   }
 
   // P0.3 observabilité (SCRAPING.md §6) : statut explicite + ligne scrape_log,
@@ -418,6 +436,7 @@ export async function GET(req: Request) {
     ).flatMap((list) => list.slice(0, 8)),
     by_show: byShow,
     stale_alerts: staleAlerts,
+    preemptions,
     stage_links: stageLinks,
   }
 

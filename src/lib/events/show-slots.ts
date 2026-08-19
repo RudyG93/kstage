@@ -32,6 +32,9 @@ export function generateShowSlots(opts: {
   fromIso?: string
   toIso?: string
   existing: readonly { type: string; title: string; start_at: string }[]
+  /** Jours SANS épisode (avis 결방 officiels, table show_preemptions 0063) :
+   * pas de slot fantôme « Lineup TBA » un jour déprogrammé (2026-08-19). */
+  preempted?: readonly { show_title: string; kst_day: string }[]
   nowMs?: number
 }): UpcomingEvent[] {
   const nowMs = opts.nowMs ?? Date.now()
@@ -39,12 +42,14 @@ export function generateShowSlots(opts: {
   const toMs = opts.toIso ? Date.parse(opts.toIso) : fromMs + 7 * DAY_MS
   if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs <= fromMs) return []
 
-  // Jours KST couverts par un vrai épisode, par show (title = displayName).
-  const covered = new Set(
-    opts.existing
+  // Jours KST couverts par un vrai épisode, par show (title = displayName) —
+  // les jours préemptés comptent comme couverts (rien à afficher).
+  const covered = new Set([
+    ...opts.existing
       .filter((e) => e.type === 'music_show')
       .map((e) => `${e.title}|${kstDayKey(e.start_at)}`),
-  )
+    ...(opts.preempted ?? []).map((p) => `${p.show_title}|${p.kst_day}`),
+  ])
 
   const out: UpcomingEvent[] = []
   // Balaye les jours KST de la fenêtre (≤ ~35 itérations pour un mois).

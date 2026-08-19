@@ -24,6 +24,7 @@ import {
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { generateShowSlots } from '@/lib/events/show-slots'
+import { getUpcomingPreemptions } from '@/lib/events/preemptions'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { getSourcesStatus, getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { buildTickerItems, pickTickerEvents } from '@/lib/events/ticker'
@@ -153,8 +154,14 @@ export default async function Home({
 
   const wantShows = types.length === 0 || types.includes('music_show')
   const weekBase = merged.length > 0 ? merged : globalGrouped
-  // Fenêtre par défaut du générateur : [maintenant, +7 j).
-  const weekSlots = wantShows ? generateShowSlots({ existing: [...dbEvents, ...globalEvents] }) : []
+  // Fenêtre par défaut du générateur : [maintenant, +7 j). Les jours 결방
+  // (préemptions officielles SBS) ne génèrent pas de slot fantôme.
+  const weekSlots = wantShows
+    ? generateShowSlots({
+        existing: [...dbEvents, ...globalEvents],
+        preempted: await getUpcomingPreemptions(),
+      })
+    : []
   const weekEvents = [...weekBase, ...weekSlots].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )

@@ -46,6 +46,20 @@ describe('generateShowSlots', () => {
     expect(slots.some((s) => s.title === 'Music Bank')).toBe(true)
   })
 
+  it('préemption 결방 : pas de slot fantôme un jour officiellement déprogrammé (cas réel Inkigayo 08/2026)', () => {
+    const slots = generateShowSlots({
+      fromIso: FROM,
+      toIso: TO,
+      existing: [],
+      preempted: [{ show_title: 'Inkigayo', kst_day: '2026-07-19' }],
+      nowMs: NOW,
+    })
+    expect(slots).toHaveLength(5)
+    expect(slots.some((s) => s.title === 'Inkigayo')).toBe(false)
+    // Un autre show du même jour ou le même show un autre jour n'est pas affecté.
+    expect(slots.some((s) => s.title === 'Music Core')).toBe(true)
+  })
+
   it('respecte la borne basse : pas de slot avant fromIso (pas de fausse histoire)', () => {
     // From = mercredi 15/07 12:00Z → The Show (mardi) et Show Champion (mer
     // 08:00Z) sont passés, il reste 4 shows.

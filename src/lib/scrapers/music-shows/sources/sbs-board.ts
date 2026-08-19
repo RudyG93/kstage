@@ -78,6 +78,41 @@ export function resolveBroadcastYear(meta: BoardPostMeta): number {
   return meta.postYear
 }
 
+// Row de board générique (préemptions) : même colonne titre/date que
+// POST_DATE_RE mais sans exiger le format épisode « [NNN회] ».
+const BOARD_ROW_RE =
+  /\|\s*\d+\s*\|\s*\[(.+?)\]\((https?:[^)]+)\)\s*\|\s*[^|]+\s*\|\s*(\d{2})-(\d{2})-(\d{2})\s*\|/g
+
+/**
+ * Avis de déprogrammation « 결방 공지 » du board SBS (constaté le 2026-08-08 :
+ * « [결방 공지] 8월 2일(일), 8월 9일(일) SBS 인기가요 » — Inkigayo sans épisode
+ * deux dimanches). Extrait chaque date `M월 D일` des posts dont le titre porte
+ * 결방, en clés KST 'YYYY-MM-DD'. Année = celle du post ; un wrap décembre →
+ * janvier (mois préempté très inférieur au mois du post) passe à l'année
+ * suivante. Pur, testé.
+ */
+export function parseBoardPreemptions(markdown: string): { kstDay: string; postUrl: string }[] {
+  const out = new Map<string, string>()
+  for (const row of markdown.matchAll(BOARD_ROW_RE)) {
+    const title = row[1]
+    if (!title.includes('결방')) continue
+    const postUrl = row[2]
+    const postYear = 2000 + Number(row[3])
+    const postMonth = Number(row[4])
+    for (const d of title.matchAll(/(\d{1,2})월\s*(\d{1,2})일/g)) {
+      const month = Number(d[1])
+      const day = Number(d[2])
+      if (month < 1 || month > 12 || day < 1 || day > 31) continue
+      const year = month < postMonth - 6 ? postYear + 1 : postYear
+      const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      if (!out.has(key)) out.set(key, postUrl)
+    }
+  }
+  return [...out.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([kstDay, postUrl]) => ({ kstDay, postUrl }))
+}
+
 export async function fetchSbsBoardLatestPost(
   boardUrl: string,
 ): Promise<{ meta: BoardPostMeta; postMarkdown: string } | null> {

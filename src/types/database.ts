@@ -577,6 +577,27 @@ export type Database = {
         }
         Relationships: []
       }
+      show_preemptions: {
+        Row: {
+          created_at: string
+          kst_day: string
+          show_title: string
+          source_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          kst_day: string
+          show_title: string
+          source_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          kst_day?: string
+          show_title?: string
+          source_url?: string | null
+        }
+        Relationships: []
+      }
       lineup_unmatched: {
         Row: {
           display_name: string
