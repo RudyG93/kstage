@@ -8,7 +8,7 @@
 
 **Quoi** : Rudy a désactivé les **clés legacy JWT** (anon + service_role) dans le dashboard Supabase — fin du programme clés API commencé au C-0 (18/07). Vérifié immédiatement : clé legacy → **401** sur PostgREST, nouvelle `sb_publishable_` → 200, prod entière saine (home/groups/calendar/search 200, **feed iCal 200** = service_role `sb_secret_` au runtime Vercel), `.env.local` local déjà en nouvelles clés. Réversible resté inutile. Deadline Supabase (« fin 2026 ») réglée avec 4 mois d'avance.
 
-**Compte E2E dédié** : `kstage.app@gmail.com` (username `Kstage`, confirmé, 10 follows) remplace le compte perso dans les secrets GitHub — découverte au passage : le golden path auth était **skippé en CI depuis le 17/07** (dernier sign-in de test), la CI verte masquait un spec non exécuté. Preuve d'exécution réelle au run suivant via `last_sign_in_at`.
+**Compte E2E dédié** : `kstage.app@gmail.com` (username `Kstage`, confirmé, 10 follows) remplace le compte perso dans les secrets GitHub — découverte au passage : le golden path auth était **skippé en CI depuis le 17/07** (dernier sign-in de test), la CI verte masquait un spec non exécuté. **Preuve acquise le jour même** : job e2e success en 91 s sur `dd31ed1` + `last_sign_in_at` du compte pendant le run — le golden path tourne à nouveau réellement en CI.
 
 ## 2026-08-19 — Admin gérable (nav + KPI), préemptions 결방, deps soldées
 
