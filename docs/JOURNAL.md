@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — Audit peaufinage : Lots 1-3 livrés (notifs, images, moteur MVs)
+
+**Contexte** : Rudy retient le partage tant que l'app n'est pas peaufinée (MVs manquants, images cassées, pages lentes, notifs doublées, ergonomie). Audit 4 axes en données réelles → `docs/AUDIT_PEAUFINAGE_2026-08-20.md` ; plan 6 lots validé. **CI verte sur les 3 merges.**
+
+**Lot 1 — Notifs** (`24acabe`) : doublon structurel corrigé — un comeback J-1/J-0 partait 2× à 15 min (digest 10:30 + alerte 10:45, jusqu'à 4 push/comeback). Le digest exclut désormais les mv/release du jour local J/J+1 de chaque abonné (`coveredByComebackAlert`, source unique resolveKind, par fuseau) — l'alerte possède J-1/J-0, le digest le reste. Esthétique (MDN/web.dev) : icône par ARTISTE + grande image sur les comebacks, bouton « Open calendar » sur le digest, renotify piloté par payload (digest silencieux), timestamp = date de l'event. ⚠️ Vérif visuelle sur téléphone au prochain cron (ou dispatch manuel si Rudy veut voir tout de suite).
+
+**Lot 2 — Images** (`281d39e`) : l'audit a infirmé « URLs mortes en DB » (189/189 = 200, 1297/1297 objets storage OK) — LA classe cassée = maxres YouTube construites au runtime (18/90 = 404) + repli client perdu en course d'hydratation. Fix : détection pré-hydratation par callback ref (complete+naturalWidth, MDN) dans HeroBackdrop ; **nouveau check `dead_image_urls`** (~75 HEAD échantillonnés/run monitor) ; allowlist +yt3.googleusercontent ; 2 URLs www.theaudiodb normalisées → r2.
+
+**Lot 3 — Moteur MVs** (`da1bede` + passe one-shot) : 3 causes racines du compteur thin en hausse (109) — ① candidates[0] déjà en base = no-op sec (58 % des visites) → itération des candidats + deep re-scan fallback ; ② off-by-one cron/check (les 12 groupes à 5 MVs ne sortaient jamais) → aligné ; ③ débit 10→20/lundi APRÈS le fix. Check assaini : rookies < 90 j séparés (info). **Passe one-shot mesurée** : KATSEYE 0→8 MVs, Taemin 3→**19** (ère SMTOWN entière), MISAMO 0→3 (source JYP seedée), PLAVE 4→8, EVNNE 3→8, Baek A Yeon 1→5, ADYA 0→2, NCT DOJAEJUNG 0→2 (SMTOWN seedée) — ~40 MVs récupérés sur les cas emblématiques. Restes coriaces : ZICO/chungha/tribe (hits = Shorts/dérivés, gates corrects) → cron corrigé + revue.
+
+**Restant du plan** : Lot 4 perf (LCP priority, /groups 550 Ko dégraissé, /calendar RSC, cache anonymes), Lot 5 admin/health actionnable (remède par check), Lot 6 ergonomie des rails (proposition design à valider avec Rudy — son exemple : « Recent Comebacks » auto-référentiel sur /mvs).
+
 ## 2026-08-20 — C-1/C-2 : clés legacy Supabase désactivées + compte E2E dédié
 
 **Quoi** : Rudy a désactivé les **clés legacy JWT** (anon + service_role) dans le dashboard Supabase — fin du programme clés API commencé au C-0 (18/07). Vérifié immédiatement : clé legacy → **401** sur PostgREST, nouvelle `sb_publishable_` → 200, prod entière saine (home/groups/calendar/search 200, **feed iCal 200** = service_role `sb_secret_` au runtime Vercel), `.env.local` local déjà en nouvelles clés. Réversible resté inutile. Deadline Supabase (« fin 2026 ») réglée avec 4 mois d'avance.
