@@ -4,6 +4,12 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — C-1/C-2 : clés legacy Supabase désactivées + compte E2E dédié
+
+**Quoi** : Rudy a désactivé les **clés legacy JWT** (anon + service_role) dans le dashboard Supabase — fin du programme clés API commencé au C-0 (18/07). Vérifié immédiatement : clé legacy → **401** sur PostgREST, nouvelle `sb_publishable_` → 200, prod entière saine (home/groups/calendar/search 200, **feed iCal 200** = service_role `sb_secret_` au runtime Vercel), `.env.local` local déjà en nouvelles clés. Réversible resté inutile. Deadline Supabase (« fin 2026 ») réglée avec 4 mois d'avance.
+
+**Compte E2E dédié** : `kstage.app@gmail.com` (username `Kstage`, confirmé, 10 follows) remplace le compte perso dans les secrets GitHub — découverte au passage : le golden path auth était **skippé en CI depuis le 17/07** (dernier sign-in de test), la CI verte masquait un spec non exécuté. Preuve d'exécution réelle au run suivant via `last_sign_in_at`.
+
 ## 2026-08-19 — Admin gérable (nav + KPI), préemptions 결방, deps soldées
 
 **Branche/commit** : `feat/admin-nav-kpi` (merge `427844f`), `feat/show-preemptions` (merge `edfb7b1`, **migration 0063 appliquée via MCP avant merge**), `chore/deps-cropper-types` (merge `c0b1aca`) → `main`.
