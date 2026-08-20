@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { SITE_URL } from '@/lib/site'
+import { kstDayKey } from '@/lib/events/date'
+import { SHOW_ID_BY_TITLE } from '@/lib/scrapers/music-shows/types'
 
 // Regénéré au plus 1×/jour — sinon le sitemap fige au build.
 export const revalidate = 86400
@@ -23,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Même correction pour les pre-debut (noindexés depuis toujours mais
   // sitemappés — incohérence historique).
   const today = new Date().toISOString().slice(0, 10)
-  const [groupsRes, mvsRes, membersRes] = await Promise.all([
+  const [groupsRes, mvsRes, membersRes, showsRes] = await Promise.all([
     supabase
       .from('groups')
       .select('slug')
@@ -44,6 +46,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .not('slug', 'is', null)
       .is('canonical_id', null)
       .range(0, 1999),
+    supabase
+      .from('events')
+      .select('title, start_at')
+      .eq('type', 'music_show')
+      .eq('hidden', false)
+      .range(0, 4999),
   ])
 
   const statics: MetadataRoute.Sitemap = ['', '/calendar', '/groups', '/mvs', '/search'].map(
@@ -61,6 +69,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const artists: MetadataRoute.Sitemap = (membersRes.data ?? []).map((m) => ({
     url: `${SITE_URL}/artists/${m.slug}`,
   }))
+  // Pages épisode /show/[show]/[day] (absentes du sitemap depuis leur création
+  // — audit 2026-08-20) : un event music_show par passage → dédup par
+  // (show, jour KST), même mapping titre→id que la page (episodeHref).
+  const episodeUrls = new Set<string>()
+  for (const e of showsRes.data ?? []) {
+    const showId = e.title ? SHOW_ID_BY_TITLE[e.title] : undefined
+    if (showId && e.start_at) episodeUrls.add(`${SITE_URL}/show/${showId}/${kstDayKey(e.start_at)}`)
+  }
+  const episodes: MetadataRoute.Sitemap = [...episodeUrls].map((url) => ({ url }))
 
-  return [...statics, ...groups, ...mvs, ...artists]
+  return [...statics, ...groups, ...mvs, ...artists, ...episodes]
 }

@@ -26,7 +26,27 @@ export async function getCalendarMonthEvents(
     existing: dbEvents,
     preempted,
   })
-  return [...dbEvents, ...anniversaries, ...showSlots].sort((a, b) =>
-    a.start_at.localeCompare(b.start_at),
-  )
+  return [...dbEvents, ...anniversaries, ...showSlots]
+    .sort((a, b) => a.start_at.localeCompare(b.start_at))
+    .map(slimForCalendar)
+}
+
+/**
+ * Dégraissage flight (audit perf 2026-08-20 : /calendar = 180 Ko de RSC
+ * inline, 49 % du HTML) : tout le mois part dans les props du provider client
+ * ET dans le JSON de /api/calendar/month, mais la chaîne calendrier (grille,
+ * QueueRow, eventHref, grouping) ne lit jamais source_url ni les visuels
+ * larges du groupe (image_landscape/banner_url/color_hex — vérifié par grep,
+ * seuls slug/name/image_url servent). NULL les champs lourds non consommés :
+ * type préservé (tous nullable), ~0,5 Ko gagné par event × ~100 events × 2
+ * (SSR + hydratation).
+ */
+function slimForCalendar(e: UpcomingEvent): UpcomingEvent {
+  return {
+    ...e,
+    source_url: null,
+    groups: e.groups
+      ? { ...e.groups, color_hex: null, image_landscape: null, banner_url: null }
+      : e.groups,
+  }
 }

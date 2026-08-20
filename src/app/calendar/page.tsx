@@ -62,6 +62,7 @@ export default async function CalendarPage({
       events={events}
       initialMonth={{ year, month }}
       followedSlugs={followedSlugs}
+      allGroups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
       initialSlugs={sp.group ? sp.group.split(',').filter(Boolean) : undefined}
     >
       {followedSlugs.length > 0 && (
@@ -77,16 +78,12 @@ export default async function CalendarPage({
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
             <Suspense fallback={<RailSkeleton />}>
-              <SidebarLeft
-                groupFilter={
-                  <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
-                }
-              />
+              <SidebarLeft groupFilter={<GroupFilter />} />
             </Suspense>
           </aside>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
             <MobileGroupFilter>
-              <GroupFilter groups={groups.map((g) => ({ slug: g.slug, name: g.name }))} />
+              <GroupFilter />
             </MobileGroupFilter>
             <FilterChips />
             <CalendarEvents timeZone={timeZone} />

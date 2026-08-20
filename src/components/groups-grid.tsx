@@ -1,33 +1,72 @@
 'use client'
 
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import type { Route } from 'next'
-import { GroupCard, type NextEventInfo } from '@/components/group-card'
-import type { GroupSummary } from '@/lib/groups/queries'
+import { GroupCard, type GroupCardData, type NextEventInfo } from '@/components/group-card'
 
 export type GroupGridItem = {
-  group: GroupSummary
-  isFollowing: boolean
-  isAuthed: boolean
+  group: GroupCardData
   href?: Route
   nextEvent?: NextEventInfo | null
 }
+
+/** Lot initial rendu (SSR + premier paint) ; la suite arrive au scroll. */
+const INITIAL_WINDOW = 48
+const WINDOW_STEP = 96
 
 /**
  * Grille de groupes avec recherche live (§5.1). La liste (déjà triée) est rendue
  * côté serveur puis filtrée côté client par nom — filtrage instantané à la frappe
  * via useDeferredValue pour garder la saisie fluide.
+ *
+ * Fenêtre de rendu (audit perf 2026-08-20) : /groups pesait 550 Ko de HTML
+ * (~5 000 nœuds, Lighthouse alerte dès ~1 400) parce que les ~172 tuiles des
+ * DEUX onglets partaient dans le HTML initial. Seul un premier lot est rendu ;
+ * un sentinel IntersectionObserver déplie la suite en approchant du bas. La
+ * recherche filtre toujours la liste COMPLÈTE (les données restent côté client).
  */
-export function GroupsGrid({ items, timeZone }: { items: GroupGridItem[]; timeZone: string }) {
+export function GroupsGrid({
+  items,
+  timeZone,
+  followedIds,
+  isAuthed,
+  priorityCount = 0,
+}: {
+  items: GroupGridItem[]
+  timeZone: string
+  followedIds: ReadonlySet<string>
+  isAuthed: boolean
+  /** N premières tuiles au-dessus de la fold → images priority (LCP). */
+  priorityCount?: number
+}) {
   const [q, setQ] = useState('')
   const deferredQ = useDeferredValue(q)
+  const [visible, setVisible] = useState(INITIAL_WINDOW)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const filtered = useMemo(() => {
     const needle = deferredQ.trim().toLowerCase()
     if (!needle) return items
     return items.filter((it) => it.group.name.toLowerCase().includes(needle))
   }, [items, deferredQ])
+
+  // En recherche active la liste filtrée est courte → pas de fenêtre.
+  const windowed = deferredQ.trim() ? filtered : filtered.slice(0, visible)
+  const hasMore = windowed.length < filtered.length
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setVisible((v) => v + WINDOW_STEP)
+      },
+      { rootMargin: '600px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore])
 
   return (
     <div className="space-y-4">
@@ -50,9 +89,9 @@ export function GroupsGrid({ items, timeZone }: { items: GroupGridItem[]; timeZo
         <p className="text-muted-foreground py-12 text-center text-sm">No group matches “{q}”.</p>
       ) : (
         <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
-          {filtered.map((it, i) => (
+          {windowed.map((it, i) => (
             // Sous la fold (~12 tuiles visibles) : content-visibility saute le
-            // rendu hors-écran des ~150 tuiles images — petites configs (round
+            // rendu hors-écran des tuiles images — petites configs (round
             // 2026-07-18). contain-intrinsic-size réserve la hauteur (pas de
             // saut de scrollbar).
             <div
@@ -65,16 +104,18 @@ export function GroupsGrid({ items, timeZone }: { items: GroupGridItem[]; timeZo
             >
               <GroupCard
                 group={it.group}
-                isFollowing={it.isFollowing}
-                isAuthed={it.isAuthed}
+                isFollowing={followedIds.has(it.group.id)}
+                isAuthed={isAuthed}
                 timeZone={timeZone}
                 href={it.href}
                 nextEvent={it.nextEvent}
+                priority={i < priorityCount}
               />
             </div>
           ))}
         </div>
       )}
+      {hasMore && <div ref={sentinelRef} className="h-px" aria-hidden />}
     </div>
   )
 }
