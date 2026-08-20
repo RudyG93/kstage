@@ -206,6 +206,11 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 - ✅ **Lot 5 admin/health actionnable** (2026-08-20, merge `091c085`) : remède par check (badge AUTO / 1-CLIC / REVUE), boutons de déclenchement des 4 crons réparateurs (after() + Bearer, origin courant), liens directs vers les surfaces admin. ⚠️ Premier clic réel à valider par Rudy en prod.
 - ✅ **Lot 6 ergonomie des rails** (2026-08-20, merge `27bb585`) : proposition validée par Rudy puis rails contextuels par page (Coming up /mvs, Just announced /calendar, New on KStage /groups, Spotlight pages détail, Top rated + Birthdays home) + règle « jamais de lien vers la page courante » ; review adversariale 8 agents avant merge (3 findings corrigés, dont le repli /mv auto-référentiel prouvé en prod). **Programme peaufinage 6/6 lots livrés.**
 
+## Retours admin debuts (2026-08-21 — cf. JOURNAL)
+
+- ✅ Solistes patron Lisa complet (kind par template fandom, Soloist + canonical inverse, Yuqi/Yves/G-Dragon/Baek A Yeon/Jang Haneum réparés, 12 groupes dé-flaggés), agences parseAgency (19 réparées), bulk Create (cap 5 + garde-temps), rows décidées retirées, MVs immédiats en after(), 3 checks anti-récurrence. Merge `2b67cc7`.
+- **File pending riche en solistes legacy** (Ten, Tzuyu, Yuta, Wooseok, Wony… repérés en review) : leurs payloads sans `kind` seront re-résolus au Create — mais un solo ambigu au kind irrésolu part en groupe avec trace `stepErrors` + check `groups_without_members`. À surveiller au premier bulk réel.
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.

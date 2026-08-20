@@ -4,6 +4,20 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-21 — Admin debuts : solistes complets, agences propres, bulk create, MVs immédiats
+
+**Branche/commit** : `fix/admin-debuts-solistes` (merge `2b67cc7`) → `main`. Retours Rudy (Yuqi/Yves), traités en classes.
+
+**Solistes** : « members vide » ≠ soliste — la nature vient du **template fandom réel** (`{{Infobox person}}` = artiste, `{{Infobox musical artist}}` = groupe, vérifié sur le wikitext live ; rien à voir avec les noms devinés initialement). Un soliste reçoit le **patron Lisa complet** : membre `position='Soloist'` + canonical **inverse** (le membership de groupe pointe le Soloist, avec re-pointage anti-chaîne). Réparé en prod : **Yuqi** (career (G)I-DLE liée, 5 MVs via la chaîne i-dle), **Yves** (6 MVs via PAIX PER MIL — sa source était sa chaîne perso de vlogs), G-Dragon/Baek A Yeon/Jang Haneum dotés de leur Soloist, **12 groupes dé-flaggés** is_solo (TOZ, MAVE:, EL7Z UP… créés « solo » faute de lineup parsé).
+
+**Agences** (« Paix Per Mil GOLDEN MOON BlockBerryCreative Hunus Entertainment ») : `parseAgency` — segments `<br>`, marqueurs `'''KR:'''`, périodes y compris préfixées « (Korea; 2018–2021) » (cas IZ*ONE reproduit en review) : seules les agences **« present »** restent, jointes par « · ». **19 agences réparées** en prod. 8 tests fixtures réelles.
+
+**Admin** : bulk **Create** sur les deux files (cap 5 + garde-temps 200 s — 15 dossiers séquentiels dépassaient le plafond 300 s Vercel), rows décidées **retirées** de la liste (pending-only), **enrichissement média immédiat** en `after()` (scrape de la source sinon découverte+seed — fini la page vide jusqu'au cron) + `revalidateTag` groups/events (sans quoi le nouveau groupe restait invisible 1 h de cache).
+
+**Anti-récurrence** : checks `solo_without_soloist_member`, `agency_wikitext_residue`, `groups_without_members` (info). **Review adversariale** : 4 défauts confirmés (timeout bulk, périodes préfixées, kind irrésolu silencieux, chaîne canonique) — tous corrigés avant merge.
+
+**Vérification** : tsc, 756 tests, build prod, pages `/artists/yuqi` (career + MVs) et `/artists/yves` vérifiées en build local, redirects 307, SQL 0 solo cassé / 0 agence wikitext.
+
 ## 2026-08-20 — Lot 6 : rails latéraux contextuels par page (validé par Rudy)
 
 **Branche/commit** : `feat/contextual-rails` (merge `27bb585`) → `main`. Proposition design validée par Rudy AVANT code (périmètre complet + les 4 nouveaux blocs).
