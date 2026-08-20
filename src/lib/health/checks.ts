@@ -13,7 +13,7 @@
 //   (SuA Dreamcatcher/UAU).
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { isValidWebpHeader } from '@/lib/images/upload'
+import { isConsistentRiffSize, isValidWebpHeader } from '@/lib/images/upload'
 import { isSamePerson, normalizeName } from '@/lib/members/matching'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -198,7 +198,14 @@ async function sampleDeadImageUrls(
           })
           if (!res.ok && res.status !== 206) return `${label} — HTTP ${res.status} — ${url}`
           const head = Buffer.from(await res.arrayBuffer())
-          return isValidWebpHeader(head) ? null : `${label} — webp corrompu — ${url}`
+          if (!isValidWebpHeader(head)) return `${label} — webp corrompu (header) — ${url}`
+          // Taille totale via Content-Range (« bytes 0-15/83391 ») : la
+          // corruption U+FFFD peut gonfler le CORPS en laissant le header
+          // intact (cas 9b31e537, 2026-08-20) — riff_size + 8 doit = total.
+          const total = Number(res.headers.get('content-range')?.split('/')[1] ?? 0)
+          if (total > 0 && !isConsistentRiffSize(head, total))
+            return `${label} — webp corrompu (taille RIFF ${head.readUInt32LE(4) + 8} ≠ ${total}) — ${url}`
+          return null
         }
         const res = await fetch(url, {
           method: 'HEAD',

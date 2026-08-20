@@ -38,9 +38,13 @@ export async function uploadWebpVerified(
       lastError = dlErr?.message ?? 'Download-back failed.'
       continue
     }
-    const head = Buffer.from(await blob.slice(0, 16).arrayBuffer())
-    if (isValidWebpHeader(head)) return { ok: true }
-    lastError = `Stored object failed WEBP integrity check [${head.toString('hex')}].`
+    // Test canonique : l'objet relu doit être OCTET POUR OCTET le buffer
+    // envoyé. La corruption observée (U+FFFD) peut ne toucher QUE le corps en
+    // laissant le header RIFF intact (cas 9b31e537 le 2026-08-20 : header sain,
+    // corps gonflé 46 Ko→83 Ko) — une vérification de signature ne suffit pas.
+    const stored = Buffer.from(await blob.arrayBuffer())
+    if (stored.equals(optimized)) return { ok: true }
+    lastError = `Stored object differs from uploaded buffer (${stored.byteLength} vs ${optimized.byteLength} bytes).`
   }
   return { ok: false, error: lastError }
 }
@@ -52,4 +56,17 @@ export function isValidWebpHeader(head: Buffer): boolean {
     head.subarray(0, 4).toString('latin1') === 'RIFF' &&
     head.subarray(8, 12).toString('latin1') === 'WEBP'
   )
+}
+
+/**
+ * Cohérence taille RIFF ↔ taille servie : le champ size (octets 4-7 LE) + 8
+ * doit égaler la taille réelle du fichier (±1 pour le padding pair RIFF).
+ * Détecte la corruption U+FFFD qui GONFLE le corps en laissant le header
+ * intact (chaque octet 0x80-0xBF isolé devient 3 octets EF BF BD) — un
+ * simple check de signature la rate.
+ */
+export function isConsistentRiffSize(head: Buffer, totalBytes: number): boolean {
+  if (head.length < 8 || totalBytes <= 0) return false
+  const declared = head.readUInt32LE(4) + 8
+  return Math.abs(declared - totalBytes) <= 1
 }
