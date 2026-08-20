@@ -75,6 +75,10 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'e-cdns-images.dzcdn.net' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'r2.theaudiodb.com' },
+      // banner_yt_url (216 rows) — rendu unoptimized aujourd'hui, mais un host
+      // absent de l'allowlist THROW au premier rendu optimisé futur (audit
+      // 2026-08-20). Les 2 rows www.theaudiodb ont été normalisées vers r2.
+      { protocol: 'https', hostname: 'yt3.googleusercontent.com' },
       { protocol: 'https', hostname: 'i.scdn.co' },
     ],
   },

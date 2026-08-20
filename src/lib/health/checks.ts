@@ -173,6 +173,39 @@ async function fetchAllMembers(supabase: SupabaseClient) {
   return rows
 }
 
+// Échantillon d'URLs d'images par colonne, testées en HEAD (audit 2026-08-20 :
+// la seule dérive « image cassée » détectable l'était par l'œil de Rudy — 18/90
+// maxres YouTube en 404). ~15 URLs par colonne, timeout court : le monitor
+// quotidien absorbe ~75 requêtes sans peser.
+const DEAD_URL_SAMPLE = 15
+const DEAD_URL_TIMEOUT_MS = 5_000
+
+async function sampleDeadImageUrls(
+  urls: readonly { url: string; label: string }[],
+): Promise<string[]> {
+  const results = await Promise.all(
+    urls.map(async ({ url, label }) => {
+      try {
+        const res = await fetch(url, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(DEAD_URL_TIMEOUT_MS),
+        })
+        // Certains CDN refusent HEAD (405) : re-tester en GET avant de flagger.
+        if (res.status === 405) {
+          const get = await fetch(url, { signal: AbortSignal.timeout(DEAD_URL_TIMEOUT_MS) })
+          return get.ok ? null : `${label} — HTTP ${get.status} — ${url}`
+        }
+        return res.ok ? null : `${label} — HTTP ${res.status} — ${url}`
+      } catch {
+        // Timeout/réseau : ne pas flagger (transitoire ≠ mort) — le check vise
+        // les 404 durables, pas la météo réseau du runner.
+        return null
+      }
+    }),
+  )
+  return results.filter((r): r is string => r !== null)
+}
+
 async function listBucketOversized(supabase: SupabaseClient, bucket: string) {
   const hits: { name: string; size: number }[] = []
   for (let offset = 0; ; offset += 1000) {
@@ -197,7 +230,11 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
 
   // Jeux partagés par plusieurs checks. members est PAGINÉ (cap 1000 franchi).
   const [{ data: groups }, members, mvRows] = await Promise.all([
-    supabase.from('groups').select('id, name, slug, is_solo, debut_date, disbanded_on, image_url'),
+    supabase
+      .from('groups')
+      .select(
+        'id, name, slug, is_solo, debut_date, disbanded_on, image_url, image_landscape, banner_yt_url',
+      ),
     fetchAllMembers(supabase),
     fetchAllMvEvents(supabase),
   ])
@@ -268,6 +305,72 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       sample: orphans
         .slice(0, SAMPLE_MAX)
         .map((o) => `${o.name} — ${(o.size / 1e6).toFixed(2)} Mo`),
+    })
+  }
+
+  // 2 bis. URLs d'images MORTES, échantillonnées par colonne (audit 2026-08-20 :
+  // 18/90 maxres YouTube en 404, détectées uniquement à l'œil jusqu'ici).
+  // ~15 URLs random par colonne + les maxres des 15 MVs les plus récents (les
+  // héros home//mvs les construisent depuis le videoId).
+  {
+    const pick = <T>(rows: readonly T[], n: number): T[] => {
+      const a = [...rows]
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[a[i], a[j]] = [a[j], a[i]]
+      }
+      return a.slice(0, n)
+    }
+    const { data: recentMvs } = await supabase
+      .from('events')
+      .select('source_url')
+      .eq('type', 'mv')
+      .eq('hidden', false)
+      .order('start_at', { ascending: false })
+      .limit(DEAD_URL_SAMPLE)
+    const ytId = (u: string | null) =>
+      u?.match(/(?:youtu\.be\/|[?&]v=|\/embed\/)([\w-]{11})/)?.[1] ?? null
+    const samples: { url: string; label: string }[] = [
+      ...pick(
+        (groups ?? []).filter((g) => g.image_url),
+        DEAD_URL_SAMPLE,
+      ).map((g) => ({
+        url: g.image_url!,
+        label: `groups.image_url (${g.slug})`,
+      })),
+      ...pick(
+        (groups ?? []).filter((g) => g.image_landscape),
+        DEAD_URL_SAMPLE,
+      ).map((g) => ({
+        url: g.image_landscape!,
+        label: `groups.image_landscape (${g.slug})`,
+      })),
+      ...pick(
+        (groups ?? []).filter((g) => g.banner_yt_url),
+        DEAD_URL_SAMPLE,
+      ).map((g) => ({
+        url: g.banner_yt_url!,
+        label: `groups.banner_yt_url (${g.slug})`,
+      })),
+      ...pick(
+        (members ?? []).filter((m) => m.photo_url),
+        DEAD_URL_SAMPLE,
+      ).map((m) => ({ url: m.photo_url!, label: `members.photo_url (${m.slug ?? m.id})` })),
+      ...(recentMvs ?? [])
+        .map((e) => ytId(e.source_url))
+        .filter((id): id is string => id !== null)
+        .map((id) => ({
+          url: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+          label: 'mv maxres (héros)',
+        })),
+    ]
+    const dead = await sampleDeadImageUrls(samples)
+    checks.push({
+      id: 'dead_image_urls',
+      label: `URLs d'images mortes (échantillon ${samples.length} testées)`,
+      severity: 'warn',
+      count: dead.length,
+      sample: dead.slice(0, SAMPLE_MAX),
     })
   }
 
