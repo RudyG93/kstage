@@ -4,6 +4,14 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — Lot 4 perf : payload RSC dégraissé, LCP priority, data cache public, sitemap épisodes
+
+**Branche/commit** : `perf/lot4-payload-lcp-cache` (merge `5cffbb3`) → `main`.
+
+**Quoi (mesures curl sur build prod locale)** : **/groups 550 → 234 Ko** de HTML (−57 %, ~5 083 → 1 828 tags, 215 → 63 img) — une seule liste slim par onglet (`GroupCardData` 5 champs), follows en ids + « Following »/« In the spotlight » dérivés côté client, trending par référence `groupId`, **fenêtre de rendu 48 tuiles** + IntersectionObserver (la recherche filtre toujours la liste complète). **LCP** : `priority` + `fetchPriority=high` explicite sur les 8 premières tuiles (next/image ne l'émet pas avec `unoptimized` — vérifié sur le HTML build) ; hero home/mvs, artist-hero et poster /mv étaient déjà priorisés. **/calendar 371 → 348 Ko** (−6 %, mesure honnête : le flight reste dominé par l'arbre rendu) — champs non consommés nullés à la source (`slimForCalendar`) + liste du filtre sérialisée UNE fois via le contexte. **Data cache partagé** : `getNonSoloGroupsCached`/`getSoloArtistsCached`/next-event/recent-releases tous-groupes (anon, revalidate 900-3600, tags `groups`/`events`) + `revalidateTag` en fin de `logScrapeRun` (point de passage commun des crons ; signature 2 args Next 16, try/catch pour les scripts hors runtime). **Sitemap** : pages épisode `/show/[show]/[day]` ajoutées (dédup show+jour KST, mapping `episodeHref`).
+
+**Vérification** : tsc, 739 tests (mode CI), build prod, spec Playwright jetable verte (fenêtre+scroll, onglets, recherche, filtre calendrier, images priority), mesures avant/après au curl.
+
 ## 2026-08-20 — Retours Rudy sur Lots 1-3 : deux classes traitées en entier (webp corrompus, entités HTML)
 
 **Branche/commit** : `fix/webp-integrity-html-entities` (merge `e4294d6`) → `main`.
