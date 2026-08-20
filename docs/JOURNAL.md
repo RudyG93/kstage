@@ -32,6 +32,8 @@
 
 **Vérification** : rituel complet (prettier, tsc, 739 tests vitest mode CI, build) ; scan intégrité re-run post-réparation ; requêtes SQL 0 pollution sur 5 surfaces. **Leçon** (répète l'audit Lot 2) : « URL vivante » ≠ « image valide » — toujours valider le contenu binaire, à l'upload ET au monitoring.
 
+**2e passe (même jour, merge `9d5f83e`)** : Cloudinary rejetait encore 9b31e537 — header RIFF **intact** mais corps gonflé U+FFFD (46 310 o déclarés vs 83 391 servis) : le scan signature ratait cette classe. Nouvelle détection fiable : **riff_size + 8 = taille réelle** (±1). Re-scan → **64 objets de plus** (58 member-photos + 6 group-photos) : 58 membres resettés/re-résolus, libelante + x-in re-self-hostés ; orphelins à purger : 19. Défenses : `uploadWebpVerified` compare désormais l'objet relu **octet pour octet** au buffer envoyé (le test canonique) ; `dead_image_urls` valide la cohérence taille RIFF vs Content-Range (6 tests unitaires). Aussi : **bump `&r=` des URLs re-résolues** — Cloudinary cache par URL source, un objet réparé sous la même URL restait servi en erreur.
+
 ## 2026-08-20 — Audit peaufinage : Lots 1-3 livrés (notifs, images, moteur MVs)
 
 **Contexte** : Rudy retient le partage tant que l'app n'est pas peaufinée (MVs manquants, images cassées, pages lentes, notifs doublées, ergonomie). Audit 4 axes en données réelles → `docs/AUDIT_PEAUFINAGE_2026-08-20.md` ; plan 6 lots validé. **CI verte sur les 3 merges.**
