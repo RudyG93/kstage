@@ -20,7 +20,7 @@
 
 **Quoi** : chaque check du data-health monitor porte désormais son **remède** — badge **AUTO** (un cron le résorbe, note qui), **1-CLIC** (bouton qui déclenche le cron réparateur maintenant : photos → refresh-images, catalogues maigres → discover-channels, sources muettes → scrape-youtube, épisodes non numérotés → scrape-music-shows) ou **REVUE** (note + lien direct admin debuts/events/images ou commande de backfill). Server action gardée admin, liste **fermée** de crons déclenchables (jamais notify/send-digest — leçon verify-automation-state), fetch Bearer CRON_SECRET vers l'**origin courant** (jamais la prod depuis un dev local) en `after()` — réponse immédiate, run jusqu'à 300 s, résultat dans scrape_log.
 
-**Vérification** : tsc, 739 tests, build prod, gate admin 307 → /login. ⚠️ Premier clic réel à faire par Rudy en prod (l'admin est inaccessible aux tests).
+**Vérification** : tsc, 739 tests, build prod, gate admin 307 → /login. **Premier clic réel validé par Rudy le jour même** (run `refresh_images` 17:40 UTC : 100 photos vérifiées, 3 mises à jour, 0 échec) — et son retour a révélé le trou : scrape_log n'était **visible nulle part**. Complément (merge `022879f`) : section « Derniers runs de crons » en tête de /admin/health (10 derniers runs, statut coloré, durée, erreurs, details JSON dépliables) + libellé du bouton ajusté.
 
 ## 2026-08-20 — Lot 4 perf : payload RSC dégraissé, LCP priority, data cache public, sitemap épisodes
 
@@ -43,6 +43,8 @@
 **Vérification** : rituel complet (prettier, tsc, 739 tests vitest mode CI, build) ; scan intégrité re-run post-réparation ; requêtes SQL 0 pollution sur 5 surfaces. **Leçon** (répète l'audit Lot 2) : « URL vivante » ≠ « image valide » — toujours valider le contenu binaire, à l'upload ET au monitoring.
 
 **2e passe (même jour, merge `9d5f83e`)** : Cloudinary rejetait encore 9b31e537 — header RIFF **intact** mais corps gonflé U+FFFD (46 310 o déclarés vs 83 391 servis) : le scan signature ratait cette classe. Nouvelle détection fiable : **riff_size + 8 = taille réelle** (±1). Re-scan → **64 objets de plus** (58 member-photos + 6 group-photos) : 58 membres resettés/re-résolus, libelante + x-in re-self-hostés ; orphelins à purger : 19. Défenses : `uploadWebpVerified` compare désormais l'objet relu **octet pour octet** au buffer envoyé (le test canonique) ; `dead_image_urls` valide la cohérence taille RIFF vs Content-Range (6 tests unitaires). Aussi : **bump `&r=` des URLs re-résolues** — Cloudinary cache par URL source, un objet réparé sous la même URL restait servi en erreur.
+
+**Clôture (accord Rudy)** : les 19 objets orphelins corrompus purgés du bucket, scan final = **0 problème sur les 3 buckets** (1698 member-photos, 101 group-photos, 6 banners). Scripts tmp supprimés — l'incident est clos, les 3 défenses (verify upload, check contenu, canary logs) restent.
 
 ## 2026-08-20 — Audit peaufinage : Lots 1-3 livrés (notifs, images, moteur MVs)
 
