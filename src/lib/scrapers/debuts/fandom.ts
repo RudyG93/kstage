@@ -65,6 +65,10 @@ export interface FandomInfobox {
   instagram: string | null
   /** Nom de fichier image de l'infobox (à résoudre via imageinfo). */
   imageFile: string | null
+  /** Nature de la page : `{{Group infobox}}` vs `{{Artist infobox}}` —
+      « members vide » ne veut PAS dire soliste (incident Yuqi/TOZ 2026-08-20 :
+      groupes pré-debut sans lineup parsé créés is_solo à tort). */
+  kind: 'group' | 'artist' | 'unknown'
 }
 
 const MONTHS: Record<string, number> = {
@@ -109,9 +113,59 @@ const stripMarkup = (s: string) =>
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>|<ref[^>]*\/>/g, '')
     .replace(/\{\{[^}]*\}\}/g, '')
     .replace(/\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/g, '$1')
+    .replace(/'''|''/g, '')
     .replace(/<[^>]+>/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+
+/**
+ * Champ label/agency d'infobox → agence(s) COURANTE(S) lisible(s).
+ *
+ * Incident Yves 2026-08-20 : le champ liste l'HISTORIQUE des agences séparées
+ * par `<br>` avec périodes `{{small|(2017–2023)}}` — stripMarkup jetait les
+ * périodes et collait les noms (« Paix Per Mil GOLDEN MOON BlockBerryCreative
+ * Hunus Entertainment »). Même classe : marqueurs de marché `'''KR:'''` non
+ * nettoyés (x-in, pow, trendz…).
+ *
+ * Règles : segments par `<br>`/sauts de ligne ; si des marqueurs de marché
+ * existent, ne garder que la section KR (marché principal) ; si des périodes
+ * existent, ne garder que les segments « present » — sinon le premier ;
+ * plusieurs agences courantes → jointes par « · ».
+ */
+export function parseAgency(raw: string): string | null {
+  // Section KR d'abord (le raw entier, avant découpe) : «'''KR:''' A <br> B '''JP:''' C ».
+  const krMatch = /'''\s*KR\s*:?\s*'''\s*:?([\s\S]*?)(?='''\s*[A-Z]{2}\s*:?\s*'''|$)/i.exec(raw)
+  const scoped = krMatch ? krMatch[1] : raw
+  const segments = scoped
+    .split(/<br\s*\/?>|\n/i)
+    .map((seg) => ({
+      // « present » détecté AVANT stripMarkup ({{small|(2024–present)}} serait jeté).
+      current: /present/i.test(seg),
+      // Préfixe de marché toléré : « (Korea; 2018–2021) » (cas réel IZ*ONE) —
+      // exiger l'année collée à la parenthèse re-collait tout l'historique.
+      dated: /\([^)]*\d{4}[\s\S]*?\)|present/i.test(seg),
+      name: stripMarkup(seg),
+    }))
+    .filter((s) => s.name)
+  if (segments.length === 0) return null
+  const anyDated = segments.some((s) => s.dated)
+  const kept = anyDated ? segments.filter((s) => s.current) : segments
+  const picked = kept.length > 0 ? kept : [segments[0]]
+  return picked.map((s) => s.name).join(' · ') || null
+}
+
+/**
+ * Nature de la page par son template d'infobox — VÉRIFIÉ sur le wikitext réel
+ * (2026-08-20) : kpop.fandom utilise `{{Infobox musical artist}}` pour les
+ * GROUPES (aespa, TOZ — malgré le nom) et `{{Infobox person}}` pour les
+ * personnes (Yves, pages membres). Les templates « Group/Artist infobox »
+ * imaginés initialement n'existent pas sur ce wiki.
+ */
+export function detectInfoboxKind(wikitext: string): FandomInfobox['kind'] {
+  if (/\{\{Infobox person/i.test(wikitext)) return 'artist'
+  if (/\{\{Infobox (?:musical artist|group)/i.test(wikitext)) return 'group'
+  return 'unknown'
+}
 
 /**
  * Parse l'infobox d'une page groupe/soliste. Null si la page n'a pas
@@ -130,6 +184,7 @@ export async function fetchInfobox(
   if (!/\{\{(?:Group |Artist |Musical artist |)infobox/i.test(wt) && !/\|\s*debut\s*=/i.test(wt)) {
     return { infobox: null, blocked: false }
   }
+  const kind = detectInfoboxKind(wt)
 
   const membersRaw = field(wt, 'current') ?? field(wt, 'members')
   const members = membersRaw
@@ -149,8 +204,9 @@ export async function fetchInfobox(
     infobox: {
       name: nameRaw ? stripMarkup(nameRaw) : '',
       debutDate: debutRaw ? parseDebutDate(debutRaw) : null,
-      label: labelRaw ? stripMarkup(labelRaw) || null : null,
+      label: labelRaw ? parseAgency(labelRaw) : null,
       members,
+      kind,
       youtubeHandle: /\{\{YouTube@?\|([^}|]+)/i.exec(sns)?.[1]?.trim() ?? null,
       instagram: /\{\{Instagram\|([^}|]+)/i.exec(sns)?.[1]?.trim() ?? null,
       imageFile: imageRaw

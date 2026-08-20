@@ -21,8 +21,10 @@ import { refreshMemberPhotos } from '@/lib/images/refresh'
 import { findCanonicalMatch, type PersonEvidence } from '@/lib/members/matching'
 import { normalize } from '@/lib/scrapers/group-match'
 import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
-import { fetchDebutCategory, fetchInfobox, resolveImageUrl } from './fandom'
+import { fetchDebutCategory, fetchInfobox, resolveImageUrl, searchPageIds } from './fandom'
 import { fetchWikipediaDebutNames, normalizeDebutName } from './wikipedia-debuts'
+import { discoverChannelsForGroup, seedAndBackfillChannel } from '@/lib/scrapers/channel-discovery'
+import { scrapeGroup } from '@/lib/scrapers/youtube'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -76,6 +78,9 @@ export interface DebutCandidatePayload {
   /** Fans Deezer au moment du scan (Phase 3 Lot 3) — persisté pour que la
    * revue admin voie le signal d'audience qui a décidé du gate. */
   deezerFans?: number
+  /** Nature de la page fandom (2026-08-20) : « members vide » ≠ soliste —
+   * absent sur les payloads legacy (re-résolu best-effort à la création). */
+  kind?: 'group' | 'artist' | 'unknown'
 }
 
 /**
@@ -179,6 +184,34 @@ export async function createFromPayload(
   if (!payload.name) return { error: 'payload sans nom' }
   const stepErrors: string[] = []
 
+  // Nature de la page (incident Yuqi/TOZ 2026-08-20) : « members vide » ne
+  // veut pas dire soliste — un groupe pré-debut sans lineup parsé était créé
+  // is_solo à tort, et un vrai soliste sans le patron membre Soloist. Les
+  // payloads legacy (avant `kind`) sont re-résolus best-effort via fandom.
+  let kind = payload.kind ?? null
+  if (kind == null && payload.members.length === 0) {
+    try {
+      for (const pageid of await searchPageIds(payload.name, 5)) {
+        const { infobox } = await fetchInfobox(pageid)
+        if (
+          infobox?.name &&
+          normalizeDebutName(infobox.name) === normalizeDebutName(payload.name)
+        ) {
+          kind = infobox.kind
+          break
+        }
+      }
+    } catch (e) {
+      stepErrors.push(`kind resolve: ${String(e)}`)
+    }
+    // Trace VISIBLE (review 2026-08-20) : searchPageIds/fetchInfobox avalent
+    // les 403/miss sans throw — sans ce marqueur, un vrai soliste au kind
+    // irrésolu devient silencieusement un groupe à 0 membre.
+    if (kind == null || kind === 'unknown')
+      stepErrors.push(`kind non résolu pour « ${payload.name} » (members vide) → créé en groupe`)
+  }
+  const isSolo = kind === 'artist'
+
   // Slug unique (collision → suffixe année).
   const base = slugify(payload.name)
   if (!base) return { error: `slug vide pour « ${payload.name} »` }
@@ -223,7 +256,7 @@ export async function createFromPayload(
         debut_date: payload.debutDate,
         image_url: image,
         links: links as Json,
-        is_solo: payload.members.length === 0,
+        is_solo: isSolo,
         // Tier de confiance (Phase 3 Lot 2, audit §4.1) : un groupe auto-créé
         // n'est JAMAIS `verified` d'emblée — cf. debutGateDecision.
         confidence: payload.ytVerified ? 'monitored' : 'candidate',
@@ -232,6 +265,28 @@ export async function createFromPayload(
       .single()
     if (groupErr || !group) return { error: `insert group: ${groupErr?.message}` }
     groupId = group.id
+  }
+
+  // Soliste → membre Soloist canonique (patron Lisa : groupe is_solo + membre
+  // position='Soloist', slug = slug du solo). Sans lui : pas de redirect
+  // /artists, absent de l'onglet Solo, aucune career (incident Yuqi/Yves).
+  if (isSolo) {
+    const { data: existingSoloist } = await supabase
+      .from('members')
+      .select('id')
+      .eq('group_id', groupId)
+      .eq('position', 'Soloist')
+      .maybeSingle()
+    if (!existingSoloist) {
+      const { error: soErr } = await supabase.from('members').insert({
+        group_id: groupId,
+        stage_name: payload.name,
+        position: 'Soloist',
+        status: 'active',
+        slug,
+      })
+      if (soErr && soErr.code !== '23505') stepErrors.push(`soloist member: ${soErr.message}`)
+    }
   }
 
   // Lineup annoncé → membres ACTIFS, insérés PAR DIFFÉRENCE (resume-safe : les
@@ -355,6 +410,30 @@ export async function createFromPayload(
       for (const m of groupMembers) {
         const target = findCanonicalMatch(m, others)
         if (!target) continue
+        if (isSolo) {
+          // Direction INVERSÉE pour un soliste (patron Lisa : blackpink-lisa
+          // pointe canonical → membre Soloist, jamais l'inverse — un Soloist
+          // avec canonical_id disparaîtrait de l'onglet Solo/getSoloArtists).
+          const other = others.find((o) => o.id === target)
+          if (other && other.canonical_id == null) {
+            // Anti-chaîne (invariant 0012, review 2026-08-20) : si target était
+            // déjà TÊTE canonique d'autres rows, les re-pointer sur le Soloist
+            // AVANT de lier target — sinon B → target → Soloist (chaîne que
+            // les consommateurs canonical_id.eq ne suivent pas).
+            const { error: rErr } = await supabase
+              .from('members')
+              .update({ canonical_id: m.id })
+              .eq('canonical_id', target)
+            if (rErr) stepErrors.push(`canonical (solo re-point) ${m.stage_name}: ${rErr.message}`)
+            const { error: cErr } = await supabase
+              .from('members')
+              .update({ canonical_id: m.id })
+              .eq('id', target)
+              .is('canonical_id', null)
+            if (cErr) stepErrors.push(`canonical (solo) ${m.stage_name}: ${cErr.message}`)
+          }
+          continue
+        }
         const { error: cErr } = await supabase
           .from('members')
           .update({ canonical_id: target })
@@ -465,6 +544,7 @@ export async function ingestNamedGroups(
         wikipediaListed: wikipediaNames.has(normalizeDebutName(infobox.name)),
         ytVerified,
         fandomUrl: `https://kpop.fandom.com/wiki/${encodeURIComponent(infobox.name.replace(/ /g, '_'))}`,
+        kind: infobox.kind,
       })
       if ('groupId' in out) created.push(infobox.name)
       else skipped.push({ name, reason: out.error })
@@ -574,6 +654,7 @@ export async function ingestDebuts(
         wikipediaListed: wikipediaNames.has(normalizeDebutName(infobox.name)),
         ytVerified,
         fandomUrl,
+        kind: infobox.kind,
       }
 
       // Gate = date concrète ET signal d'AUDIENCE réel : subs YouTube ≥ 10k OU
@@ -617,4 +698,74 @@ export async function ingestDebuts(
   }
 
   return result
+}
+
+/**
+ * Enrichissement MÉDIA immédiat d'un groupe/soliste fraîchement créé (retour
+ * Rudy 2026-08-20 : « je veux littéralement tout voir sur sa page, MVs y
+ * compris ») : sans ça, un artiste créé depuis /admin/debuts attendait le
+ * cron quotidien (source présente) ou le discover du lundi (sans source) —
+ * page vide pendant des jours. Appelé en `after()` par les actions admin.
+ *
+ * - Source(s) YouTube déjà posée(s) → backfill immédiat (maxPages 10 ≈ 500
+ *   uploads : l'historique d'un nouveau groupe tient largement dedans).
+ * - Aucune source → découverte de chaîne ciblée + seed/backfill (mêmes gates
+ *   que le cron discover : ≥2 MVs title-matchés, anti-homonyme).
+ */
+export async function enrichNewGroupMedia(
+  supabase: SupabaseClient,
+  groupId: string,
+  apiKey: string,
+): Promise<{ inserted: number; seeded: boolean; units: number; notes: string[] }> {
+  const notes: string[] = []
+  let inserted = 0
+  let seeded = false
+  let units = 0
+
+  const { data: group } = await supabase
+    .from('groups')
+    .select('id, name, confidence, debut_date, name_aliases')
+    .eq('id', groupId)
+    .single()
+  if (!group) return { inserted, seeded, units, notes: ['groupe introuvable'] }
+
+  const { data: sources } = await supabase
+    .from('sources')
+    .select('id, url, group_id')
+    .eq('group_id', groupId)
+    .eq('type', 'youtube_api')
+
+  if (sources && sources.length > 0) {
+    for (const source of sources) {
+      try {
+        // group_id non-null garanti par le .eq du select — le typegen ne le sait pas.
+        const res = await scrapeGroup({ ...source, group_id: groupId }, apiKey, supabase, {
+          maxPages: 10,
+        })
+        inserted += res.inserted
+        units += res.units
+      } catch (e) {
+        notes.push(`scrape ${source.url}: ${String(e)}`)
+      }
+    }
+    return { inserted, seeded, units, notes }
+  }
+
+  try {
+    const discovery = await discoverChannelsForGroup(group, apiKey)
+    units += discovery.units
+    for (const candidate of discovery.candidates) {
+      const res = await seedAndBackfillChannel(supabase, group, candidate, apiKey)
+      if ('units' in res) units += res.units
+      if (res.seeded) {
+        seeded = true
+        inserted += res.backfilled
+        break
+      }
+      notes.push(`${candidate.channelTitle}: ${res.reason}`)
+    }
+  } catch (e) {
+    notes.push(`discover: ${String(e)}`)
+  }
+  return { inserted, seeded, units, notes }
 }

@@ -574,6 +574,59 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
+  // 10-bis. Solistes sans membre Soloist + agences avec wikitext résiduel
+  // (incident Yuqi/Yves 2026-08-20) : un groupe is_solo SANS membre
+  // position='Soloist' n'a ni page /artists, ni onglet Solo, ni career ; une
+  // agency avec `'''` = champ fandom collé sans parseAgency.
+  {
+    const { data: solos } = await supabase
+      .from('groups')
+      .select('slug, name, is_solo, members(position)')
+      .eq('is_solo', true)
+      .limit(1000)
+    const broken = (solos ?? []).filter(
+      (g) => !(g.members ?? []).some((m) => m.position === 'Soloist'),
+    )
+    checks.push({
+      id: 'solo_without_soloist_member',
+      label: 'Solistes sans membre Soloist (pas de page artiste/career)',
+      severity: 'warn',
+      count: broken.length,
+      sample: broken.slice(0, SAMPLE_MAX).map((g) => `${g.name} (${g.slug})`),
+    })
+
+    const { data: badAgencies } = await supabase
+      .from('groups')
+      .select('slug, agency')
+      .like('agency', "%'''%")
+      .limit(100)
+    checks.push({
+      id: 'agency_wikitext_residue',
+      label: 'Agences avec wikitext résiduel (parsing fandom)',
+      severity: 'warn',
+      count: (badAgencies ?? []).length,
+      sample: (badAgencies ?? []).slice(0, SAMPLE_MAX).map((g) => `${g.slug} — ${g.agency}`),
+    })
+
+    // Check INVERSE (review 2026-08-20) : un groupe non-solo à 0 membre =
+    // soit un vrai soliste au kind fandom irrésolu (créé en groupe par
+    // défaut), soit un roster jamais parsé — dans les deux cas une dette à
+    // revoir, invisible du check solo_without_soloist_member (is_solo=true).
+    const { data: nonSolo } = await supabase
+      .from('groups')
+      .select('slug, name, is_solo, members(id)')
+      .eq('is_solo', false)
+      .limit(1000)
+    const memberless = (nonSolo ?? []).filter((g) => (g.members ?? []).length === 0)
+    checks.push({
+      id: 'groups_without_members',
+      label: 'Groupes (non-solo) sans aucun membre — soliste raté ou roster manquant',
+      severity: 'info',
+      count: memberless.length,
+      sample: memberless.slice(0, SAMPLE_MAX).map((g) => `${g.name} (${g.slug})`),
+    })
+  }
+
   // 11. Erreurs scrape_log récentes (48 h).
   {
     const since = new Date(now.getTime() - 48 * 3_600_000).toISOString()

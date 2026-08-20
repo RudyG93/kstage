@@ -104,4 +104,16 @@ export const REMEDIES: Record<string, Remedy> = {
     kind: 'review',
     note: 'Même personne sous 2 groupes : fusion manuelle réfléchie (canonical_id) — jamais automatique.',
   },
+  solo_without_soloist_member: {
+    kind: 'review',
+    note: 'Créer le membre position=Soloist (patron Lisa : slug = slug du solo) + canonical du membership groupe → Soloist.',
+  },
+  agency_wikitext_residue: {
+    kind: 'review',
+    note: 'Champ agency fandom mal parsé : re-fetch l’infobox avec parseAgency (segments « present » seulement).',
+  },
+  groups_without_members: {
+    kind: 'review',
+    note: 'Soit un soliste créé en groupe (kind fandom irrésolu → corriger is_solo + membre Soloist), soit un roster à compléter depuis l’infobox.',
+  },
 }
