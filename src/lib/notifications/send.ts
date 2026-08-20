@@ -5,7 +5,19 @@ import type { Database } from '@/types/database'
 type ServiceClient = ReturnType<typeof createClient<Database>>
 
 export type PushTarget = { endpoint: string; p256dh: string; auth: string }
-export type PushPayload = { title: string; body: string; url: string; tag?: string }
+// Champs visuels/comportement optionnels (audit notifs 2026-08-20) : le SW
+// applique des fallbacks (icône app, pas de buzz) quand ils sont absents.
+export type PushPayload = {
+  title: string
+  body: string
+  url: string
+  tag?: string
+  icon?: string
+  image?: string
+  actions?: { action: string; title: string }[]
+  renotify?: boolean
+  timestamp?: number
+}
 
 /**
  * Envoie un push web et nettoie l'abonnement mort. Le caller doit avoir appelé

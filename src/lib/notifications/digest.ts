@@ -6,7 +6,7 @@
 
 import { localDayKey } from '@/lib/events/date'
 import { withPushSrc } from './push-url'
-import { passesConfidenceGate } from './comebacks'
+import { passesConfidenceGate, coveredByComebackAlert } from './comebacks'
 
 export type DigestSubscription = {
   userId: string
@@ -35,7 +35,13 @@ export type DigestEvent = {
   sourceType?: string | null
 }
 
-export type DigestPayload = { title: string; body: string; url: string; tag?: string }
+export type DigestPayload = {
+  title: string
+  body: string
+  url: string
+  tag?: string
+  actions?: { action: string; title: string }[]
+}
 export type DigestMessage = { subscription: DigestSubscription; payload: DigestPayload }
 export type DigestEdition = 'daily' | 'weekly'
 
@@ -120,12 +126,20 @@ function buildPayload(
     return parts.join(' · ') + more
   }
 
+  // Action explicite (web.dev push : 1-2 actions texte max) — même cible que
+  // le clic sur le corps, mais le bouton rend la notif actionnable d'un geste.
+  const actions = [{ action: 'open', title: 'Open calendar' }]
+
   if (edition === 'weekly') {
     return {
       title: `Your k-pop week: ${n} event${n > 1 ? 's' : ''}`,
       body: bodyOf(entries.slice(0, MAX_LISTED), n - Math.min(n, MAX_LISTED)),
       url: withPushSrc('/calendar'),
-      tag: 'digest', // le digest du jour REMPLACE celui d'hier au lieu de s'empiler
+      // Le digest du jour REMPLACE celui d'hier au lieu de s'empiler — sans
+      // renotify : le remplacement est silencieux (le buzz est réservé aux
+      // alertes comeback, audit notifs 2026-08-20).
+      tag: 'digest',
+      actions,
     }
   }
 
@@ -138,6 +152,7 @@ function buildPayload(
     body: bodyOf(listed, rest.length - listed.length),
     url: withPushSrc('/calendar'),
     tag: 'digest',
+    actions,
   }
 }
 
@@ -164,21 +179,29 @@ export function buildDigest(
 
   const sorted = [...events].sort((a, b) => a.startAt.localeCompare(b.startAt))
 
+  const now = new Date(nowIso)
   const messages: DigestMessage[] = []
   for (const subscription of subscriptions) {
     const followed = groupsByUser.get(subscription.userId)
     if (!followed || followed.size === 0) continue
     const disabled = disabledTypes?.get(subscription.userId)
+    const timeZone = timeZones?.get(subscription.userId) ?? 'Asia/Seoul'
     // Filtre AVANT digestLabels : le compte du titre et l'agrégation music_show
     // ne voient que les events pertinents. Event sans type → conservé (compat).
     // Gate de confiance (Phase 3 Lot 2) : candidate jamais, monitored seulement
     // confirmed/youtube_api — même règle que le push.
+    // Partage des flux (audit notifs 2026-08-20) : un mv/release dont le jour
+    // LOCAL de l'abonné est aujourd'hui/demain appartient au flux alertes
+    // (⏳/🔥 à 10:45) — le digest l'exclut, sinon le même comeback partait
+    // deux fois à 15 min d'écart (jusqu'à 4 push sur 2 jours).
     const userEvents = sorted.filter(
       (e) =>
-        followed.has(e.groupId) && passesConfidenceGate(e) && !(e.type && disabled?.has(e.type)),
+        followed.has(e.groupId) &&
+        passesConfidenceGate(e) &&
+        !(e.type && disabled?.has(e.type)) &&
+        !coveredByComebackAlert({ type: e.type, startAt: e.startAt }, now, timeZone),
     )
     if (userEvents.length === 0) continue
-    const timeZone = timeZones?.get(subscription.userId) ?? 'Asia/Seoul'
     messages.push({ subscription, payload: buildPayload(userEvents, edition, timeZone, nowIso) })
   }
   return messages

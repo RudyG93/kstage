@@ -97,6 +97,7 @@ describe('buildDigest', () => {
       body: '',
       // ?src=push = attribution des ouvertures (audit §10.3).
       url: '/calendar?src=push',
+      actions: [{ action: 'open', title: 'Open calendar' }],
     })
   })
 
@@ -210,19 +211,21 @@ describe('buildDigest', () => {
   })
 
   it('prefs : type désactivé exclu du titre et du corps', () => {
+    // Le mv est posé à J+2 : à J-1/J-0 il serait exclu par le partage des flux
+    // (couvert par l'alerte comeback) — ici on teste bien le filtre prefs.
     const follows = [{ userId: 'u1', groupId: 'g1' }]
     const events = [
-      { ...ev('g1', 'Comeback', '2026-05-26T00:30:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Comeback', '2026-05-28T00:30:00Z', 'aespa'), type: 'mv' },
       { ...ev('g1', 'Music Bank', '2026-05-27T08:00:00Z', 'aespa'), type: 'music_show' },
     ]
     const disabled = new Map([['u1', new Set(['music_show'])]])
     const [message] = daily([sub('u1')], follows, events, disabled)
-    expect(message.payload.title).toBe('aespa — Comeback · today')
+    expect(message.payload.title).toBe('aespa — Comeback · Thu')
     expect(message.payload.body).toBe('')
   })
 
   it('prefs : tous les types du user désactivés → aucun message', () => {
-    const events = [{ ...ev('g1', 'Comeback', '2026-05-26T00:30:00Z', 'aespa'), type: 'mv' }]
+    const events = [{ ...ev('g1', 'Comeback', '2026-05-28T00:30:00Z', 'aespa'), type: 'mv' }]
     const disabled = new Map([['u1', new Set(['mv'])]])
     const messages = daily([sub('u1')], [{ userId: 'u1', groupId: 'g1' }], events, disabled)
     expect(messages).toEqual([])
@@ -234,15 +237,66 @@ describe('buildDigest', () => {
       { userId: 'u2', groupId: 'g1' },
     ]
     const events = [
-      { ...ev('g1', 'Comeback', '2026-05-26T00:30:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Comeback', '2026-05-28T00:30:00Z', 'aespa'), type: 'mv' }, // J+2
       ev('g1', 'Untyped', '2026-05-27T00:30:00Z', 'aespa'), // sans type (compat)
     ]
     const disabled = new Map([['u1', new Set(['mv'])]])
     const messages = daily([sub('u1'), sub('u2')], follows, events, disabled)
     const byUser = new Map(messages.map((m) => [m.subscription.userId, m.payload]))
     expect(byUser.get('u1')?.title).toBe('aespa — Untyped · tomorrow') // l'untyped reste
-    expect(byUser.get('u2')?.title).toBe('aespa — Comeback · today')
-    expect(byUser.get('u2')?.body).toBe('Tomorrow: aespa — Untyped')
+    expect(byUser.get('u2')?.title).toBe('aespa — Untyped · tomorrow')
+    expect(byUser.get('u2')?.body).toBe('Thu: aespa — Comeback')
+  })
+
+  it('partage des flux : un mv J-0/J-1 est EXCLU du daily (couvert par l’alerte ⏳/🔥), un J+2 reste', () => {
+    // Doublon structurel corrigé (audit notifs 2026-08-20) : digest 10:30 +
+    // alerte 10:45 portaient le même comeback à 15 min d'écart.
+    const follows = [{ userId: 'u1', groupId: 'g1' }]
+    const events = [
+      { ...ev('g1', 'Drop today', '2026-05-26T09:00:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Drop tomorrow', '2026-05-27T09:00:00Z', 'aespa'), type: 'release' },
+      { ...ev('g1', 'Drop later', '2026-05-28T09:00:00Z', 'aespa'), type: 'mv' },
+    ]
+    const [message] = daily([sub('u1')], follows, events)
+    expect(message.payload.title).toBe('aespa — Drop later · Thu')
+    expect(message.payload.body).toBe('')
+  })
+
+  it('partage des flux : l’exclusion suit le FUSEAU de l’abonné', () => {
+    // 27/05 16:00Z = 28/05 01:00 KST (J+2 → reste) mais 27/05 18:00 Paris
+    // (demain → exclu). Les autres types (music_show) ne sont jamais exclus.
+    const events = [
+      { ...ev('g1', 'Drop', '2026-05-27T16:00:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Inkigayo', '2026-05-31T06:50:00Z', 'aespa'), type: 'music_show' },
+    ]
+    const follows = [
+      { userId: 'u-paris', groupId: 'g1' },
+      { userId: 'u-kst', groupId: 'g1' },
+    ]
+    const timeZones = new Map([['u-paris', 'Europe/Paris']])
+    const messages = daily([sub('u-paris'), sub('u-kst')], follows, events, undefined, timeZones)
+    const byUser = new Map(messages.map((m) => [m.subscription.userId, m.payload]))
+    expect(byUser.get('u-paris')?.title).toBe('aespa — Inkigayo · Sun') // mv exclu chez lui
+    // KST : 28/05 01:00 locale = J+2 → conservé, étiqueté jour court (jeudi).
+    expect(byUser.get('u-kst')?.title).toBe('aespa — Drop · Thu')
+  })
+
+  it('partage des flux : le weekly exclut aussi J-0/J-1 (l’alerte les possède)', () => {
+    const events = [
+      { ...ev('g1', 'Drop today', '2026-05-26T09:00:00Z', 'aespa'), type: 'mv' },
+      { ...ev('g1', 'Later in week', '2026-05-29T09:00:00Z', 'aespa'), type: 'mv' },
+    ]
+    const [message] = buildDigest(
+      [sub('u1')],
+      [{ userId: 'u1', groupId: 'g1' }],
+      events,
+      'weekly',
+      undefined,
+      undefined,
+      NOW,
+    )
+    expect(message.payload.title).toBe('Your k-pop week: 1 event')
+    expect(message.payload.body).not.toContain('Drop today')
   })
 
   it('only notifies the subscriptions of users with matching events', () => {

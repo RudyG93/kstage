@@ -46,7 +46,33 @@ describe('buildComebackNotifications', () => {
       // ?src=push = attribution des ouvertures (audit §10.3) ; le SW matche
       // les onglets par pathname, le param ne casse pas le focus.
       url: '/mv/aespa-whiplash?src=push',
+      // Le buzz du remplacement est réservé aux comebacks (le digest se
+      // remplace en silence) ; l'horodatage = l'EVENT, pas l'envoi.
+      renotify: true,
+      timestamp: Date.parse('2026-06-09T05:00:00Z'),
     })
+  })
+
+  it('visuels par artiste : iconUrl/imageUrl de l’event alimentent icon/image du payload', () => {
+    const [m] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev({ iconUrl: 'https://i.scdn.co/image/abc', imageUrl: 'https://cdn/x/landscape.jpg' })],
+      new Set(),
+      NOW,
+    )
+    expect(m.payload.icon).toBe('https://i.scdn.co/image/abc')
+    expect(m.payload.image).toBe('https://cdn/x/landscape.jpg')
+    // Sans visuels : pas de champs (le SW retombe sur l'icône app).
+    const [plain] = buildComebackNotifications(
+      [sub('u1')],
+      [follow('u1', 'g1')],
+      [ev()],
+      new Set(),
+      NOW,
+    )
+    expect(plain.payload.icon).toBeUndefined()
+    expect(plain.payload.image).toBeUndefined()
   })
 
   it('day_before : event dont le jour KST = demain', () => {
