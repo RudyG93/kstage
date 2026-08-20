@@ -27,6 +27,15 @@ export default async function AdminHealthPage() {
   const infos = report.checks.filter((c) => c.severity === 'info')
   const totalIssues = warns.reduce((a, c) => a + c.count, 0)
 
+  // Derniers runs de crons (retour Rudy 2026-08-20 : les boutons 1-CLIC
+  // renvoyaient vers scrape_log… qui n'était visible nulle part). C'est ICI
+  // que le résultat d'un déclenchement se lit.
+  const { data: runs } = await service
+    .from('scrape_log')
+    .select('id, source, status, started_at, ended_at, error_msg, details')
+    .order('started_at', { ascending: false })
+    .limit(10)
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
       <div className="space-y-6">
@@ -37,6 +46,56 @@ export default async function AdminHealthPage() {
             {report.generatedAt.slice(0, 16).replace('T', ' ')} UTC
           </p>
         </div>
+
+        {/* Résultat des crons — dont ceux déclenchés par les boutons 1-CLIC
+            ci-dessous (rafraîchir la page ~1-2 min après un clic). */}
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">Derniers runs de crons</h2>
+          <ul className="divide-y rounded-md border">
+            {(runs ?? []).map((run) => {
+              const durS = run.ended_at
+                ? Math.round((Date.parse(run.ended_at) - Date.parse(run.started_at)) / 1000)
+                : null
+              return (
+                <li key={run.id} className="px-3 py-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={
+                        run.status === 'ok'
+                          ? 'font-semibold text-teal-600 dark:text-teal-400'
+                          : run.status === 'partial'
+                            ? 'font-semibold text-amber-600 dark:text-amber-400'
+                            : 'font-semibold text-red-500'
+                      }
+                    >
+                      {run.status}
+                    </span>
+                    <span className="font-mono font-medium">{run.source}</span>
+                    <span className="text-muted-foreground">
+                      {run.started_at.slice(0, 16).replace('T', ' ')} UTC
+                      {durS !== null ? ` · ${durS}s` : ''}
+                    </span>
+                  </div>
+                  {run.error_msg && (
+                    <p className="text-muted-foreground mt-1 truncate" title={run.error_msg}>
+                      {run.error_msg}
+                    </p>
+                  )}
+                  {run.details != null && (
+                    <details className="mt-1">
+                      <summary className="text-muted-foreground cursor-pointer select-none">
+                        details
+                      </summary>
+                      <pre className="bg-secondary/50 mt-1 max-h-64 overflow-auto rounded p-2 text-[10px] break-all whitespace-pre-wrap">
+                        {JSON.stringify(run.details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
 
         {[...warns, ...infos].map((check) => {
           const remedy = REMEDIES[check.id]

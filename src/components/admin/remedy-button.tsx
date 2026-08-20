@@ -23,7 +23,7 @@ export function RemedyButton({ cron, label }: { cron: TriggerableCron; label: st
       className="bg-secondary hover:bg-hover disabled:text-muted-foreground cursor-pointer rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-default"
     >
       {state === 'launched'
-        ? 'Lancé ✓ (résultat dans scrape_log)'
+        ? 'Lancé ✓ — résultat dans « Derniers runs » (~1-2 min, rafraîchir)'
         : state === 'error'
           ? 'Échec — réessayer'
           : pending
