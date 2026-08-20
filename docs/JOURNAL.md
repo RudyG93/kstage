@@ -4,6 +4,18 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — Retours Rudy sur Lots 1-3 : deux classes traitées en entier (webp corrompus, entités HTML)
+
+**Branche/commit** : `fix/webp-integrity-html-entities` (merge `e4294d6`) → `main`.
+
+**Contexte** : Rudy signale que les photos BABYMONSTER restent cassées et que les titres MV KATSEYE portent des `&quot;` — avec consigne explicite de traiter chaque erreur comme une CLASSE sur TOUS les artistes (« quasi perfection »).
+
+**Classe A — webp corrompus (la vraie cause des images cassées)** : le Lot 2 avait validé les URLs (HTTP 200) mais pas le CONTENU. Scan exhaustif des 3 buckets (signature RIFF/WEBP sur 16 octets) → **180 objets corrompus** (155 member-photos, 25 group-photos, 0 banners) : octets U+FFFD (`EF BF BD`) dans le header RIFF = round-trip binaire→texte dans la couche upload du **runtime Vercel** (~24 juil.+ ; le même code en local produit des fichiers valides — aucun deploy dans la fenêtre → couche environnement, pas notre code). Servis 200 mais rejetés par navigateurs ET Cloudinary (« Invalid image file »). Réparation : 155 membres resettés puis re-résolus via le pipeline local (BABYMONSTER 7/7, re-scan final : **1688/1688 member-photos sains**) ; 10 group-photos référencées re-self-hostées depuis leur source fandom (`debut_candidates.payload`) ; 15 objets group-photos corrompus restants = **orphelins non servis** (purge en attente d'accord — `scripts/repair-group-photos-tmp.ts --purge-orphans`). Défense durable : **`uploadWebpVerified`** (upload + relecture `storage.download()` — pas le GET public, le CDN sert l'ancienne version après un upsert même-chemin — + validation signature, 1 retry, échec franc sans écriture DB) branché sur les 3 surfaces runtime (self-host, refresh, ingest debuts) ; le check `dead_image_urls` valide désormais le contenu des webp self-hostés (Range 16 octets), plus seulement le statut.
+
+**Classe B — entités HTML (`&#39;`, `&quot;`)** : introduites par MA passe backfill du 19/08 — `search.list` renvoie des titres HTML-encodés (contrairement à `playlistItems`, décodé à la construction). Racine : `scrapeGroup` décode désormais les uploads injectés à la consommation (idempotent, source unique quel que soit le chemin d'entrée). Nettoyage DB : 35 titres décodés + 35 slugs régénérés via `buildEventSlug` (KATSEYE ×8, Taemin ×15, PLAVE ×4, Baek A Yeon ×3, MISAMO, EVNNE, ADYA, NCT DOJAEJUNG ×2). Vérifié : **0 résidu** sur titres, slugs, descriptions, noms de groupes et de membres.
+
+**Vérification** : rituel complet (prettier, tsc, 739 tests vitest mode CI, build) ; scan intégrité re-run post-réparation ; requêtes SQL 0 pollution sur 5 surfaces. **Leçon** (répète l'audit Lot 2) : « URL vivante » ≠ « image valide » — toujours valider le contenu binaire, à l'upload ET au monitoring.
+
 ## 2026-08-20 — Audit peaufinage : Lots 1-3 livrés (notifs, images, moteur MVs)
 
 **Contexte** : Rudy retient le partage tant que l'app n'est pas peaufinée (MVs manquants, images cassées, pages lentes, notifs doublées, ergonomie). Audit 4 axes en données réelles → `docs/AUDIT_PEAUFINAGE_2026-08-20.md` ; plan 6 lots validé. **CI verte sur les 3 merges.**

@@ -196,6 +196,16 @@ Paiement : Stripe Checkout + webhook → update `profiles.tier`. **Aucune migrat
 - **Notification de bienvenue locale** post-subscribe (`reg.showNotification`, pas un push) : confirmer que ça marche au lieu d'un silence jusqu'au prochain cron. Mineur.
 - **Logos — mineurs consignés sans action** (audit 2026-07-17) : `purpose "any maskable"` combiné dans le manifest (entrées séparées recommandées), `themeColor` figé sombre en mode clair, pas de splash screen iOS.
 
+## Programme peaufinage pré-partage (2026-08-20 — plan = `docs/AUDIT_PEAUFINAGE_2026-08-20.md`)
+
+- ✅ **Lot 1 notifs** (dédup digest/alerte + esthétique), ✅ **Lot 2 images** (maxres 404 + check `dead_image_urls`), ✅ **Lot 3 moteur MVs** (3 causes racines + passe one-shot ~40 MVs) — cf. JOURNAL 2026-08-20.
+- ✅ **Retours Rudy sur 1-3 traités en classes** (2026-08-20) : 180 webp corrompus réparés + `uploadWebpVerified` sur les 3 surfaces d'upload runtime + check contenu ; 35 titres/slugs à entités HTML décodés + racine fixée dans `scrapeGroup`. Cf. JOURNAL.
+- ⏳ **Purge des 15 objets `group-photos` corrompus orphelins** (non référencés, irrécupérables) : `npx tsx scripts/repair-group-photos-tmp.ts --purge-orphans` — action destructive, en attente d'accord Rudy.
+- **Canary cause racine webp** : la corruption venait de la couche upload du runtime Vercel (~24 juil.+, aucun deploy dans la fenêtre, même code sain en local). `uploadWebpVerified` la rend inoffensive (échec franc + retry) ; si les logs cron montrent des `Stored object failed WEBP integrity check` répétés → ouvrir un ticket Vercel/Supabase avec la signature `EF BF BD`.
+- **Lot 4 perf** : LCP images (tout est lazy aujourd'hui), `/groups` 550 Ko à dégraisser, `/calendar` RSC −49 %, cache requêtes anonymes + `revalidateTag` post-cron, sitemap +`/show/`+`/calendar`.
+- **Lot 5 admin/health actionnable** : colonne remède par check (AUTO / 1-CLIC / REVUE), boutons directs, liens éditeur.
+- **Lot 6 ergonomie des rails** : proposition design par page à faire valider par Rudy AVANT code (ex. « Recent Comebacks » auto-référentiel sur /mvs).
+
 ## Ops manuelles en attente
 
 - ~~Re-scrape kprofiles des photos membres~~ → **remplacé 2026-07-05** par le self-host Supabase Storage (R4 ci-dessus) : régler la résilience et la fraîcheur en un seul geste.
