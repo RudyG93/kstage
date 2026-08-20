@@ -22,6 +22,9 @@ import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
+import { RailStack } from '@/components/rails/rail-stack'
+import { SpotlightBlock } from '@/components/rails/discovery-blocks'
+import { DiscussionsBlock } from '@/components/rails/community-blocks'
 import { getViewer } from '@/lib/supabase/viewer'
 import { SITE_URL } from '@/lib/site'
 
@@ -258,7 +261,16 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
     [group.agency, debutYear ? `debut ${debutYear}` : null].filter(Boolean).join(' · ') || null
 
   return (
-    <PageRails>
+    <PageRails
+      // Rail contextuel (Lot 6) : spotlight (sans le groupe courant — jamais
+      // de lien vers soi-même) + discussions, au lieu du rail générique.
+      right={
+        <RailStack>
+          <SpotlightBlock excludeSlug={group.slug} />
+          <DiscussionsBlock />
+        </RailStack>
+      }
+    >
       <JsonLd
         data={{
           '@context': 'https://schema.org',

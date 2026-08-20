@@ -1,144 +1,26 @@
-import type { ReactNode } from 'react'
-import Image from 'next/image'
-import type { Route } from 'next'
-import Link from 'next/link'
+import { RailStack } from '@/components/rails/rail-stack'
+import { RecentComebacksBlock } from '@/components/rails/event-blocks'
 import {
-  getRecentComebacks,
-  getRecentlyCommentedEvents,
-  type CommentedEvent,
-} from '@/lib/events/queries'
-import { displaySongTitle } from '@/lib/events/title'
-import { eventHref } from '@/lib/events/href'
-import { relativeTime, shortDate } from '@/lib/events/date'
-import { CommentsRealtime } from '@/components/home/comments-realtime'
+  BirthdaysBlock,
+  DiscussionsBlock,
+  TopRatedBlock,
+} from '@/components/rails/community-blocks'
 
-// En dessous, la section « Recent discussions » est masquée (anti-ville-fantôme).
-const DISCUSSIONS_MIN = 3
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return <span className="label-data">{children}</span>
-}
-
-function DiscussionLine({ row }: { row: CommentedEvent }) {
-  const count = row.commentCount
+/**
+ * Composition de rail droit de la HOME (et repli des pages détail sans rail
+ * contextuel). Recomposée au Lot 6 (2026-08-20) : les blocs vivent dans
+ * `components/rails/` et chaque page empile les siens — ce fichier n'est plus
+ * LE rail unique de l'app. Ici : sorties récentes (miroir passé du « Next
+ * up » central), top notes (seule surface où le module notation est visible
+ * hors /mvs), anniversaires des groupes suivis, discussions.
+ */
+export function SidebarRight() {
   return (
-    <li>
-      <Link
-        href={eventHref(row) as Route}
-        className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
-      >
-        {row.image_url ? (
-          <Image
-            src={row.image_url}
-            alt=""
-            width={40}
-            height={40}
-            className="size-10 shrink-0 rounded-md object-cover"
-            aria-hidden
-          />
-        ) : (
-          <div
-            className="gradient-signature flex size-10 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-white"
-            aria-hidden
-          >
-            {row.groups?.name?.[0] ?? '?'}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">
-            {displaySongTitle(row.title, row.groups?.name)}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {count} comment{count === 1 ? '' : 's'} · {relativeTime(row.lastCommentAt)}
-          </p>
-        </div>
-      </Link>
-    </li>
-  )
-}
-
-export async function SidebarRight() {
-  const [recentComebacks, discussions] = await Promise.all([
-    getRecentComebacks(10),
-    getRecentlyCommentedEvents(12),
-  ])
-
-  return (
-    <div className="space-y-4 lg:sticky lg:top-20">
-      {/* Refresh live de "Recent discussions" sur nouveau commentaire (§7.2) */}
-      <CommentsRealtime />
-
-      {/* Recent comebacks — au-dessus de Recent discussions (§7.1) */}
-      <section className="bg-card rounded-lg border p-4">
-        <div className="mb-3">
-          <SectionLabel>Recent comebacks</SectionLabel>
-        </div>
-        {recentComebacks.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No recent comebacks yet.</p>
-        ) : (
-          <>
-            <ul className="space-y-1">
-              {recentComebacks.map((cb) => (
-                <li key={cb.id}>
-                  <Link
-                    href={eventHref(cb) as Route}
-                    className="hover:bg-hover -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors"
-                  >
-                    {cb.image_url ? (
-                      <Image
-                        src={cb.image_url}
-                        alt={cb.groups?.name ?? ''}
-                        width={48}
-                        height={48}
-                        className="size-12 shrink-0 rounded-md object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="gradient-signature flex size-12 shrink-0 items-center justify-center rounded-md text-sm font-semibold text-white"
-                        aria-hidden
-                      >
-                        {cb.groups?.name?.[0] ?? '?'}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {displaySongTitle(cb.title, cb.groups?.name)}
-                      </p>
-                      <p className="text-muted-foreground text-xs">{cb.groups?.name}</p>
-                    </div>
-                    <span className="tabular text-muted-foreground shrink-0 text-[11px]">
-                      {shortDate(cb.start_at)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/mvs"
-              className="text-primary mt-3 inline-block text-xs underline-offset-2 hover:underline"
-            >
-              All drops →
-            </Link>
-          </>
-        )}
-      </section>
-
-      {/* Recent discussions — forum-like, live (§7.2). Masqué sous un seuil :
-          1-2 threads isolés = effet ville fantôme. Feature sociale dont la valeur
-          dépend de l'audience (règle de gel) → affichée seulement avec assez de
-          matière. */}
-      {discussions.length >= DISCUSSIONS_MIN && (
-        <section className="bg-card rounded-lg border p-4">
-          <div className="mb-3">
-            <SectionLabel>Recent discussions</SectionLabel>
-          </div>
-          <ul className="space-y-1">
-            {discussions.map((row) => (
-              <DiscussionLine key={row.id} row={row} />
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
+    <RailStack>
+      <RecentComebacksBlock />
+      <TopRatedBlock />
+      <BirthdaysBlock />
+      <DiscussionsBlock />
+    </RailStack>
   )
 }

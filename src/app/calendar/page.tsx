@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
-import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailStack } from '@/components/rails/rail-stack'
+import { JustAnnouncedBlock } from '@/components/rails/event-blocks'
+import { DiscussionsBlock } from '@/components/rails/community-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupFilter } from '@/components/home/group-filter'
 import { FilterChips } from '@/components/calendar/filter-chips'
@@ -88,9 +90,16 @@ export default async function CalendarPage({
             <FilterChips />
             <CalendarEvents timeZone={timeZone} />
           </div>
+          {/* Rail contextuel (Lot 6) : « Just announced » = events futurs
+              triés par date de DÉTECTION — la fraîcheur, que la grille (triée
+              par date d'event) ne montre pas. Pas de lien de sortie : la page
+              courante est déjà le calendrier. */}
           <aside className="order-3 shrink-0 lg:w-80">
             <Suspense fallback={<RailSkeleton />}>
-              <SidebarRight />
+              <RailStack>
+                <JustAnnouncedBlock />
+                <DiscussionsBlock />
+              </RailStack>
             </Suspense>
           </aside>
         </div>

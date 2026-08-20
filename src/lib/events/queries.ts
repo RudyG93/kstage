@@ -339,6 +339,36 @@ export async function getRecentReleasesForAllGroupsCached(): Promise<
   return new Map(await getRecentReleasePairsCached())
 }
 
+/**
+ * Events FUTURS fraîchement détectés par les scrapers (« Just announced »,
+ * rail /calendar — Lot 6 rails contextuels 2026-08-20) : l'ordre est la date
+ * d'INSERTION (created_at), pas la date de l'event — le bloc « fraîcheur »
+ * qui donne une raison de revenir. Cached anon (public, tag events).
+ */
+export const getRecentlyAddedEvents = unstable_cache(
+  async (limit = 8) => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('events')
+      .select(`${EVENT_SELECT}, created_at`)
+      // mv/release seulement : les épisodes music-show arrivent par lot
+      // quotidien (bruit), les anniversaires ne sont pas des annonces.
+      .in('type', ['mv', 'release'])
+      .eq('hidden', false)
+      .gte('start_at', new Date().toISOString())
+      .or(isMainOrNonMv)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return data ?? []
+  },
+  ['recently-added-events'],
+  { revalidate: 900, tags: ['events'] },
+)
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]
