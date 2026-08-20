@@ -119,6 +119,31 @@ export async function getSoloArtists() {
   })
 }
 
+/**
+ * Derniers groupes/solistes ajoutés au roster (« New on KStage », rail
+ * /groups — Lot 6 rails contextuels 2026-08-20). Ordre = date d'INSERTION,
+ * pas la date de debut : met en avant la couverture qui grandit. Cached anon
+ * (public, tag groups).
+ */
+export const getNewestGroupsCached = unstable_cache(
+  async (limit = 6) => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('groups')
+      .select(`${GROUP_FIELDS}, created_at, is_solo`)
+      .neq('confidence', 'candidate')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return data ?? []
+  },
+  ['groups-newest'],
+  { revalidate: 3600, tags: ['groups'] },
+)
+
 /** Variante `unstable_cache` de getSoloArtists — mêmes raisons/invalidation
     que getNonSoloGroupsCached (les 2 onglets de /groups). */
 export const getSoloArtistsCached = unstable_cache(

@@ -26,6 +26,9 @@ import { faceCrop } from '@/lib/images/cloudinary'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
+import { RailStack } from '@/components/rails/rail-stack'
+import { SpotlightBlock } from '@/components/rails/discovery-blocks'
+import { DiscussionsBlock } from '@/components/rails/community-blocks'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -256,49 +259,61 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
     const bannerSrc = groupBannerSrc({ ...group, image_url: heroSrc })
 
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-6">
-        <div className="space-y-6">
-          {/* SHELL : hero + fiche depuis la row membre/groupe ; le follow
+      // Rails contextuels (Lot 6) : la vue solo rejoint le patron PageRails
+      // des pages détail (R10 « plus de côtés vides ») — le contenu garde sa
+      // largeur de lecture max-w-2xl DANS la colonne centrale.
+      <PageRails
+        right={
+          <RailStack>
+            <SpotlightBlock excludeSlug={group.slug} />
+            <DiscussionsBlock />
+          </RailStack>
+        }
+      >
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-0">
+          <div className="space-y-6">
+            {/* SHELL : hero + fiche depuis la row membre/groupe ; le follow
               (viewer) et le corps (events, MVs, carrière) streament (Lot G). */}
-          <ArtistHero
-            name={member.stage_name}
-            image={bannerSrc}
-            follow={
-              <Suspense fallback={null}>
-                <SoloFollow group={group} />
-              </Suspense>
-            }
-          />
+            <ArtistHero
+              name={member.stage_name}
+              image={bannerSrc}
+              follow={
+                <Suspense fallback={null}>
+                  <SoloFollow group={group} />
+                </Suspense>
+              }
+            />
 
-          <div className="space-y-3">
-            {group.agency && <p className="text-muted-foreground text-sm">{group.agency}</p>}
-            <LinksBar links={group.links} />
+            <div className="space-y-3">
+              {group.agency && <p className="text-muted-foreground text-sm">{group.agency}</p>}
+              <LinksBar links={group.links} />
+            </div>
+
+            {(member.real_name || member.birthday) && (
+              <section className="text-sm">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                  {member.real_name && (
+                    <>
+                      <dt className="text-muted-foreground">Real name</dt>
+                      <dd>{member.real_name}</dd>
+                    </>
+                  )}
+                  {member.birthday && (
+                    <>
+                      <dt className="text-muted-foreground">Birthday</dt>
+                      <dd>{formatBirthday(member.birthday)}</dd>
+                    </>
+                  )}
+                </dl>
+              </section>
+            )}
+
+            <Suspense fallback={<ArtistBodySkeleton />}>
+              <SoloBody member={member} group={group} />
+            </Suspense>
           </div>
-
-          {(member.real_name || member.birthday) && (
-            <section className="text-sm">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                {member.real_name && (
-                  <>
-                    <dt className="text-muted-foreground">Real name</dt>
-                    <dd>{member.real_name}</dd>
-                  </>
-                )}
-                {member.birthday && (
-                  <>
-                    <dt className="text-muted-foreground">Birthday</dt>
-                    <dd>{formatBirthday(member.birthday)}</dd>
-                  </>
-                )}
-              </dl>
-            </section>
-          )}
-
-          <Suspense fallback={<ArtistBodySkeleton />}>
-            <SoloBody member={member} group={group} />
-          </Suspense>
         </div>
-      </div>
+      </PageRails>
     )
   }
 
@@ -310,7 +325,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   const statusText = statusLabel[member.status]
 
   return (
-    <PageRails>
+    <PageRails
+      // Rail contextuel (Lot 6) : spotlight (sans le groupe de l'artiste
+      // courant) + discussions, au lieu du rail générique.
+      right={
+        <RailStack>
+          <SpotlightBlock excludeSlug={group?.slug} />
+          <DiscussionsBlock />
+        </RailStack>
+      }
+    >
       <div className="space-y-6 px-4 md:px-0">
         {/* SHELL : header + fiche depuis la row membre ; le corps (solo
             releases, carrière, groupmates) streame (Lot G). */}

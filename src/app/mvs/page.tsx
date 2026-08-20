@@ -3,7 +3,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
-import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailStack } from '@/components/rails/rail-stack'
+import { ComingUpBlock } from '@/components/rails/event-blocks'
+import { DiscussionsBlock } from '@/components/rails/community-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { HeroBackdrop } from '@/components/home/hero-backdrop'
 import { Panel, PanelHeader } from '@/components/ui/panel'
@@ -141,9 +143,15 @@ export default async function MvsPage({
           />
         </div>
 
+        {/* Rail contextuel (Lot 6) : « Coming up » = le miroir FUTUR du
+            contenu central (les drops passés) — l'ancien « Recent comebacks »
+            dupliquait la page et son lien pointait ici même (retour Rudy). */}
         <aside className="order-3 shrink-0 lg:w-80">
           <Suspense fallback={<RailSkeleton />}>
-            <SidebarRight />
+            <RailStack>
+              <ComingUpBlock />
+              <DiscussionsBlock />
+            </RailStack>
           </Suspense>
         </aside>
       </div>

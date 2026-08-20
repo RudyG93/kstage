@@ -29,7 +29,8 @@ import { LikeButton } from '@/components/mv/like-button'
 import { MvCard } from '@/components/group/mv-card'
 import { MvRightRail } from '@/components/mv/mv-right-rail'
 import { PageRails } from '@/components/layout/page-rails'
-import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailStack } from '@/components/rails/rail-stack'
+import { SpotlightBlock } from '@/components/rails/discovery-blocks'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 
 async function loadMv(slug: string) {
@@ -85,7 +86,17 @@ async function MvRail({
     getRailData(groupSlug, excludeId),
     getViewerTimeZone(),
   ])
-  if (railMvs.length === 0) return <SidebarRight />
+  // Repli sans catalogue : JAMAIS l'ancien SidebarRight — ses blocs émettent
+  // des liens /mv/[slug] pouvant être la page courante (cas prouvé en prod :
+  // ONE PACT « U SO HOT », seul MV de son groupe ET dans le top-10 Recent
+  // comebacks ~10 jours — la page se liait elle-même). Spotlight = liens
+  // /groups/* uniquement, groupe courant exclu.
+  if (railMvs.length === 0)
+    return (
+      <RailStack>
+        <SpotlightBlock excludeSlug={groupSlug} />
+      </RailStack>
+    )
   return (
     <MvRightRail
       groupName={groupName}

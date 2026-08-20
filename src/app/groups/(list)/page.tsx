@@ -1,7 +1,9 @@
 import type { Route } from 'next'
 import { Suspense } from 'react'
 import { SidebarLeft } from '@/components/home/sidebar-left'
-import { SidebarRight } from '@/components/home/sidebar-right'
+import { RailStack } from '@/components/rails/rail-stack'
+import { NewGroupsBlock } from '@/components/rails/discovery-blocks'
+import { DiscussionsBlock } from '@/components/rails/community-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
 import {
@@ -135,9 +137,15 @@ export default async function GroupsPage({
           />
         </div>
 
+        {/* Rail contextuel (Lot 6) : « New on KStage » = derniers ajouts au
+            roster (l'ancien « Recent comebacks » n'avait aucun rapport avec
+            une page d'annuaire) ; « In the spotlight » vit déjà au centre. */}
         <aside className="order-3 shrink-0 lg:w-80">
           <Suspense fallback={<RailSkeleton />}>
-            <SidebarRight />
+            <RailStack>
+              <NewGroupsBlock />
+              <DiscussionsBlock />
+            </RailStack>
           </Suspense>
         </aside>
       </div>
