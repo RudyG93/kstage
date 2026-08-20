@@ -16,6 +16,7 @@ import type { createClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database'
 import { kstToUtcISO } from '@/lib/events/date'
 import { optimizeImageBuffer } from '@/lib/images/optimize'
+import { uploadWebpVerified } from '@/lib/images/upload'
 import { refreshMemberPhotos } from '@/lib/images/refresh'
 import { findCanonicalMatch, type PersonEvidence } from '@/lib/members/matching'
 import { normalize } from '@/lib/scrapers/group-match'
@@ -151,10 +152,8 @@ async function selfHostGroupImage(
     // dépassaient parfois 10 Mo → Cloudinary fetch cassé à l'affichage.
     const optimized = await optimizeImageBuffer(bytes)
     const path = `${slug}.webp`
-    const { error } = await supabase.storage
-      .from(GROUP_PHOTO_BUCKET)
-      .upload(path, optimized, { contentType: 'image/webp', upsert: true })
-    if (error) return null
+    const up = await uploadWebpVerified(supabase, GROUP_PHOTO_BUCKET, path, optimized)
+    if (!up.ok) return null
     return supabase.storage.from(GROUP_PHOTO_BUCKET).getPublicUrl(path).data.publicUrl
   } catch {
     return null
