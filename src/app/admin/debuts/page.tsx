@@ -14,16 +14,15 @@ export default async function AdminDebutsPage() {
     getDebutCandidates(),
     getLineupUnmatched(),
   ])
-  const pending = candidates.filter((c) => c.status === 'pending').length
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Debut candidates</h1>
-          <p className="text-muted-foreground text-sm">
-            {candidates.length} détectés · {pending} en attente
-          </p>
+          {/* Liste de travail : seules les rows EN ATTENTE s'affichent (retour
+              Rudy 2026-08-20) — l'historique créé/écarté vit en DB. */}
+          <p className="text-muted-foreground text-sm">{candidates.length} en attente</p>
         </div>
         {/* Artistes des lineups music-show absents du roster (2026-07-17) :
             triés par récurrence, alimentés par le cron scrape-music-shows. */}

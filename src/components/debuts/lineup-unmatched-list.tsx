@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Panel } from '@/components/ui/panel'
 import {
   createLineupArtist,
+  createLineupArtistsBulk,
   ignoreLineupUnmatched,
   ignoreLineupUnmatchedBulk,
   type LineupUnmatchedRow,
@@ -52,6 +53,33 @@ export function LineupUnmatchedList({ items }: { items: LineupUnmatchedRow[] }) 
       toast.success(`${res.ignored ?? 0} ignored`)
     })
 
+  // Bulk create (retour Rudy 2026-08-20 : la sélection ne servait qu'à
+  // ignorer). Chaque création = dossier fandom complet → borné côté serveur ;
+  // les échecs restent listés (et en file) pour une création manuelle.
+  const createSelected = () =>
+    startTransition(async () => {
+      const names = [...selected]
+      let res: Awaited<ReturnType<typeof createLineupArtistsBulk>>
+      try {
+        res = await createLineupArtistsBulk(names)
+      } catch {
+        toast.error('Interrompu (timeout ?) — recharge la page pour voir l’état réel')
+        return
+      }
+      if (res.error) {
+        toast.error(res.error)
+        return
+      }
+      // Restent affichées : les non-sélectionnées + les sélectionnées en échec
+      // (toujours pending côté serveur, à re-tenter ou créer à la main).
+      const chosen = new Set(names)
+      const failed = new Set((res.errors ?? []).map((e) => e.split(':')[0]))
+      setRows((prev) => prev.filter((r) => !chosen.has(r.name_norm) || failed.has(r.display_name)))
+      setSelected(new Set())
+      if ((res.errors ?? []).length > 0) toast.error(res.errors!.join(' · '))
+      toast.success(`${res.created ?? 0} created`)
+    })
+
   const decide = (nameNorm: string, action: 'create' | 'ignore') => {
     setBusy(nameNorm)
     startTransition(async () => {
@@ -76,6 +104,14 @@ export function LineupUnmatchedList({ items }: { items: LineupUnmatchedRow[] }) 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={bulkPending || selected.size === 0}
+          onClick={createSelected}
+          className="label-data-inline bg-primary text-primary-foreground cursor-pointer rounded-sm px-3 py-1.5 text-[9px] disabled:opacity-50"
+        >
+          Create selected ({selected.size})
+        </button>
         <button
           type="button"
           disabled={bulkPending || selected.size === 0}

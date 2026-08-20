@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Panel } from '@/components/ui/panel'
 import {
   approveDebutCandidate,
+  approveDebutCandidatesBulk,
   dismissDebutCandidate,
   dismissDebutCandidatesBulk,
   dismissStaleReviewQueues,
@@ -33,12 +34,12 @@ export function DebutAdminList({ items }: { items: DebutCandidateRow[] }) {
         toast.error(res.error)
         return
       }
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === id ? { ...r, status: action === 'create' ? 'created' : 'dismissed' } : r,
-        ),
+      // La file est une liste de TRAVAIL : une row décidée en sort (retour
+      // Rudy 2026-08-20 — elle restait affichée avec son badge).
+      setRows((prev) => prev.filter((r) => r.id !== id))
+      toast.success(
+        action === 'create' ? 'Created — MVs en cours de récupération (arrière-plan)' : 'Dismissed',
       )
-      toast.success(action === 'create' ? 'Group created' : 'Dismissed')
     })
 
   const toggle = (id: string) =>
@@ -60,9 +61,41 @@ export function DebutAdminList({ items }: { items: DebutCandidateRow[] }) {
         return
       }
       const done = new Set(ids)
-      setRows((prev) => prev.map((r) => (done.has(r.id) ? { ...r, status: 'dismissed' } : r)))
+      setRows((prev) => prev.filter((r) => !done.has(r.id)))
       setSelected(new Set())
       toast.success(`${res.dismissed ?? 0} dismissed`)
+    })
+
+  // Bulk create (retour Rudy 2026-08-20 : la sélection ne servait qu'à
+  // Dismiss). Les échecs restent affichés (et pending côté serveur).
+  const createSelected = () =>
+    startTransition(async () => {
+      const ids = [...selected]
+      let res: Awaited<ReturnType<typeof approveDebutCandidatesBulk>>
+      try {
+        res = await approveDebutCandidatesBulk(ids)
+      } catch {
+        // Timeout d'invocation possible mi-lot : les créations déjà faites
+        // sont en DB (resume-safe) — recharger pour voir l'état réel.
+        toast.error('Interrompu (timeout ?) — recharge la page pour voir l’état réel')
+        return
+      }
+      if (res.error) {
+        toast.error(res.error)
+        return
+      }
+      const failedNames = new Set((res.errors ?? []).map((e) => e.split(':')[0]))
+      const chosen = new Set(ids)
+      setRows((prev) =>
+        prev.filter((r) => {
+          if (!chosen.has(r.id)) return true
+          const name = r.payload && 'name' in r.payload ? r.payload.name : r.page_title
+          return failedNames.has(name)
+        }),
+      )
+      setSelected(new Set())
+      if ((res.errors ?? []).length > 0) toast.error(res.errors!.join(' · '))
+      toast.success(`${res.created ?? 0} created — MVs en cours de récupération (arrière-plan)`)
     })
 
   const dismissStale = () =>
@@ -76,11 +109,7 @@ export function DebutAdminList({ items }: { items: DebutCandidateRow[] }) {
       // recharge la liste ; ici on reflète localement les rows affichées.
       const cutoff = Date.now() - 30 * 86_400_000
       setRows((prev) =>
-        prev.map((r) =>
-          r.status === 'pending' && Date.parse(r.detected_at) < cutoff
-            ? { ...r, status: 'dismissed' }
-            : r,
-        ),
+        prev.filter((r) => !(r.status === 'pending' && Date.parse(r.detected_at) < cutoff)),
       )
       toast.success(`${res.dismissed ?? 0} candidats + ${res.ignored ?? 0} lineups écartés (≥30 j)`)
     })
@@ -88,6 +117,14 @@ export function DebutAdminList({ items }: { items: DebutCandidateRow[] }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={pending || selected.size === 0}
+          onClick={createSelected}
+          className="label-data-inline bg-primary text-primary-foreground cursor-pointer rounded-sm px-3 py-1.5 text-[9px] disabled:opacity-50"
+        >
+          Create selected ({selected.size})
+        </button>
         <button
           type="button"
           disabled={pending || selected.size === 0}
