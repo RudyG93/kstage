@@ -4,6 +4,16 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — Lot 6 : rails latéraux contextuels par page (validé par Rudy)
+
+**Branche/commit** : `feat/contextual-rails` (merge `27bb585`) → `main`. Proposition design validée par Rudy AVANT code (périmètre complet + les 4 nouveaux blocs).
+
+**Quoi** : le rail droit était identique partout (Recent comebacks + discussions) — doublon auto-référentiel sur /mvs (l'exemple de Rudy), même bloc répété sur toutes les surfaces (NN/g « right-rail blindness »). Blocs recomposés par page (`components/rails/`), règle : **un bloc ne lie jamais vers la page où il est rendu**. Home = comebacks + **Top rated** (module notation enfin visible hors /mvs) + **Birthdays this week** (groupes suivis, fuseau viewer) + discussions · /mvs = **Coming up** (miroir futur du contenu central) · /calendar = **Just announced** (tri par date de DÉTECTION, dates fuseau viewer) · /groups = **New on KStage** · pages groupe/artiste (les 2 vues, la solo rejoint PageRails) = **In the spotlight** (artiste courant exclu) · /mv = catalogue inchangé, repli mono-MV = Spotlight seul.
+
+**Review adversariale multi-agents avant merge** (8 agents, 4 dimensions → réfutation par finding) : 3 confirmés, tous corrigés — indentation vue solo (gate Prettier CI), dates KST vs fuseau viewer dans Just announced (incohérence rail/grille sur la même page), et **repli /mv auto-référentiel prouvé en prod** (ONE PACT « U SO HOT » : seul MV de son groupe ET top-10 comebacks pendant ~10 jours → la page se liait elle-même ; structurellement reproductible à chaque nouveau groupe découvert avant son backfill).
+
+**Vérification** : tsc, 745 tests (mode CI), build prod, curl des 7 surfaces (labels contextuels présents, ancien bloc absent, 0 lien vers soi-même sur le repli kandis mono-MV).
+
 ## 2026-08-20 — Lot 5 : /admin/health actionnable (remède par check)
 
 **Branche/commit** : `feat/admin-health-remedies` (merge `091c085`) → `main`.
