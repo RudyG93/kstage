@@ -16,6 +16,7 @@ import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { parseSpotifyArtistId, spotifyArtistById, spotifyNameMatches } from '@/lib/spotify'
 import { optimizeImageBuffer } from '@/lib/images/optimize'
+import { uploadWebpVerified } from '@/lib/images/upload'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -518,10 +519,8 @@ export async function refreshMemberPhotos(
         // les sources trop lourdes et l'avatar s'affiche cassé.
         const optimized = await optimizeImageBuffer(bytes)
         const path = `${m.id}.webp`
-        const { error: upErr } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, optimized, { contentType: 'image/webp', upsert: true })
-        if (upErr) throw new Error(upErr.message)
+        const up = await uploadWebpVerified(supabase, PHOTO_BUCKET, path, optimized)
+        if (!up.ok) throw new Error(up.error)
         const { data: pub } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path)
         // `?v=cb` : upsert = même chemin, le CDN servirait l'ancienne version.
         const cb = /[?&]cb=(\d+)/.exec(source)?.[1] ?? String(bytes.byteLength)

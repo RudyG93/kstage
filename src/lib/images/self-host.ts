@@ -1,6 +1,7 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { MAX_SOURCE_BYTES, optimizeImageBuffer } from '@/lib/images/optimize'
+import { uploadWebpVerified } from '@/lib/images/upload'
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
@@ -46,10 +47,8 @@ export async function selfHostImage(
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
   const path = `${idBase}.webp`
-  const { error: upErr } = await admin.storage
-    .from(bucket)
-    .upload(path, optimized, { upsert: true, contentType: 'image/webp' })
-  if (upErr) return { error: 'Upload failed.' }
+  const up = await uploadWebpVerified(admin, bucket, path, optimized)
+  if (!up.ok) return { error: up.error }
   const { data: pub } = admin.storage.from(bucket).getPublicUrl(path)
   return { url: `${pub.publicUrl}?v=${Date.now()}` }
 }

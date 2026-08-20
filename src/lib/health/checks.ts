@@ -13,6 +13,7 @@
 //   (SuA Dreamcatcher/UAU).
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { isValidWebpHeader } from '@/lib/images/upload'
 import { isSamePerson, normalizeName } from '@/lib/members/matching'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -186,6 +187,19 @@ async function sampleDeadImageUrls(
   const results = await Promise.all(
     urls.map(async ({ url, label }) => {
       try {
+        // Webp self-hosté : valider le CONTENU (signature RIFF/WEBP via Range),
+        // pas juste le statut — incident 2026-08-20 : 180 objets corrompus par
+        // la couche upload du runtime Vercel étaient servis HTTP 200 mais
+        // rejetés par les navigateurs et Cloudinary.
+        if (url.includes('/storage/v1/object/public/') && url.includes('.webp')) {
+          const res = await fetch(url, {
+            headers: { Range: 'bytes=0-15' },
+            signal: AbortSignal.timeout(DEAD_URL_TIMEOUT_MS),
+          })
+          if (!res.ok && res.status !== 206) return `${label} — HTTP ${res.status} — ${url}`
+          const head = Buffer.from(await res.arrayBuffer())
+          return isValidWebpHeader(head) ? null : `${label} — webp corrompu — ${url}`
+        }
         const res = await fetch(url, {
           method: 'HEAD',
           signal: AbortSignal.timeout(DEAD_URL_TIMEOUT_MS),

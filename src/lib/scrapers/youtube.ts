@@ -334,7 +334,16 @@ export async function scrapeGroup(
   const cached = opts.uploads ?? opts.pageCache?.get(channel.uploadsPlaylistId)
   let items: UploadItem[]
   if (cached) {
-    items = cached
+    // Les uploads INJECTÉS (search.list, backfill ciblé) arrivent avec des
+    // titres HTML-ENCODÉS par l'API (&#39;, &quot; — contrairement à
+    // playlistItems, décodé à la construction l.228) : 35 titres pollués en
+    // prod le 2026-08-20 via la passe backfill. Décodage idempotent ici =
+    // source unique, quel que soit le chemin d'entrée.
+    items = cached.map((it) => ({
+      ...it,
+      title: decodeHtmlEntities(it.title),
+      description: decodeHtmlEntities(it.description),
+    }))
   } else {
     items = []
     let pageToken: string | undefined
