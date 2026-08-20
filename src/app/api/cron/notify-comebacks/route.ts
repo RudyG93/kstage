@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const now = new Date()
   const EVENT_FIELDS =
-    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug, confidence), sources(type)'
+    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug, confidence, image_url, image_landscape, banner_url), sources(type)'
 
   // Superset d'events comeback (mv/release) sur la fenêtre [now-1j, now+3j) ;
   // resolveKind fait le test de jour exact PAR FUSEAU. La fenêtre couvre tous
@@ -96,6 +96,10 @@ export async function GET(req: Request) {
       confidence: e.groups?.confidence ?? null,
       sourceType: e.sources?.type ?? null,
       url: eventHref(e),
+      // Visuels par artiste (audit notifs 2026-08-20) : photo carrée →
+      // icône, paysage/bannière → grande image. URLs déjà absolues en DB.
+      iconUrl: e.groups?.image_url ?? null,
+      imageUrl: e.groups?.image_landscape ?? e.groups?.banner_url ?? null,
     }))
 
   // Triggers déjà envoyés pour ces events (idempotence).

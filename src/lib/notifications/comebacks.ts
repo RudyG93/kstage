@@ -45,6 +45,11 @@ export type ComebackEvent = {
   // source de l'event. Optionnels : absents = comportement historique.
   confidence?: 'verified' | 'monitored' | 'candidate' | null
   sourceType?: string | null
+  // Visuels du groupe (audit notifs 2026-08-20) : photo carrée self-hostée →
+  // icône de la notif ; paysage/bannière → grande image Android/desktop.
+  // Optionnels : absents = icône app générique.
+  iconUrl?: string | null
+  imageUrl?: string | null
 }
 
 /**
@@ -68,7 +73,16 @@ export function passesConfidenceGate(event: {
 
 export type NotificationKind = 'day_before' | 'day_of'
 
-export type ComebackPayload = { title: string; body: string; url: string; tag?: string }
+export type ComebackPayload = {
+  title: string
+  body: string
+  url: string
+  tag?: string
+  icon?: string
+  image?: string
+  renotify?: boolean
+  timestamp?: number
+}
 export type ComebackRecord = { userId: string; eventId: string; kind: NotificationKind }
 export type ComebackMessage = {
   subscription: ComebackSubscription
@@ -87,12 +101,32 @@ const addDaysKey = (key: string, days: number): string => {
  * Le `kind` applicable à un event au moment `now`, dans le fuseau de l'abonné,
  * ou null si aucun. Précédence day_of > day_before → un seul kind par run.
  */
-function resolveKind(event: ComebackEvent, now: Date, timeZone: string): NotificationKind | null {
+function resolveKind(
+  event: { startAt: string },
+  now: Date,
+  timeZone: string,
+): NotificationKind | null {
   const todayKey = localDayKey(now.toISOString(), timeZone)
   const startKey = localDayKey(event.startAt, timeZone)
   if (startKey === todayKey) return 'day_of'
   if (startKey === addDaysKey(todayKey, 1)) return 'day_before'
   return null
+}
+
+/**
+ * Un event mv/release dont le jour local de l'abonné est aujourd'hui ou demain
+ * est LA propriété du flux alertes (⏳/🔥) — le digest doit l'exclure, sinon le
+ * même comeback part deux fois à 15 min d'écart (10:30 digest, 10:45 alerte —
+ * doublon structurel prouvé, audit notifs 2026-08-20). Source unique de la
+ * fenêtre : resolveKind.
+ */
+export function coveredByComebackAlert(
+  event: { type?: string | null; startAt: string },
+  now: Date,
+  timeZone: string,
+): boolean {
+  if (event.type !== 'mv' && event.type !== 'release') return false
+  return resolveKind({ startAt: event.startAt }, now, timeZone) !== null
 }
 
 function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPayload {
@@ -102,9 +136,23 @@ function buildPayload(event: ComebackEvent, kind: NotificationKind): ComebackPay
   // 18:00 KST — « c'est sorti », plus « ça sort aujourd'hui ».
   const title = kind === 'day_of' ? `🔥 Out now: ${label}` : `⏳ Tomorrow: ${label}`
   const body = kind === 'day_of' ? 'Just dropped — go watch' : 'Dropping tomorrow'
-  // tag par event : les rappels successifs du même comeback (J-1 → jour J)
-  // se REMPLACENT dans le tiroir au lieu de s'empiler.
-  return { title, body, url: withPushSrc(event.url), tag: `comeback-${event.id}` }
+  return {
+    title,
+    body,
+    url: withPushSrc(event.url),
+    // tag par event : les rappels successifs du même comeback (J-1 → jour J)
+    // se REMPLACENT dans le tiroir au lieu de s'empiler ; renotify garde le
+    // buzz sur CE remplacement (J-1 → « Out now » le mérite — le digest, lui,
+    // se remplace en silence).
+    tag: `comeback-${event.id}`,
+    renotify: true,
+    // Visuels par artiste (MDN showNotification icon/image ; web.dev : icône
+    // ≥192 px, grande image large) — fallback icône app dans le SW si absents.
+    ...(event.iconUrl ? { icon: event.iconUrl } : {}),
+    ...(event.imageUrl ? { image: event.imageUrl } : {}),
+    // Horodatage = l'EVENT (tiroir Android trié par timestamp), pas l'envoi.
+    timestamp: Date.parse(event.startAt),
+  }
 }
 
 export function buildComebackNotifications(

@@ -9,19 +9,26 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'KStage', body: event.data.text() }
   }
-  const { title = 'KStage', body = '', url = '/', tag } = payload
+  const { title = 'KStage', body = '', url = '/', tag, icon, image, actions, renotify, timestamp } = payload
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: '/icons/icon-192.png',
+      // Icône par artiste quand le payload la porte (comebacks), sinon l'app.
+      icon: icon || '/icons/icon-192.png',
       // Badge Android = silhouette MONOCHROME dédiée (le PNG couleur était
       // aplati en pâté gris dans la barre de statut).
       badge: '/icons/badge-96.png',
+      // Grande visuelle (Android/desktop) et boutons d'action, si fournis.
+      ...(image ? { image } : {}),
+      ...(actions ? { actions } : {}),
       // tag : les notifs de même famille se REMPLACENT au lieu de s'empiler
-      // (digest du jour, rappels successifs d'un même comeback) ; renotify
-      // garde le buzz sur la mise à jour.
-      ...(tag ? { tag, renotify: true } : {}),
-      timestamp: Date.now(),
+      // (digest du jour, rappels successifs d'un même comeback). Le buzz du
+      // remplacement (renotify) est désormais PILOTÉ PAR LE PAYLOAD : les
+      // comebacks buzzent (J-1 → « Out now »), le digest se remplace en
+      // silence (audit notifs 2026-08-20).
+      ...(tag ? { tag, ...(renotify ? { renotify: true } : {}) } : {}),
+      // Horodatage de l'EVENT quand fourni (tiroir Android trié par date).
+      timestamp: timestamp || Date.now(),
       data: { url },
     }),
   )
