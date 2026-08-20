@@ -375,19 +375,32 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
   }
 
   // 3. Catalogues MV maigres (groupes actifs non dissous, ≤ THIN_MV_THRESHOLD).
+  // Les débuts < 90 j sont SÉPARÉS (info) : leur catalogue fin est légitime —
+  // mélangés, le compteur montait mécaniquement à chaque vague de debuts et
+  // masquait le vrai retard (audit 2026-08-20 : 16/109 étaient des rookies).
   {
     const countByGroup = new Map<string, number>()
     for (const r of mvRows) {
       if (r.group_id) countByGroup.set(r.group_id, (countByGroup.get(r.group_id) ?? 0) + 1)
     }
-    const thin = (groups ?? [])
+    const recentDebutCutoff = new Date(now.getTime() - 90 * 86_400_000).toISOString().slice(0, 10)
+    const allThin = (groups ?? [])
       .filter((g) => !g.disbanded_on)
       .map((g) => ({ g, n: countByGroup.get(g.id) ?? 0 }))
       .filter(({ n }) => n <= THIN_MV_THRESHOLD)
       .sort((a, b) => a.n - b.n)
+    const rookies = allThin.filter(({ g }) => g.debut_date && g.debut_date >= recentDebutCutoff)
+    const thin = allThin.filter(({ g }) => !(g.debut_date && g.debut_date >= recentDebutCutoff))
+    checks.push({
+      id: 'thin_rookies',
+      label: `Rookies (< 90 j) à catalogue encore fin — normal, en construction`,
+      severity: 'info',
+      count: rookies.length,
+      sample: rookies.slice(0, SAMPLE_MAX).map(({ g, n }) => `${g.name} (${g.slug}) — ${n} MV`),
+    })
     checks.push({
       id: 'thin_mv_catalogs',
-      label: `Groupes à catalogue MV maigre (≤${THIN_MV_THRESHOLD})`,
+      label: `Groupes à catalogue MV maigre (≤${THIN_MV_THRESHOLD}, hors debuts < 90 j)`,
       severity: 'warn',
       count: thin.length,
       sample: thin.slice(0, SAMPLE_MAX).map(({ g, n }) => `${g.name} (${g.slug}) — ${n} MV`),
