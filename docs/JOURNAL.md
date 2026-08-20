@@ -4,6 +4,14 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-20 — Lot 5 : /admin/health actionnable (remède par check)
+
+**Branche/commit** : `feat/admin-health-remedies` (merge `091c085`) → `main`.
+
+**Quoi** : chaque check du data-health monitor porte désormais son **remède** — badge **AUTO** (un cron le résorbe, note qui), **1-CLIC** (bouton qui déclenche le cron réparateur maintenant : photos → refresh-images, catalogues maigres → discover-channels, sources muettes → scrape-youtube, épisodes non numérotés → scrape-music-shows) ou **REVUE** (note + lien direct admin debuts/events/images ou commande de backfill). Server action gardée admin, liste **fermée** de crons déclenchables (jamais notify/send-digest — leçon verify-automation-state), fetch Bearer CRON_SECRET vers l'**origin courant** (jamais la prod depuis un dev local) en `after()` — réponse immédiate, run jusqu'à 300 s, résultat dans scrape_log.
+
+**Vérification** : tsc, 739 tests, build prod, gate admin 307 → /login. ⚠️ Premier clic réel à faire par Rudy en prod (l'admin est inaccessible aux tests).
+
 ## 2026-08-20 — Lot 4 perf : payload RSC dégraissé, LCP priority, data cache public, sitemap épisodes
 
 **Branche/commit** : `perf/lot4-payload-lcp-cache` (merge `5cffbb3`) → `main`.
