@@ -4,10 +4,10 @@ import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { cn, compactNumber } from '@/lib/utils'
-import type { GroupSummary } from '@/lib/groups/queries'
+import type { GroupCardData } from '@/components/group-card'
 
 export interface TrendingEntry {
-  group: GroupSummary
+  group: GroupCardData
   follows: number
   isFollowing: boolean
   /** Pourquoi le groupe est « du moment » — résolu côté serveur (uniforme). */

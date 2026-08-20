@@ -11,8 +11,15 @@ import type { Database } from '@/types/database'
 export type NextEventInfo = {
   type: Database['public']['Enums']['event_type']
   start_at: string
-  title: string
 }
+
+/**
+ * Sous-ensemble de GroupSummary réellement affiché par la tuile — les pages
+ * qui sérialisent des listes vers des composants client (ex. /groups, 172
+ * items) ne doivent embarquer QUE ces champs (audit perf 2026-08-20 : 550 Ko
+ * de HTML dont 127 Ko de flight RSC, chaque item sérialisé 3×).
+ */
+export type GroupCardData = Pick<GroupSummary, 'id' | 'slug' | 'name' | 'color_hex' | 'image_url'>
 
 /**
  * Tuile groupe carrée Data Desk (§7.5) : photo + scrim vers --page, nom
@@ -26,13 +33,16 @@ export function GroupCard({
   timeZone,
   href,
   nextEvent,
+  priority = false,
 }: {
-  group: GroupSummary
+  group: GroupCardData
   isFollowing: boolean
   isAuthed: boolean
   timeZone: string
   href?: Route
   nextEvent?: NextEventInfo | null
+  /** Tuile au-dessus de la fold : désactive le lazy-load (LCP, audit 2026-08-20). */
+  priority?: boolean
 }) {
   const img = group.image_url ? faceCrop(group.image_url, 600, 600) : null
   const statusColor = nextEvent ? EVENT_TYPE_COLORS[nextEvent.type] : null
@@ -51,6 +61,11 @@ export function GroupCard({
           aria-hidden
           fill
           unoptimized
+          priority={priority}
+          // `unoptimized` court-circuite l'émission fetchpriority de next/image
+          // (vérifié sur le HTML build) → posé explicitement pour le scanner
+          // de préchargement.
+          fetchPriority={priority ? 'high' : undefined}
           sizes="(min-width: 768px) 320px, 50vw"
           className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
         />

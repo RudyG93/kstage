@@ -9,9 +9,13 @@ import { cn } from '@/lib/utils'
 // (My groups / Reset). CONTRÔLÉ par CalendarFilterProvider depuis 2026-07-12 —
 // plus aucun param d'URL ni navigation : la coche filtre en mémoire,
 // instantanément (retour Rudy « le tri par URL est lent »). La persistance
-// localStorage vit dans le provider.
-export function GroupFilter({ groups }: { groups: { slug: string; name: string }[] }) {
-  const { selectedSlugs, toggleSlug, reset, selectMyGroups, followedSlugs } = useCalendarFilters()
+// localStorage vit dans le provider — et la LISTE des groupes aussi
+// (audit perf 2026-08-20 : passée en props aux 2 montages, elle partait 2×
+// dans le flight RSC).
+export function GroupFilter() {
+  const { selectedSlugs, toggleSlug, reset, selectMyGroups, followedSlugs, allGroups } =
+    useCalendarFilters()
+  const groups = allGroups
   const [q, setQ] = useState('')
 
   const filtered = useMemo(() => {

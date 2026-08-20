@@ -64,6 +64,31 @@ export async function getNonSoloGroups() {
 }
 
 /**
+ * Variante `unstable_cache` de getNonSoloGroups (audit perf 2026-08-20 :
+ * données identiques pour tous les viewers, retapées à chaque vue de
+ * /groups + onboarding). Client anon — `unstable_cache` interdit cookies().
+ * Invalidation : revalidate horaire + tag `groups` (revalidé en fin de cron
+ * scraping via logScrapeRun).
+ */
+export const getNonSoloGroupsCached = unstable_cache(
+  async () => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('groups')
+      .select(GROUP_FIELDS)
+      .eq('is_solo', false)
+      .order('name', { ascending: true })
+    if (error) throw error
+    return data ?? []
+  },
+  ['groups-non-solo'],
+  { revalidate: 3600, tags: ['groups'] },
+)
+
+/**
  * Liste les solistes avec le slug de leur membre canonique pour pointer la
  * carte directement vers `/artists/[memberSlug]` (évite le détour
  * /groups → re-clic membre).
@@ -93,6 +118,36 @@ export async function getSoloArtists() {
     return { ...row, memberSlug: member?.slug ?? null }
   })
 }
+
+/** Variante `unstable_cache` de getSoloArtists — mêmes raisons/invalidation
+    que getNonSoloGroupsCached (les 2 onglets de /groups). */
+export const getSoloArtistsCached = unstable_cache(
+  async () => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('groups')
+      .select(`${GROUP_FIELDS}, members!inner(slug, position, canonical_id)`)
+      .eq('is_solo', true)
+      .eq('members.position', 'Soloist')
+      .is('members.canonical_id', null)
+      .order('name', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map((row) => {
+      const membersRaw = (row as { members: unknown }).members
+      const member = (Array.isArray(membersRaw) ? membersRaw[0] : membersRaw) as {
+        slug: string | null
+        position: string | null
+        canonical_id: string | null
+      } | null
+      return { ...row, memberSlug: member?.slug ?? null }
+    })
+  },
+  ['groups-solo-artists'],
+  { revalidate: 3600, tags: ['groups'] },
+)
 
 // `cache()` (request-scoped) : la page groupe appelle getGroupBySlug à la fois
 // dans generateMetadata ET dans le composant → une seule requête par render.

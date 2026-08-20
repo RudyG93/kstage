@@ -32,6 +32,9 @@ interface CalendarFilterState {
   reset: () => void
   selectMyGroups: () => void
   followedSlugs: string[]
+  /** Liste complète (slug, name) pour le filtre — sérialisée UNE fois ici
+      plutôt qu'en props des 2 montages de GroupFilter (audit perf 2026-08-20). */
+  allGroups: { slug: string; name: string }[]
   /** Types actifs — vide = tous. */
   activeTypes: readonly string[]
   toggleType: (type: string | null) => void
@@ -57,6 +60,7 @@ export function CalendarFilterProvider({
   events,
   initialMonth,
   followedSlugs,
+  allGroups,
   initialSlugs,
   children,
 }: {
@@ -65,6 +69,7 @@ export function CalendarFilterProvider({
   /** Mois du rendu initial SSR (?month= ou mois courant). */
   initialMonth: { year: number; month: number }
   followedSlugs: string[]
+  allGroups: { slug: string; name: string }[]
   /** Deep-link ?group=<csv> (liens « Calendar → » des pages groupe). */
   initialSlugs?: string[]
   children: ReactNode
@@ -164,6 +169,7 @@ export function CalendarFilterProvider({
   const value: CalendarFilterState = {
     selectedSlugs: selected,
     followedSlugs,
+    allGroups,
     toggleSlug: (slug) => {
       const next = new Set(selected)
       if (next.has(slug)) next.delete(slug)

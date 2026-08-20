@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache'
 import type { createClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database'
 
@@ -41,4 +42,18 @@ export async function logScrapeRun(
     details: (entry.details ?? null) as Json,
   })
   if (error) console.error(`[scrape-log] insert failed: ${error.message}`)
+
+  // Fin de run = le point de passage commun de TOUS les crons scraping →
+  // invalide le data cache public (listes /groups, next event, releases —
+  // audit perf 2026-08-20) dès qu'un run a pu écrire. try/catch : hors
+  // runtime Next (scripts tsx locaux qui loggent aussi), revalidateTag jette.
+  if (entry.status !== 'error') {
+    try {
+      // 2e arg requis en Next 16 : { expire: 0 } = purge immédiate.
+      revalidateTag('events', { expire: 0 })
+      revalidateTag('groups', { expire: 0 })
+    } catch {
+      // Contexte sans store Next (script local) : rien à invalider.
+    }
+  }
 }

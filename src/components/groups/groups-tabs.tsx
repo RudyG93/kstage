@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { GroupCard } from '@/components/group-card'
 import { GroupsGrid, type GroupGridItem } from '@/components/groups-grid'
 import { GroupSort } from '@/components/home/group-sort'
@@ -10,9 +10,9 @@ import { cn } from '@/lib/utils'
 export type TabKey = 'groups' | 'solo'
 
 export interface GroupsTabData {
-  followedItems: GroupGridItem[]
-  trendingEntries: TrendingEntry[]
   items: GroupGridItem[]
+  /** Top 5 « du moment » — par référence aux `items` (pas de 2e copie flight). */
+  trending: { groupId: string; follows: number; reason: string }[]
   /** « groups » / « soloists » — libellé du compteur « All … — N ». */
   countNoun: string
 }
@@ -24,22 +24,52 @@ export interface GroupsTabData {
  * afficher — même philosophie que la recherche de GroupsGrid et le tri des
  * commentaires. L'URL reste sync (deep-link partageable) via replaceState,
  * sans round-trip ni entrée d'historique par clic.
+ *
+ * Dégraissage flight (audit perf 2026-08-20) : le serveur sérialisait chaque
+ * item 3× (items + followedItems + trendingEntries) × 2 onglets → 127 Ko de
+ * RSC inline. Désormais UNE liste par onglet + les follows en liste d'ids ;
+ * « Following » et « In the spotlight » sont DÉRIVÉS ici.
  */
 export function GroupsTabs({
   initialTab,
   sort,
   timeZone,
   isAuthed,
+  followedIds,
   tabs,
 }: {
   initialTab: TabKey
   sort: string
   timeZone: string
   isAuthed: boolean
+  followedIds: string[]
   tabs: Record<TabKey, GroupsTabData>
 }) {
   const [tab, setTab] = useState<TabKey>(initialTab)
   const data = tabs[tab]
+
+  const followedSet = useMemo(() => new Set(followedIds), [followedIds])
+  const followedItems = useMemo(
+    () => data.items.filter((it) => followedSet.has(it.group.id)),
+    [data.items, followedSet],
+  )
+  const trendingEntries = useMemo(
+    () =>
+      data.trending.flatMap((t): TrendingEntry[] => {
+        const it = data.items.find((i) => i.group.id === t.groupId)
+        return it
+          ? [
+              {
+                group: it.group,
+                follows: t.follows,
+                isFollowing: followedSet.has(t.groupId),
+                reason: t.reason,
+              },
+            ]
+          : []
+      }),
+    [data.items, data.trending, followedSet],
+  )
 
   const select = (next: TabKey) => {
     setTab(next)
@@ -70,24 +100,39 @@ export function GroupsTabs({
         </div>
       </div>
 
-      {data.followedItems.length > 0 && (
+      {followedItems.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Following — {data.followedItems.length}</span>
+          <span className="label-data">Following — {followedItems.length}</span>
           <div className="grid grid-cols-2 gap-[9px] md:grid-cols-3">
-            {data.followedItems.map((item) => (
-              <GroupCard key={item.group.slug} {...item} timeZone={timeZone} />
+            {followedItems.map((item, i) => (
+              <GroupCard
+                key={item.group.slug}
+                {...item}
+                isFollowing
+                isAuthed={isAuthed}
+                timeZone={timeZone}
+                priority={i < 8}
+              />
             ))}
           </div>
         </section>
       )}
 
-      <TrendingList entries={data.trendingEntries} isAuthed={isAuthed} />
+      <TrendingList entries={trendingEntries} isAuthed={isAuthed} />
 
       <section className="space-y-2">
         <span className="label-data">
           All {data.countNoun} — {data.items.length}
         </span>
-        <GroupsGrid items={data.items} timeZone={timeZone} />
+        {/* Sans section « Following » au-dessus, les 1res tuiles de la grille
+            sont la LCP → priority sur les 8 premières. */}
+        <GroupsGrid
+          items={data.items}
+          timeZone={timeZone}
+          followedIds={followedSet}
+          isAuthed={isAuthed}
+          priorityCount={followedItems.length === 0 ? 8 : 0}
+        />
       </section>
     </div>
   )

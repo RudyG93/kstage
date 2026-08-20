@@ -1,3 +1,5 @@
+import { unstable_cache } from 'next/cache'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getKstMonthRange } from './date'
 import type { Database } from '@/types/database'
@@ -232,6 +234,46 @@ export async function getNextEventForGroups(
 }
 
 /**
+ * Variante `unstable_cache` de getNextEventForGroups pour TOUS les groupes
+ * (audit perf 2026-08-20 : /groups la recalcule à chaque vue alors que le
+ * résultat est identique pour tous les viewers). Client anon (unstable_cache
+ * interdit cookies) ; retour en paires (une Map ne survit pas à la
+ * sérialisation JSON du cache), reconstruite au retour. Tag `events` revalidé
+ * en fin de cron scraping (logScrapeRun) ; le `now` figé entre deux
+ * régénérations (≤ 15 min) ne décale que la ligne statut des tuiles.
+ */
+const getNextEventPairsCached = unstable_cache(
+  async (): Promise<[string, { type: EventType; start_at: string; title: string }][]> => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const { data, error } = await supabase
+      .from('events')
+      .select('group_id, type, start_at, title')
+      .eq('hidden', false)
+      .gte('start_at', new Date().toISOString())
+      .or(isMainOrNonMv)
+      .order('start_at', { ascending: true })
+    if (error) throw error
+    const out = new Map<string, { type: EventType; start_at: string; title: string }>()
+    for (const e of data ?? []) {
+      if (!e.group_id || out.has(e.group_id)) continue
+      out.set(e.group_id, { type: e.type, start_at: e.start_at, title: e.title })
+    }
+    return [...out]
+  },
+  ['next-event-all-groups'],
+  { revalidate: 900, tags: ['events'] },
+)
+
+export async function getNextEventForAllGroupsCached(): Promise<
+  Map<string, { type: EventType; start_at: string; title: string }>
+> {
+  return new Map(await getNextEventPairsCached())
+}
+
+/**
  * Dernière sortie RÉCENTE (mv main ou release ≤ `days` jours) par groupe —
  * signal « recency » du panneau Trending (2026-07-11). Un fetch, réduction TS.
  */
@@ -259,6 +301,42 @@ export async function getRecentReleasesForGroups(
     out.set(e.group_id, { type: e.type, start_at: e.start_at, title: e.title })
   }
   return out
+}
+
+/** Variante cached « tous groupes » de getRecentReleasesForGroups — mêmes
+    raisons/mécanique que getNextEventForAllGroupsCached (fenêtre 30 j). */
+const getRecentReleasePairsCached = unstable_cache(
+  async (): Promise<[string, { type: EventType; start_at: string; title: string }][]> => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
+    const { data, error } = await supabase
+      .from('events')
+      .select('group_id, type, start_at, title')
+      .in('type', ['mv', 'release'])
+      .eq('hidden', false)
+      .or(isMainOrNonMv)
+      .gte('start_at', since)
+      .lte('start_at', new Date().toISOString())
+      .order('start_at', { ascending: false })
+    if (error) throw error
+    const out = new Map<string, { type: EventType; start_at: string; title: string }>()
+    for (const e of data ?? []) {
+      if (!e.group_id || out.has(e.group_id)) continue
+      out.set(e.group_id, { type: e.type, start_at: e.start_at, title: e.title })
+    }
+    return [...out]
+  },
+  ['recent-releases-all-groups'],
+  { revalidate: 900, tags: ['events'] },
+)
+
+export async function getRecentReleasesForAllGroupsCached(): Promise<
+  Map<string, { type: EventType; start_at: string; title: string }>
+> {
+  return new Map(await getRecentReleasePairsCached())
 }
 
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
