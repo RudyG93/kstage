@@ -60,3 +60,32 @@ describe('resolveGroupTokens (« Music Bank aespa », retour Rudy 2026-07-03)', 
     expect(titleTokens).toEqual(['music', 'bank'])
   })
 })
+
+describe('resolveGroupTokens — tolérance aux fautes (retour Rudy 2026-08-21)', () => {
+  const groups = [
+    { id: 'bm', name: 'BABYMONSTER' },
+    { id: 'ae', name: 'aespa' },
+    { id: 'sk', name: 'Stray Kids' },
+  ]
+
+  it('rattrape une lettre écorchée ou inversée sur le nom du groupe', () => {
+    expect(resolveGroupTokens(['babymonstre'], groups).groupIds).toEqual(['bm'])
+    expect(resolveGroupTokens(['aepsa'], groups).groupIds).toEqual(['ae'])
+  })
+
+  it('laisse la correspondance FRANCHE primer sur l’approximative', () => {
+    // « aespa » est exact : il ne doit pas ramener aussi un voisin.
+    expect(resolveGroupTokens(['aespa'], groups).groupIds).toEqual(['ae'])
+  })
+
+  it('sépare le token membre du token groupe (« asa babymonster »)', () => {
+    const { groupIds, titleTokens } = resolveGroupTokens(['asa', 'babymonster'], groups)
+    expect(groupIds).toEqual(['bm'])
+    expect(titleTokens).toEqual(['asa'])
+  })
+
+  it('ne transforme pas un mot quelconque en groupe', () => {
+    expect(resolveGroupTokens(['comeback'], groups).groupIds).toEqual([])
+    expect(resolveGroupTokens(['comeback'], groups).titleTokens).toEqual(['comeback'])
+  })
+})
