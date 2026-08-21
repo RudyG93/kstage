@@ -4,6 +4,44 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-22 — Filtre MV, recherche tolérante aux fautes, contenu des pages
+
+**Commits** : `ad19724` (filtre MV), `30b83ca` (recherche), `62b900c` (pages) → `main`.
+
+### 1. Des dérivés publiés comme des clips
+
+Rudy signale un « MV » Hi-Fi Un!corn qui est un épisode de coulisses : « [Beh!nd Un!corn] … #14 FANTASIA photo shooting & PHANTOM PAIN MV shooting ». **Deux failles indépendantes** :
+
+- **La stylisation.** La blacklist raisonne en mots, et le « i » de Behind est un « ! ». La règle ne voyait rien. Les titres sont désormais re-testés sur une variante **dé-stylisée** (`! 1 0 3 4 $ @` → `i i o e a s a`), qui ne sert QU'à re-tester la blacklist : au pire on rejette un peu plus, on ne peut pas accepter un dérivé de plus.
+- **« MV Shooting » vs « MV Shoot ».** Le suffixe `-ing` cassait la frontière de mot. La règle est **ancrée à M/V**, donc « Kep1er 'Shooting Star' M/V » et « DAY6 "Shoot Me" M/V » restent des clips.
+
+**Audit complet** (« check si ce n'est pas arrivé ailleurs ») : les 3 047 MV visibles repassés au filtre. Familles trouvées, toutes relues avant écriture — M/V Monitoring Clip (TWICE, 9), MV Review (NewJeans, 6), MV EVENT/QUIZ (EXO, ASTRO, 4), projections 시사/상영회 (4), EXTRA & BONUS CUT (3), MV Demo, MV Interview, Synopsis, MV Set, MAKINGFILM, release Countdown, M/V COPY, MV Theory, documentaire ILLIT, concours aespa. **58 events masqués** (`hidden`, réversible).
+
+**Une règle écartée** : « DIY M/V ». Les 6 « VERIVERY - 'X' DIY M/V (Produced by VERIVERY) » sont de vrais clips auto-produits — écarter un clip réel coûte plus cher que garder un bonus. **Une règle structurelle mesurée puis rejetée** (« le marqueur MV est suivi d'un mot », 80 lignes sur 3 047) : elle jetait les « Apink … Music Video Official », les versions Drama/Selfie et « BTS 'Life Goes On' Official MV : like an arrow ».
+
+Le gate ne s'appliquant qu'à l'ingestion, tout durcissement futur laisserait un résidu invisible : nouveau check `mv_title_rejected` + `scripts/audit-mv-titles.ts --hide`.
+
+### 2. Recherche : fautes de frappe et requêtes à deux mots
+
+- « **babymonster** » ne proposait **aucun membre** : `searchMembers` ne filtrait que `stage_name` et `real_name`. Le `groups!inner(…)` de `MEMBER_SELECT` est une projection d'affichage, jamais un prédicat — le nom du groupe était structurellement hors de portée. La brique de résolution existait pourtant (`resolveGroupTokens`, utilisée par les MV et les events) ; elle n'était pas câblée sur les membres.
+- « **asa babymonster** » ne renvoyait **rien** : la phrase entière partait dans un seul `ilike`. Chaque token est maintenant résolu — le token groupe ouvre le roster, les tokens restants filtrent dedans. **UNION** et non `else`, sinon un nom de membre qui est aussi sous-chaîne d'un nom de groupe perdrait son résultat actuel.
+- **Tolérance aux fautes** (`lib/search/fuzzy.ts`) : distance de **Damerau**-Levenshtein bornée. La transposition compte pour UNE faute — c'est le point, Rudy demande « si ça échange quelques unes » et Levenshtein classique facture « aepsa » 2. Budget selon la longueur (0 sous 4 caractères, 1 jusqu'à 7, 2 au-delà), plus une comparaison sur le **début** de la cible pour la frappe partielle ET fautive. L'approximatif est toujours un repli : `matchRank` garde exact > préfixe > contenu > approximatif.
+
+**Deux pièges rencontrés en route.** `fuzzyMatches` accepte d'abord le containment : l'appeler sans garde de longueur faisait de « asa » un nom de groupe (« hwasa » contient « asa ») et « asa babymonster » renvoyait les 7 membres. Et **PostgREST tronque sans `ORDER BY`** : limiter à 3 côté SQL faisait disparaître la correspondance EXACTE — « asa » rendait Asahi / Masato / Jo et jamais Asa. On rapatrie un vivier avant de classer.
+
+**Vérifié en build prod local** : `asa babymonster` → Asa seule ; `babymonster` → les membres ; `karina aespa` → Karina ; `jimin bts` → Jimin ; `babymonstre`, `aepsa`, `blakpink` → le bon groupe ; `asa` → **Asa** en tête. Limite assumée : « karina blackpink » renvoie vide (ET strict) — c'est correct.
+
+**Piste écartée** : charger toute la table `members` pour scorer côté TS. Elle dépasse le plafond de 1 000 lignes sans `.range()`, ajoute un second cache pleine table, et imposerait une liste unifiée là où `/search` a quatre segments.
+
+### 3. Contenu des pages
+
+- **La fiche d'un membre n'affichait aucune date**, sur une app de calendrier. `getUpcomingEvents` / `getGroupStages` n'étaient appelés que par la branche SOLO (~40 pages sur 1 250). Les deux blocs restants étaient quasi toujours vides : « Solo releases » (17 MV `mv_kind='member'` en tout) et « Career » (18 personnes). Ajout de « **Upcoming — {groupe}** » (rendu seulement s'il y a quelque chose) et « **Recent stages — {groupe}** ». Couverture mesurée : 99 groupes ont des passages contre 29 avec un event futur — c'est le second bloc qui remplit réellement les pages. Les intitulés portent le nom du GROUPE : ce sont ses dates, pas celles de la personne.
+- **Rail gauche mort** : `/groups`, `/mvs` et `/calendar` montaient `SidebarLeft` dans leur propre `<aside>`, hors du gate d'authentification. Vérifié en prod avant correction — un visiteur déconnecté recevait « You don't follow any groups yet · 0 groups · 0 upcoming » sur les trois pages, et l'aside n'étant pas `hidden`, le bloc s'affichait aussi en **mobile**. `LeftRail` est exporté avec un `className` paramétrable ; le comportement des connectés est inchangé.
+
+**Piste écartée** : un bloc de rail « même agence ». Seuls **38 groupes sur 256** ont un labelmate en base — le bloc serait vide sur 85 % des pages, soit exactement le remplissage sans valeur à éviter.
+
+**Vérification** : tsc, 866 tests, eslint, prettier, build prod, contrôles SQL et curl avant/après sur chaque correction.
+
 ## 2026-08-21 (nuit) — refresh-images : sévérité honnête + photos de membre qui désignent la personne
 
 **Branche/commits** : `fix/refresh-images-severity` (`b4e7134`, merge `77c87c8`) → `main`.
