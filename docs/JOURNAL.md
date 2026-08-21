@@ -4,6 +4,38 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-21 (nuit) — refresh-images : sévérité honnête + photos de membre qui désignent la personne
+
+**Branche/commits** : `fix/refresh-images-severity` (`b4e7134`, merge `77c87c8`) → `main`.
+
+**Point de départ** : le job GitHub `monitor` était rouge tous les jours depuis le 16/08. Cause immédiate : un seul désaccord de nom Spotify (`stellive (StelLive) ≠ spotify:스텔라이브`) mettait `refresh-images` en `partial`, donc le monitor en alerte, donc HTTP 500. Le diagnostic (5 axes en parallèle, chaque finding soumis à un réfuteur — 11 confirmés, 4 écartés) a trouvé nettement pire derrière.
+
+**La sévérité était inversée.** Le prédicat `degraded` ne regardait ni les échecs d'appel Spotify ni les pannes de la phase fandom :
+
+- run du **20/08 à 23:08 : 166 appels Spotify sur 167 en échec** (quota) → loggué **`ok`**. Un run avec 166 succès et un nom coréen → loggué `partial` ;
+- `photos.failures` compte par **membre** alors qu'une coupure fandom échoue par **lot de 5** : le seuil `failures > checked / 2` était mathématiquement inatteignable. Et un non-2xx autre que 403 sortait de la boucle **sans rien incrémenter** — les 100 membres du lot ressortaient avec `photo_checked_at` rafraîchi, run `ok`.
+
+Un désaccord de nom est désormais un **ÉTAT** (check `spotify_link_mismatch`), pas une panne de run. Même leçon que le `partial` permanent de `scrape-youtube` : un statut qui crie au loup n'est plus lu.
+
+**Le garde de nom ne pouvait pas fonctionner.** Son `norm()` local faisait `replace(/[^a-z0-9]/g, '')` : `norm('스텔라이브') === ''`, donc **tout artiste au nom purement coréen était structurellement impossible à matcher**. Il utilise maintenant le `normalize` Unicode-aware de `group-match` **et** lit `groups.name_aliases` — la base portait déjà l'alias `스텔라이브`, personne ne le lui demandait. Le `Record` codé en dur (TXT seul) est supprimé, la DB porte aussi cet alias.
+
+Au passage, un test de non-régression a révélé que l'inclusion brute validait « WEi → “Weird Al” Yankovic » (`'wei'` est contenu dans `'weirdalyankovic'`) — **l'exemple même que ce garde est censé arrêter**. Ce qui avait réellement tué cette classe en R4-B, c'était la suppression de la recherche par nom, pas le garde. Désormais : mots entiers, ou inclusion à partir de 4 caractères.
+
+**Quota Spotify.** `spotifyArtistById` renvoyait `null` pour 404, 401, 429 et 5xx confondus. Il renvoie maintenant une raison typée, et un échec **fatal** (429 `QUOTA_EXCEEDED`, 401/403) interrompt la boucle au lieu de brûler 167 appels pour rien. Vérifié en conditions réelles : abandon en **899 ms** avec `retry-after=46549 s`. Noté aussi : `GET /v1/artists?ids=` (batch) renvoie **403** en dev-mode — aucun regroupement possible, l'appel unitaire est le seul chemin.
+
+**Les photos de membres désignaient le groupe.** `pageimage` est l'image PRINCIPALE d'une page fandom : quand la page perso n'a pas de portrait, c'est la photo de **groupe** qui remonte. Constat prod : **210 membres sur 1 248 partageaient 78 images** — les 7 SF9 le même concept photo, les 5 FANTASY BOYS le **logo de leur émission**. Le repli par recherche ne vérifiait que la catégorie (or la page du groupe est catégorisée sous le groupe), et un titre désambiguïsé `X (Groupe)` ne subissait **aucune** garde alors que `finalTitle` suit les redirections. Deux gardes posées :
+
+1. la page retenue doit **désigner la personne** (mots entiers sur le titre : stage name, vrai nom, ou dernier mot — les romanisations divergent) ;
+2. une image **déjà portée par quelqu'un d'autre** est refusée, sauf même personne (`canonical_id`, ou même nom de scène : DK figure dans Seventeen ET dans l'unit DK X Seungkwan).
+
+**Régression corrigée — la mienne, de la veille** (`14f5cd7`) : `mq.is('photo_url', null)` **mutait** le builder PostgREST réutilisé 13 lignes plus bas (`is()` fait un `append` et retourne `this`). `--stale` exécutait donc `photo_source_key IS NULL AND photo_url IS NULL` — intersection vide depuis qu'aucun membre actif n'est sans photo : l'outil de rattrapage des photos d'ère était mort en silence.
+
+**Vérifications en données réelles** (pas seulement des tests verts) : SF9 8/8 photos de groupe refusées ; Seventeen **13/13 portraits conservés** (aucun faux rejet) ; rotation de 60 membres à 28 % de miss, dans la bande habituelle ; abandon Spotify sur 429 mesuré. Un faux rejet résiduel observé (1/60) : Yeseo, présente en double sous « Kang, Ye-seo » — c'est la classe `member_sort_names` déjà suivie, et l'effet se limite à « photo inchangée ».
+
+**Ce qui reste à décider** : les 210 membres qui portent déjà une photo de groupe. Le garde empêche d'en créer de nouvelles mais ne nettoie pas l'existant, et l'expérience menée sur Jaeyoon (SF9) montre que vider `photo_source_key` ne fait que résoudre vers **une autre** photo de groupe : ces membres n'ont pas de portrait sur fandom. Les débrancher les ferait retomber sur l'initiale colorée. Arbitrage produit — remonté par le check `members_sharing_photo`.
+
+**Transparence** : c'est mon audit des 167 liens qui a épuisé le quota Spotify du jour (reset ~2026-08-22 04:14 UTC). Le cron tourne à 04:00 UTC : le run de demain matin peut encore être 429 — il abandonnera proprement en une requête au lieu d'en brûler 167, et le suivant repartira normalement.
+
 ## 2026-08-21 (soir) — Music shows : reconstruire les épisodes depuis les chaînes des diffuseurs
 
 **Branche/commits** : `feat/aired-shows-reconciliation` (`d062064`, merge `876123e`) → `main`.
