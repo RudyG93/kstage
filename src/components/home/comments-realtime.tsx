@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/browser'
 
 /**
  * Abonnement Supabase Realtime sur les INSERT de `comments` (§7.2). À chaque
@@ -19,9 +18,11 @@ import { createClient } from '@/lib/supabase/browser'
 export function CommentsRealtime() {
   const router = useRouter()
   useEffect(() => {
-    const supabase = createClient()
     let timer: ReturnType<typeof setTimeout> | null = null
     let pendingWhileHidden = false
+    let dispose: (() => void) | null = null
+    let cancelled = false
+
     const refresh = () => {
       if (document.visibilityState !== 'visible') {
         pendingWhileHidden = true
@@ -36,17 +37,32 @@ export function CommentsRealtime() {
       }
     }
     document.addEventListener('visibilitychange', onVisible)
-    const channel = supabase
-      .channel('recent-comments')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, () => {
-        if (timer) clearTimeout(timer)
-        timer = setTimeout(refresh, 1500)
-      })
-      .subscribe()
+
+    // Import DYNAMIQUE du client Supabase (perf 2026-08-22). En import statique,
+    // ce fichier — seul consommateur client de `@/lib/supabase/browser` —
+    // faisait entrer supabase-js AVEC Realtime, Phoenix et GoTrue dans le
+    // bundle de CHAQUE route : 252 Ko bruts, le plus gros chunk du build,
+    // téléchargés même sur les pages où le bloc discussions ne s'affiche pas.
+    // Le rendre conditionnel ne suffisait pas : c'est l'import qui compte,
+    // pas le rendu. Ici le chunk n'est demandé qu'à l'exécution de l'effet.
+    void import('@/lib/supabase/browser').then(({ createClient }) => {
+      if (cancelled) return
+      const supabase = createClient()
+      const channel = supabase
+        .channel('recent-comments')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, () => {
+          if (timer) clearTimeout(timer)
+          timer = setTimeout(refresh, 1500)
+        })
+        .subscribe()
+      dispose = () => supabase.removeChannel(channel)
+    })
+
     return () => {
+      cancelled = true
       if (timer) clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisible)
-      supabase.removeChannel(channel)
+      dispose?.()
     }
   }, [router])
   return null

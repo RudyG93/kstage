@@ -57,13 +57,26 @@ function DiscussionLine({ row }: { row: CommentedEvent }) {
   )
 }
 
-/** Fils de commentaires récents — refresh live via CommentsRealtime, monté
-    MÊME sous le seuil (sinon le bloc ne peut jamais apparaître en live). */
+/**
+ * Fils de commentaires récents.
+ *
+ * `CommentsRealtime` était monté INCONDITIONNELLEMENT, y compris sous le seuil,
+ * « sinon le bloc ne peut jamais apparaître en live ». Le prix mesuré le
+ * 2026-08-22 : il est le seul import client de `@/lib/supabase/browser`, donc
+ * il tirait **tout le client Supabase — Realtime, Phoenix, GoTrue — dans le
+ * bundle de CHAQUE page** (252 Ko bruts, le plus gros chunk du build) et
+ * ouvrait un websocket au chargement. Pour un bloc qui, avec 6 commentaires
+ * sur 2 entités en base, ne s'affiche sur AUCUNE surface.
+ *
+ * Il ne s'arme donc plus qu'à partir d'une activité réelle : dès qu'une entité
+ * est commentée, le live redevient utile et l'intention d'origine est
+ * préservée — le bloc peut apparaître sans rechargement quand le 3ᵉ arrive.
+ */
 export async function DiscussionsBlock() {
   const discussions = await getRecentlyCommentedEvents(12)
   return (
     <>
-      <CommentsRealtime />
+      {discussions.length > 0 && <CommentsRealtime />}
       {discussions.length >= DISCUSSIONS_MIN && (
         <section className="bg-card rounded-lg border p-4">
           <div className="mb-3">
