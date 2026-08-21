@@ -15,12 +15,33 @@ import { getViewer } from '@/lib/supabase/viewer'
  * (connecté seulement) : `getViewer()` est mémoïsé par requête, donc déjà
  * résolu quand la page a rendu son contenu — pas de flash de layout.
  */
-async function LeftRail() {
+/**
+ * Colonne « My groups », qui décide elle-même de son rendu.
+ *
+ * Exportée depuis le 2026-08-21 : /groups, /mvs et /calendar montaient
+ * `SidebarLeft` dans leur PROPRE `<aside>`, hors de ce gate. Un visiteur
+ * déconnecté recevait donc un panneau mort — « You don't follow any groups
+ * yet. · 0 groups · 0 upcoming » — vérifié en prod sur les trois pages, et
+ * visible aussi en mobile puisque leur aside n'est pas `hidden`. Le gate doit
+ * POSSÉDER l'aside, sinon la colonne réserve sa largeur pour du vide.
+ *
+ * `className` reste paramétrable : les pages hub gardent leur ordre mobile
+ * (`order-2 lg:order-1`), les pages détail leur variante desktop-only.
+ */
+export async function LeftRail({
+  className = 'hidden shrink-0 lg:block lg:w-60',
+  groupFilter,
+  showFilters = false,
+}: {
+  className?: string
+  groupFilter?: ReactNode
+  showFilters?: boolean
+}) {
   const { user } = await getViewer()
   if (!user) return null
   return (
-    <aside className="hidden shrink-0 lg:block lg:w-60">
-      <SidebarLeft showFilters={false} />
+    <aside className={className}>
+      <SidebarLeft groupFilter={groupFilter} showFilters={showFilters} />
     </aside>
   )
 }

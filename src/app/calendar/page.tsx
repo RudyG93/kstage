@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { SidebarLeft } from '@/components/home/sidebar-left'
+import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { JustAnnouncedBlock } from '@/components/rails/event-blocks'
 import { DiscussionsBlock } from '@/components/rails/community-blocks'
@@ -78,11 +78,15 @@ export default async function CalendarPage({
       )}
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
         <div className="flex flex-col gap-6 lg:flex-row">
-          <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-            <Suspense fallback={<RailSkeleton />}>
-              <SidebarLeft groupFilter={<GroupFilter />} />
-            </Suspense>
-          </aside>
+          <Suspense fallback={null}>
+            {/* Le filtre Group reste accessible aux deconnectes : MobileGroupFilter
+                le rend juste en dessous, sur toutes les tailles d'ecran. */}
+            <LeftRail
+              className="order-2 shrink-0 lg:order-1 lg:w-60"
+              groupFilter={<GroupFilter />}
+              showFilters
+            />
+          </Suspense>
           <div className="order-1 min-w-0 flex-1 space-y-3 lg:order-2">
             <MobileGroupFilter>
               <GroupFilter />
