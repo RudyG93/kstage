@@ -4,6 +4,22 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-21 — Statut d'activité des artistes + retours Dayoung / photos / Performance Video
+
+**Commits** : `1d4ab39` (faux membres MB, Performance/Special Video), `14f5cd7` (priorité photos), `106968a` (statut d'activité) → `main`.
+
+**Les deux pages Dayoung** (`/artists/dayoung` et `/artists/dayoung-wjsn-chocome`) : la seconde n'était pas une personne mais **WJSN Chocome**, le sous-groupe, importé comme membre avec la date de FORMATION du groupe en guise d'anniversaire. Cause : la relation MusicBrainz « member of band » existe **dans les deux sens** — sur la page d'un groupe elle liste ses membres (`backward`/`Person`), sur celle d'une personne elle liste **ses groupes** (`forward`/`Group`). Ni le sens ni le type d'entité n'étaient filtrés. Corrigé aux deux niveaux + un solo ne reçoit jamais de roster MB. Classe purgée : `dayoung-wjsn-chocome`, `tzuyu-twice` (anniversaire = debut de TWICE), `yuta-nct`. Check `solo_extra_members`.
+
+**« Performance Video » / « Special Video » sont des clips** (retour Rudy) : une partie des sorties k-pop n'a pas de MV — leur seul visuel officiel est un Performance/Special Video (OURBIRTHDAY « HUNGRY », KISS OF LIFE « Painting », « Don't mind me »). Les blacklister les faisait disparaître. Règle implémentée : un format secondaire est `main` si sa **chanson** n'a aucun clip principal connu, `performance` sinon — via une clé de chanson extraite des guillemets du titre, suffixes de déclinaison (Side A/B, Korean ver.) retirés. Leurs dérivés (« … Video Behind/Teaser », « Shoot Sketch ») restent rejetés. Mesure : OURBIRTHDAY +2, KISS OF LIFE +9, classification relue ligne à ligne.
+
+**Photos « 0 résolues »** : le bouton ne mentait pas sur le run, il lançait une rotation qui ne contenait pas ces membres — la sélection triait par ancienneté de vérification, donc les sans-photo (venant d'échouer) restaient au fond d'une file de 100. Leurs pages fandom existaient pourtant. **Les membres sans photo passent désormais en premier** : 12 → **0** (BADVILLAIN 5/5, NOWZ 3/3, MAVE: 4/4, Dayoung 1/1 via un repli de parent).
+
+**Statut d'activité** (question « trop de groupes ? ») : les chiffres nuancent — 200 des 256 groupes ont sorti quelque chose en 12 mois, et les « inactifs » incluent NewJeans, iKON, FTISLAND, PENTAGON. Le défaut n'était pas le nombre mais l'absence de hiérarchie. `activityStatus()` (actif < 12 mois · en pause 12-24 · inactif > 24) pilote un tri **« Activity » par défaut** sur /groups, un badge discret sur la tuile, et l'exclusion des dormants du check « catalogue maigre ». **Rien n'est supprimé ni masqué** : les tris explicites restent purs, la recherche et les pages sont intactes.
+
+**Piège traversé** : mes propres scripts de patch Python écrivaient un caractère **backspace (0x08)** à la place de `` dans deux expressions régulières — elles ne matchaient plus rien, ce qui faisait échouer un test « sans raison ». Leçon : quand un code manifestement correct échoue, inspecter les OCTETS du fichier tôt. Le dépôt a été scanné, il n'en reste aucun.
+
+**Vérification** : tsc, 787 tests (mode CI), build prod, rendu vérifié sur `next start`, contrôles SQL après coup (0 membre actif sans photo, 0 parasite solo, 0 sans slug).
+
 ## 2026-08-21 (nuit) — Les remèdes de /admin/health deviennent opérants + audit complet
 
 **Branche/commits** : `fix/mv-recovery-fandom` (merge `a48c373`), `639b295` → `main`. Rapport détaillé : `docs/AUDIT_NUIT_2026-08-21.md`.
