@@ -4,6 +4,26 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-21 (nuit) — Les remèdes de /admin/health deviennent opérants + audit complet
+
+**Branche/commits** : `fix/mv-recovery-fandom` (merge `a48c373`), `639b295` → `main`. Rapport détaillé : `docs/AUDIT_NUIT_2026-08-21.md`.
+
+**Point de départ (retour Rudy)** : « quoi que je fasse, ça change rien » — photos membres, catalogues MV, tout reste en l'état après un clic. Diagnostic en données réelles : le reproche était fondé, avec **trois causes distinctes** dont aucune ne se règle en relançant un cron. ① Les MV vivent souvent sur la chaîne du LABEL, jamais scrapée (OURBIRTHDAY : 84 Shorts sur sa chaîne, son « SQUEEZY » est sur celle de JYP). ② La découverte passe par `search.list` à 100 units ; `discover-channels` a brûlé **3 884 units et fini en 429** le 20/08 — quota mort, bouton affichant quand même « Lancé ✓ ». ③ Les « membres sans photo » sont des **données pourries** (`the-wind` = 5 musiciens d'un groupe indie américain, 19 noms au format « Kim, Yeon-hee ») : aucune photo ne peut exister pour eux.
+
+**Solution — pipeline `recover-mvs`** : les pages fandom de sorties citent le lien YouTube du MV quelle que soit la chaîne hébergeuse. ~2 units/groupe au lieu de ~205, branché sur le pipeline existant via les `uploads` injectés (tous les gates conservés). **Mesure : 123 MV récupérés sur 25 groupes pour 205 units** (WayV 0→20, chungha 5→20, ZICO 4→17, colde 4→16 — chungha et ZICO étaient les « restes coriaces » du 20/08). Cron quotidien + remède 1-clic ; `discover-channels` ramené 20→3.
+
+**Title-match** : `normalize` en NFKD **avant** `toLowerCase` (les capitales mathématiques n'ont pas de minuscule) — « 𝗩𝟴 » et « ＡＥＳＰＡ » ne matchaient pas. Alias hangul/hanja/roman alimentés depuis l'infobox (MiiWAN : 0 MV malgré 33 vidéos, titrées 미완소년).
+
+**Garde anti-homonyme** : 3 groupes affichaient le catalogue d'un artiste ÉTRANGER (GENUS ← death metal italien, Puzzle ← Shota Shimizu, TOZ ← groupe turc). Une chaîne n'est seedée que sur signal k-pop (hangul, ou chaîne = groupe/agence). 6 events + 3 sources purgés — **la source légitime de TOZ préservée** (l'audit proposait une purge globale destructrice).
+
+**Données** : 40 idols sans slug (rosters entiers NCT 127/DREAM, Hearts2Hearts, izna, QWER, G-Dragon) → invisibles partout, backfillés ; doublons MusicBrainz fusionnés (EVNNE avait 9 rows pour 5 membres) ; « Yu »/« U » d'OURBIRTHDAY réglé ; `debut_date` corrigé (22/07 = pre-debut, vrai debut 19/08). Racine corrigée à l'ingestion (`samePersonName`, jamais de virgule dans un nom affiché).
+
+**Plateforme** : sitemap dépaginé (**1 929 MV sur 2 929 étaient absents** — `.range(0,4999)` ne contourne pas le plafond serveur) ; **429** reconnu comme quota ; statut de run crédible (1 source cassée sur 326 mettait tout en `partial` en permanence → plus personne ne lisait le statut) ; check `debuted_without_mv` en warn (le « normal, en construction » était faux).
+
+**Audit complet** (6 dimensions, agents parallèles + vérification adversariale) : 59 findings importants et 52 idées, priorisés dans `docs/AUDIT_NUIT_2026-08-21.md`. Deux corrections d'analyse notables : le TTFB n'est pas en cause (75-150 ms à chaud, les pics étaient des cold starts) et le finding « h1 dans un div hidden » est un faux positif (streaming Suspense normal).
+
+**Vérification** : tsc, 768 tests (mode CI), build prod, passe de masse mesurée, relecture des 123 MV insérés (aucun faux positif), contrôles SQL (0 membre sans slug, 0 solo cassé, 0 alias parasite).
+
 ## 2026-08-21 — Admin debuts : solistes complets, agences propres, bulk create, MVs immédiats
 
 **Branche/commit** : `fix/admin-debuts-solistes` (merge `2b67cc7`) → `main`. Retours Rudy (Yuqi/Yves), traités en classes.
