@@ -5,6 +5,7 @@ import { matchesGroup } from './group-match'
 import { decodeHtmlEntities } from './html-entities'
 import { isOfficialMvTitle } from './is-official-mv'
 import { detectMvVersion, type MemberRef } from './mv-version'
+import { mvKindForSecondary, songTitleKey } from './song-key'
 
 type EventType = Database['public']['Enums']['event_type']
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -98,6 +99,9 @@ export function normalizeMvTitle(title: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, '')
 }
 
+/** Formats de clip officiels mais secondaires — cf. is-official-mv.ts. */
+const SECONDARY_VISUAL_RE = /\b(performance|special)\s+(video|clip)\b/i
+
 export function detectEventType(title: string, description: string): EventType {
   // Early-reject derivatives sur le TITRE SEUL (fix 2026-07-11) : la
   // convention k-pop met la nature du contenu dans le titre (« …MV Teaser »,
@@ -106,6 +110,15 @@ export function detectEventType(title: string, description: string): EventType {
   // 'Lemon Tang' MV » (SMTOWN, 2026-06-22) était rejeté 'other' parce que la
   // piste 05 de l'album s'appelle « Secret Recipe » (\brecipe\b, ajouté contre
   // les vidéos de cuisine). Même principe que l'attribution §3.10 (titre seul).
+  // Formats secondaires OFFICIELS (« Performance Video », « Special Video ») :
+  // ce sont des clips, ils doivent atteindre le gate MV qui décidera s'ils
+  // sont le clip principal de la chanson. Leurs dérivés (« … Video Behind »,
+  // « … Video Teaser », « … Shoot Sketch ») retombent dans DERIVATIVE_RE.
+  if (
+    SECONDARY_VISUAL_RE.test(title) &&
+    !/behind|teaser|sketch|making|practice|reaction|비하인드|메이킹|티저/i.test(title)
+  )
+    return 'mv'
   if (DERIVATIVE_RE.test(title)) return 'other'
 
   const text = `${title} ${description}`
@@ -378,13 +391,20 @@ export async function scrapeGroup(
   // chaîne précédente du même groupe sont visibles pour la suivante.
   const { data: existingMvs } = await supabase
     .from('events')
-    .select('title, start_at')
+    .select('title, start_at, mv_kind')
     .eq('group_id', source.group_id)
     .eq('type', 'mv')
   const knownMvs = (existingMvs ?? []).map((e) => ({
     norm: normalizeMvTitle(e.title),
     startAt: new Date(e.start_at).getTime(),
   }))
+  // Chansons du groupe qui ont DÉJÀ un clip principal : décide si un
+  // « Performance Video » / « Special Video » est le clip de référence de sa
+  // chanson (OURBIRTHDAY « HUNGRY », qui n'a pas de MV) ou une déclinaison
+  // (KISS OF LIFE « Bad News », qui en a un).
+  const mainSongKeys = new Set(
+    (existingMvs ?? []).filter((e) => e.mv_kind === 'main').map((e) => songTitleKey(e.title)),
+  )
 
   // Uploads paginés (récents → anciens), borné par maxPages. Le pageCache
   // (backfill multi-sources) évite de re-paginer une playlist partagée par
@@ -421,6 +441,9 @@ export async function scrapeGroup(
   // Gates titre (gratuits) AVANT le videos.list payant : on ne paie le détail
   // premiere que pour les vrais candidats MV (typiquement 0-5 par run).
   const candidates: UploadItem[] = []
+  // videoIds des clips « Performance Video » / « Special Video » : officiels
+  // mais dont le rang (main vs performance) dépend de la chanson.
+  const secondaryIds = new Set<string>()
   for (const item of items) {
     // P0.1 (audit 2026-06-12) : YouTube n'ingère QUE les MV officiels. Un upload
     // ne porte que sa date de publication — jamais la date d'un event réel
@@ -443,6 +466,8 @@ export async function scrapeGroup(
       skipped++
       continue
     }
+    // Clip officiel de format secondaire : retenu ici, classé à l'insertion.
+    if (check.secondary) secondaryIds.add(item.videoId)
 
     // Filtre nom de groupe : sur une chaîne d'agence (SMTOWN, YG, HYBE…),
     // évite d'ingérer les MVs des autres groupes signés à la même agence.
@@ -553,6 +578,14 @@ export async function scrapeGroup(
     // mv_kind + member_id : classification de version (main / performance /
     // member / other_version) — tout ce qui passe le gate est un MV.
     const version = detectMvVersion(item.title, members, groupName ?? undefined)
+    // Format secondaire (Performance/Special Video) : `main` seulement si sa
+    // chanson n'a aucun clip principal connu. `detectMvVersion` prime quand il
+    // a identifié une version de membre ou une autre déclinaison.
+    const songKey = songTitleKey(item.title)
+    const mvKind =
+      secondaryIds.has(item.videoId) && version.kind === 'main'
+        ? mvKindForSecondary(songKey, mainSongKeys)
+        : version.kind
 
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
@@ -565,7 +598,7 @@ export async function scrapeGroup(
       status: 'confirmed',
       image_url: item.thumbnailUrl,
       slug,
-      mv_kind: version.kind,
+      mv_kind: mvKind,
       member_id: version.memberId,
     })
 
@@ -578,6 +611,7 @@ export async function scrapeGroup(
       // Visible pour les items suivants du même run (ex. la même vidéo postée
       // deux fois par la chaîne sous des videoId distincts).
       knownMvs.push({ norm, startAt: startAtMs })
+      if (mvKind === 'main' && songKey) mainSongKeys.add(songKey)
     }
   }
 

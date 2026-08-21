@@ -162,6 +162,10 @@ export const REMEDIES: Record<string, Remedy> = {
     kind: 'review',
     note: 'Champ agency fandom mal parsé : re-fetch l’infobox avec parseAgency (segments « present » seulement).',
   },
+  solo_extra_members: {
+    kind: 'review',
+    note: 'Un artiste solo n’a QUE son membre Soloist. Une autre row est presque toujours le GROUPE dont il fait partie, importé à l’envers depuis MusicBrainz — à supprimer. La racine est corrigée depuis le 21/08 (direction de la relation).',
+  },
   members_without_slug: {
     kind: 'review',
     note: 'Backfill : slug = {slug du groupe}-{stage name slugifié} (le membre Soloist d’un solo porte le slug du solo). Sans slug, la personne n’existe sur aucune surface.',

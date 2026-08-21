@@ -98,13 +98,48 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['view milestone', /돌파|달성|공약/],
 ].map(([term, re]) => ({ term: term as string, re: re as RegExp }))
 
+/**
+ * Formats de clip OFFICIELS mais secondaires (retour Rudy 2026-08-21).
+ *
+ * Une part des sorties k-pop n'a PAS de « MV » : leur seul visuel officiel est
+ * un « Performance Video » ou un « Special Video » — KISS OF LIFE « Painting »
+ * et « Don't mind me », OURBIRTHDAY « HUNGRY (Side A/B) ». Les blacklister
+ * faisait disparaître ces chansons de l'app. À l'inverse, quand un vrai MV
+ * existe (« Bad News », « Get Loud »), le Performance Video n'est qu'une
+ * déclinaison.
+ *
+ * Ils passent donc le gate, marqués `secondary` : l'appelant les classe
+ * `mv_kind='performance'` s'il connaît déjà un MV principal pour la chanson,
+ * sinon `main` (c'est le clip de référence). Cf. `mvKindForSecondary`.
+ */
+const SECONDARY_VISUAL = /\b(performance|special)\s+(video|clip)\b/i
+
 export interface OfficialMvCheck {
   official: boolean
   reason: string // pourquoi rejeté/accepté (pour scrape_log)
+  /** Clip officiel d'un format secondaire (Performance/Special Video) : à
+      classer `main` seulement si la chanson n'a pas de vrai MV. */
+  secondary?: boolean
 }
 
-/** Le titre désigne-t-il un MV officiel ? (whitelist + blacklist). */
+/**
+ * Termes qui disqualifient MEME un format secondaire (« Performance Video
+ * Behind », « Special Video Teaser », « … Shoot Sketch »). C'est la blacklist
+ * privee des motifs qui DEFINISSENT ces formats.
+ */
+const SECONDARY_EXEMPT = new Set(['performance', 'special video', 'special clip'])
+const DERIVATIVE_BLOCKERS = BLACKLIST.filter((b) => !SECONDARY_EXEMPT.has(b.term))
+
+/** Le titre designe-t-il un MV officiel ? (whitelist + blacklist). */
 export function isOfficialMvTitle(title: string): OfficialMvCheck {
+  // 1. Derives : ils invalident tout, y compris un format secondaire.
+  const derivative = DERIVATIVE_BLOCKERS.find((b) => b.re.test(title))
+  if (derivative) return { official: false, reason: `blacklist:${derivative.term}` }
+  // 2. Format secondaire officiel (Performance/Special Video) : accepte, mais
+  //    marque — son rang depend de l'existence d'un vrai MV pour la chanson.
+  if (SECONDARY_VISUAL.test(title))
+    return { official: true, reason: 'secondary-visual', secondary: true }
+  // 3. Blacklist complete puis whitelist, comme avant.
   const hit = BLACKLIST.find((b) => b.re.test(title))
   if (hit) return { official: false, reason: `blacklist:${hit.term}` }
   if (!WHITELIST_WORD.test(title) && !WHITELIST_PHRASE.test(title)) {

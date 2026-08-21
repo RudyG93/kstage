@@ -72,9 +72,14 @@ describe('detectEventType', () => {
       )
     })
 
-    it("performance video n'est pas un MV", () => {
+    it('performance video EST un clip (rang decide a l ingestion)', () => {
+      // Change le 2026-08-21 : une partie des sorties k-pop n a pour seul
+      // visuel officiel qu un Performance/Special Video (OURBIRTHDAY
+      // « HUNGRY », KISS OF LIFE « Painting »). On les classe donc en 'mv' ;
+      // c est `mvKindForSecondary` qui decide ensuite main vs performance
+      // selon l existence d un vrai MV pour la chanson.
       expect(detectEventType("aespa 'WDA (Whole Different Animal)' Performance Video", '')).toBe(
-        'other',
+        'mv',
       )
     })
 

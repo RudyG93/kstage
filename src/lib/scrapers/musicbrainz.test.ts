@@ -189,3 +189,70 @@ describe('pickArtistMatch — garde pays (round 2026-07-18)', () => {
     expect(pickArtistMatch(noCountry, 'ANTARES')?.id).toBe('x-1')
   })
 })
+
+// Direction des relations « member of band » — payloads RÉELS de l'API
+// (vérifiés le 2026-08-21). Sans ce filtre, la soliste Dayoung recevait
+// « WJSN CHOCOME » comme membre, daté de la formation du sous-groupe.
+describe('extractCurrentMembers — direction et type d’entité', () => {
+  it('page d’un GROUPE : garde les membres (backward / Person)', () => {
+    const groupJson = {
+      name: 'WJSN : THE BLACK',
+      type: 'Group',
+      relations: [
+        {
+          'target-type': 'artist',
+          type: 'member of band',
+          direction: 'backward',
+          ended: false,
+          artist: { id: 'p1', name: 'Seola', type: 'Person' },
+        },
+        {
+          'target-type': 'artist',
+          type: 'member of band',
+          direction: 'backward',
+          ended: true,
+          artist: { id: 'p2', name: 'Ancienne', type: 'Person' },
+        },
+      ],
+    }
+    expect(extractCurrentMembers(groupJson).map((m) => m.name)).toEqual(['Seola'])
+  })
+
+  it('page d’une PERSONNE : ne prend PAS ses groupes pour des membres', () => {
+    const personJson = {
+      name: 'DAYOUNG',
+      type: 'Person',
+      relations: [
+        {
+          'target-type': 'artist',
+          type: 'member of band',
+          direction: 'forward',
+          ended: false,
+          artist: { id: 'g1', name: '우주소녀', type: 'Group' },
+        },
+        {
+          'target-type': 'artist',
+          type: 'member of band',
+          direction: 'forward',
+          ended: false,
+          artist: { id: 'g2', name: '우주소녀 쪼꼬미', type: 'Group' },
+        },
+      ],
+    }
+    expect(extractCurrentMembers(personJson)).toEqual([])
+  })
+
+  it('rejette une entité ensemble même sans direction renseignée', () => {
+    const json = {
+      relations: [
+        {
+          'target-type': 'artist',
+          type: 'member of band',
+          ended: false,
+          artist: { id: 'g3', name: 'Un Groupe', type: 'Group' },
+        },
+      ],
+    }
+    expect(extractCurrentMembers(json)).toEqual([])
+  })
+})

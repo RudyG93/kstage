@@ -346,7 +346,11 @@ export async function createFromPayload(
       // romanisé vit dans sort-name) ; membre MB absent du roster → inséré
       // seulement si le sort-name est un romanisé propre (jamais de stage_name
       // hangul deviné).
-      if (mb.members.length > 0) {
+      // Un SOLISTE n'a qu'un membre : lui-même. Même avec le filtre de
+      // direction MusicBrainz, ne jamais peupler le roster d'un solo depuis
+      // les relations d'artiste (garde de ceinture et bretelles — cas Dayoung
+      // qui héritait de « WJSN CHOCOME » comme membre).
+      if (mb.members.length > 0 && !isSolo) {
         const { data: memberRows } = await supabase
           .from('members')
           .select('id, stage_name, birthday')

@@ -104,7 +104,21 @@ export interface MbMemberRef {
   name: string
 }
 
-/** Relations « member of band » ACTUELLES (non terminées) du groupe. */
+/**
+ * Relations « member of band » ACTUELLES (non terminées) du groupe.
+ *
+ * ⚠ La relation existe DANS LES DEUX SENS et MusicBrainz la sert des deux
+ * côtés (vérifié le 2026-08-21) :
+ *   - page d'un GROUPE   → direction `backward`, artist.type `Person` = ses MEMBRES
+ *   - page d'une PERSONNE → direction `forward`, artist.type `Group`  = SES GROUPES
+ * Sans filtre, la soliste Dayoung se voyait attribuer « WJSN CHOCOME » comme
+ * membre — avec la date de FORMATION du sous-groupe (2020-09-23) en guise
+ * d'anniversaire, et une page /artists/dayoung-wjsn-chocome à la clé.
+ *
+ * Double garde : direction backward ET entité qui n'est pas un ensemble.
+ */
+const ENSEMBLE_TYPES = new Set(['Group', 'Orchestra', 'Choir'])
+
 export function extractCurrentMembers(artistJson: unknown): MbMemberRef[] {
   const rels = (obj(artistJson).relations as unknown[] | undefined) ?? []
   const out: MbMemberRef[] = []
@@ -112,7 +126,11 @@ export function extractCurrentMembers(artistJson: unknown): MbMemberRef[] {
     const r = obj(raw)
     if (str(r['target-type']) !== 'artist' || str(r.type) !== 'member of band') continue
     if (r.ended === true) continue
+    // `forward` = « X est membre de ce groupe » lu depuis la page de X.
+    if (str(r.direction) === 'forward') continue
     const a = obj(r.artist)
+    // Un membre est une personne : jamais un groupe, un orchestre ou un chœur.
+    if (ENSEMBLE_TYPES.has(str(a.type))) continue
     const id = str(a.id)
     if (id) out.push({ artistId: id, name: str(a.name) })
   }

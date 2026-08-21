@@ -29,14 +29,12 @@ describe('isOfficialMvTitle', () => {
     // La blacklist prime sur le nouveau marqueur « official video ».
     ["ROSÉ - 'toxic' (Official Lyric Video)", 'blacklist:lyric'],
     ["BABYMONSTER 'SHEESH' DANCE PRACTICE", 'blacklist:dance practice'],
-    ["aespa 'Supernova' Performance Video", 'blacklist:performance'],
     ["(G)I-DLE 'TOMBOY' Live Clip", 'blacklist:live'],
     ["NewJeans 'Supernatural' (Official Audio)", 'blacklist:audio'],
     ["aespa 'LEMONADE' Behind the scenes", 'blacklist:behind'],
     ["ILLIT 'Magnetic' M/V Making Film", 'blacklist:making'],
     ['(G)I-DLE - M/V Bloopers : [I feel]', 'blacklist:bloopers'],
     ["(G)I-DLE - 'Uh-Oh' M/V 응원법", 'blacklist:fanchant'],
-    ["aespa 'Whiplash' Special Clip", 'blacklist:special clip'],
     ["SHINee 'Atmos' MV Commentary", 'blacklist:commentary'],
     ['강다니엘(KANGDANIEL) - PARANOIA M/V 코멘터리', 'blacklist:commentary'],
     ["[#TAEYONG Focus] '질주 (2 Baddies)' @MV Film", 'blacklist:mv film'],
@@ -100,5 +98,41 @@ describe('isOfficialMvTitle', () => {
     // Vrais MVs du groupe Highlight : « MV] » puis le nom — pas un extrait.
     expect(isOfficialMvTitle('[MV] 하이라이트(HIGHLIGHT) - Chains').official).toBe(true)
     expect(isOfficialMvTitle('[MV] 하이라이트(HIGHLIGHT) - BODY').official).toBe(true)
+  })
+})
+
+// Formats de clip officiels mais secondaires (retour Rudy 2026-08-21) :
+// certaines chansons n'ont QUE ça comme visuel officiel — les jeter les faisait
+// disparaître de l'app. Titres réels des chaînes officielles.
+describe('isOfficialMvTitle — Performance / Special Video', () => {
+  it('accepte un Performance Video en le marquant secondaire', () => {
+    const r = isOfficialMvTitle('OURBIRTHDAY "HUNGRY (Side A)" Performance Video')
+    expect(r.official).toBe(true)
+    expect(r.secondary).toBe(true)
+  })
+
+  it('accepte un Special Video en le marquant secondaire', () => {
+    const r = isOfficialMvTitle("KISS OF LIFE (키스오브라이프) 'Painting' Special Video")
+    expect(r.official).toBe(true)
+    expect(r.secondary).toBe(true)
+  })
+
+  it('rejette toujours leurs DÉRIVÉS', () => {
+    expect(isOfficialMvTitle('"HUNGRY" Performance Video Behind | OBDO').official).toBe(false)
+    expect(
+      isOfficialMvTitle("KISS OF LIFE 'Don't mind me' Special Video Shoot Sketch").official,
+    ).toBe(false)
+    expect(isOfficialMvTitle("KISS OF LIFE 'Lucky' Special Video Teaser").official).toBe(false)
+  })
+
+  it('un vrai MV reste principal (non secondaire)', () => {
+    const r = isOfficialMvTitle("aespa 에스파 'Whiplash' MV")
+    expect(r.official).toBe(true)
+    expect(r.secondary).toBeUndefined()
+  })
+
+  it('les autres dérivés restent rejetés', () => {
+    expect(isOfficialMvTitle('BTS "Butter" Dance Practice').official).toBe(false)
+    expect(isOfficialMvTitle("ITZY 'Cake' MV Teaser").official).toBe(false)
   })
 })

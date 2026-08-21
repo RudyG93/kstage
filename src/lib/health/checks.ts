@@ -628,6 +628,29 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       sample: (badAgencies ?? []).slice(0, SAMPLE_MAX).map((g) => `${g.slug} — ${g.agency}`),
     })
 
+    // Membre parasite dans une page solo (nuit 2026-08-21) : un artiste solo
+    // n'a QUE son membre `Soloist`. Toute autre row est un artefact — le plus
+    // souvent le GROUPE dont il fait partie, importé à l'envers depuis
+    // MusicBrainz, avec la date de formation en guise d'anniversaire
+    // (« WJSN CHOCOME » né le 2020-09-23 sur la page de Dayoung).
+    const { data: soloRosters } = await supabase
+      .from('groups')
+      .select('slug, members(slug, stage_name, position)')
+      .eq('is_solo', true)
+      .limit(1000)
+    const soloExtras = (soloRosters ?? []).flatMap((g) =>
+      (g.members ?? [])
+        .filter((m) => m.position !== 'Soloist')
+        .map((m) => `${m.stage_name} (${m.slug ?? '?'}) sur /artists/${g.slug}`),
+    )
+    checks.push({
+      id: 'solo_extra_members',
+      label: 'Membres parasites sur une page solo (groupe importé comme personne)',
+      severity: 'warn',
+      count: soloExtras.length,
+      sample: soloExtras.slice(0, SAMPLE_MAX),
+    })
+
     // Membres sans slug (nuit 2026-08-21) : sans slug, member-card ne rend
     // aucun lien, la recherche filtre la personne et le sitemap l'ignore — 40
     // idols étaient injoignables (rosters entiers de NCT 127, NCT DREAM,
