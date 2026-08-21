@@ -351,6 +351,69 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
+  // 1bis. Photos PARTAGÉES entre plusieurs membres : fandom renvoie l'image
+  // principale de la page, qui est la photo de GROUPE (ou une pochette, ou un
+  // logo d'émission) dès que la page perso n'a pas de portrait. Résultat : une
+  // grille où sept visages sont identiques. Le garde d'écriture est posé depuis
+  // le 2026-08-21 ; ce check compte ce qui reste à nettoyer.
+  {
+    const owners = new Map<string, string[]>()
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await supabase
+        .from('members')
+        .select('stage_name, photo_source_key, groups!inner(name)')
+        .not('photo_source_key', 'is', null)
+        .neq('photo_source_key', 'admin')
+        .range(from, from + 999)
+      if (!page || page.length === 0) break
+      for (const m of page) {
+        const key = m.photo_source_key as string
+        const label = `${m.stage_name} (${(m.groups as { name: string }).name})`
+        owners.set(key, [...(owners.get(key) ?? []), label])
+      }
+      if (page.length < 1000) break
+    }
+    const shared = [...owners.entries()]
+      .filter(([, list]) => list.length > 1)
+      .sort((a, b) => b[1].length - a[1].length)
+    checks.push({
+      id: 'members_sharing_photo',
+      label: 'Membres partageant la même photo (photo de groupe / pochette)',
+      severity: 'warn',
+      count: shared.reduce((n, [, list]) => n + list.length, 0),
+      sample: shared
+        .slice(0, SAMPLE_MAX)
+        .map(
+          ([key, list]) =>
+            `${list.length}× ${list.slice(0, 4).join(', ')} — ${key.split('/').pop()?.slice(0, 60)}`,
+        ),
+    })
+  }
+
+  // 1ter. Lien Spotify refusé par le garde de nom : rien n'a été écrit pour ce
+  // groupe. C'est un ÉTAT à corriger à la main (lien mal seedé, ou alias hangul
+  // manquant), plus un statut de run dégradé — sinon le monitor crie au loup
+  // tous les jours (StelLive, 16–21/08).
+  {
+    const { data: lastRun } = await supabase
+      .from('scrape_log')
+      .select('details')
+      .eq('source', 'refresh_images')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const images = ((lastRun?.details ?? {}) as Record<string, unknown>).images as
+      { mismatches?: unknown } | undefined
+    const mismatches = Array.isArray(images?.mismatches) ? (images.mismatches as string[]) : []
+    checks.push({
+      id: 'spotify_link_mismatch',
+      label: 'Liens Spotify refusés par le garde de nom',
+      severity: 'warn',
+      count: mismatches.length,
+      sample: mismatches.slice(0, SAMPLE_MAX),
+    })
+  }
+
   // 2. Objets Storage surdimensionnés (>400 Ko), scindés référencés/orphelins
   // (2026-08-07 : le check comptait 23 orphelins jamais servis — signal pollué,
   // le remède reprocess-oversized-photos refusait à juste titre d'y toucher).
