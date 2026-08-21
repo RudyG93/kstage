@@ -12,11 +12,55 @@
     d'ENVOI (notify-comebacks, send-digest — leçon verify-automation-state). */
 export const TRIGGERABLE_CRONS = [
   'refresh-images',
+  'recover-mvs',
   'discover-channels',
   'scrape-youtube',
   'scrape-music-shows',
 ] as const
 export type TriggerableCron = (typeof TRIGGERABLE_CRONS)[number]
+
+/**
+ * Endpoint cron → `scrape_log.source` correspondant. Sert à RETROUVER le run
+ * déclenché par un bouton et à en afficher le résultat réel (retour Rudy
+ * 2026-08-21 : « quoi que je fasse, ça change rien » — le bouton annonçait
+ * « Lancé ✓ » même quand l'API refusait, faute de boucle de retour).
+ */
+export const CRON_LOG_SOURCE: Record<TriggerableCron, string> = {
+  'refresh-images': 'refresh_images',
+  'recover-mvs': 'recover_mvs',
+  'discover-channels': 'channel_discovery',
+  'scrape-youtube': 'youtube',
+  'scrape-music-shows': 'music_shows',
+}
+
+/** Résumé lisible d'un run, pour l'afficher à côté du bouton. */
+export function summarizeRun(
+  source: string,
+  status: string,
+  details: unknown,
+  errorMsg: string | null,
+): string {
+  const d = (details ?? {}) as Record<string, unknown>
+  const num = (k: string) => (typeof d[k] === 'number' ? (d[k] as number) : null)
+  const parts: string[] = []
+  if (source === 'recover_mvs') {
+    const ins = num('inserted')
+    const improved = num('groupsImproved')
+    parts.push(ins === 0 ? 'aucun MV nouveau' : `${ins} MV récupérés sur ${improved} groupes`)
+    const scanned = num('scanned')
+    if (scanned !== null) parts.push(`${scanned} groupes scannés`)
+  } else if (source === 'refresh_images') {
+    const photos = (d.photos ?? {}) as Record<string, number>
+    if (typeof photos.updated === 'number')
+      parts.push(`${photos.updated} photos résolues, ${photos.misses ?? 0} sans source`)
+  } else if (source === 'channel_discovery') {
+    const seeded = num('seeded')
+    if (seeded !== null) parts.push(`${seeded} chaînes seedées`)
+  }
+  if (errorMsg) parts.push(`⚠ ${errorMsg}`)
+  if (parts.length === 0) parts.push(status)
+  return parts.join(' · ')
+}
 
 export type Remedy =
   | { kind: 'auto'; note: string }
@@ -46,15 +90,21 @@ export const REMEDIES: Record<string, Remedy> = {
     cron: 'refresh-images',
     buttonLabel: 'Relancer la résolution photos',
   },
-  thin_rookies: {
-    kind: 'auto',
-    note: 'Debut < 90 j : le catalogue se remplit avec les sorties — rien à faire.',
-  },
   thin_mv_catalogs: {
     kind: 'one_click',
-    note: 'Le cron discover-channels (lundi, 20 groupes/run) draine la file — déclenchable tout de suite.',
-    cron: 'discover-channels',
-    buttonLabel: 'Lancer une passe discover',
+    note: 'Récupère les MV par la discographie fandom — y compris ceux hébergés sur la chaîne du label, que le scraper de chaîne ne voit pas. ~2 units/groupe, tout le pool en un run.',
+    cron: 'recover-mvs',
+    buttonLabel: 'Récupérer les MV manquants',
+  },
+  debuted_without_mv: {
+    kind: 'one_click',
+    note: 'Un groupe qui a débuté A un MV : il est souvent sur la chaîne de son label, invisible du scraper de chaîne. Cette passe va le chercher dans la discographie fandom.',
+    cron: 'recover-mvs',
+    buttonLabel: 'Récupérer les MV manquants',
+  },
+  thin_rookies: {
+    kind: 'auto',
+    note: 'Debut < 90 j avec déjà un MV : le catalogue se remplit au fil des sorties — rien à faire.',
   },
   lineup_unmatched_pending: {
     kind: 'review',
@@ -111,6 +161,14 @@ export const REMEDIES: Record<string, Remedy> = {
   agency_wikitext_residue: {
     kind: 'review',
     note: 'Champ agency fandom mal parsé : re-fetch l’infobox avec parseAgency (segments « present » seulement).',
+  },
+  members_without_slug: {
+    kind: 'review',
+    note: 'Backfill : slug = {slug du groupe}-{stage name slugifié} (le membre Soloist d’un solo porte le slug du solo). Sans slug, la personne n’existe sur aucune surface.',
+  },
+  member_sort_names: {
+    kind: 'review',
+    note: 'Comparer au roster fandom (champs current/former) : fusionner le doublon dans la row au stage name, ou dé-inverser le nom. La racine est corrigée à l’ingestion depuis le 21/08.',
   },
   groups_without_members: {
     kind: 'review',

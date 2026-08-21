@@ -16,7 +16,7 @@
 
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { matchesGroup } from './group-match'
+import { matchesGroup, normalize } from './group-match'
 import { scrapeGroup, QuotaExceededError } from './youtube'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -149,6 +149,46 @@ export async function discoverChannelsForGroup(
   return { candidates, units }
 }
 
+/**
+ * Une chaîne candidate porte-t-elle un signal K-POP ? (nuit 2026-08-21)
+ *
+ * `matchesGroup` compare des chaînes NORMALISÉES sans séparateurs : un nom
+ * court est donc contenu dans le nom d'un artiste étranger homonyme. Trois
+ * chaînes avaient ainsi été seedées sur des groupes coréens, et leurs clips
+ * s'affichaient sur les pages fans :
+ *   - GENUS   ← « GENUS ORDINIS DEI » (death metal italien, Eclipse Records)
+ *   - Puzzle  ← « 清水翔太『PUZZLE』MV » (chanteur japonais)
+ *   - TOZ     ← « manifest - Toz Pembe » (groupe turc)
+ * La garde de date existante ne les attrape pas : leurs clips sont récents.
+ *
+ * Signal accepté (l'un des trois) :
+ *   a) du HANGUL dans un titre matché — un MV k-pop porte presque toujours le
+ *      nom coréen, même quand le titre est en anglais ;
+ *   b) le nom de la chaîne correspond au groupe ou à son AGENCE — couvre les
+ *      MV 100 % anglais postés par le label (VCHA sur « JYP Entertainment ») ;
+ *   c) rien d'autre : on refuse et on journalise, plutôt que publier un clip
+ *      d'un artiste étranger sur la page d'un groupe k-pop.
+ */
+const HANGUL_RE = /[가-힣ᄀ-ᇿ㄰-㆏]/
+
+export function hasKpopSignal(
+  candidate: { channelTitle: string; hits: string[] },
+  group: { name: string; agency?: string | null },
+): boolean {
+  if (candidate.hits.some((h) => HANGUL_RE.test(h))) return true
+  if (HANGUL_RE.test(candidate.channelTitle)) return true
+  const channel = normalize(candidate.channelTitle)
+  if (!channel) return false
+  const groupKey = normalize(group.name)
+  if (groupKey && (channel.includes(groupKey) || groupKey.includes(channel))) return true
+  // Agence : « JYP Entertainment » couvre les sorties anglophones de ses groupes.
+  for (const part of (group.agency ?? '').split('·')) {
+    const key = normalize(part)
+    if (key.length >= 4 && channel.includes(key)) return true
+  }
+  return false
+}
+
 export type SeedResult =
   | { seeded: true; sourceId: string; backfilled: number; promoted: boolean; units: number }
   | { seeded: false; reason: string }
@@ -159,7 +199,13 @@ export type SeedResult =
  */
 export async function seedAndBackfillChannel(
   supabase: SupabaseClient,
-  group: { id: string; name: string; confidence: string; debut_date?: string | null },
+  group: {
+    id: string
+    name: string
+    confidence: string
+    debut_date?: string | null
+    agency?: string | null
+  },
   candidate: ChannelCandidate,
   apiKey: string,
 ): Promise<SeedResult> {
@@ -167,6 +213,14 @@ export async function seedAndBackfillChannel(
   // (compilation, chaîne fan) → revue humaine via scrape_log.details.review.
   if (candidate.hits.length < 2) {
     return { seeded: false, reason: `1 seul MV matché (${candidate.channelTitle})` }
+  }
+  // Garde anti-homonyme ÉTRANGER : sans signal k-pop, la chaîne parle d'un
+  // autre artiste qui partage le nom (cf. hasKpopSignal).
+  if (!hasKpopSignal(candidate, group)) {
+    return {
+      seeded: false,
+      reason: `aucun signal k-pop (${candidate.channelTitle}) — homonyme probable`,
+    }
   }
   // Garde anti-homonyme (round 2026-07-18) : si TOUS les hits datent d'avant
   // le debut du groupe (marge 180 j pour les pre-releases), la chaîne parle

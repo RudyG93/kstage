@@ -129,3 +129,18 @@ describe('withinOneEdit', () => {
     expect(withinOneEdit('ateez', 'aespa')).toBe(false)
   })
 })
+
+// Variantes typographiques repliées par NFKD (nuit 2026-08-21) : chacune
+// correspond à un MV réellement raté en prod avant le passage NFD → NFKD.
+describe('matchesGroup — variantes typographiques (NFKD)', () => {
+  it('capitales mathématiques stylisées', () => {
+    expect(matchesGroup("𝗩𝟴 'singasong' Official MV", 'V8')).toBe(true)
+    expect(matchesGroup('𝗕𝗔𝗕𝗬𝗠𝗢𝗡𝗦𝗧𝗘𝗥 - SHEESH M/V', 'BABYMONSTER')).toBe(true)
+  })
+  it('pleine chasse (fullwidth)', () => {
+    expect(matchesGroup("ＡＥＳＰＡ 'Whiplash' MV", 'aespa')).toBe(true)
+  })
+  it("n'élargit pas le matching à un autre groupe", () => {
+    expect(matchesGroup("𝗩𝟴 'singasong' Official MV", 'V9')).toBe(false)
+  })
+})

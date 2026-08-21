@@ -270,6 +270,51 @@ export async function fetchVideoDetails(
   return { details, calls }
 }
 
+/**
+ * Détail COMPLET de vidéos ciblées (par id) sous forme d'`UploadItem` — le
+ * même contrat que `fetchUploadsPage`, mais pour une liste d'ids venue
+ * d'ailleurs que d'une playlist de chaîne (discographie fandom, nuit
+ * 2026-08-21). Coût : 1 unit par lot de 50, quelle que soit la chaîne
+ * hébergeuse — c'est ce qui permet de récupérer un MV posé sur la chaîne d'un
+ * label sans jamais paginer ses milliers d'uploads.
+ */
+export async function fetchVideosAsUploads(
+  videoIds: string[],
+  apiKey: string,
+): Promise<{ items: UploadItem[]; units: number }> {
+  const items: UploadItem[] = []
+  let units = 0
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const chunk = videoIds.slice(i, i + 50)
+    units++
+    const data = (await ytFetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${chunk.join(',')}&key=${apiKey}`,
+    )) as {
+      items?: {
+        id: string
+        snippet?: {
+          title?: string
+          description?: string
+          publishedAt?: string
+          thumbnails?: Record<string, { url?: string }>
+        }
+      }[]
+    }
+    for (const v of data.items ?? []) {
+      const sn = v.snippet
+      if (!sn?.title || !sn.publishedAt) continue
+      items.push({
+        videoId: v.id,
+        title: decodeHtmlEntities(sn.title),
+        description: decodeHtmlEntities(sn.description ?? ''),
+        publishedAt: sn.publishedAt,
+        thumbnailUrl: sn.thumbnails?.maxres?.url ?? sn.thumbnails?.high?.url ?? null,
+      })
+    }
+  }
+  return { items, units }
+}
+
 export async function scrapeGroup(
   source: { id: string; url: string; group_id: string },
   apiKey: string,
@@ -290,8 +335,15 @@ export async function scrapeGroup(
   const maxPages = opts.maxPages ?? 2
   let units = 0
 
-  units++
-  const channel = await resolveChannel(source.url, apiKey)
+  // Résolution de chaîne SEULEMENT quand il faut paginer sa playlist. Avec des
+  // uploads INJECTÉS (discographie fandom, backfill ciblé), la chaîne
+  // hébergeuse est hors sujet — et n'est souvent PAS celle de la source (un MV
+  // de rookie vit sur la chaîne de son label). Économise aussi 1 unit.
+  let channel: ChannelMeta | null = null
+  if (!opts.uploads) {
+    units++
+    channel = await resolveChannel(source.url, apiKey)
+  }
 
   // Charge le slug + name + aliases du groupe pour générer les slugs d'events.
   // Le name est nécessaire pour dédupliquer les préfixes quand le titre scrapé
@@ -331,7 +383,7 @@ export async function scrapeGroup(
   // (backfill multi-sources) évite de re-paginer une playlist partagée par
   // plusieurs sources du run (HYBE LABELS ×12, SMTOWN ×10 — §3.19) ; valable
   // uniquement à maxPages constant sur le run, ce que le script garantit.
-  const cached = opts.uploads ?? opts.pageCache?.get(channel.uploadsPlaylistId)
+  const cached = opts.uploads ?? (channel ? opts.pageCache?.get(channel.uploadsPlaylistId) : null)
   let items: UploadItem[]
   if (cached) {
     // Les uploads INJECTÉS (search.list, backfill ciblé) arrivent avec des
@@ -349,12 +401,12 @@ export async function scrapeGroup(
     let pageToken: string | undefined
     for (let page = 0; page < maxPages; page++) {
       units++
-      const res = await fetchUploadsPage(channel.uploadsPlaylistId, apiKey, pageToken)
+      const res = await fetchUploadsPage(channel!.uploadsPlaylistId, apiKey, pageToken)
       items.push(...res.items)
       if (!res.nextPageToken) break
       pageToken = res.nextPageToken
     }
-    opts.pageCache?.set(channel.uploadsPlaylistId, items)
+    opts.pageCache?.set(channel!.uploadsPlaylistId, items)
   }
 
   let skipped = 0
@@ -497,7 +549,7 @@ export async function scrapeGroup(
 
     const { error } = await supabase.from('events').insert({
       group_id: source.group_id,
-      source_id: source.id,
+      source_id: source.id || null,
       source_url: sourceUrl,
       type: 'mv',
       title: item.title,
@@ -525,14 +577,19 @@ export async function scrapeGroup(
   // last_scraped_at : on n'arrive ici que si les fetches ont réussi (les
   // erreurs réseau/quota ont throw plus haut). Au passage, on persiste le
   // channel_id résolu + le subscriberCount (critère de popularité P0.5).
-  await supabase
-    .from('sources')
-    .update({
-      last_scraped_at: new Date().toISOString(),
-      channel_id: channel.channelId,
-      subscriber_count: channel.subscriberCount,
-    })
-    .eq('id', source.id)
+  // `source.id` vide = source SYNTHÉTIQUE (ingestion par discographie fandom,
+  // sans row sources) → rien à stamper. channel absent = uploads injectés.
+  if (source.id) {
+    await supabase
+      .from('sources')
+      .update({
+        last_scraped_at: new Date().toISOString(),
+        ...(channel
+          ? { channel_id: channel.channelId, subscriber_count: channel.subscriberCount }
+          : {}),
+      })
+      .eq('id', source.id)
+  }
 
   return { inserted, skipped, premieres, units }
 }

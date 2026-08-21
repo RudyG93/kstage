@@ -412,12 +412,32 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       .sort((a, b) => a.n - b.n)
     const rookies = allThin.filter(({ g }) => g.debut_date && g.debut_date >= recentDebutCutoff)
     const thin = allThin.filter(({ g }) => !(g.debut_date && g.debut_date >= recentDebutCutoff))
+    // Un rookie à catalogue fin est normal ; un groupe DÉJÀ DÉBUTÉ à ZÉRO MV
+    // ne l'est pas (retour Rudy 2026-08-21 : « un groupe qui a fait ses débuts
+    // a au moins un MV » — vrai, cas OURBIRTHDAY dont le MV vivait sur la
+    // chaîne JYP). Les pre-debut (date future) restent hors compte.
+    const today = now.toISOString().slice(0, 10)
+    const debutedNoMv = rookies.filter(
+      ({ g, n }) => n === 0 && g.debut_date && g.debut_date <= today,
+    )
+    const stillBuilding = rookies.filter((r) => !debutedNoMv.includes(r))
+    checks.push({
+      id: 'debuted_without_mv',
+      label: `Groupes DÉBUTÉS sans aucun MV — anormal (le MV est souvent sur la chaîne du label)`,
+      severity: 'warn',
+      count: debutedNoMv.length,
+      sample: debutedNoMv
+        .slice(0, SAMPLE_MAX)
+        .map(({ g }) => `${g.name} (${g.slug}) — debut ${g.debut_date}`),
+    })
     checks.push({
       id: 'thin_rookies',
-      label: `Rookies (< 90 j) à catalogue encore fin — normal, en construction`,
+      label: `Rookies (< 90 j) avec 1+ MV — catalogue en construction, normal`,
       severity: 'info',
-      count: rookies.length,
-      sample: rookies.slice(0, SAMPLE_MAX).map(({ g, n }) => `${g.name} (${g.slug}) — ${n} MV`),
+      count: stillBuilding.length,
+      sample: stillBuilding
+        .slice(0, SAMPLE_MAX)
+        .map(({ g, n }) => `${g.name} (${g.slug}) — ${n} MV`),
     })
     checks.push({
       id: 'thin_mv_catalogs',
@@ -606,6 +626,33 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       severity: 'warn',
       count: (badAgencies ?? []).length,
       sample: (badAgencies ?? []).slice(0, SAMPLE_MAX).map((g) => `${g.slug} — ${g.agency}`),
+    })
+
+    // Membres sans slug (nuit 2026-08-21) : sans slug, member-card ne rend
+    // aucun lien, la recherche filtre la personne et le sitemap l'ignore — 40
+    // idols étaient injoignables (rosters entiers de NCT 127, NCT DREAM,
+    // Hearts2Hearts, izna, QWER, plus G-Dragon). Invisible de tout autre check.
+    const noSlug = (members ?? []).filter((m) => !m.slug)
+    checks.push({
+      id: 'members_without_slug',
+      label: 'Membres sans slug — aucune page, absents de la recherche et du sitemap',
+      severity: 'warn',
+      count: noSlug.length,
+      sample: noSlug.slice(0, SAMPLE_MAX).map((m) => m.stage_name),
+    })
+
+    // Noms de personnes au format sort-name (nuit 2026-08-21) : « Park,
+    // Han-bin » vient de MusicBrainz, s'affiche tel quel sur les pages
+    // membres, et signale presque toujours un DOUBLON de la même personne
+    // déjà présente sous son stage name (EVNNE : 9 rows pour 5 membres).
+    // Aucune photo fandom ne peut être trouvée pour un tel nom.
+    const sortNamed = (members ?? []).filter((m) => /^[^,]+,\s+\S/.test(m.stage_name))
+    checks.push({
+      id: 'member_sort_names',
+      label: 'Membres au format « Nom, Prénom » (doublon MusicBrainz probable)',
+      severity: 'warn',
+      count: sortNamed.length,
+      sample: sortNamed.slice(0, SAMPLE_MAX).map((m) => `${m.stage_name} (${m.slug})`),
     })
 
     // Check INVERSE (review 2026-08-20) : un groupe non-solo à 0 membre =

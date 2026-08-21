@@ -69,6 +69,11 @@ export interface FandomInfobox {
       « members vide » ne veut PAS dire soliste (incident Yuqi/TOZ 2026-08-20 :
       groupes pré-debut sans lineup parsé créés is_solo à tort). */
   kind: 'group' | 'artist' | 'unknown'
+  /** Autres graphies officielles du nom (hangul, hanja, romanisation) — les
+      chaînes coréennes titrent leurs MV « 미완소년(未完少年) 'PLUMA' MV », que
+      le nom latin seul ne matche pas (MiiWAN : 0 MV malgré 33 vidéos trouvées,
+      nuit 2026-08-21). Destinées à `groups.name_aliases`. */
+  aliases: string[]
 }
 
 const MONTHS: Record<string, number> = {
@@ -155,6 +160,37 @@ export function parseAgency(raw: string): string | null {
 }
 
 /**
+ * Un alias exploitable ? Ces valeurs alimentent `matchesGroup`, qui teste une
+ * SOUS-CHAÎNE : un alias parasite est une mine. Les premiers scans du
+ * 2026-08-21 ont produit « | origin = Seoul », « South Korea », « | katakana = »
+ * et « Embio )}} » — le champ d'infobox débordait sur le suivant. « South
+ * Korea » aurait attribué au groupe tout titre contenant ces mots.
+ *
+ * Règles : pas de résidu de syntaxe wikitext, une longueur plausible pour un
+ * nom d'artiste, et aucun terme géographique/générique.
+ */
+const ALIAS_STOPWORDS = new Set([
+  'south korea',
+  'korea',
+  'seoul',
+  'japan',
+  'china',
+  'usa',
+  'united states',
+])
+
+export function isUsableAlias(value: string): boolean {
+  const v = value.trim()
+  if (v.length < 2 || v.length > 40) return false
+  // Résidus de wikitext : séparateur de champ, égal, accolades, refs.
+  if (/[|=<>{}[\]]/.test(v)) return false
+  if (/\)\}\}|\{\{/.test(v)) return false
+  if (ALIAS_STOPWORDS.has(v.toLowerCase())) return false
+  // Doit contenir au moins une lettre (hangul, hanja, kana ou latine).
+  return /\p{L}/u.test(v)
+}
+
+/**
  * Nature de la page par son template d'infobox — VÉRIFIÉ sur le wikitext réel
  * (2026-08-20) : kpop.fandom utilise `{{Infobox musical artist}}` pour les
  * GROUPES (aespa, TOZ — malgré le nom) et `{{Infobox person}}` pour les
@@ -193,6 +229,18 @@ export async function fetchInfobox(
         .filter((m) => m && !/^category:/i.test(m))
     : []
 
+  // Graphies alternatives du nom. `hnaja` est une faute de frappe RÉELLE et
+  // répandue du modèle fandom (constatée sur MiiWAN) — les deux orthographes
+  // sont lues. Un alias n'est retenu que s'il diffère du nom principal.
+  const aliasFields = ['hangul', 'hanja', 'hnaja', 'roman', 'japanese', 'chinese']
+  const aliases = aliasFields
+    .map((f) => field(wt, f))
+    .filter((v): v is string => Boolean(v))
+    .map(stripMarkup)
+    .flatMap((v) => v.split(/[,;/]| or /i))
+    .map((v) => v.trim())
+    .filter(isUsableAlias)
+
   const nameRaw = field(wt, 'name')
   const debutRaw = field(wt, 'debut')
   const labelRaw = field(wt, 'label') ?? field(wt, 'agency')
@@ -207,6 +255,9 @@ export async function fetchInfobox(
       label: labelRaw ? parseAgency(labelRaw) : null,
       members,
       kind,
+      aliases: aliases.filter(
+        (a) => a.toLowerCase() !== (nameRaw ? stripMarkup(nameRaw).toLowerCase() : ''),
+      ),
       youtubeHandle: /\{\{YouTube@?\|([^}|]+)/i.exec(sns)?.[1]?.trim() ?? null,
       instagram: /\{\{Instagram\|([^}|]+)/i.exec(sns)?.[1]?.trim() ?? null,
       imageFile: imageRaw

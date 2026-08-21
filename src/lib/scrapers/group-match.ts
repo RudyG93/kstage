@@ -10,10 +10,21 @@
 // silencieusement jamais ingéré. NFD + strip \p{M} aligne les deux formes
 // ('rose' des deux côtés) ; le hangul décompose en jamo identiquement des
 // deux côtés, donc inchangé.
+// NFKD plutôt que NFD (nuit 2026-08-21) : la décomposition de COMPATIBILITÉ
+// replie en plus les variantes typographiques dont la k-pop raffole — capitales
+// mathématiques (« 𝗩𝟴 'singasong' Official MV » → v8, MV réellement raté en
+// prod), pleine chasse (« ＡＥＳＰＡ » → aespa), katakana demi-largeur. NFD les
+// laissait intactes, donc hors de portée du title-match. Hangul et hanja sont
+// inchangés (vérifié sur 미완소년 / 美完少年), et les cas déjà couverts le
+// restent (ROSÉ → rose, (G)I-DLE → gidle).
+// ORDRE CRITIQUE : NFKD **avant** toLowerCase. Les capitales mathématiques
+// n'ont pas de minuscule (𝗕 U+1D5D5 est invariant par toLowerCase) ; repliées
+// après, elles ressortaient en « BABYMONSTER » majuscule et ne matchaient plus
+// le needle minuscule. Décomposer d'abord, abaisser ensuite.
 export function normalize(s: string): string {
   return s
+    .normalize('NFKD')
     .toLowerCase()
-    .normalize('NFD')
     .replace(/\p{M}+/gu, '')
     .normalize('NFC') // recompose le hangul (jamo → syllabes) après le strip
     .replace(/[^\p{L}\p{N}]+/gu, '')
