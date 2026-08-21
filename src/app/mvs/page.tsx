@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { SidebarLeft } from '@/components/home/sidebar-left'
+import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { ComingUpBlock } from '@/components/rails/event-blocks'
 import { DiscussionsBlock } from '@/components/rails/community-blocks'
@@ -69,11 +69,9 @@ export default async function MvsPage({
   return (
     <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-4 md:py-6">
       <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="order-2 shrink-0 lg:order-1 lg:w-60">
-          <Suspense fallback={<RailSkeleton />}>
-            <SidebarLeft showFilters={false} />
-          </Suspense>
-        </aside>
+        <Suspense fallback={null}>
+          <LeftRail className="order-2 shrink-0 lg:order-1 lg:w-60" />
+        </Suspense>
 
         <div className="order-1 min-w-0 flex-1 space-y-4 lg:order-2">
           <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Drops</h1>

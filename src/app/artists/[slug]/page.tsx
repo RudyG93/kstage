@@ -211,11 +211,20 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
  * soit plus un cul-de-sac maigre. Les fetchs indépendants partent ENSEMBLE ;
  * seuls les ratings dépendent des MVs. */
 async function MemberBody({ member, group }: { member: Member; group: ArtistGroup | null }) {
-  const [memberMvs, groupmatesRaw, career, timeZone] = await Promise.all([
+  const [memberMvs, groupmatesRaw, career, timeZone, upcoming, stages] = await Promise.all([
     getMemberMvs(member.id),
     group ? getMembersForGroup(group.id) : Promise.resolve([]),
     getCareerPath(member.id),
     getViewerTimeZone(),
+    // La page d'un membre n'affichait AUCUNE date — sur un calendrier de
+    // comebacks (audit 2026-08-21). Les deux requêtes existaient déjà, mais
+    // n'étaient appelées que par la branche SOLO, soit ~40 pages sur 1 250.
+    // Elles portent le nom du GROUPE : ce sont ses dates, pas celles de la
+    // personne, et l'intitulé doit le dire.
+    group ? getUpcomingEvents({ groupSlug: group.slug, limit: 5 }) : Promise.resolve([]),
+    // Les passages music-show couvrent bien plus de monde que l'à-venir :
+    // 99 groupes en ont, contre 29 avec un event futur.
+    group ? getGroupStages(group.slug, 8) : Promise.resolve([]),
   ])
   const memberRatings =
     memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
@@ -223,6 +232,43 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
 
   return (
     <>
+      {/* Rendu SEULEMENT si peuplé : un « No upcoming events » s'afficherait sur
+          plus de 1 000 pages membres, et le lien vers la page groupe sous le
+          titre sert déjà de sortie. */}
+      {group && upcoming.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-medium">Upcoming — {group.name}</h2>
+            <Link
+              href={`/calendar?group=${group.slug}`}
+              className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
+            >
+              Calendar →
+            </Link>
+          </div>
+          <EventList events={upcoming} scrollAfter={5} />
+        </section>
+      )}
+
+      {group && stages.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-medium">Recent stages — {group.name}</h2>
+            <Link
+              href={`/groups/${group.slug}`}
+              className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
+            >
+              All →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
+            {stages.map((stage) => (
+              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {memberMvs.length > 0 && (
         <section className="space-y-2">
           <span className="label-data">Solo releases</span>
