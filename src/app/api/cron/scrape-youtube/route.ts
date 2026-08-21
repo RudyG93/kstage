@@ -99,10 +99,18 @@ export async function GET(req: Request) {
     (sum, r) => sum + ('units' in r ? r.units : 0),
     0,
   )
+  // Seuil de tolérance (nuit 2026-08-21) : UNE source cassée sur 326 mettait le
+  // run en `partial` à chaque exécution depuis des jours (playlist uploads
+  // introuvable côté TOZ). Résultat : le statut criait au loup en permanence,
+  // donc plus personne ne le lisait. La santé d'une source ISOLÉE est déjà
+  // suivie par le check `stale_sources` du data-health ; le statut du run, lui,
+  // doit signaler une panne du RUN. Le détail des échecs reste dans `details`.
+  const failureRatio = sourceIds.length > 0 ? failed.length / sourceIds.length : 1
+  const significantFailure = failed.length >= 5 || failureRatio > 0.05
   const status =
     sourceIds.length === 0 || failed.length === sourceIds.length
       ? 'error'
-      : failed.length > 0
+      : significantFailure || quotaExhausted
         ? 'partial'
         : 'ok'
   await logScrapeRun(supabase, {
@@ -117,7 +125,7 @@ export async function GET(req: Request) {
           : quotaExhausted
             ? `quota exceeded after ${sourceIds.length}/${(sources ?? []).length} sources`
             : `${failed.length}/${sourceIds.length} sources failed`,
-    details: { results, totalUnits, quotaExhausted },
+    details: { results, totalUnits, quotaExhausted, failedSources: failed },
   })
   if (status === 'error') {
     return NextResponse.json({ ok: false, results }, { status: 500 })

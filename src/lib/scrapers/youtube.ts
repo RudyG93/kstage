@@ -150,7 +150,14 @@ async function ytFetch(url: string): Promise<unknown> {
   const res = await fetch(url)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    if (res.status === 403 && body.includes('quotaExceeded')) throw new QuotaExceededError()
+    // 403 quotaExceeded ET 429 rateLimitExceeded : l'API renvoie 429 pour le
+    // quota de RECHERCHE (« Quota exceeded for quota metric 'Search Queries' »,
+    // constaté le 21/08). Sans ce mapping, la boucle appelante continuait à
+    // taper une clé déjà morte au lieu de s'arrêter proprement.
+    const exhausted =
+      (res.status === 403 && body.includes('quotaExceeded')) ||
+      (res.status === 429 && /quota|rateLimitExceeded/i.test(body))
+    if (exhausted) throw new QuotaExceededError()
     throw new Error(`YouTube API ${res.status}: ${body.slice(0, 200)}`)
   }
   return res.json()

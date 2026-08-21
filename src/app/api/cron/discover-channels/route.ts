@@ -21,7 +21,14 @@ import type { Database } from '@/types/database'
 // présente » : l'élargir avant n'aurait que doublé le gaspillage) : cycle du
 // pool ~10 semaines → ~5. ~205 units/groupe × 20 ≈ 4 100/lundi — tient dans
 // les 10 000/jour avec le scrape quotidien (~1 900).
-const MAX_GROUPS_PER_RUN = 20
+// Débit ramené 20 → 3 (nuit 2026-08-21) : ce cron a consommé 3 884 units le
+// 20/08 et fini en HTTP 429, épuisant le quota de RECHERCHE pour la journée —
+// c'est lui qui rendait les remèdes de /admin/health inopérants. La
+// récupération des MV passe désormais par `recover-mvs` (discographie fandom,
+// ~2 units/groupe, tout le pool en un run). `discover-channels` reste utile
+// pour DÉCOUVRIR une chaîne à scraper en continu, mais devient un complément
+// à petit débit, pas le moteur principal.
+const MAX_GROUPS_PER_RUN = 3
 // Seuil « fin » : ≤ 5 MVs, une page groupe paraît vide — ALIGNÉ sur le check
 // santé thin_mv_catalogs (audit 2026-08-20 : le `<` strict excluait à jamais
 // les 12 groupes à exactement 5 MVs, drain impossible par construction).

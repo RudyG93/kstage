@@ -14,6 +14,27 @@ export const revalidate = 86400
 // avec la clé anon (tables publiques en lecture via RLS). Exclusions :
 // groupes solo (redirect 308 vers /artists) et membres non canoniques
 // (redirect) — un sitemap ne doit pas lister de redirections.
+
+/**
+ * Pagination RÉELLE (nuit 2026-08-21) : `.range(0, 4999)` ne contourne pas le
+ * plafond serveur de PostgREST — il rendait exactement 1000 lignes, en silence.
+ * Le sitemap listait donc 1000 MV sur 2929 et 1000 artistes sur 1234 : les deux
+ * tiers du catalogue étaient invisibles des moteurs. On boucle par lots de 1000
+ * jusqu'à épuisement.
+ */
+async function fetchAllRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await page(from, from + 999)
+    if (error) break
+    out.push(...((data ?? []) as T[]))
+    if (!data || data.length < 1000) break
+  }
+  return out
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,26 +53,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('is_solo', false)
       .neq('confidence', 'candidate')
       .or(`debut_date.is.null,debut_date.lte.${today}`),
-    supabase
-      .from('events')
-      .select('slug, updated_at, groups!inner(confidence)')
-      .eq('type', 'mv')
-      .not('slug', 'is', null)
-      .eq('hidden', false)
-      .neq('groups.confidence', 'candidate')
-      .range(0, 4999), // cap PostgREST 1000 rows par défaut → fenêtre explicite
-    supabase
-      .from('members')
-      .select('slug')
-      .not('slug', 'is', null)
-      .is('canonical_id', null)
-      .range(0, 1999),
-    supabase
-      .from('events')
-      .select('title, start_at')
-      .eq('type', 'music_show')
-      .eq('hidden', false)
-      .range(0, 4999),
+    fetchAllRows<{ slug: string | null; updated_at: string | null }>((from, to) =>
+      supabase
+        .from('events')
+        .select('slug, updated_at, groups!inner(confidence)')
+        .eq('type', 'mv')
+        .not('slug', 'is', null)
+        .eq('hidden', false)
+        .neq('groups.confidence', 'candidate')
+        .range(from, to),
+    ).then((data) => ({ data })),
+    fetchAllRows<{ slug: string | null }>((from, to) =>
+      supabase
+        .from('members')
+        .select('slug')
+        .not('slug', 'is', null)
+        .is('canonical_id', null)
+        .range(from, to),
+    ).then((data) => ({ data })),
+    fetchAllRows<{ title: string; start_at: string }>((from, to) =>
+      supabase
+        .from('events')
+        .select('title, start_at')
+        .eq('type', 'music_show')
+        .eq('hidden', false)
+        .range(from, to),
+    ).then((data) => ({ data })),
   ])
 
   const statics: MetadataRoute.Sitemap = ['', '/calendar', '/groups', '/mvs', '/search'].map(
