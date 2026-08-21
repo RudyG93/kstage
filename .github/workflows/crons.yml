@@ -27,6 +27,14 @@ on:
     # là où discover-channels (205 units/groupe) drainait sur des semaines et
     # butait sur le quota de recherche.
     - cron: '20 10 * * *' # recover-mvs          (19:20 KST — après scrape-youtube)
+    # Réconciliation post-diffusion des music shows (2026-08-21). N'interroge
+    # QUE l'API YouTube + l'API Wikipedia — aucun scraping de site tiers, donc
+    # la limite « 1-2 fois par jour » de CLAUDE.md ne s'y applique pas. Trois
+    # passages calent la fenêtre sur la publication réelle des scènes : elles
+    # sortent 2 à 8 h après la diffusion, et Rudy les voyait arriver trop tard.
+    - cron: '0 12 * * *' # aired-shows           (21:00 KST — scènes du jour)
+    - cron: '30 16 * * *' # aired-shows          (01:30 KST — traînards du soir)
+    - cron: '0 21 * * *' # aired-shows           (06:00 KST — uploads de la nuit)
   workflow_dispatch:
     inputs:
       endpoint:
@@ -44,6 +52,7 @@ on:
           - monitor
           - discover-channels
           - recover-mvs
+          - aired-shows
 
 jobs:
   run:
@@ -71,6 +80,7 @@ jobs:
               "30 13 * * *") EP=monitor ;;
               "0 11 * * 1") EP=discover-channels ;;
               "20 10 * * *") EP=recover-mvs ;;
+              "0 12 * * *"|"30 16 * * *"|"0 21 * * *") EP=aired-shows ;;
               *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;
             esac
           fi

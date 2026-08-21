@@ -16,6 +16,7 @@ import type { Database } from '@/types/database'
 import { isConsistentRiffSize, isValidWebpHeader } from '@/lib/images/upload'
 import { isSamePerson, normalizeName } from '@/lib/members/matching'
 import { activityStatus } from '@/lib/groups/activity'
+import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -80,14 +81,79 @@ export function findNumberingConflicts(episodes: readonly EpisodeRow[]): string[
       const between = sorted.filter((e) => e.kst_day > a.kst_day && e.kst_day < b.kst_day).length
       const expected = between + 1
       const actual = (b.episode_number ?? 0) - (a.episode_number ?? 0)
-      if (actual !== expected) {
+      // delta SUPÉRIEUR à l'attendu = des épisodes nous manquent entre les deux
+      // — c'est le sujet de `findMissingEpisodes`, qui le dit avec les dates
+      // précises. Ne restent ici que les vraies CONTRADICTIONS : même numéro
+      // deux semaines de suite, régression chronologique, ou saut trop court.
+      // Les mélanger rendait le bloc illisible (11 lignes affichées dont 9
+      // n'étaient que des trous de collecte, capture Rudy du 2026-08-21).
+      if (actual <= 0) {
         conflicts.push(
-          `${show}: #${a.episode_number} (${a.kst_day}) → #${b.episode_number} (${b.kst_day}) — delta ${actual}, attendu ${expected} (${between} épisodes entre)`,
+          `${show}: #${a.episode_number} (${a.kst_day}) → #${b.episode_number} (${b.kst_day}) — numéro identique ou en recul`,
+        )
+      } else if (actual < expected) {
+        conflicts.push(
+          `${show}: #${a.episode_number} (${a.kst_day}) → #${b.episode_number} (${b.kst_day}) — delta ${actual} pour ${between} épisodes entre (attendu ${expected})`,
         )
       }
     }
   }
   return conflicts
+}
+
+export type SlotSpec = { showTitle: string; weekday: number }
+
+/**
+ * Épisodes RÉELLEMENT diffusés qui manquent en base, arbitrés par la
+ * NUMÉROTATION et non par le calendrier.
+ *
+ * Un simple « pas d'épisode ce mardi » ne prouve rien : les chaînes coréennes
+ * déprogramment (결방) régulièrement. Mesuré le 2026-08-21, la version
+ * calendaire signalait 9 trous dont 8 FAUX — Inkigayo #1317 (28/06) est suivi
+ * de #1318 (12/07) : numéros consécutifs à 14 jours d'écart, donc le 05/07
+ * n'a jamais existé. Idem Music Bank #1296 → #1297 sur 21 jours (Coupe du
+ * monde). Seul M Countdown #936 (09/07) → #938 (23/07) laisse un vrai trou :
+ * l'épisode #937 a bien été diffusé et nous manque.
+ *
+ * On ne signale donc QUE les créneaux situés dans un saut de numérotation. Hors
+ * de la plage numérotée on ne conclut rien (l'alerte J-1 du cron couvre le
+ * bord droit).
+ */
+export function findMissingEpisodes(
+  episodes: readonly EpisodeRow[],
+  preempted: ReadonlySet<string>,
+  slots: readonly SlotSpec[],
+  sinceDay: string,
+  untilDay: string,
+): string[] {
+  const out: string[] = []
+  for (const slot of slots) {
+    const rows = episodes
+      .filter((e) => e.show_title === slot.showTitle)
+      .sort((a, b) => a.kst_day.localeCompare(b.kst_day))
+    const numbered = rows.filter((e) => e.episode_number != null)
+    for (let i = 1; i < numbered.length; i++) {
+      const a = numbered[i - 1]
+      const b = numbered[i]
+      const between = rows.filter((e) => e.kst_day > a.kst_day && e.kst_day < b.kst_day)
+      const holes = (b.episode_number ?? 0) - (a.episode_number ?? 0) - 1 - between.length
+      if (holes <= 0) continue
+      const known = new Set(rows.map((e) => e.kst_day))
+      for (
+        let t = Date.parse(`${a.kst_day}T00:00:00Z`) + 86_400_000;
+        t < Date.parse(`${b.kst_day}T00:00:00Z`);
+        t += 86_400_000
+      ) {
+        const d = new Date(t)
+        if (d.getUTCDay() !== slot.weekday) continue
+        const day = d.toISOString().slice(0, 10)
+        if (day < sinceDay || day > untilDay) continue
+        if (known.has(day) || preempted.has(`${slot.showTitle}|${day}`)) continue
+        out.push(`${slot.showTitle} — ${day} (entre #${a.episode_number} et #${b.episode_number})`)
+      }
+    }
+  }
+  return out.sort((x, y) => y.localeCompare(x))
 }
 
 export type MemberRow = {
@@ -503,10 +569,93 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     const conflicts = findNumberingConflicts(rows)
     checks.push({
       id: 'episode_numbering_conflicts',
-      label: 'Numérotation d’épisodes incohérente',
+      label: 'Numérotation d’épisodes contradictoire',
       severity: 'warn',
       count: conflicts.length,
       sample: conflicts.slice(0, SAMPLE_MAX),
+    })
+
+    // Régularité : une semaine sans épisode, hors préemption officielle.
+    const { data: preemptions } = await supabase
+      .from('show_preemptions')
+      .select('show_title, kst_day')
+    const since = new Date(now.getTime() - 91 * 86_400_000).toISOString().slice(0, 10)
+    const missing = findMissingEpisodes(
+      rows,
+      new Set((preemptions ?? []).map((p) => `${p.show_title}|${p.kst_day}`)),
+      // Seuls les shows RÉELLEMENT hebdomadaires : The Show ne diffuse plus
+      // toutes les semaines (cf. ShowDescriptor.weekly).
+      SHOW_DESCRIPTORS.filter((d) => d.weekly).map((d) => ({
+        showTitle: d.displayName,
+        weekday: d.slot.weekday,
+      })),
+      since,
+      today,
+    )
+    // Jours KST qui portent au moins un passage. Pagination explicite : plus
+    // de 700 rows music_show sur 13 semaines, et PostgREST plafonne à 1 000.
+    const eventDays = new Set<string>()
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await supabase
+        .from('events')
+        .select('title, start_at')
+        .eq('type', 'music_show')
+        // Un épisode dont tous les passages sont masqués est vide côté user.
+        .eq('hidden', false)
+        .range(from, from + 999)
+      if (!page || page.length === 0) break
+      for (const e of page) {
+        const kst = new Date(Date.parse(e.start_at) + 9 * 3600_000).toISOString().slice(0, 10)
+        eventDays.add(`${e.title}|${kst}`)
+      }
+      if (page.length < 1000) break
+    }
+
+    // Épisode en base auquel aucun passage n'est rattaché : une row fantôme
+    // (The Show 18/08 portait #397, déjà attribué au 11/08 par l'autorité) —
+    // elle produit une page /show vide et fausse la numérotation.
+    const empty = rows.filter(
+      (e) => e.kst_day <= today && !eventDays.has(`${e.show_title}|${e.kst_day}`),
+    )
+    checks.push({
+      id: 'empty_episodes',
+      label: 'Épisodes sans aucun passage',
+      severity: 'warn',
+      count: empty.length,
+      sample: empty.slice(0, SAMPLE_MAX).map((e) => `${e.show_title} — ${e.kst_day}`),
+    })
+
+    checks.push({
+      id: 'episodes_missing',
+      label: 'Épisodes diffusés jamais collectés (trou de numérotation)',
+      severity: 'warn',
+      count: missing.length,
+      sample: missing.slice(0, SAMPLE_MAX),
+    })
+  }
+
+  // Passages annoncés qu'aucune vidéo du diffuseur ne confirme — relevés par
+  // le dernier run `aired-shows`. Deux causes possibles (lineup prévisionnel
+  // non réalisé, ou alias manquant) : revue humaine, jamais de purge auto.
+  {
+    const { data: lastRun } = await supabase
+      .from('scrape_log')
+      .select('details')
+      .eq('source', 'aired_shows')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const details = (lastRun?.details ?? {}) as Record<string, unknown>
+    const unconfirmed = Array.isArray(details.unconfirmed) ? (details.unconfirmed as string[]) : []
+    checks.push({
+      id: 'episodes_unconfirmed_lineup',
+      label: 'Passages annoncés sans trace de diffusion',
+      severity: 'warn',
+      count:
+        typeof details.unconfirmed_count === 'number'
+          ? details.unconfirmed_count
+          : unconfirmed.length,
+      sample: unconfirmed.slice(0, SAMPLE_MAX),
     })
   }
 

@@ -122,3 +122,92 @@ export function matchesGroup(
   const hashtags = text.match(HASHTAG_RE) ?? []
   return hashtags.some((h) => needles.some((n) => normalize(h) === n))
 }
+
+/**
+ * Tokens normalisés d'un texte : tout ce qui n'est ni lettre ni chiffre sépare.
+ * Contrairement à `normalize`, les frontières de mots sont PRÉSERVÉES.
+ */
+export function normalizedTokens(text: string): string[] {
+  return text
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/\p{M}+/gu, '')
+    .normalize('NFC')
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+}
+
+/**
+ * Index de matching d'un titre :
+ *   `singles` = les mots normalisés ;
+ *   `runs`    = toutes leurs suites CONTIGUËS (jusqu'à 6 mots) — « Girls'
+ *               Generation », « KISS OF LIFE » s'écrivent en plusieurs mots.
+ * Calculé UNE fois par titre puis interrogé en O(1) par chaque nom candidat :
+ * un scan de 250 groupes × 900 vidéos reste instantané.
+ */
+const MAX_RUN_TOKENS = 6
+const MAX_RUN_CHARS = 48
+
+export interface TitleIndex {
+  singles: Set<string>
+  runs: Set<string>
+}
+
+export function tokenIndex(text: string): TitleIndex {
+  const tokens = normalizedTokens(stripHashtags(text).replace(FEATURING_RE, ' '))
+  const singles = new Set(tokens)
+  const runs = new Set<string>()
+  for (let i = 0; i < tokens.length; i++) {
+    let acc = ''
+    for (let j = i; j < tokens.length && j - i < MAX_RUN_TOKENS; j++) {
+      acc += tokens[j]
+      if (acc.length > MAX_RUN_CHARS) break
+      runs.add(acc)
+    }
+  }
+  return { singles, runs }
+}
+
+/**
+ * Un nom TRÈS court doit tomber sur un mot entier : le recollage de mots
+ * fabrique sinon des noms de groupes à partir de rien. Cas réel (2026-08-21) :
+ * « woosoohyun - I've been in love | Show! MusicCore | MBC260801 » — « I've »
+ * donne les mots « i » et « ve », recollés en « ive » → passage d'IVE inventé
+ * sur Music Core. Au-delà de 3 caractères la collision devient improbable.
+ */
+export const SHORT_NEEDLE_MAX = 3
+
+export function needleInTitle(needle: string, index: TitleIndex): boolean {
+  return needle.length <= SHORT_NEEDLE_MAX ? index.singles.has(needle) : index.runs.has(needle)
+}
+
+/**
+ * Variante STRICTE de `matchesGroup` : le nom doit couvrir des mots ENTIERS du
+ * titre (un mot, ou une suite contiguë de mots), jamais un fragment.
+ *
+ * `matchesGroup` teste une inclusion de sous-chaîne sur le titre normalisé
+ * SANS séparateurs — largesse assumée pour attribuer un MV à un groupe déjà
+ * ciblé, mais inutilisable pour CRÉER une ligne à partir d'un titre : le
+ * live-stream « … KPOP LIVE STREAM » contient « ive » et inventerait un passage
+ * d'IVE (même classe que les 3 MV de SISTAR attribués à IVE, audit 2026-08-21).
+ *
+ * À utiliser dès qu'un faux positif écrit en base ; garder `matchesGroup`
+ * quand le groupe est déjà connu et qu'on cherche seulement à le confirmer.
+ */
+export function mentionsArtist(
+  text: string,
+  name: string | null | undefined,
+  extraAliases: readonly string[] = [],
+): boolean {
+  if (!name) return false
+  const base = normalize(name)
+  if (!base) return false
+  const needles = [base, ...(NAME_ALIASES[base] ?? []), ...extraAliases.map(normalize)].filter(
+    Boolean,
+  )
+  const index = tokenIndex(text)
+  if (needles.some((n) => needleInTitle(n, index))) return true
+  // Repli hashtag exact (« #ENHYPEN ») — même règle que matchesGroup.
+  const tags = text.match(HASHTAG_RE) ?? []
+  return tags.some((h) => needles.some((n) => normalize(h) === n))
+}
