@@ -85,3 +85,67 @@ describe('pickTickerEvents', () => {
     expect(picked).toHaveLength(2)
   })
 })
+
+describe('pickTickerEvents — une ligne = une ANNONCE (régression 2026-08-22)', () => {
+  const show = (groupId: string, name: string) => ({
+    title: 'Music Core',
+    type: 'music_show' as const,
+    start_at: '2026-07-03T06:15:00Z',
+    group_id: groupId,
+    groups: { name },
+  })
+
+  it('ne réserve pas les 8 emplacements aux groupes d’UN SEUL épisode', () => {
+    // Le libellé d'un music show ne porte pas le nom du groupe : dédupliquer
+    // par groupe donnait 8 events → 1 seule ligne « MUSIC CORE D-1 », donc un
+    // bandeau statique (le défilement démarre à 3 lignes).
+    const events = [
+      show('a', 'Oh My Girl'),
+      show('b', 'ENHYPEN'),
+      show('c', 'Kiss of Life'),
+      show('d', 'KiiiKiii'),
+      {
+        title: 'Inkigayo',
+        type: 'music_show' as const,
+        start_at: '2026-07-04T06:25:00Z',
+        group_id: 'a',
+        groups: { name: 'Oh My Girl' },
+      },
+      {
+        title: 'Rich Man',
+        type: 'release' as const,
+        start_at: '2026-07-05T09:00:00Z',
+        group_id: 'e',
+        groups: { name: 'aespa' },
+      },
+    ]
+    const picked = pickTickerEvents(events, new Map(), 8)
+    expect(picked).toHaveLength(3)
+    const items = buildTickerItems(picked, { nowIso: now })
+    expect(items.map((i) => i.text)).toEqual([
+      'MUSIC CORE D-1',
+      'INKIGAYO D-2',
+      'AESPA · RICH MAN D-3',
+    ])
+  })
+
+  it('garde la déduplication par GROUPE pour les autres types', () => {
+    const events = [
+      {
+        title: 'Song A',
+        type: 'mv' as const,
+        start_at: '2026-07-03T09:00:00Z',
+        group_id: 'a',
+        groups: { name: 'aespa' },
+      },
+      {
+        title: 'Song B',
+        type: 'mv' as const,
+        start_at: '2026-07-04T09:00:00Z',
+        group_id: 'a',
+        groups: { name: 'aespa' },
+      },
+    ]
+    expect(pickTickerEvents(events, new Map(), 8)).toHaveLength(1)
+  })
+})

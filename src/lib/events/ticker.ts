@@ -85,9 +85,28 @@ export function buildTickerItems(
 }
 
 /**
- * Sélection des events du ticker : les annonces « qui tapent » — un event par
- * groupe, groupes triés par popularité (nb de follows global), tous types,
- * qu'on suive le groupe ou non.
+ * Clé d'ANNONCE : ce qu'une ligne du ticker raconte réellement.
+ *
+ * Pour un music show, la ligne dit « MUSIC CORE D-1 » — le nom du groupe n'y
+ * figure pas, puisque c'est l'épisode qui est l'événement. Dédupliquer par
+ * GROUPE réservait donc les 8 emplacements à 8 groupes… du même épisode, et
+ * `buildTickerItems` les fusionnait ensuite en UNE ligne (il déduplique par
+ * texte). Constaté en prod le 2026-08-22 : les 8 events retenus étaient les
+ * 8 groupes de Music Core du 22/08, le bandeau affichait « MUSIC CORE D-1 »
+ * seul — donc statique, le défilement n'ayant lieu qu'à partir de 3 lignes.
+ *
+ * Un music show se déduplique par ÉPISODE (titre + jour), tout le reste par
+ * groupe : une ligne = une annonce distincte.
+ */
+function announcementKey(e: TickerSourceEvent & { group_id?: string | null }): string {
+  if (e.type === 'music_show') return `show:${e.title}|${e.start_at.slice(0, 10)}`
+  return e.group_id ?? e.groups?.name ?? e.title
+}
+
+/**
+ * Sélection des events du ticker : les annonces « qui tapent » — une annonce
+ * par groupe (par épisode pour les music shows), triées par popularité (nb de
+ * follows global), tous types, qu'on suive le groupe ou non.
  */
 export function pickTickerEvents<T extends TickerSourceEvent & { group_id?: string | null }>(
   events: readonly T[],
@@ -96,7 +115,7 @@ export function pickTickerEvents<T extends TickerSourceEvent & { group_id?: stri
 ): T[] {
   const byGroup = new Map<string, T>()
   for (const e of events) {
-    const key = e.group_id ?? e.groups?.name ?? e.title
+    const key = announcementKey(e)
     if (!byGroup.has(key)) byGroup.set(key, e) // events triés par date → le plus proche gagne
   }
   return [...byGroup.entries()]
