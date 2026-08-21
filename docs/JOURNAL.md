@@ -4,6 +4,72 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-22 (soir) — Performances de chargement : JS, polices, images
+
+**Commits** : `92a2638` (Supabase Realtime), `705d89f` (polices + bannière), `e91e4cd` (srcset) → `main`.
+
+Audit en cinq axes (polices, images, JS client, payload RSC, cache et navigation), chaque finding soumis à un réfuteur qui devait **reproduire la mesure**. Le TTFB n'était pas en cause (137-340 ms à chaud) : tout le poids est dans les octets envoyés.
+
+### 1. Le client Supabase partait sur toutes les pages — le plus gros poste
+
+Chaque page servait 17 chunks pour ~360 Ko brotli, **quasi identiques d'une route à l'autre** : presque tout vivait dans le bundle partagé. Le plus gros chunk du build (251 780 octets bruts) contenait supabase-js avec **Realtime, Phoenix et GoTrue**.
+
+`comments-realtime.tsx` est le seul import client de `@/lib/supabase/browser`, et `DiscussionsBlock` le montait **inconditionnellement**, avant même son seuil d'affichage — le commentaire d'origine l'assumait : « monté MÊME sous le seuil (sinon le bloc ne peut jamais apparaître en live) ». Le prix réel : 251 Ko de JS et un websocket ouvert sur chaque page, pour un bloc qui ne s'affiche **nulle part** (6 commentaires sur 2 entités en base, seuil à 3).
+
+Deux correctifs, et **le second est celui qui compte** : le composant ne s'arme qu'à partir d'une activité réelle, et l'import du client Supabase passe en **dynamique** dans l'effet. Rendre le rendu conditionnel ne suffisait pas — vérifié par mesure, le chunk restait dans le bundle : c'est l'**import** qui compte, pas le rendu.
+
+| Route             | Avant     | Après   |
+| ----------------- | --------- | ------- |
+| `/`               | 1 153 883 | 903 031 |
+| `/groups`         | 1 154 933 | 903 967 |
+| `/calendar`       | 1 160 407 | 909 555 |
+| `/mvs`            | 1 144 111 | 893 145 |
+| `/artists/[slug]` | 1 147 611 | 896 645 |
+
+Soit **−22 % de JS sur toutes les routes**, et plus aucune trace de phoenix/realtime dans les chunks servis.
+
+### 2. La bannière hero — l'élément LCP de toutes les pages groupe et artiste
+
+Le cron écrit l'URL de bannière YouTube en `=w2560` et elle partait **brute**. Mesure sur aespa : **1 220 921 octets** pour une boîte de 672 × 210 CSS. Les trois sources de la chaîne bannière passent désormais par Cloudinary à la taille réellement affichée (1344 × 420 = DPR 2) : **172 737 octets, −86 %**.
+
+Le crop **manuel** de l'admin n'est que redimensionné — jamais `g_auto`, qui re-cadrerait son cadrage délibéré. La bannière YouTube, ultra-large (2560 × 423) pour une boîte en 3,2:1, garde `c_fill,g_auto` qui choisit la zone d'intérêt au lieu de rogner au centre. 218 groupes concernés, 1 crop manuel.
+
+### 3. Les polices — 206 Ko préchargés par page
+
+Détail méthodologique qui m'a d'abord induit en erreur : les polices sont préchargées par les **hints du flight RSC**, pas par des `<link rel=preload>` dans le HTML. Un grep du HTML n'en montre aucune ; c'est le relevé Resource Timing qui les révèle.
+
+- **Geist Mono** (23 108 octets) était préchargée sur 100 % des pages publiques alors que ses deux seuls usages vivent dans `/admin` → `preload: false`.
+- **Archivo** (90 096 octets, 44 % du budget) était servie avec l'axe de **graisse** en 100..900. C'est lui qui coûte : pinner l'axe de largeur ne change rien (mesuré : `wdth@78..82` + `wght@100..900` = 90 104 octets). Or `next/font/google` **refuse** `weight` dès que `axes` est présent. D'où le passage en `next/font/local` sur `Archivo:wdth,wght@62..125,700` = **37 612 octets**, axe de largeur intact — `font-stretch: 78 % / 82 %` continue de fonctionner. Fichier sous OFL, licence jointe, métriques de repli calculées (`adjustFontFallback`) pour ne pas réintroduire de CLS.
+
+**206 048 → 130 456 octets (−36,7 %)** et une requête haute priorité en moins. Vérifié au navigateur : face `archivo` **loaded**, `font-stretch` calculé à 78 %, graisse 700 — rendu identique.
+
+**Invariant à tenir** : `.label-data` / `.label-data-inline` ne doivent jamais demander une autre graisse que 700, l'axe `wght` n'existe plus dans le fichier vendorisé.
+
+### 4. Le srcset — 212 des 231 `<img>` n'en avaient aucun
+
+Les composants posent `unoptimized` parce que le pipeline passe déjà par Cloudinary. Conséquence : **une seule taille pour tous les écrans**. Sur `/groups`, une tuile de 176,5 px téléchargeait l'image de 600 px — 44 316 octets là où ~10 000 suffisent.
+
+Un **loader `next/image` personnalisé** rend le srcset sans ajouter de transformation : il réécrit la largeur dans l'URL Cloudinary déjà construite, en conservant cadrage et ratio. `unoptimized` n'est retiré **que** de `GroupCard`.
+
+Piège évité : les tailles candidates par défaut de Next commencent à 640 px côté appareil — pour une tuile de 176 px, le plus petit candidat aurait été **plus gros** que le 600 actuel. La grille descend donc à 360/480 et gagne 200/300 côté `imageSizes`.
+
+Mesuré en mobile 375 px DPR 2 : le navigateur choisit **384 au lieu de 600**, et les images au-dessus de la ligne de flottaison passent de **354 528 à 170 742 octets (−52 %)**.
+
+Portée vérifiée : 37 `<Image>` dans le repo, 33 gardent `unoptimized` et ne passent pas par le loader ; les 6 restants basculent de l'optimiseur Vercel vers Cloudinary — 0 image cassée sur `/`, `/mvs`, `/calendar`, `/groups/aespa`.
+
+### Ce qui a été mesuré puis ÉCARTÉ
+
+- **`loading.tsx` sur les routes de détail.** Le réfuteur a montré que le correctif régresserait le fix soft-404 — décision déjà prise et documentée (`JOURNAL` du 2026-07-10, commit `a22d376`), et vérifiée en prod : `/groups/zzz`, `/artists/zzz`, `/mv/zzz` répondent bien **404**. Un `loading.tsx` au-dessus d'un segment dynamique fige le statut à 200. Le gain annoncé (~730 ms) était par ailleurs surestimé d'un facteur 2 à 3 : le delta réel mesuré est de ~240 ms, contre un coût SEO certain.
+- **`prefetch={false}` sur les tuiles de groupe.** Réel mais invisible : l'A/B mobile throttlé ne bouge ni le FCP ni le `load`. C'est une économie d'invocations Vercel (~224 sur un scroll intégral), pas une amélioration perçue. À garder pour un lot « coût », pas « perf ».
+
+### Ce qui reste, mesuré et chiffré
+
+- **`/calendar` sérialise le mois entier** : 133 008 octets de prop `events` pour 285 events, soit 46 % du document, alors que seuls les jours à venir sont rendus.
+- **`/groups` sérialise 256 slugs et leurs UUID** dans le flight : 65,8 Ko, dont ~5,8 Ko d'UUID inutiles côté client.
+- **Toutes les routes sont dynamiques** (`ƒ`), y compris `/about`, `/privacy`, `/terms` : le layout lit les cookies, ce qui opte tout l'arbre. Le vrai remède est PPR, parqué pour cause de soft-404.
+
+**Vérification** : tsc, 866 tests, eslint, prettier, build prod, mesures avant/après sur serveur de production local et au navigateur pour chaque correctif.
+
 ## 2026-08-22 — Filtre MV, recherche tolérante aux fautes, contenu des pages
 
 **Commits** : `ad19724` (filtre MV), `30b83ca` (recherche), `62b900c` (pages) → `main`.
