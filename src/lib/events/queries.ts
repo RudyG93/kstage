@@ -157,6 +157,37 @@ export async function getGroupMvs(slug: string, limit = 48) {
 }
 
 /**
+ * Passages music-show PASSÉS d'un groupe qui ont leur vidéo de scène.
+ *
+ * Ces lignes existaient sans surface (2026-08-21) : la page groupe n'affichait
+ * que les events à VENIR, donc les 643 scènes liées n'étaient atteignables que
+ * par le calendrier, à la bonne date. IDID avait 24 passages, tous avec vidéo,
+ * et une page qui semblait vide.
+ *
+ * `stage_url` non nul est volontaire : sans vidéo la ligne n'apporte qu'un
+ * intitulé de show, et le calendrier la porte déjà.
+ */
+export async function getGroupStages(slug: string, limit = 12) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    // groups!inner requis : PostgREST ne filtre sur `groups.slug` que si la
+    // relation est EMBARQU00c9E dans le select (PGRST200 sinon).
+    .select('id, title, start_at, episode_number, stage_url, image_url, groups!inner(slug)')
+    .eq('groups.slug', slug)
+    .eq('type', 'music_show')
+    .eq('hidden', false)
+    .not('stage_url', 'is', null)
+    .lt('start_at', new Date().toISOString())
+    .order('start_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+export type GroupStage = Awaited<ReturnType<typeof getGroupStages>>[number]
+
+/**
  * MVs SOLO d'un membre (mv_kind='member', member_id) — surfacés sur sa page
  * /artists/[slug] (R10). Ces MVs étaient collectés mais jamais affichés
  * (getGroupMvs les exclut, la branche membre ne les requêtait pas).

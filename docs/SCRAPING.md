@@ -339,6 +339,29 @@ Trois défauts distincts trouvés sur le SEUL épisode M Countdown EP.936 (09/07
 
 **Deux pièges du seed auto** : ① une chaîne étrangère homonyme passe le gate ≥2 hits (« Our Birthday » AMV 2025 seedée sur le girl group OURBIRTHDAY né en 2026) → garde : hits tous antérieurs au debut (marge 180 j) = pas de seed ; ② la même chaîne existe sous `/channel/UC…` ET `/@handle` → le check « déjà présente » par URL seul a créé des sources doublons (7 paires purgées) → dédup par `channel_id` EN PLUS de l'URL. Même classe côté MusicBrainz : l'artiste eurodance italien « Antares » (score 100) a fourni 4 faux membres au boys group k-pop → `pickArtistMatch` rejette un `country` présent ≠ KR.
 
+### 3.25 — Music shows : le lineup prévisionnel n'est pas la vérité (bascule 2026-08-21)
+
+**Symptômes cumulés** (retour Rudy) : numérotation incohérente, épisodes irréguliers, passages d'artistes manquants, scènes qui n'arrivent que des jours plus tard.
+
+**Cause commune** : tout partait d'un lineup **prévisionnel** capté dans une fenêtre étroite, et rien ne repassait derrière. Mesuré sur 13 semaines — 20 épisodes jamais collectés, 22 % des passages sans vidéo (`stage_url` cherché dans `[H-12 h, H+4 j]` de **publication** : une scène postée le 5ᵉ jour était rejetée définitivement), et des passages fantômes (M Countdown EP.941 portait 10 groupes alors que l'épisode était un spécial « MCD Summer Camp »).
+
+**Bascule** : la vidéo du diffuseur est l'autorité. Son titre porte la **date de diffusion** en `YYMMDD` — `Mnet 260820 방송`, `@뮤직뱅크(Music Bank) 260821`, `| 쇼! 음악중심 | MBC260815`, `@SBS Inkigayo 260816`, `| Show Champion | EP.608 | 260819`, `[THE SHOW] 260811 방송` — présente sur **83 à 98 %** des vidéos de show selon la chaîne. Mnet et Show Champion y ajoutent le numéro d'épisode. `broadcast-harvest.ts` la lit, `aired-lineups.ts` en déduit l'épisode, le lineup réel et `stage_url` (plus aucune fenêtre de publication). Cron `aired-shows` 3×/jour — **API YouTube + API Wikipedia uniquement**, donc hors de la limite « 1-2 fois par jour » qui vise le scraping de sites tiers.
+
+**Quatre gardes, chacune née d'un faux positif vu en dry-run** (les 291 créations ont été relues avant application) :
+
+1. **Mots entiers obligatoires** dès qu'un match écrit en base → `mentionsArtist`, jamais `matchesGroup` (qui teste une sous-chaîne sur le titre sans séparateurs). « ㅣKPOP LIVE STREAM » contenait « ive » → passage d'IVE inventé. Corollaire : un nom de ≤ 3 caractères doit tomber sur **un mot**, sans recollage — « I've been in love » donne les mots `i` + `ve`, recollés en `ive`.
+2. **Pas d'index de noms de membres** sur un titre libre : « fan » (NouerA), « jin » (BTS), « kim » (VVUP), « junmin » (xikers) fabriquaient 119 passages. Le nom du groupe figure de toute façon dans ces titres. (Le cron lineups, lui, reçoit un nom d'artiste déjà isolé : la règle y reste valable.)
+3. **Une vidéo qui nomme deux artistes du roster ne prouve rien** — un titre de chanson peut être un nom de groupe (« hrtz.wav - Highlight »).
+4. **Longueur minimale dépendante de l'écriture** : 2 syllabes hangul portent autant d'information que 5 lettres latines. Le seuil unique à 3 jetait tous les alias hangul courts — TXT restait invisible sur 7 épisodes où son slot solo est titré « 연준 ».
+
+**Régularité : arbitrer par la numérotation, pas par le calendrier.** Un dimanche sans épisode ne prouve rien (déprogrammations 결방 fréquentes). Inkigayo #1317 (28/06) → #1318 (12/07) : numéros consécutifs à 14 jours, donc le 05/07 n'a jamais existé. Sur 9 trous calendaires, **8 étaient des déprogrammations** (Coupe du monde) ; seul M Countdown #937 manque vraiment. `findMissingEpisodes` ne signale donc que les créneaux situés dans un **saut de numérotation**. Corollaire : `ShowDescriptor.weekly` — The Show ne diffuse plus toutes les semaines (4 épisodes en 2026, numéros consécutifs à deux semaines d'écart).
+
+**Le numéro est une propriété de l'ÉPISODE.** `events.episode_number` et `show_episodes.episode_number` étaient renseignés indépendamment : Music Bank du 21/08 affichait « #1304 » sur 5 tuiles et rien sur 2 ; The Show du 14/07 portait deux numéros. Il se recopie désormais depuis `show_episodes`, jamais redécouvert. L'autorité Wikipedia (§3.22), restée un script manuel depuis juillet donc jamais exécutée, tourne maintenant dans le cron.
+
+**Ce qu'on ne fait pas** : purger automatiquement un passage qu'aucune vidéo ne confirme. Un diffuseur ne poste pas toutes ses scènes — la liste part en revue humaine (`episodes_unconfirmed_lineup`), et elle sert autant de **détecteur d'alias manquants** que de fantômes.
+
+---
+
 ---
 
 ## 8. Versions de MV (`mv_kind` + `member_id`)

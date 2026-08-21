@@ -33,6 +33,8 @@ export interface AuthorityResult {
   corrected: number
   /** Épisodes sans numéro que l'autorité ne couvre pas non plus. */
   stillMissing: number
+  /** Numéros effacés parce que l'autorité les attribue à une AUTRE date. */
+  cleared: number
   /** Pages écartées car internement contradictoires. */
   incoherent: string[]
   changes: string[]
@@ -65,6 +67,7 @@ export async function applyEpisodeAuthority(
     filled: 0,
     corrected: 0,
     stillMissing: 0,
+    cleared: 0,
     incoherent: [],
     changes: [],
   }
@@ -122,6 +125,32 @@ export async function applyEpisodeAuthority(
       await supabase
         .from('events')
         .update({ episode_number: auth })
+        .eq('type', 'music_show')
+        .eq('title', show)
+        .gte('start_at', from)
+        .lt('start_at', to)
+    }
+
+    // Un numéro attribué par l'autorité à une date ne peut pas en décorer une
+    // autre : toute homonymie restante est PROUVÉE fausse, on l'efface plutôt
+    // que de la corriger par arithmétique. Cas réel (2026-08-21) : le carrd
+    // avait posé #1321 sur l'Inkigayo du 23/08, numéro que Wikipedia attribue
+    // au 16/08 — les deux s'affichaient « Inkigayo #1321 ».
+    const takenByDay = new Map([...authority].map(([day, num]) => [num, day]))
+    for (const row of episodes.filter((e) => e.show_title === show)) {
+      if (row.episode_number == null) continue
+      const owner = takenByDay.get(row.episode_number)
+      if (!owner || owner === row.kst_day) continue
+      result.cleared++
+      result.changes.push(
+        `${show} ${row.kst_day} : #${row.episode_number} effacé (l'autorité l'attribue au ${owner})`,
+      )
+      if (!apply) continue
+      await supabase.from('show_episodes').update({ episode_number: null }).eq('id', row.id)
+      const { from, to } = dayBounds(row.kst_day)
+      await supabase
+        .from('events')
+        .update({ episode_number: null })
         .eq('type', 'music_show')
         .eq('title', show)
         .gte('start_at', from)

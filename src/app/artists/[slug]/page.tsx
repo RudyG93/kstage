@@ -19,7 +19,8 @@ import {
   getMemberSlugById,
   getMembersForGroup,
 } from '@/lib/members/queries'
-import { getUpcomingEvents, getGroupMvs, getMemberMvs } from '@/lib/events/queries'
+import { StageCard } from '@/components/group/stage-card'
+import { getUpcomingEvents, getGroupMvs, getGroupStages, getMemberMvs } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -144,8 +145,9 @@ function ArtistBodySkeleton() {
 
 /** Corps solo (events, MVs, carrière) — streamé après le hero (Lot G). */
 async function SoloBody({ member, group }: { member: Member; group: ArtistGroup }) {
-  const [events, mvs, career, timeZone] = await Promise.all([
+  const [events, stages, mvs, career, timeZone] = await Promise.all([
     getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
+    getGroupStages(group.slug),
     getGroupMvs(group.slug, 48),
     getCareerPath(member.id),
     getViewerTimeZone(),
@@ -182,6 +184,19 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
           <CollapsibleMvs mvs={mvs} ratings={ratings} timeZone={timeZone} />
+        </section>
+      )}
+
+      {/* Passages music-show diffusés — même manque que sur la page groupe
+          (2026-08-21) : la section events ne montre que l'À VENIR. */}
+      {stages.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium">Stages ({stages.length})</h2>
+          <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
+            {stages.map((stage) => (
+              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
+            ))}
+          </div>
         </section>
       )}
 

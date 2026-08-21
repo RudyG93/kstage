@@ -181,6 +181,17 @@ export function shortDate(iso: string, timeZone = 'Asia/Seoul'): string {
     .toUpperCase()
 }
 
+/** « Jul 12, 2026 » — date complète courte (passages music-show : le jour
+ * compte, et l'année distingue deux épisodes éloignés). */
+export function dayMonthYear(iso: string, timeZone = 'Asia/Seoul'): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  }).format(new Date(iso))
+}
+
 /** « Mar 2026 » — mois + année (profil « Fan since » en UTC ; cartes MV / Top
  * Rated en KST — retour Rudy R7 : mois-année, pas de jour ni d'apostrophe). */
 export function monthYear(iso: string, timeZone = 'UTC'): string {
