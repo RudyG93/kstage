@@ -19,7 +19,7 @@ import { optimizeImageBuffer } from '@/lib/images/optimize'
 import { uploadWebpVerified } from '@/lib/images/upload'
 import { refreshMemberPhotos } from '@/lib/images/refresh'
 import { findCanonicalMatch, type PersonEvidence } from '@/lib/members/matching'
-import { normalize } from '@/lib/scrapers/group-match'
+import { samePersonName, unsortPersonName } from '@/lib/scrapers/person-name'
 import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
 import { fetchDebutCategory, fetchInfobox, resolveImageUrl, searchPageIds } from './fandom'
 import { fetchWikipediaDebutNames, normalizeDebutName } from './wikipedia-debuts'
@@ -352,10 +352,14 @@ export async function createFromPayload(
           .select('id, stage_name, birthday')
           .eq('group_id', groupId)
         for (const person of mb.members) {
+          // Match élargi aux FORMES du nom (nuit 2026-08-21) : le sort-name MB
+          // « Park, Han-bin » désigne le membre déjà en base sous son stage
+          // name « Hanbin ». Sans ça, MB créait un second membre — EVNNE avait
+          // 9 rows pour 5 personnes, virgule affichée à l'écran comprise.
           const match = (memberRows ?? []).find(
             (m) =>
-              normalize(m.stage_name) === normalize(person.sortName) ||
-              normalize(m.stage_name) === normalize(person.name),
+              samePersonName(m.stage_name, person.sortName ?? '') ||
+              samePersonName(m.stage_name, person.name ?? ''),
           )
           if (match) {
             if (!match.birthday && person.birthday) {
@@ -366,15 +370,18 @@ export async function createFromPayload(
               if (bErr) stepErrors.push(`mb birthday ${person.sortName}: ${bErr.message}`)
             }
           } else if (person.sortName && /^[\x20-\x7e]+$/.test(person.sortName)) {
+            // Nom AFFICHABLE : jamais la forme inversée « Park, Han-bin » —
+            // elle finissait telle quelle sur les pages membres.
+            const display = unsortPersonName(person.sortName)
             const { error: iErr } = await supabase.from('members').insert({
               group_id: groupId,
-              stage_name: person.sortName,
+              stage_name: display,
               status: 'active',
-              slug: `${slug}-${slugify(person.sortName)}`,
+              slug: `${slug}-${slugify(display)}`,
               birthday: person.birthday,
             })
             if (iErr && iErr.code !== '23505')
-              stepErrors.push(`mb member ${person.sortName}: ${iErr.message}`)
+              stepErrors.push(`mb member ${display}: ${iErr.message}`)
           }
         }
       }
@@ -724,7 +731,7 @@ export async function enrichNewGroupMedia(
 
   const { data: group } = await supabase
     .from('groups')
-    .select('id, name, confidence, debut_date, name_aliases')
+    .select('id, name, confidence, debut_date, name_aliases, agency')
     .eq('id', groupId)
     .single()
   if (!group) return { inserted, seeded, units, notes: ['groupe introuvable'] }

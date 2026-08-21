@@ -22,6 +22,11 @@ on:
     - cron: '45 10 * * *' # notify-comebacks      (19:45 KST / 12:45 Paris)
     - cron: '30 13 * * *' # monitor               (22:30 KST — après le dernier scrape du jour)
     - cron: '0 11 * * 1' # discover-channels      (lundi 20:00 KST — hebdo, 1 h après scrape-youtube)
+    # Récupération des MV par discographie fandom (nuit 2026-08-21) : ~2 units
+    # par groupe, donc TOUT le pool à catalogue maigre en un run quotidien —
+    # là où discover-channels (205 units/groupe) drainait sur des semaines et
+    # butait sur le quota de recherche.
+    - cron: '20 10 * * *' # recover-mvs          (19:20 KST — après scrape-youtube)
   workflow_dispatch:
     inputs:
       endpoint:
@@ -38,6 +43,7 @@ on:
           - notify-comebacks
           - monitor
           - discover-channels
+          - recover-mvs
 
 jobs:
   run:
@@ -64,6 +70,7 @@ jobs:
               "45 10 * * *") EP=notify-comebacks ;;
               "30 13 * * *") EP=monitor ;;
               "0 11 * * 1") EP=discover-channels ;;
+              "20 10 * * *") EP=recover-mvs ;;
               *) echo "::error::schedule inconnu: ${SCHEDULE:-}"; exit 1 ;;
             esac
           fi
