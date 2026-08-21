@@ -53,8 +53,17 @@ export function summarizeRun(
     if (scanned !== null) parts.push(`${scanned} groupes scannés`)
   } else if (source === 'refresh_images') {
     const photos = (d.photos ?? {}) as Record<string, number>
+    const images = (d.images ?? {}) as Record<string, unknown>
     if (typeof photos.updated === 'number')
       parts.push(`${photos.updated} photos résolues, ${photos.misses ?? 0} sans source`)
+    if (typeof photos.sharedRejected === 'number' && photos.sharedRejected > 0)
+      parts.push(`${photos.sharedRejected} photos de groupe écartées`)
+    if (typeof images.updated === 'number') parts.push(`${images.updated} images groupe`)
+    const aborted = images.aborted as { reason?: string } | null | undefined
+    if (aborted?.reason) parts.push(`⚠ spotify ${aborted.reason}`)
+    const mismatches = images.mismatches
+    if (Array.isArray(mismatches) && mismatches.length > 0)
+      parts.push(`${mismatches.length} liens Spotify à revoir`)
   } else if (source === 'aired_shows') {
     const eps = num('episodes_created')
     const passages = num('events_created')
@@ -91,6 +100,14 @@ export const REMEDIES: Record<string, Remedy> = {
     note: 'Le cron quotidien refresh-images re-résout les photos manquantes (fandom).',
     cron: 'refresh-images',
     buttonLabel: 'Relancer la résolution photos',
+  },
+  spotify_link_mismatch: {
+    kind: 'review',
+    note: 'Le nom renvoyé par Spotify ne correspond pas au nom DB : soit le lien pointe le mauvais artiste (à corriger dans groups.links), soit Spotify localise le nom et il manque l’alias — ajouter la forme officielle dans groups.name_aliases. RIEN n’est écrit tant que le désaccord dure. Re-lancer le cron ne sert à rien : la donnée est à corriger à la main.',
+  },
+  members_sharing_photo: {
+    kind: 'review',
+    note: 'Ces membres portent la même image : fandom sert la photo de GROUPE (ou une pochette, un logo) quand la page perso n’a pas de portrait. L’écriture de nouveaux partages est bloquée depuis le 21/08 ; pour les lignes existantes, vider photo_source_key + photo_url du groupe concerné puis relancer la résolution — ils repasseront par les titres désambiguïsés. Arbitrage humain : sans portrait, la tuile retombe sur l’initiale.',
   },
   oversized_photos: {
     kind: 'review',

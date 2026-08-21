@@ -49,17 +49,47 @@ export async function GET(req: Request) {
   const photos = await refreshMemberPhotos(supabase, { batch: photoBatch })
 
   const summary = { images, banners, photos }
-  const degraded =
-    images.mismatches.length > 0 || photos.apiBlocked || photos.failures > photos.checked / 2
+
+  // Ce qui dégrade un run, c'est ce qui l'a EMPÊCHÉ de faire son travail — pas
+  // une donnée connue à corriger. Avant le 2026-08-21 c'était l'inverse : un
+  // seul nom d'artiste en coréen (StelLive) mettait le run en `partial` tous
+  // les jours depuis le 16/08, donc le monitor en alerte, donc le job GitHub
+  // rouge ; pendant qu'un run où **166 appels Spotify sur 167** avaient échoué
+  // (quota) passait pour `ok` (2026-08-20 23:08). Même leçon que le `partial`
+  // permanent de scrape-youtube : un statut qui crie au loup n'est plus lu.
+  // Les mismatches restent visibles — details.images.mismatches et le check
+  // `spotify_link_mismatch` de /admin/health.
+  const imagesBroken = images.aborted !== null || images.apiErrors > images.total / 4
+  // La phase 3 n'avait AUCUN signal capable de détecter une panne de résolution
+  // fandom : `failures` compte par membre, alors qu'une coupure fait échouer par
+  // LOT de 5 — le seuil `failures > checked / 2` était donc inatteignable, et
+  // les 100 membres du run ressortaient avec `photo_checked_at` rafraîchi.
+  const photosBroken =
+    photos.apiBlocked ||
+    photos.batchFailures > 0 ||
+    photos.apiErrors > 0 ||
+    (photos.checked > 0 && photos.failures > photos.checked / 2)
+  const degraded = imagesBroken || photosBroken
+
+  const reasons = [
+    images.aborted?.reason === 'rate_limited'
+      ? `spotify quota épuisé (retry-after ${images.aborted.retryAfterSec ?? '?'} s, ${images.aborted.skipped} groupes non tentés)`
+      : null,
+    images.aborted?.reason === 'auth' ? 'spotify 401/403 — credentials ou app restreinte' : null,
+    images.apiErrors > images.total / 4 ? `spotify ${images.apiErrors} erreurs API` : null,
+    photos.apiBlocked ? 'fandom api.php 403 — re-router la phase photos' : null,
+    photos.batchFailures > 0 ? `fandom: ${photos.batchFailures} lots injoignables` : null,
+    photos.apiErrors > 0 ? `fandom: ${photos.apiErrors} réponses non-2xx` : null,
+    photos.checked > 0 && photos.failures > photos.checked / 2
+      ? `photos: ${photos.failures}/${photos.checked} en échec`
+      : null,
+  ].filter(Boolean)
+
   await logScrapeRun(supabase, {
     source: 'refresh_images',
     status: degraded ? 'partial' : 'ok',
     startedAt,
-    errorMsg: photos.apiBlocked
-      ? 'fandom api.php 403 — re-router la phase photos'
-      : images.mismatches.length > 0
-        ? `spotify name mismatches: ${images.mismatches.join('; ')}`
-        : null,
+    errorMsg: reasons.length > 0 ? reasons.join(' ; ') : null,
     details: summary,
   })
 
