@@ -65,12 +65,12 @@ export function GroupCard({
           alt=""
           aria-hidden
           fill
-          unoptimized
           priority={priority}
-          // `unoptimized` court-circuite l'émission fetchpriority de next/image
-          // (vérifié sur le HTML build) → posé explicitement pour le scanner
-          // de préchargement.
-          fetchPriority={priority ? 'high' : undefined}
+          // `unoptimized` RETIRE (perf 2026-08-22) : il supprimait le srcset, et
+          // la tuile — 176,5 px de large en mobile — telechargeait la version
+          // 600 px, 44 Ko la, pour ~10 Ko utiles. Le loader Cloudinary reecrit
+          // simplement la largeur dans l'URL que `faceCrop` a deja construite,
+          // donc aucune transformation supplementaire n'est facturee.
           sizes="(min-width: 768px) 320px, 50vw"
           className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
         />
