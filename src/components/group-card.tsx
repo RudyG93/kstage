@@ -5,6 +5,7 @@ import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { formatDDay } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
+import { activityLabel, type ActivityStatus } from '@/lib/groups/activity'
 import type { GroupSummary } from '@/lib/groups/queries'
 import type { Database } from '@/types/database'
 
@@ -33,6 +34,7 @@ export function GroupCard({
   timeZone,
   href,
   nextEvent,
+  activity,
   priority = false,
 }: {
   group: GroupCardData
@@ -41,6 +43,9 @@ export function GroupCard({
   timeZone: string
   href?: Route
   nextEvent?: NextEventInfo | null
+  /** Statut d'activité (2026-08-21) : badge discret sur les artistes en pause
+      ou inactifs — rien sur les actifs, pour ne pas surcharger la grille. */
+  activity?: ActivityStatus
   /** Tuile au-dessus de la fold : désactive le lazy-load (LCP, audit 2026-08-20). */
   priority?: boolean
 }) {
@@ -108,6 +113,13 @@ export function GroupCard({
         >
           {group.name}
         </p>
+        {!statusLabel && activityLabel(activity ?? 'active') && (
+          <p className="mt-0.5">
+            <span className="label-data-inline text-faint text-[9px]">
+              {activityLabel(activity ?? 'active')}
+            </span>
+          </p>
+        )}
         {statusLabel && statusColor && (
           <p className="mt-0.5 flex items-center gap-1.5">
             <span

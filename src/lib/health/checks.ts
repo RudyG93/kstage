@@ -15,6 +15,7 @@ import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { isConsistentRiffSize, isValidWebpHeader } from '@/lib/images/upload'
 import { isSamePerson, normalizeName } from '@/lib/members/matching'
+import { activityStatus } from '@/lib/groups/activity'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -128,13 +129,15 @@ export function findDuplicatePersonCandidates(members: readonly MemberRow[]): st
 
 // ── Fetch paginé (cap PostgREST 1000 rows) ───────────────────────────────────
 
+// MV **et** releases : le comptage « catalogue maigre » ne regarde que les mv,
+// mais la DERNIÈRE SORTIE (qui décide du statut d'activité) compte les deux.
 async function fetchAllMvEvents(supabase: SupabaseClient) {
-  const rows: { group_id: string | null }[] = []
+  const rows: { group_id: string | null; start_at: string; type: string }[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from('events')
-      .select('group_id')
-      .eq('type', 'mv')
+      .select('group_id, start_at, type')
+      .in('type', ['mv', 'release'])
       .eq('hidden', false)
       .range(from, from + 999)
     if (error) throw new Error(`events mv: ${error.message}`)
@@ -402,11 +405,25 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
   {
     const countByGroup = new Map<string, number>()
     for (const r of mvRows) {
-      if (r.group_id) countByGroup.set(r.group_id, (countByGroup.get(r.group_id) ?? 0) + 1)
+      if (r.group_id && r.type === 'mv')
+        countByGroup.set(r.group_id, (countByGroup.get(r.group_id) ?? 0) + 1)
     }
     const recentDebutCutoff = new Date(now.getTime() - 90 * 86_400_000).toISOString().slice(0, 10)
+    // Les groupes DORMANTS (aucune sortie depuis > 24 mois) sortent du compteur
+    // « catalogue maigre » (2026-08-21) : un artiste en pause depuis trois ans
+    // avec 2 MV n'est pas un défaut de scraping, c'est son catalogue réel. Les
+    // y compter gonflait l'alerte et noyait les vrais retards.
+    const lastReleaseByGroup = new Map<string, string>()
+    for (const r of mvRows) {
+      if (!r.group_id) continue
+      const cur = lastReleaseByGroup.get(r.group_id)
+      if (!cur || r.start_at > cur) lastReleaseByGroup.set(r.group_id, r.start_at)
+    }
+    const isDormant = (id: string) =>
+      activityStatus(lastReleaseByGroup.get(id), now.getTime()) === 'dormant'
+
     const allThin = (groups ?? [])
-      .filter((g) => !g.disbanded_on)
+      .filter((g) => !g.disbanded_on && !isDormant(g.id))
       .map((g) => ({ g, n: countByGroup.get(g.id) ?? 0 }))
       .filter(({ n }) => n <= THIN_MV_THRESHOLD)
       .sort((a, b) => a.n - b.n)

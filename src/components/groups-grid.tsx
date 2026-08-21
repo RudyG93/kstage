@@ -4,11 +4,13 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import type { Route } from 'next'
 import { GroupCard, type GroupCardData, type NextEventInfo } from '@/components/group-card'
+import type { ActivityStatus } from '@/lib/groups/activity'
 
 export type GroupGridItem = {
   group: GroupCardData
   href?: Route
   nextEvent?: NextEventInfo | null
+  activity?: ActivityStatus
 }
 
 /** Lot initial rendu (SSR + premier paint) ; la suite arrive au scroll. */
@@ -109,6 +111,7 @@ export function GroupsGrid({
                 timeZone={timeZone}
                 href={it.href}
                 nextEvent={it.nextEvent}
+                activity={it.activity}
                 priority={i < priorityCount}
               />
             </div>

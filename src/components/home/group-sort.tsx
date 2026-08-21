@@ -5,6 +5,8 @@ import type { Route } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const OPTIONS = [
+  // Défaut : met en avant les artistes qui sortent quelque chose (2026-08-21).
+  { value: 'activity', label: 'Activity' },
   { value: 'az', label: 'A–Z' },
   { value: 'za', label: 'Z–A' },
   { value: 'pop_desc', label: 'Most followed' },
@@ -19,7 +21,7 @@ export function GroupSort({ value }: { value: string }) {
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const params = new URLSearchParams(searchParams.toString())
     const v = e.target.value
-    if (v && v !== 'az') params.set('sort', v)
+    if (v && v !== 'activity') params.set('sort', v)
     else params.delete('sort')
     const qs = params.toString()
     router.push((qs ? `${pathname}?${qs}` : pathname) as Route)

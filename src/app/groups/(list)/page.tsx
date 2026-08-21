@@ -12,19 +12,26 @@ import {
   getSoloArtistsCached,
 } from '@/lib/groups/queries'
 import {
+  getLastReleaseByGroupCached,
   getNextEventForAllGroupsCached,
   getRecentReleasesForAllGroupsCached,
 } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
+import { activityStatus, ACTIVITY_RANK } from '@/lib/groups/activity'
 import { pickTrending } from '@/lib/groups/trending'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
 
 export const metadata = { title: 'Groups' }
 
-type SortKey = 'az' | 'za' | 'pop_desc' | 'pop_asc'
+type SortKey = 'activity' | 'az' | 'za' | 'pop_desc' | 'pop_asc'
 
-const SORT_KEYS: readonly SortKey[] = ['az', 'za', 'pop_desc', 'pop_asc']
+// « activity » est le tri PAR DÉFAUT (2026-08-21) : il met en avant les
+// artistes qui sortent quelque chose, au lieu de traiter à égalité un comeback
+// du mois et un groupe silencieux depuis trois ans. Les tris explicites (A-Z,
+// popularité) restent PURS : qui veut l'annuaire alphabétique complet le
+// demande, et retrouve NewJeans à la lettre N.
+const SORT_KEYS: readonly SortKey[] = ['activity', 'az', 'za', 'pop_desc', 'pop_asc']
 
 export default async function GroupsPage({
   searchParams,
@@ -35,7 +42,7 @@ export default async function GroupsPage({
   const initialTab: TabKey = sp.tab === 'solo' ? 'solo' : 'groups'
   const activeSort: SortKey = (SORT_KEYS as string[]).includes(sp.sort ?? '')
     ? (sp.sort as SortKey)
-    : 'az'
+    : 'activity'
 
   // Les DEUX jeux (groupes + solos) sont chargés d'un coup : la bascule
   // d'onglet est 100 % client (retour Rudy 2026-07-17 — la nav ?tab=
@@ -57,14 +64,22 @@ export default async function GroupsPage({
   // Trending = signal DU MOMENT (reproche Rudy 2026-07-11) : imminence d'un
   // event futur + récence d'une sortie — cached « tous groupes » (le résultat
   // couvre l'union des deux onglets).
-  const [nextEvents, recentReleases] = await Promise.all([
+  const [nextEvents, recentReleases, lastReleases] = await Promise.all([
     getNextEventForAllGroupsCached(),
     getRecentReleasesForAllGroupsCached(),
+    getLastReleaseByGroupCached(),
   ])
+  // Statut d'activité (actif / en pause / dormant) derive de la derniere
+  // sortie — sert au tri par defaut ET au badge de la tuile.
+  const statusOf = (id: string) => activityStatus(lastReleases.get(id))
 
   const sortItems = <T extends { id: string; name: string }>(items: readonly T[]): T[] =>
     [...items].sort((a, b) => {
       switch (activeSort) {
+        case 'activity': {
+          const rank = ACTIVITY_RANK[statusOf(a.id)] - ACTIVITY_RANK[statusOf(b.id)]
+          return rank !== 0 ? rank : a.name.localeCompare(b.name)
+        }
         case 'za':
           return b.name.localeCompare(a.name)
         case 'pop_desc':
@@ -97,6 +112,7 @@ export default async function GroupsPage({
             ? (`/artists/${item.memberSlug}` as Route)
             : undefined,
         nextEvent: next ? { type: next.type, start_at: next.start_at } : null,
+        activity: statusOf(item.id),
       }
     }
     // nowMs = undefined → défaut Date.now() DANS la lib (purity lint RSC).

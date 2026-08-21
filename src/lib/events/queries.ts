@@ -369,6 +369,44 @@ export const getRecentlyAddedEvents = unstable_cache(
   { revalidate: 900, tags: ['events'] },
 )
 
+/**
+ * Date de la DERNIÈRE sortie (mv/release) par groupe, toutes périodes — base du
+ * statut d'activité (actif / en pause / dormant, cf. lib/groups/activity.ts).
+ * Cached anon : identique pour tous les viewers, tag `events`.
+ */
+const getLastReleasePairsCached = unstable_cache(
+  async (): Promise<[string, string][]> => {
+    const supabase = createAnonClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+    const out = new Map<string, string>()
+    // Paginé : le catalogue dépasse largement le plafond PostgREST de 1000.
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('events')
+        .select('group_id, start_at')
+        .in('type', ['mv', 'release'])
+        .eq('hidden', false)
+        .lte('start_at', new Date().toISOString())
+        .order('start_at', { ascending: false })
+        .range(from, from + 999)
+      if (error) break
+      for (const e of data ?? []) {
+        if (e.group_id && !out.has(e.group_id)) out.set(e.group_id, e.start_at)
+      }
+      if (!data || data.length < 1000) break
+    }
+    return [...out]
+  },
+  ['last-release-by-group'],
+  { revalidate: 3600, tags: ['events'] },
+)
+
+export async function getLastReleaseByGroupCached(): Promise<Map<string, string>> {
+  return new Map(await getLastReleasePairsCached())
+}
+
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
 export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]
