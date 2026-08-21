@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isOfficialMvTitle } from './is-official-mv'
+import { destylize, isOfficialMvTitle } from './is-official-mv'
 
 describe('isOfficialMvTitle', () => {
   const official = [
@@ -134,5 +134,70 @@ describe('isOfficialMvTitle — Performance / Special Video', () => {
   it('les autres dérivés restent rejetés', () => {
     expect(isOfficialMvTitle('BTS "Butter" Dance Practice').official).toBe(false)
     expect(isOfficialMvTitle("ITZY 'Cake' MV Teaser").official).toBe(false)
+  })
+})
+
+describe('destylize — lettres remplacées par de la ponctuation', () => {
+  it('rend « Beh!nd » lisible par la règle behind', () => {
+    // Cas signalé par Rudy le 2026-08-21 : publié comme un vrai clip parce que
+    // le « i » de Behind est un « ! » — 7 rows Hi-Fi Un!corn en prod.
+    const t =
+      '[Beh!nd Un!corn] Hi-Fi Un!corn - #14 FANTASIA photo shooting & PHANTOM PAIN MV shooting'
+    expect(destylize(t)).toContain('Behind')
+    expect(isOfficialMvTitle(t).official).toBe(false)
+    expect(isOfficialMvTitle(t).reason).toBe('blacklist:behind')
+  })
+
+  it("n'écarte pas un vrai clip dont le nom est stylisé", () => {
+    expect(isOfficialMvTitle("Hi-Fi Un!corn (하이파이 유니콘) 'PHANTOM PAIN' MV").official).toBe(
+      true,
+    )
+    expect(isOfficialMvTitle("Kep1er 케플러 | 'Shooting Star' M/V").official).toBe(true)
+    expect(isOfficialMvTitle("TXT 'LO$ER=LO♡ER' Official MV").official).toBe(true)
+  })
+})
+
+describe('dérivés trouvés à l’audit des 3 047 MV en base (2026-08-21)', () => {
+  const derives = [
+    "[BANGTAN BOMB] 'FIRE' MV Shooting- 'JIMIN' Follow ver. - BTS (방탄소년단)",
+    "ENHYPEN (엔하이픈) X TAYO - 'Hey Tayo' MV shooting sketch",
+    'TWICE "Feel Special" M/V Monitoring Clip #8',
+    "NewJeans (뉴진스) 'Bubble Gum' MV Review",
+    'iKON - "PANORAMA" MV Interview',
+    "STAYC(스테이씨) 'GPT' MV Synopsis & Inst. Pre-release",
+    '[EN-TER key] What Goes On at the MV Set - ENHYPEN (엔하이픈)',
+    "IVE 아이브 'ELEVEN' MV EXTRA CUT",
+    "ZEROBASEONE (제로베이스원) 'NOW OR NEVER' MV BONUS CUT",
+    'ASTRO 아스트로 - Baby M/V QUIZ EVENT',
+    '[aespa X Premiere Pro] 프리미어 프로로 만드는 나만의 Girls MV 콘테스트',
+    "[특별기획] … | 'It's Me' MV 미니 다큐멘터리 | ILLIT (아일릿)",
+    "[Dreamcatcher's Note] '날아올라' 첫 MV 시사!",
+    "(MAMAMOO)이니시아네스트'GirlCrush'MV MAKINGFILM",
+    "[&DAY] 'Under the skin' MV release Countdown - &TEAM",
+    'TWICE "Feel Special" M/V COPY',
+    'Jackson Wang - Cruel (MV Demo)',
+    'K.A.R.D - Don`t Recall M/V Theory',
+  ]
+  it.each(derives)('rejette %s', (title) => {
+    expect(isOfficialMvTitle(title).official).toBe(false)
+  })
+
+  const vraisClips = [
+    // Le mot piégeux est dans le TITRE DE LA CHANSON, pas accolé à « MV ».
+    'Kep1er 케플러 | ‘Shooting Star’ M/V',
+    'XG - SHOOTING STAR (Official Music Video)',
+    'DAY6 "Shoot Me" M/V',
+    "MONSTA X 몬스타엑스 'Shoot Out' MV",
+    "SHINee 샤이니 'View' MV",
+    // Ordre inversé « Music Video Official » : Apink titre ainsi ses clips.
+    'Apink 에이핑크 덤더럼(Dumhdurum) Music Video Official',
+    // Clip auto-produit par le groupe : une version, pas du contenu.
+    "VERIVERY - '소중력' DIY M/V (Produced by VERIVERY)",
+    // Versions officielles : elles restent des clips.
+    'N.Flying (엔플라잉) – 봄이 부시게 (Spring Memories) M/V Selfie ver.',
+    'iKON - "PANORAMA" MV Drama Ver',
+  ]
+  it.each(vraisClips)('garde %s', (title) => {
+    expect(isOfficialMvTitle(title).official).toBe(true)
   })
 })

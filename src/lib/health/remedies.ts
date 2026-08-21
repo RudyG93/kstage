@@ -101,6 +101,10 @@ export const REMEDIES: Record<string, Remedy> = {
     cron: 'refresh-images',
     buttonLabel: 'Relancer la résolution photos',
   },
+  mv_title_rejected: {
+    kind: 'review',
+    note: "Ces vidéos sont entrées sous une version antérieure du filtre de titre. Vérifier la liste, puis masquer d'un coup : `npx tsx scripts/audit-mv-titles.ts --hide` (revue seule sans le drapeau). `hidden` plutôt que DELETE : réversible, et la clé d'idempotence empêche la ré-insertion.",
+  },
   spotify_link_mismatch: {
     kind: 'review',
     note: 'Le nom renvoyé par Spotify ne correspond pas au nom DB : soit le lien pointe le mauvais artiste (à corriger dans groups.links), soit Spotify localise le nom et il manque l’alias — ajouter la forme officielle dans groups.name_aliases. RIEN n’est écrit tant que le désaccord dure. Re-lancer le cron ne sert à rien : la donnée est à corriger à la main.',

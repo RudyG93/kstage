@@ -83,7 +83,12 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   ['content subtitles', /\ben\s+jp\s+cn\b/i],
   // « MV Shoot » = tournage du clip en anglais (behind : BANGTAN BOMB, T:TIME,
   // EN-TER key…) — complète le coréen 촬영.
-  ['mv shoot', /\bmv shoot\b/i],
+  // « MV Shooting » autant que « MV Shoot » : le suffixe -ing cassait la
+  // frontière de mot — 20 rows en prod, dont les 9 BANGTAN BOMB « 'FIRE' MV
+  // Shooting » et le « [Beh!nd Un!corn] … MV shooting » signalé par Rudy.
+  // ANCRÉ À MV : « Kep1er 'Shooting Star' M/V » et « DAY6 "Shoot Me" M/V »
+  // sont de vrais clips dont la CHANSON porte le mot.
+  ['mv shoot', /\bm\/?v\s*shoot(ing)?\b/i],
   // « [Let's Play …] » = série variété/contenu interactif (MCND) — pas le clip.
   ["let's play", /\blet'?s play\b/i],
   // « … MV Time » = série de contenu (DAILY:DIRECTION « DD MV TIME »).
@@ -96,6 +101,42 @@ const BLACKLIST: { term: string; re: RegExp }[] = [
   // promesse-défi. Marqueurs d'événement, jamais un titre de chanson (« EXO-SC
   // 10억뷰 (1 Billion Views) » — chanson — n'a AUCUN de ces mots → épargné).
   ['view milestone', /돌파|달성|공약/],
+  // ─── Audit prod 2026-08-21 ────────────────────────────────────────────────
+  // Retour Rudy sur « [Beh!nd Un!corn] … MV shooting ». Les 3 047 MV de la base
+  // ont été repassés au filtre : ces familles de contenu NON-clip passaient
+  // toutes. Chaque terme est ANCRÉ à M/V quand le mot seul pourrait être un
+  // titre de chanson.
+  // « M/V Monitoring Clip #1..#9 » (TWICE) : le groupe regarde son propre clip.
+  ['monitoring', /\bmonitoring\b/i],
+  // « 'Bubble Gum' MV Review » (NewJeans ×4), « … MV 리뷰 » : réaction.
+  ['mv review', /\bm\/?v\s*(review|리뷰)\b/i],
+  ['interview', /\binterview\b|인터뷰/i],
+  ['synopsis', /\bsynopsis\b/i],
+  // « MV 해석 » / « MV theory » : décryptage du clip.
+  ['mv analysis', /\bm\/?v\s*(해석|theory)\b/i],
+  // « What Goes On at the MV Set » : coulisses de plateau.
+  ['mv set', /\bm\/?v\s*set\b/i],
+  // « MV EXTRA CUT » (IVE), « MV BONUS CUT » (ZEROBASEONE) : rushes.
+  ['bonus cut', /\b(bonus|extra)\s+cut\b/i],
+  // « ['Hey Mama!' MV EVENT] » (EXO), « M/V QUIZ EVENT » (ASTRO) : animation.
+  ['mv event', /\bm\/?v\s*(event|quiz)\b/i],
+  // « MV 콘테스트 » : concours de montage proposé aux fans (aespa × Premiere Pro).
+  ['contest', /\bcontest\b|콘테스트/i],
+  // « MV 미니 다큐멘터리 » (ILLIT).
+  ['documentary', /\bdocumentar(y|ies)\b|다큐멘터리/i],
+  // « 첫 MV 시사 » (Dreamcatcher), « 상영회 » : projection / avant-première.
+  ['screening', /시사|상영회/],
+  // « MV MAKINGFILM » collé en un mot : \bmaking\b ne l'attrape pas.
+  ['making film', /\bmaking ?film\b/i],
+  // « MV release Countdown » (&TEAM) : compte à rebours, pas la sortie.
+  ['release countdown', /\brelease\s*countdown\b/i],
+  // PAS de règle « DIY » : « VERIVERY - '소중력' DIY M/V (Produced by VERIVERY) »
+  // désigne un vrai clip auto-produit par le groupe (6 rows), au même titre
+  // qu'une version self-cam. Seules les projections « DIY M/V 상영회 » tombent,
+  // via `screening`. Un clip réel écarté coûte plus cher qu'un bonus gardé.
+  // « M/V COPY » (TWICE), « (MV Demo) » (Jackson Wang) : brouillons de travail.
+  ['mv copy', /\bm\/?v\s*copy\b/i],
+  ['mv demo', /\bm\/?v\s*demo\b/i],
 ].map(([term, re]) => ({ term: term as string, re: re as RegExp }))
 
 /**
@@ -130,17 +171,44 @@ export interface OfficialMvCheck {
 const SECONDARY_EXEMPT = new Set(['performance', 'special video', 'special clip'])
 const DERIVATIVE_BLOCKERS = BLACKLIST.filter((b) => !SECONDARY_EXEMPT.has(b.term))
 
+/**
+ * Rend lisibles les lettres remplacées par de la ponctuation ou des chiffres.
+ *
+ * La k-pop stylise énormément les noms de séries et de groupes, et la
+ * blacklist raisonne en MOTS : « [Beh!nd Un!corn] … MV shooting » (Hi-Fi
+ * Un!corn) n'a jamais déclenché la règle `behind` parce que le « i » est un
+ * « ! ». Le titre a donc été publié comme un vrai clip (signalé par Rudy le
+ * 2026-08-21).
+ *
+ * Substitutions leet classiques uniquement, et le résultat sert EXCLUSIVEMENT
+ * à re-tester la blacklist — jamais à valider un titre. Au pire on rejette un
+ * peu plus ; on ne peut pas accepter un dérivé de plus.
+ */
+export function destylize(title: string): string {
+  return title
+    .replace(/!/g, 'i')
+    .replace(/1/g, 'i')
+    .replace(/0/g, 'o')
+    .replace(/3/g, 'e')
+    .replace(/4/g, 'a')
+    .replace(/\$/g, 's')
+    .replace(/@/g, 'a')
+}
+
 /** Le titre designe-t-il un MV officiel ? (whitelist + blacklist). */
 export function isOfficialMvTitle(title: string): OfficialMvCheck {
+  // Le titre dé-stylisé passe les MÊMES gates : un dérivé ne doit pas s'en
+  // tirer parce que son nom de série écrit « Beh!nd » au lieu de « Behind ».
+  const plain = destylize(title)
   // 1. Derives : ils invalident tout, y compris un format secondaire.
-  const derivative = DERIVATIVE_BLOCKERS.find((b) => b.re.test(title))
+  const derivative = DERIVATIVE_BLOCKERS.find((b) => b.re.test(title) || b.re.test(plain))
   if (derivative) return { official: false, reason: `blacklist:${derivative.term}` }
   // 2. Format secondaire officiel (Performance/Special Video) : accepte, mais
   //    marque — son rang depend de l'existence d'un vrai MV pour la chanson.
   if (SECONDARY_VISUAL.test(title))
     return { official: true, reason: 'secondary-visual', secondary: true }
   // 3. Blacklist complete puis whitelist, comme avant.
-  const hit = BLACKLIST.find((b) => b.re.test(title))
+  const hit = BLACKLIST.find((b) => b.re.test(title) || b.re.test(plain))
   if (hit) return { official: false, reason: `blacklist:${hit.term}` }
   if (!WHITELIST_WORD.test(title) && !WHITELIST_PHRASE.test(title)) {
     return { official: false, reason: 'no-mv-marker' }

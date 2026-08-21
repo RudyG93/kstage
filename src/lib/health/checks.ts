@@ -17,6 +17,7 @@ import { isConsistentRiffSize, isValidWebpHeader } from '@/lib/images/upload'
 import { isSamePerson, normalizeName } from '@/lib/members/matching'
 import { activityStatus } from '@/lib/groups/activity'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
+import { isOfficialMvTitle } from '@/lib/scrapers/is-official-mv'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -595,6 +596,44 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       severity: 'warn',
       count: thin.length,
       sample: thin.slice(0, SAMPLE_MAX).map(({ g, n }) => `${g.name} (${g.slug}) — ${n} MV`),
+    })
+  }
+
+  // 3bis. MV publiés dont le TITRE ne passe plus le filtre courant.
+  //
+  // Le gate ne s'applique qu'à l'ingestion : tout ce qui est entré sous une
+  // version antérieure y reste. C'est ainsi que « [Beh!nd Un!corn] … MV
+  // shooting » s'affichait comme un clip (retour Rudy 2026-08-21) — le « i »
+  // de Behind est un « ! », la règle ne le voyait pas. Ce check rend visible
+  // le résidu à chaque renforcement du filtre, au lieu d'attendre qu'un
+  // utilisateur tombe dessus.
+  {
+    const suspects: string[] = []
+    let scanned = 0
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await supabase
+        .from('events')
+        .select('title, slug, groups!inner(name)')
+        .eq('type', 'mv')
+        .eq('hidden', false)
+        .range(from, from + 999)
+      if (!page || page.length === 0) break
+      scanned += page.length
+      for (const e of page) {
+        const check = isOfficialMvTitle(e.title)
+        if (check.official) continue
+        suspects.push(
+          `${(e.groups as { name: string }).name} — ${check.reason} — ${e.title.slice(0, 70)}`,
+        )
+      }
+      if (page.length < 1000) break
+    }
+    checks.push({
+      id: 'mv_title_rejected',
+      label: `MV publiés que le filtre de titre rejette (${scanned} scannés)`,
+      severity: 'warn',
+      count: suspects.length,
+      sample: suspects.slice(0, SAMPLE_MAX),
     })
   }
 
