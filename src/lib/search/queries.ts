@@ -4,7 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getGroupSubscriberCounts } from '@/lib/sources/queries'
 import { normalize } from '@/lib/scrapers/group-match'
+import { fuzzyMatches, matchRank, MIN_FUZZY_LEN } from '@/lib/search/fuzzy'
+import { getAllMembers } from '@/lib/members/queries'
 import type { Database } from '@/types/database'
+
+/** Rang d'une correspondance approximative : toujours après les franches. */
+const FUZZY_RANK = 4
 
 /**
  * Échappe une saisie user pour un `.ilike()` PostgREST : neutralise les
@@ -38,10 +43,21 @@ export function resolveGroupTokens(
   for (const token of tokens) {
     const norm = normalize(token)
     if (!norm) continue
-    const hits = groups.filter((g) => {
+    let hits = groups.filter((g) => {
       const name = normalize(g.name)
       return name === norm || (norm.length >= 4 && name.includes(norm))
     })
+    // Repli APPROXIMATIF, seulement si rien n'a matché franchement : « aepsa »
+    // ou « babymonstre » doivent désigner leur groupe (demande Rudy
+    // 2026-08-21). Jamais en premier — une correspondance exacte doit toujours
+    // primer, sinon un vrai nom se ferait voler par un voisin orthographique.
+    // Le garde de longueur est celui de la branche exacte, et il est
+    // indispensable : `fuzzyMatches` accepte d'abord le containment, donc sans
+    // lui « asa » désignerait le groupe Hwasa (« hwasa » contient « asa ») et
+    // « asa babymonster » renverrait tout le roster au lieu d'Asa.
+    if (hits.length === 0 && norm.length >= MIN_FUZZY_LEN) {
+      hits = groups.filter((g) => fuzzyMatches(norm, normalize(g.name)))
+    }
     if (hits.length > 0) for (const h of hits) groupIds.add(h.id)
     else titleTokens.push(token)
   }
@@ -88,13 +104,29 @@ export async function searchGroups(q: string, limit = 5) {
   const norm = normalize(needle)
   if (!norm) return []
   const target = SEARCH_ALIASES[norm] ?? norm
-  const rows = (data ?? []).filter((g) => {
+  // Deux niveaux : correspondance FRANCHE d'abord, approximative ensuite
+  // (fautes de frappe et inversions — cf. lib/search/fuzzy). `rank` garde
+  // l'exact et le préfixe devant, pour qu'un « à peu près » ne double jamais
+  // un vrai résultat.
+  const scored: { g: (typeof data)[number]; rank: number }[] = []
+  for (const g of data ?? []) {
     const n = normalize(g.name)
-    return n.includes(norm) || n.includes(target) || normalize(g.slug).includes(target)
-  })
-  // Tri par notoriété (subs YouTube max par groupe) plutôt qu'alphabétique :
-  // « les plus connus d'abord » (retour Rudy 2026-07-03).
-  return rows.sort((a, b) => (subs.get(b.id) ?? 0) - (subs.get(a.id) ?? 0)).slice(0, limit)
+    const s = normalize(g.slug)
+    if (n.includes(norm) || n.includes(target) || s.includes(target)) {
+      scored.push({
+        g,
+        rank: Math.min(matchRank(norm, n), matchRank(target, n), matchRank(target, s)),
+      })
+    } else if (fuzzyMatches(norm, n) || fuzzyMatches(target, n) || fuzzyMatches(target, s)) {
+      scored.push({ g, rank: FUZZY_RANK })
+    }
+  }
+  // Tri par pertinence puis par notoriété (subs YouTube max par groupe) plutôt
+  // qu'alphabétique : « les plus connus d'abord » (retour Rudy 2026-07-03).
+  return scored
+    .sort((a, b) => a.rank - b.rank || (subs.get(b.g.id) ?? 0) - (subs.get(a.g.id) ?? 0))
+    .slice(0, limit)
+    .map(({ g }) => g)
 }
 
 export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]
@@ -291,13 +323,80 @@ export async function searchMembers(q: string, limit = 8) {
   const needle = sanitizeIlike(q)
   if (!needle) return []
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('members')
-    .select(MEMBER_SELECT)
-    .is('canonical_id', null)
-    .not('slug', 'is', null)
-    .or(`stage_name.ilike.%${needle}%,real_name.ilike.%${needle}%`)
-    .limit(limit)
+  const base = () =>
+    supabase.from('members').select(MEMBER_SELECT).is('canonical_id', null).not('slug', 'is', null)
+
+  // Un token qui désigne un GROUPE ouvre son roster (retour Rudy 2026-08-21 :
+  // « babymonster » ne proposait aucun membre, « asa babymonster » rien du
+  // tout). La brique existait déjà pour les MV et les events — searchMembers
+  // ne l'appelait simplement pas, et l'embed `groups!inner(...)` de
+  // MEMBER_SELECT n'est qu'une projection d'affichage, jamais un prédicat.
+  const { groupIds, titleTokens } = resolveGroupTokens(tokenize(needle), await allGroupRefs())
+  let byGroup = null
+  if (groupIds.length > 0) {
+    let query = base().in('group_id', groupIds)
+    // Chaque `.or()` chaîné est AND-é par PostgREST : « asa babymonster » →
+    // membres de BABYMONSTER dont un nom contient « asa ».
+    for (const token of titleTokens) {
+      query = query.or(`stage_name.ilike.%${token}%,real_name.ilike.%${token}%`)
+    }
+    byGroup = query.limit(limit * 2)
+  }
+
+  // UNION, jamais un `else` : sinon un nom de membre qui est aussi sous-chaîne
+  // d'un nom de groupe perdrait son résultat actuel.
+  // On rapatrie PLUS que `limit` avant de classer : PostgREST tronque sans
+  // ORDER BY, donc limiter à 3 côté SQL faisait disparaître la correspondance
+  // EXACTE. « asa » renvoyait Asahi / Masato / Jo — jamais Asa. Le tri par
+  // pertinence doit voir un vivier, pas trois lignes arbitraires.
+  const pool = Math.max(limit * 4, 24)
+  const [byName, grouped] = await Promise.all([
+    base()
+      .or(`stage_name.ilike.%${needle}%,real_name.ilike.%${needle}%`)
+      .order('stage_name')
+      .limit(pool),
+    byGroup ?? Promise.resolve({ data: [] }),
+  ])
+
+  const merged = dedupeMembers([...(byName.data ?? []), ...(grouped.data ?? [])])
+  if (merged.length > 0) return rankMembers(merged, needle).slice(0, limit)
+
+  // Rien de franc : dernier recours, approximation sur le nom de scène. La
+  // liste des membres canoniques est déjà en cache 1 h (picker Bias) — aucun
+  // chargement neuf, et ce chemin ne s'ouvre que sur une recherche vide.
+  return fuzzyMemberFallback(supabase, needle, limit)
+}
+
+type MemberRow = { id: string; slug: string | null; stage_name: string; status?: string | null }
+
+function dedupeMembers<T extends { id: string }>(rows: readonly T[]): T[] {
+  const seen = new Set<string>()
+  return rows.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+}
+
+/** Exact avant préfixe avant contenu ; à égalité, ordre alphabétique. */
+function rankMembers<T extends MemberRow>(rows: readonly T[], needle: string): T[] {
+  const norm = normalize(needle)
+  return [...rows].sort(
+    (a, b) =>
+      matchRank(norm, normalize(a.stage_name)) - matchRank(norm, normalize(b.stage_name)) ||
+      a.stage_name.localeCompare(b.stage_name),
+  )
+}
+
+async function fuzzyMemberFallback(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  needle: string,
+  limit: number,
+) {
+  const norm = normalize(needle)
+  if (!norm) return []
+  const slugs = (await getAllMembers())
+    .filter((m) => fuzzyMatches(norm, normalize(m.stage_name)))
+    .slice(0, limit)
+    .map((m) => m.slug)
+  if (slugs.length === 0) return []
+  const { data } = await supabase.from('members').select(MEMBER_SELECT).in('slug', slugs)
   return data ?? []
 }
 
