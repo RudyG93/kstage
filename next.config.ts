@@ -63,6 +63,19 @@ const nextConfig: NextConfig = {
     ]
   },
   images: {
+    // Loader Cloudinary (perf 2026-08-22) : le pipeline d'images passe deja par
+    // Cloudinary, les composants posaient donc `unoptimized` pour ne pas payer
+    // deux transformations — et perdaient le `srcset`. Le loader le rend en
+    // reecrivant la largeur dans l'URL deja construite. Les composants qui
+    // gardent `unoptimized` ne passent pas par ici.
+    loader: 'custom',
+    loaderFile: './image-loader.ts',
+    // Tailles CANDIDATES du srcset. Les valeurs par defaut de Next commencent a
+    // 640 px cote appareil : pour une tuile de 176 px, le plus petit candidat
+    // aurait ete plus GROS que le 600 px servi aujourd'hui. On descend donc la
+    // grille, et on coupe 2048/3840 qu'aucune surface n'utilise.
+    deviceSizes: [360, 480, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 200, 256, 300, 384],
     // v16 : defaut qualities=[75] — sans cette liste, le quality={70} du hero
     // (hero-backdrop.tsx) etait silencieusement force a 75.
     qualities: [70, 75],
