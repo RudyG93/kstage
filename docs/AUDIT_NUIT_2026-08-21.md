@@ -76,3 +76,32 @@ Les plus transposables, dans l'ordre recommandé :
 
 - Le TTFB **n'est pas** un problème : 75-150 ms à chaud. Les pics à 1,2 s mesurés au premier passage étaient des démarrages à froid de lambda. Le serveur est bien réglé ; ce qui coûte est côté client (images, polices, JS).
 - Le finding « le h1 est livré dans un `<div hidden>` » est un **faux positif** : c'est le mécanisme normal du streaming Suspense de React (contenu réinséré par JS). Vérifié en prod, `/groups/ourbirthday` a bien son `h1`.
+
+## 6. « Trop de groupes ? » — analyse chiffrée (question de Rudy, 21/08)
+
+Intuition : « on a beaucoup de groupes quasi inconnus ou inactifs, avec un MV ou deux, dans des agences peu connues ». Les chiffres la **nuancent nettement** — sur 256 groupes (dont 38 solos, 3 dissous) :
+
+| Mesure                                       | Valeur         |
+| -------------------------------------------- | -------------- |
+| Ont sorti quelque chose ces 12 derniers mois | **200 (78 %)** |
+| Silencieux depuis 12-24 mois                 | 28             |
+| Silencieux depuis plus de 24 mois            | 28             |
+| Sans aucun MV                                | 9              |
+| 1 à 2 MV seulement                           | 46             |
+| N'ont jamais rien sorti                      | **0**          |
+
+**Le point important** : les « inactifs » ne sont pas des inconnus. La liste des silencieux depuis 18 mois et plus contient **NewJeans** (26 MV, hiatus judiciaire), **iKON** (41), **FTISLAND** (56), **PENTAGON** (18), VICTON, ONEUS, Kang Daniel, MCND, OnlyOneOf. Un fan qui cherche NewJeans doit les trouver : les supprimer serait une régression, pas un nettoyage.
+
+Les vrais creux se comptent à **13 groupes** : `kandis, geenius, puzzle, forte-na, el7z-up, stellive, cherish, triple-iz, aria, heartsteel, b-d-u, tribe, bewave` (≤ 1 MV **et** silencieux depuis 18 mois).
+
+**Diagnostic** : le problème n'est pas le NOMBRE, c'est l'ABSENCE DE HIÉRARCHIE. Dans l'annuaire, rien ne distingue NewJeans d'un groupe à 1 MV sorti en 2023 — même tuile, même poids. C'est ça qui donne la sensation d'une base diluée.
+
+**Recommandation — classer plutôt que supprimer** (réversible, et ça sert aussi le produit) :
+
+1. **Statut d'activité dérivé** (aucune saisie manuelle) : `actif` (sortie < 12 mois) · `en pause` (12-24 mois) · `dormant` (> 24 mois). Calculé depuis la dernière sortie.
+2. **L'annuaire trie par activité** : les actifs d'abord, les dormants en fin de liste ou derrière un filtre « inclure les groupes en pause ». Un fan de NewJeans les trouve toujours par la recherche.
+3. **Les checks santé cessent de compter les dormants** comme des anomalies : un groupe en pause à 2 MV n'est pas un défaut de scraping, et il pollue aujourd'hui le compteur « catalogue maigre ».
+4. **Les 13 creux réels** : revue manuelle ponctuelle — soit compléter (leur MV existe peut-être sur la chaîne d'un label, ce que `recover-mvs` sait maintenant faire), soit masquer de l'annuaire sans supprimer.
+5. **L'entrée est déjà durcie** : le gate d'auto-création exige un signal d'audience réel (YouTube ≥ 10k abonnés ou Deezer ≥ 5k fans). Le flux entrant n'est donc plus le problème ; c'est le stock historique qui est hétérogène.
+
+À trancher par Rudy : le point 2 est un choix produit (montrer tout le catalogue vs mettre en avant le vivant).
