@@ -35,6 +35,9 @@ const UA =
 // groupe solo. Étendre au besoin (ex-membres de légendes retirées).
 const SOLO_PARENT_FALLBACK: Record<string, string> = {
   taeyeon: "Girls' Generation",
+  // Dayoung : sa page fandom est « Dayoung (WJSN) », mais WJSN n'est pas au
+  // roster — aucune row membre pour dériver le parent (2026-08-21).
+  dayoung: 'WJSN',
 }
 
 /**
@@ -283,10 +286,33 @@ export async function refreshMemberPhotos(
   // Ciblage d'un groupe précis : photos immédiates à la création (round
   // 2026-07-18 — un nouveau groupe attendait la rotation ~100/j, avatars vides).
   if (opts.groupId) mq = mq.eq('group_id', opts.groupId)
-  const { data: members, error } = await mq
+  // PRIORITÉ AUX MEMBRES SANS PHOTO (retour Rudy 2026-08-21). La rotation par
+  // ancienneté seule les laissait au fond de la file : le bouton « Relancer la
+  // résolution photos » rendait « 0 photos résolues » alors qu'un passage ciblé
+  // sur le même groupe en récupérait 5 sur 5 (BADVILLAIN — leurs pages fandom
+  // existent). Une photo MANQUANTE est un trou visible ; une photo vieille de
+  // deux jours ne l'est pas : les sans-photo passent donc d'abord, le reste de
+  // la rotation remplit le budget restant.
+  const { data: missing, error: missErr } = await (opts.groupId || opts.staleOnly
+    ? mq.is('photo_url', null).limit(0)
+    : supabase
+        .from('members')
+        .select(
+          'id, stage_name, real_name, photo_url, photo_source_key, groups!inner(name, slug, is_solo)',
+        )
+        .is('photo_url', null)
+        .eq('status', 'active')
+        .order('photo_checked_at', { ascending: true, nullsFirst: true })
+        .limit(batchSize))
+  if (missErr) throw new Error(`members select (missing): ${missErr.message}`)
+
+  const remaining = Math.max(0, batchSize - (missing?.length ?? 0))
+  const { data: rotation, error } = await mq
     .order('photo_checked_at', { ascending: true, nullsFirst: true })
-    .limit(batchSize)
+    .limit(remaining)
   if (error) throw new Error(`members select: ${error.message}`)
+  const seen = new Set((missing ?? []).map((m) => m.id))
+  const members = [...(missing ?? []), ...(rotation ?? []).filter((m) => !seen.has(m.id))]
 
   const summary: MemberPhotosSummary = {
     checked: 0,
