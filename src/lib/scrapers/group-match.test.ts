@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalize, matchesGroup, withinOneEdit } from './group-match'
+import { matchesGroup, mentionsArtist, normalize, withinOneEdit } from './group-match'
 
 describe('normalize', () => {
   it('lowercase + strip ponctuation/espaces', () => {
@@ -142,5 +142,34 @@ describe('matchesGroup — variantes typographiques (NFKD)', () => {
   })
   it("n'élargit pas le matching à un autre groupe", () => {
     expect(matchesGroup("𝗩𝟴 'singasong' Official MV", 'V9')).toBe(false)
+  })
+})
+
+describe('mentionsArtist (matching par mots entiers)', () => {
+  it('matche un nom en un mot ou en plusieurs', () => {
+    expect(
+      mentionsArtist('[안방1열 풀캠4K] 웨이션브이 (WayV FullCam) @SBS Inkigayo 260816', 'WayV'),
+    ).toBe(true)
+    expect(mentionsArtist('더윈드(The Wind) - Party Like A Rock Star', 'The Wind')).toBe(true)
+    expect(
+      mentionsArtist("[MCD Summer Camp] 소녀시대 (Girls' Generation) - PARTY", "Girls' Generation"),
+    ).toBe(true)
+  })
+
+  it('refuse un fragment de mot là où matchesGroup accepte', () => {
+    // Le live-stream contient « LIVE » : « ive » n'est pas un mot du titre.
+    expect(matchesGroup('[LIVE] KPOP LIVE STREAM | 쇼! 음악중심', 'IVE')).toBe(true)
+    expect(mentionsArtist('[LIVE] KPOP LIVE STREAM | 쇼! 음악중심', 'IVE')).toBe(false)
+  })
+
+  it('refuse un nom court recollé depuis deux mots (« I\u2019ve » → i + ve)', () => {
+    expect(
+      mentionsArtist("woosoohyun - I've been in love | Show! MusicCore | MBC260801", 'IVE'),
+    ).toBe(false)
+    expect(mentionsArtist('IVE (아이브) - REBEL HEART @SBS Inkigayo 260816', 'IVE')).toBe(true)
+  })
+
+  it('accepte un alias fourni par l\u2019appelant', () => {
+    expect(mentionsArtist('정은지 - 파도 #엠카운트다운 EP.942', 'Apink', ['정은지'])).toBe(true)
   })
 })

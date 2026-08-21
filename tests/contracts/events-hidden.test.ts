@@ -19,6 +19,11 @@ const EXEMPT = new Set([
   'app/admin/events/page.tsx',
   'lib/scrapers/debuts/ingest.ts',
   'lib/scrapers/music-shows/stage-links.ts',
+  // Reconstruction post-diffusion : crée les passages, pose stage_url et
+  // recopie le numéro d'épisode. Écritures — un passage masqué doit rester
+  // aligné sur son épisode, il n'est simplement plus affiché.
+  'lib/scrapers/music-shows/aired-lineups.ts',
+  'lib/scrapers/music-shows/episode-authority.ts',
   'app/api/cron/scrape-music-shows/route.ts',
   'lib/scrapers/youtube.ts',
   'lib/scrapers/comeback-ingest.ts',

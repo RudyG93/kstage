@@ -15,6 +15,15 @@ export interface ShowDescriptor {
   // extraire la date du HTML (cas MnetPlus M Countdown). Cf. `slots.ts`.
   // weekday : 0=dimanche … 6=samedi (cohérence avec Date.getUTCDay())
   slot: { weekday: number; hour: number; minute: number }
+  /**
+   * Le show diffuse-t-il TOUTES les semaines ? The Show ne le fait plus :
+   * Wikipedia ne lui connaît que 4 épisodes en 2026 (#394 le 02/06, #395 le
+   * 14/07, #396 le 28/07, #397 le 11/08 — numéros CONSÉCUTIFS à deux semaines
+   * d'intervalle), et la chaîne @thekpop ne poste rien pour les mardis
+   * intermédiaires. Sans ce drapeau, le contrôle de régularité lui inventait
+   * 8 épisodes manquants (vérifié le 2026-08-21).
+   */
+  weekly: boolean
   // Avatar de la chaîne YouTube officielle du diffuseur (fetch channels.list
   // du 2026-07-13, R5) : visuel des bandeaux « Lineup TBA » à la place de
   // l'initiale. Les URLs yt3.ggpht sont stables tant que la chaîne ne change
@@ -27,6 +36,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'the-show',
     displayName: 'The Show',
     slot: { weekday: 2, hour: 18, minute: 0 },
+    weekly: false,
     iconUrl:
       'https://yt3.ggpht.com/ak7rvwiEaaJDbiau5F_o_oV6wHqAUZwORy_-ALQyI2IEJjo_m9IAxAecX7Og1UY93TiVxs9Zgw=s88-c-k-c0x00ffffff-no-rj',
   },
@@ -34,6 +44,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'show-champion',
     displayName: 'Show Champion',
     slot: { weekday: 3, hour: 17, minute: 0 },
+    weekly: true,
     iconUrl:
       'https://yt3.ggpht.com/KmtLGIgpEOIRca9yfl8WzQedKkkooLw7kszl0ieVBfq7aq9u6PmFLdMIYAF2FcDONszSl1JZbA=s88-c-k-c0x00ffffff-no-rj',
   },
@@ -41,6 +52,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'm-countdown',
     displayName: 'M Countdown',
     slot: { weekday: 4, hour: 18, minute: 0 },
+    weekly: true,
     iconUrl:
       'https://yt3.ggpht.com/xPBuFrafbL_6Opr8UVDVKinGSQRqv1432LMo-7tRojZpdOd7N3hLeCegoQPX45iKEvQnnIrx=s88-c-k-c0x00ffffff-no-rj',
   },
@@ -48,6 +60,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'music-bank',
     displayName: 'Music Bank',
     slot: { weekday: 5, hour: 17, minute: 0 },
+    weekly: true,
     iconUrl:
       'https://yt3.ggpht.com/bfuCyrlo74z5K_0A1voFD7leSSlafqfb953tFQ4Oe5X9CFDN23X_vm07yV8f_YCY63dxBjiB=s88-c-k-c0x00ffffff-no-rj',
   },
@@ -55,6 +68,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'music-core',
     displayName: 'Music Core',
     slot: { weekday: 6, hour: 15, minute: 15 },
+    weekly: true,
     iconUrl:
       'https://yt3.ggpht.com/lMLCpSdIgJNZ11RW-0hyfU3Xb4f-molFbQFPn_302s1BAjJUFL8298P4Sbz_W76YEWtwscXi-48=s88-c-k-c0x00ffffff-no-rj',
   },
@@ -62,6 +76,7 @@ export const SHOW_DESCRIPTORS: readonly ShowDescriptor[] = [
     id: 'inkigayo',
     displayName: 'Inkigayo',
     slot: { weekday: 0, hour: 15, minute: 25 },
+    weekly: true,
     iconUrl:
       'https://yt3.ggpht.com/GqzNZfMlBCgXYpAA74wuCs9HTEJ7ePtImt6QpXwk2qt6LJEIrZ8hEdPHeLPusnCCqoEGJb1pEQ=s88-c-k-c0x00ffffff-no-rj',
   },

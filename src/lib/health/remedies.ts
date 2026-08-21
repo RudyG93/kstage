@@ -13,6 +13,7 @@
 export const TRIGGERABLE_CRONS = [
   'refresh-images',
   'recover-mvs',
+  'aired-shows',
   'discover-channels',
   'scrape-youtube',
   'scrape-music-shows',
@@ -28,6 +29,7 @@ export type TriggerableCron = (typeof TRIGGERABLE_CRONS)[number]
 export const CRON_LOG_SOURCE: Record<TriggerableCron, string> = {
   'refresh-images': 'refresh_images',
   'recover-mvs': 'recover_mvs',
+  'aired-shows': 'aired_shows',
   'discover-channels': 'channel_discovery',
   'scrape-youtube': 'youtube',
   'scrape-music-shows': 'music_shows',
@@ -53,6 +55,20 @@ export function summarizeRun(
     const photos = (d.photos ?? {}) as Record<string, number>
     if (typeof photos.updated === 'number')
       parts.push(`${photos.updated} photos résolues, ${photos.misses ?? 0} sans source`)
+  } else if (source === 'aired_shows') {
+    const eps = num('episodes_created')
+    const passages = num('events_created')
+    const stages = num('stages_linked')
+    const nums = (num('numbers_filled') ?? 0) + (num('numbers_synced') ?? 0)
+    const auth = (d.authority ?? {}) as Record<string, unknown>
+    if (typeof auth.filled === 'number' || typeof auth.corrected === 'number') {
+      parts.push(`autorité : ${auth.filled ?? 0} comblés, ${auth.corrected ?? 0} corrigés`)
+    }
+    parts.unshift(
+      `${eps ?? 0} épisodes, ${passages ?? 0} passages, ${stages ?? 0} scènes, ${nums} numéros`,
+    )
+    const unconfirmed = num('unconfirmed_count')
+    if (unconfirmed) parts.push(`${unconfirmed} passages non confirmés`)
   } else if (source === 'channel_discovery') {
     const seeded = num('seeded')
     if (seeded !== null) parts.push(`${seeded} chaînes seedées`)
@@ -114,19 +130,33 @@ export const REMEDIES: Record<string, Remedy> = {
   },
   episodes_unnumbered: {
     kind: 'one_click',
-    note: 'Épisodes récents : un re-scrape peut combler le numéro. Les anciens exigent une source autoritaire.',
-    cron: 'scrape-music-shows',
-    buttonLabel: 'Re-scraper les music shows',
+    note: 'Le numéro vient du diffuseur (Mnet, Show Champion l’écrivent dans le titre de leurs vidéos) ou de l’autorité Wikipedia. Cette passe applique les deux.',
+    cron: 'aired-shows',
+    buttonLabel: 'Reconstruire depuis les diffuseurs',
   },
   episode_numbering_conflicts: {
-    kind: 'review',
-    note: 'Numéro parsé faux OU épisodes manquants : vérifier contre une source autoritaire — jamais deviner.',
-    href: '/admin/events',
-    linkLabel: 'Admin events',
+    kind: 'one_click',
+    note: 'Numéro contredit par l’autorité : la passe le réécrit depuis Wikipedia et réaligne toutes les tuiles de l’épisode sur le même numéro.',
+    cron: 'aired-shows',
+    buttonLabel: 'Reconstruire depuis les diffuseurs',
+  },
+  episodes_missing: {
+    kind: 'one_click',
+    note: 'Semaine sans épisode en base (hors 결방) : la chaîne du diffuseur porte les scènes diffusées ce jour-là — la passe reconstruit l’épisode et son lineup.',
+    cron: 'aired-shows',
+    buttonLabel: 'Reconstruire depuis les diffuseurs',
   },
   episodes_missing_stages: {
+    kind: 'one_click',
+    note: 'Plus de fenêtre : la scène est retrouvée par la date de diffusion écrite dans le titre de la vidéo, quelle que soit sa date de publication.',
+    cron: 'aired-shows',
+    buttonLabel: 'Reconstruire depuis les diffuseurs',
+  },
+  episodes_unconfirmed_lineup: {
     kind: 'review',
-    note: 'Fenêtre d’enrichissement (air +4 j) passée : backfill requis — `npx tsx scripts/backfill-stage-links.ts`.',
+    note: 'Passage annoncé qu’aucune vidéo du diffuseur ne confirme : soit le lineup prévisionnel ne s’est pas réalisé (épisode spécial), soit il manque un alias au groupe. À trancher au cas par cas — jamais de purge auto.',
+    href: '/admin/events',
+    linkLabel: 'Admin events',
   },
   placeholder_titles: {
     kind: 'review',

@@ -7,7 +7,7 @@ import {
   type UploadItem,
   type VideoDetails,
 } from '../youtube'
-import { matchesGroup } from '../group-match'
+import { matchesGroup, mentionsArtist } from '../group-match'
 import { SHOW_DESCRIPTORS, type ShowId } from './types'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
@@ -69,17 +69,46 @@ export const MIN_STAGE_DURATION_SEC = 60
 // segment variety ou une caption Shorts (2 faux positifs réels aux runs 1-2).
 export const MIN_STAGE_SCORE = 1
 
+// Contenus NON-stage des mêmes chaînes : interview, making, behind,
+// fancam/selfcam, réaction… Faux positif réel du 2026-07-09 : « '컴백 인터뷰'
+// i-dle #엠카운트다운 EP.936 | Mnet 방송 » scorait +3 (EP+방송 et « | ») et a
+// été lié comme stage. Un vrai passage ne porte aucun de ces marqueurs.
+// NB : « 풀캠 » (안방1열 풀캠 = plan large du groupe entier, SBS) N'EST PAS
+// dérivé — c'est LA vidéo de scène d'Inkigayo/The Show.
+export const DERIVATIVE_TITLE_RE =
+  /인터뷰|interview|비하인드|behind|메이킹|making|리액션|reaction|백스테이지|backstage|셀프캠|self\s?-?cam|직캠|fan\s?-?cam|face\s?-?cam|얼빡|\btmi\b|소감/i
+
 /**
- * Candidats « vidéo du passage » d'un groupe, du plus probable au moins
- * probable : marqueur du show + nom du groupe (hors hashtags) + fenêtre
- * [H-12h, H+4j], puis scoring —
- *   +2 marqueur de diffusion (« 방송 », « EP.935 », « 무대 ») : signe le stage
+ * Score « à quel point ce titre est LA vidéo du passage de ce groupe », ou
+ * null si le titre ne mentionne pas le groupe.
+ *   +2 marqueur de diffusion (« 방송 », « EP.935 », « 무대 »)
  *   +1 format « Song - Group » / séparateur « | »
- *   −3 titre qui matche AUSSI d'autres groupes (segments variety multi-artistes,
- *      faux positif réel « M-Z » Mnet au run 2 — un vrai stage n'a qu'un artiste)
- *   −5 #shorts
- * Seuls les candidats ≥ MIN_STAGE_SCORE sont renvoyés. Pur, testable.
+ *   −3 titre qui matche AUSSI un autre groupe du même épisode (segments
+ *      variety multi-artistes — un vrai stage n'a qu'un artiste)
+ *   −5 #shorts, −5 contenu dérivé (cf. DERIVATIVE_TITLE_RE)
+ *
+ * `strict` : matching par mots ENTIERS (cf. mentionsArtist) — obligatoire dès
+ * que le résultat peut CRÉER une ligne en base, sinon « KPOP LIVE STREAM »
+ * inventerait un passage d'IVE.
  */
+export function stageScore(
+  title: string,
+  groupName: string,
+  otherGroupNames: readonly string[] = [],
+  aliases: readonly string[] = [],
+  strict = false,
+): number | null {
+  const matches = strict ? mentionsArtist : matchesGroup
+  if (!matches(title, groupName, aliases)) return null
+  let score = 0
+  if (/방송|무대|\bep\.?\s*\d+/i.test(title)) score += 2
+  if (/\s[-|]\s/.test(title)) score += 1
+  if (otherGroupNames.some((other) => other !== groupName && matches(title, other))) score -= 3
+  if (/#shorts/i.test(title)) score -= 5
+  if (DERIVATIVE_TITLE_RE.test(title)) score -= 5
+  return score
+}
+
 export function rankStageCandidates(
   uploads: readonly UploadItem[],
   groupName: string,
@@ -96,28 +125,11 @@ export function rankStageCandidates(
   const scored: { upload: UploadItem; score: number; published: number }[] = []
   for (const u of uploads) {
     if (!marker.test(u.title)) continue
-    if (!matchesGroup(u.title, groupName, aliases)) continue
     const published = new Date(u.publishedAt).getTime()
     if (Number.isNaN(published)) continue
     if (published < airTime - BEFORE_MS || published > airTime + AFTER_MS) continue
-    let score = 0
-    if (/방송|무대|\bep\.?\s*\d+/i.test(u.title)) score += 2
-    if (/\s[-|]\s/.test(u.title)) score += 1
-    if (otherGroupNames.some((other) => other !== groupName && matchesGroup(u.title, other)))
-      score -= 3
-    if (/#shorts/i.test(u.title)) score -= 5
-    // Contenus NON-stage des mêmes chaînes : interview, making, behind,
-    // fancam/selfcam, réaction… Faux positif réel du 2026-07-09 : « '컴백
-    // 인터뷰' i-dle #엠카운트다운 EP.936 | Mnet 방송 » scorait +3 (EP+방송 et
-    // « | ») et a été lié comme stage. Un vrai passage ne porte aucun de ces
-    // marqueurs ; -5 les élimine quel que soit le reste du titre.
-    if (
-      /인터뷰|interview|비하인드|behind|메이킹|making|리액션|reaction|백스테이지|backstage|셀프캠|self\s?-?cam|직캠|fan\s?-?cam|\btmi\b|소감/i.test(
-        u.title,
-      )
-    )
-      score -= 5
-    if (score < MIN_STAGE_SCORE) continue
+    const score = stageScore(u.title, groupName, otherGroupNames, aliases)
+    if (score == null || score < MIN_STAGE_SCORE) continue
     scored.push({ upload: u, score, published })
   }
   return scored.sort((a, b) => b.score - a.score || a.published - b.published).map((s) => s.upload)

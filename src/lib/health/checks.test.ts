@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  findMissingEpisodes,
   findDuplicatePersonCandidates,
   findNumberingConflicts,
   isPlaceholderTitle,
@@ -174,5 +175,89 @@ describe('normalizeName', () => {
   it('gomme casse, espaces, tirets, apostrophes', () => {
     expect(normalizeName("Kim Bo-ra's")).toBe(normalizeName('kimboras'))
     expect(normalizeName(null)).toBe('')
+  })
+})
+
+describe('findMissingEpisodes', () => {
+  const slots = [{ showTitle: 'Inkigayo', weekday: 0 }]
+
+  it("ne signale rien quand les numéros sont consécutifs, même à 14 jours d'écart", () => {
+    // Cas réel : Inkigayo #1317 (28/06) puis #1318 (12/07) — le 05/07 n'a
+    // jamais été diffusé, ce n'est pas un trou de collecte.
+    expect(
+      findMissingEpisodes(
+        [
+          { show_title: 'Inkigayo', kst_day: '2026-06-28', episode_number: 1317 },
+          { show_title: 'Inkigayo', kst_day: '2026-07-12', episode_number: 1318 },
+        ],
+        new Set(),
+        slots,
+        '2026-06-01',
+        '2026-08-21',
+      ),
+    ).toEqual([])
+  })
+
+  it('signale le créneau situé dans un saut de numérotation', () => {
+    // M Countdown #936 (09/07) → #938 (23/07) : l'épisode #937 du 16/07 manque.
+    expect(
+      findMissingEpisodes(
+        [
+          { show_title: 'M Countdown', kst_day: '2026-07-09', episode_number: 936 },
+          { show_title: 'M Countdown', kst_day: '2026-07-23', episode_number: 938 },
+        ],
+        new Set(),
+        [{ showTitle: 'M Countdown', weekday: 4 }],
+        '2026-06-01',
+        '2026-08-21',
+      ),
+    ).toEqual(['M Countdown — 2026-07-16 (entre #936 et #938)'])
+  })
+
+  it('ne compte pas un jour préempté (결방)', () => {
+    expect(
+      findMissingEpisodes(
+        [
+          { show_title: 'Inkigayo', kst_day: '2026-08-02', episode_number: 1320 },
+          { show_title: 'Inkigayo', kst_day: '2026-08-16', episode_number: 1322 },
+        ],
+        new Set(['Inkigayo|2026-08-09']),
+        slots,
+        '2026-06-01',
+        '2026-08-21',
+      ),
+    ).toEqual([])
+  })
+})
+
+describe('findNumberingConflicts (contradictions seules)', () => {
+  it('signale un numéro identique deux semaines de suite', () => {
+    const out = findNumberingConflicts([
+      { show_title: 'The Show', kst_day: '2026-08-11', episode_number: 397 },
+      { show_title: 'The Show', kst_day: '2026-08-18', episode_number: 397 },
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0]).toContain('identique ou en recul')
+  })
+
+  it('ne signale PAS un simple trou de collecte (delta trop grand)', () => {
+    // #930 puis #933 sans épisode entre : deux semaines manquent en base —
+    // c'est le sujet de findMissingEpisodes, pas une numérotation fausse.
+    expect(
+      findNumberingConflicts([
+        { show_title: 'M Countdown', kst_day: '2026-05-28', episode_number: 930 },
+        { show_title: 'M Countdown', kst_day: '2026-06-18', episode_number: 933 },
+      ]),
+    ).toEqual([])
+  })
+
+  it('signale un saut trop court pour les épisodes intercalés', () => {
+    const out = findNumberingConflicts([
+      { show_title: 'Inkigayo', kst_day: '2026-07-05', episode_number: 1317 },
+      { show_title: 'Inkigayo', kst_day: '2026-07-12', episode_number: 1318 },
+      { show_title: 'Inkigayo', kst_day: '2026-07-19', episode_number: 1319 },
+      { show_title: 'Inkigayo', kst_day: '2026-07-26', episode_number: 1319 },
+    ])
+    expect(out).toHaveLength(1)
   })
 })
