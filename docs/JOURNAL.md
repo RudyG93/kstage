@@ -4,6 +4,51 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-21 (soir) — Music shows : reconstruire les épisodes depuis les chaînes des diffuseurs
+
+**Branche/commits** : `feat/aired-shows-reconciliation` (`d062064`, merge `876123e`) → `main`.
+
+**Point de départ (retour Rudy)** : numérotation incohérente, épisodes irréguliers, et surtout « il manque des passages d'artistes » / « il faut attendre trop longtemps avant de les voir apparaître ».
+
+**Diagnostic en données réelles.** Tout le pipeline partait d'un lineup **prévisionnel** (carrd fan, boards broadcaster) capté dans une fenêtre étroite, et rien ne repassait derrière. Trois conséquences mesurées sur 13 semaines :
+
+- **20 épisodes jamais collectés** (The Show 4/13, Inkigayo 6/13) — une semaine ratée l'était définitivement ;
+- **412 passages dont 78 % seulement avec vidéo** ; `stage_url` était cherché dans une fenêtre de publication `[H-12 h, H+4 j]`, donc une scène postée le 5ᵉ jour était rejetée **pour toujours** ;
+- des passages **fantômes** : M Countdown EP.941 (13/08) portait 10 groupes en base alors que l'épisode était un spécial « MCD Summer Camp » — un seul des 10 y est réellement passé.
+
+Et une incohérence de numérotation invisible jusque-là : `events.episode_number` et `show_episodes.episode_number` étaient renseignés **indépendamment**. Music Bank du 21/08 affichait « #1304 » sur 5 tuiles et rien sur 2 autres ; The Show du 14/07 portait **deux numéros différents pour le même épisode**.
+
+**La bascule** : partir de la seule source qui ne ment pas — la vidéo postée par le diffuseur. Son titre porte la **date de diffusion** (`Mnet 260820 방송`, `@뮤직뱅크(Music Bank) 260821`, `| 쇼! 음악중심 | MBC260815`, `@SBS Inkigayo 260816`, `| Show Champion | EP.608 | 260819`, `[THE SHOW] 260811 방송`) et, chez Mnet et Show Champion, le **numéro d'épisode**. Mesuré sur les 6 chaînes : 83 à 98 % des vidéos de show portent une date exploitable.
+
+- `broadcast-harvest.ts` — lecture date + numéro. Trois validations : le jour de la semaine doit être le créneau du show, la diffusion ne peut pas suivre la publication de plus de 2 jours ni la précéder de plus de 45. Un numéro n'est retenu que **corroboré par 2 vidéos**.
+- `aired-lineups.ts` — crée l'épisode manquant, crée le passage absent du lineup, pose `stage_url` **sans aucune fenêtre de publication** (l'appartenance est prouvée par la date lue dans le titre), et **signale** les passages qu'aucune vidéo ne confirme sans jamais purger.
+- `episode-authority.ts` — la correction Wikipedia devient automatique. Elle n'existait qu'en script manuel depuis le 18/07, donc en pratique elle ne tournait jamais.
+- Le numéro d'épisode se **recopie** de `show_episodes` vers ses `events` : c'est une propriété de l'épisode, pas du passage.
+
+**Garde-fous, tous posés après un faux positif observé en dry-run** (291 créations relues avant application) :
+
+- **`mentionsArtist`** : matching par **mots entiers**, obligatoire dès qu'un match écrit en base. `matchesGroup` teste une sous-chaîne sur le titre sans séparateurs — « ㅣKPOP LIVE STREAM » contient « ive » et inventait un passage d'IVE. Idem « I've been in love » → i + ve recollés : un nom de 3 caractères ou moins doit désormais tomber sur un **mot entier**, sans recollage.
+- **Pas d'index de noms de membres** ici (contrairement au cron lineups, dont l'entrée est un nom déjà isolé) : sur un titre libre, « fan » (membre de NouerA), « jin » (BTS), « kim » (VVUP) et « junmin » (xikers) fabriquaient 119 passages inexistants.
+- **Une vidéo qui nomme deux artistes du roster ne prouve rien** : « hrtz.wav - Highlight » créait un passage du groupe Highlight (titre de chanson = nom de groupe).
+- Longueur minimale **dépendante de l'écriture** : 2 syllabes hangul suffisent (« 연준 » = YEONJUN). Le seuil unique à 3 les jetait toutes — TXT restait invisible sur 7 épisodes où KBS/SBS titrent son slot solo en hangul.
+
+**Latence.** Nouveau cron `aired-shows` **3×/jour** (12:00, 16:30, 21:00 UTC). Il n'interroge que l'API YouTube et l'API Wikipedia — aucun scraping de site tiers, la limite « 1-2 fois par jour » de `CLAUDE.md` ne s'y applique pas. `scrape-music-shows` reste à 2×/jour pour les lineups. Les scènes sortent 2 à 8 h après la diffusion : elles sont désormais captées le soir même.
+
+**Health honnête.** L'ancien bloc « numérotation incohérente » mélangeait vraies contradictions et simples trous de collecte (9 lignes sur 11 dans la capture de Rudy). Séparé en trois checks, et surtout : **`episodes_missing` est arbitré par la numérotation, pas par le calendrier**. Un « pas d'épisode ce dimanche » ne prouve rien — Inkigayo #1317 (28/06) est suivi de #1318 (12/07), numéros consécutifs à 14 jours d'écart : le 05/07 n'a jamais existé. Sur 9 trous calendaires, **8 étaient des déprogrammations** (Coupe du monde juin-juillet) ; seul M Countdown #937 (16/07) manque réellement. Nouveaux checks `empty_episodes` et `episodes_unconfirmed_lineup` ; les 4 blocs music-show ont maintenant un remède 1-clic qui les résout vraiment.
+
+**Décisions.**
+
+- **The Show n'est plus hebdomadaire** (`ShowDescriptor.weekly = false`) : Wikipedia ne lui connaît que 4 épisodes en 2026 (#394 → #397, numéros consécutifs à deux semaines d'écart) et sa chaîne ne poste rien les mardis intermédiaires. Sans ce drapeau le contrôle de régularité lui inventait 8 épisodes manquants.
+- **Aucune purge automatique des passages non confirmés.** Un diffuseur ne poste pas toutes ses scènes : le doute va à la revue humaine. La liste sert d'ailleurs de **détecteur d'alias manquants** autant que de fantômes.
+- L'épisode fantôme The Show du 18/08 (0 passage, #397 déjà attribué au 11/08) supprimé après vérification qu'aucun commentaire n'y était rattaché.
+- Music Core 2026 reste à 2 épisodes non numérotés : la page Wikipedia est **elle-même contradictoire** (#952 le 27/06 et le 04/07). Le validateur refuse d'appliquer une autorité incohérente — on ne devine pas.
+
+**Les passages n'avaient aucune surface.** Vérification faite, la page d'un artiste ne montrait que l'**à venir** : IDID avait 24 passages, tous avec vidéo, et une page qui semblait vide — les 643 scènes liées n'étaient atteignables que par le calendrier, à la bonne date. Nouvelle section **« Stages »** sur `/groups/[slug]` et `/artists/[slug]` (branche solo) : grille de vignettes au même langage visuel que les MV, avatar du diffuseur, `Show #épisode`, date, lien externe vers la scène. Vérifié au rendu sur build prod local (12 cartes sur IDID).
+
+**Mesure en prod** : passages 412 → **703** (+291), avec vidéo 78 % → **91,5 %** ; 288 scènes liées ; 8 épisodes créés ; 201 numéros d'events resynchronisés ; 7 numéros comblés et 3 corrigés par l'autorité (dont le doublon Inkigayo #1318 visible sur la capture) ; passages non confirmés 44 → 35.
+
+**Vérification** : tsc, 814 tests, eslint, prettier, build prod, dry-run intégral relu avant application, contrôles SQL après coup.
+
 ## 2026-08-21 — Statut d'activité des artistes + retours Dayoung / photos / Performance Video
 
 **Commits** : `1d4ab39` (faux membres MB, Performance/Special Video), `14f5cd7` (priorité photos), `106968a` (statut d'activité) → `main`.

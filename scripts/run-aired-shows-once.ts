@@ -49,7 +49,7 @@ scanAiredShows(supabase, process.env.YOUTUBE_API_KEY!, {
     sinceKstDay: arg('since'),
   })
   console.log(
-    `--- autorite Wikipedia : ${auth.filled} combles, ${auth.corrected} corriges, ${auth.stillMissing} hors autorite (${auth.pagesRead} pages) ---`,
+    `--- autorite Wikipedia : ${auth.filled} combles, ${auth.corrected} corriges, ${auth.cleared} effaces, ${auth.stillMissing} hors autorite (${auth.pagesRead} pages) ---`,
   )
   for (const c of auth.changes) console.log('  ' + c)
   for (const i of auth.incoherent) console.log('  ! ' + i)

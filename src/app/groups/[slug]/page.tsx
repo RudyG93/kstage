@@ -12,7 +12,8 @@ import { StatsStrip } from '@/components/group/stats-strip'
 import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
 import { getGroupBySlug, getGroupFollowCounts } from '@/lib/groups/queries'
-import { getUpcomingEvents, getGroupMvs } from '@/lib/events/queries'
+import { StageCard } from '@/components/group/stage-card'
+import { getUpcomingEvents, getGroupMvs, getGroupStages } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
@@ -59,8 +60,9 @@ type Group = NonNullable<Awaited<ReturnType<typeof getGroupBySlug>>>
 // comeback du hero, stats, listes) — cache() dédoublonne par args (Lot G).
 const getGroupPageData = cache(async (slug: string, groupId: string) => {
   const timeZone = await getViewerTimeZone()
-  const [dbEvents, anniversaries, mvs, members, followCounts] = await Promise.all([
+  const [dbEvents, stages, anniversaries, mvs, members, followCounts] = await Promise.all([
     getUpcomingEvents({ groupSlug: slug, limit: 20 }),
+    getGroupStages(slug),
     getUpcomingAnniversaries([groupId], 90, timeZone),
     getGroupMvs(slug, 48),
     getMembersForGroup(groupId),
@@ -71,7 +73,7 @@ const getGroupPageData = cache(async (slug: string, groupId: string) => {
   const events = [...dbEvents, ...anniversaries].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )
-  return { timeZone, events, mvs, members, followCounts }
+  return { timeZone, events, stages, mvs, members, followCounts }
 })
 
 /** Chip « Comeback D-x » du hero — dépend des events, streamé dans le slot. */
@@ -120,7 +122,7 @@ function GroupBodySkeleton() {
 
 /** Corps (stats, membres, events, MVs) — streamé après le hero (Lot G). */
 async function GroupBody({ group }: { group: Group }) {
-  const { timeZone, events, mvs, members, followCounts } = await getGroupPageData(
+  const { timeZone, events, stages, mvs, members, followCounts } = await getGroupPageData(
     group.slug,
     group.id,
   )
@@ -221,6 +223,21 @@ async function GroupBody({ group }: { group: Group }) {
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {mvs.map((mv) => (
               <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} timeZone={timeZone} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Passages music-show diffusés (2026-08-21). Ces lignes existaient sans
+          surface : la page ne montrait que l'À VENIR, donc une scène diffusée
+          n'était atteignable que par le calendrier, à la bonne date — IDID
+          avait 24 passages, tous avec vidéo, et une page qui semblait vide. */}
+      {stages.length > 0 && (
+        <section className="space-y-2">
+          <span className="label-data">Stages — {stages.length}</span>
+          <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
+            {stages.map((stage) => (
+              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
             ))}
           </div>
         </section>

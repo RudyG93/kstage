@@ -62,7 +62,9 @@ export function summarizeRun(
     const nums = (num('numbers_filled') ?? 0) + (num('numbers_synced') ?? 0)
     const auth = (d.authority ?? {}) as Record<string, unknown>
     if (typeof auth.filled === 'number' || typeof auth.corrected === 'number') {
-      parts.push(`autorité : ${auth.filled ?? 0} comblés, ${auth.corrected ?? 0} corrigés`)
+      parts.push(
+        `autorité : ${auth.filled ?? 0} comblés, ${auth.corrected ?? 0} corrigés, ${auth.cleared ?? 0} effacés`,
+      )
     }
     parts.unshift(
       `${eps ?? 0} épisodes, ${passages ?? 0} passages, ${stages ?? 0} scènes, ${nums} numéros`,
