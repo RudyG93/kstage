@@ -395,16 +395,20 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
   // manquant), plus un statut de run dégradé — sinon le monitor crie au loup
   // tous les jours (StelLive, 16–21/08).
   {
-    const { data: lastRun } = await supabase
+    // Le DERNIER run ne suffit pas : s'il s'est interrompu (quota Spotify), il
+    // n'a comparé aucun nom et rapporterait « 0 mismatch » alors qu'on ne sait
+    // simplement rien. On remonte au dernier run dont la phase 1 est allée au
+    // bout (`aborted` null).
+    const { data: runs } = await supabase
       .from('scrape_log')
       .select('details')
       .eq('source', 'refresh_images')
       .order('started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    const images = ((lastRun?.details ?? {}) as Record<string, unknown>).images as
-      { mismatches?: unknown } | undefined
-    const mismatches = Array.isArray(images?.mismatches) ? (images.mismatches as string[]) : []
+      .limit(10)
+    const complete = (runs ?? [])
+      .map((r) => ((r.details ?? {}) as Record<string, unknown>).images as Record<string, unknown>)
+      .find((img) => img && img.aborted == null)
+    const mismatches = Array.isArray(complete?.mismatches) ? (complete.mismatches as string[]) : []
     checks.push({
       id: 'spotify_link_mismatch',
       label: 'Liens Spotify refusés par le garde de nom',
