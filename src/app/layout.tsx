@@ -5,8 +5,8 @@ import {
   Bricolage_Grotesque,
   Space_Grotesk,
   Instrument_Serif,
-  Archivo,
 } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { SITE_URL } from '@/lib/site'
@@ -32,6 +32,11 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  // Precharge en NON (perf 2026-08-22) : 23 108 octets pousses en haute
+  // priorite sur 100 % des pages publiques, alors que les deux seuls usages de
+  // font-mono vivent dans /admin. Le @font-face reste emis : l'admin la charge
+  // en lazy, en display swap, sur une page lue par une personne.
+  preload: false,
 })
 
 const bricolage = Bricolage_Grotesque({
@@ -64,10 +69,40 @@ const instrument = Instrument_Serif({
 
 // Data Desk : Archivo variable (axe wdth) pour les labels condensés
 // (.label-data / .label-data-inline dans globals.css — font-stretch 78-82%).
-const archivo = Archivo({
+// Archivo VENDORISEE, graisse epinglee a 700 (perf 2026-08-22).
+//
+// Via next/font/google, la face latine pesait 90 096 octets — 44 % du budget
+// polices de chaque page — parce que l'axe de GRAISSE etait servi en 100..900.
+// L'API css2 n'instancie un sous-fichier que si un axe est fixe a une valeur
+// unique ; pinner l'axe de largeur ne change rien (mesure : wdth@78..82 +
+// wght@100..900 = 90 104 octets). Or next/font/google REFUSE `weight` des que
+// `axes` est present (« Axes can only be defined for variable fonts when the
+// weight property is nonexistent »), d'ou le passage en next/font/local sur
+// `Archivo:wdth,wght@62..125,700` : 37 612 octets, axe de largeur INTACT.
+//
+// INVARIANT A TENIR : .label-data / .label-data-inline (globals.css) ne doivent
+// jamais demander une autre graisse que 700 — l'axe wght n'existe plus dans ce
+// fichier. L'axe wdth reste entier (62..125), donc font-stretch reste libre.
+// Fichier sous OFL, licence jointe (src/app/fonts/OFL.txt).
+const archivo = localFont({
+  src: './fonts/archivo-cond-700-latin.woff2',
   variable: '--font-archivo',
-  subsets: ['latin'],
-  axes: ['wdth'],
+  weight: '700',
+  style: 'normal',
+  // Le sous-ensemble vendorise est le LATIN seul : ces labels sont du chrome
+  // d'interface (« NEXT UP », « COMEBACK »). Declarer la plage evite que le
+  // navigateur tente d'y puiser un glyphe absent au lieu de replier.
+  declarations: [
+    { prop: 'font-stretch', value: '62% 125%' },
+    {
+      prop: 'unicode-range',
+      value:
+        'U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD',
+    },
+  ],
+  // Metriques de repli calculees depuis le fichier : sans elles on
+  // reintroduirait le CLS que next/font/google evitait.
+  adjustFontFallback: 'Arial',
   // Labels condenses (.label-data) : optional — zero shift de swap.
   display: 'optional',
 })
