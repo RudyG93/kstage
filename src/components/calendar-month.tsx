@@ -117,7 +117,14 @@ export function CalendarMonth({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-[17px] font-extrabold tracking-[-0.01em]">Calendar</h1>
-        <div className="bg-secondary flex items-center gap-0.5 rounded-md border p-0.5">
+        {/* Groupe nommé : les trois contrôles forment un pager, et le libellé
+            de mois est le seul « MOIS AAAA » identifiable de la page (les
+            rails en affichent d'autres). */}
+        <div
+          role="group"
+          aria-label="Month navigation"
+          className="bg-secondary flex items-center gap-0.5 rounded-md border p-0.5"
+        >
           {onNavigate ? (
             <button
               type="button"

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 // Smoke déconnecté : Landing (Data Desk §7.9) + calendar accessible.
 
@@ -51,12 +51,16 @@ test.describe('Landing (logged out)', () => {
 
 test.describe('Calendar', () => {
   const MONTH_PAGER = /\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4}\b/
+  // Scopé au pager : les blocs de rail (« Rookies ») affichent eux aussi des
+  // « MOIS AAAA », et un getByText global part en strict-mode violation.
+  const monthPager = (page: Page) =>
+    page.getByRole('group', { name: 'Month navigation' }).getByText(MONTH_PAGER)
 
   test('month grid renders + has next/prev navigation', async ({ page }) => {
     await page.goto('/calendar')
     // h1 « Calendar » (Data Desk) + pager de mois « ‹ JUL 2026 › ».
     await expect(page.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible()
-    await expect(page.getByText(MONTH_PAGER)).toBeVisible()
+    await expect(monthPager(page)).toBeVisible()
     // Boutons (plus des liens) depuis la nav de mois 100 % client (2026-07-18).
     await expect(page.getByRole('button', { name: 'Next month' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Previous month' })).toBeVisible()
@@ -67,7 +71,7 @@ test.describe('Calendar', () => {
   // pager (URL + texte) et le retour — PAS qu'un event précis s'affiche.
   test('next/previous month re-render the grid for the new month', async ({ page }) => {
     await page.goto('/calendar')
-    const pager = page.getByText(MONTH_PAGER).first()
+    const pager = monthPager(page)
     const initial = (await pager.textContent())?.trim() ?? ''
     expect(initial).not.toBe('')
 
