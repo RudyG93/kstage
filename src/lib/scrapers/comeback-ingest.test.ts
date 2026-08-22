@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { resolveNearDup, shouldUpgradeTitle, type NearDupRow } from './comeback-ingest'
+import {
+  isUntitledRelease,
+  resolveNearDup,
+  shouldUpgradeTitle,
+  type NearDupRow,
+} from './comeback-ingest'
 
 const DAY = 86_400_000
 const WINDOW = 3 * DAY
@@ -63,5 +68,71 @@ describe('resolveNearDup', () => {
     // Après l'upgrade, le near est confirmed à la nouvelle heure.
     const afterUpgrade = [near({ status: 'confirmed', t: Date.parse(candidate.startAt) })]
     expect(resolveNearDup(candidate, afterUpgrade, WINDOW)).toBe('skip')
+  })
+})
+
+describe('isUntitledRelease — descripteur de format vs vrai nom (2026-08-22)', () => {
+  const descripteurs = [
+    'NCT 127 7th Full Album (2026)',
+    'SF9 2nd Album (2026)',
+    'BOYNEXTDOOR 2nd Japanese Digital Single (2026)',
+    'ATEEZ Japan 5th Single (2026)',
+    'ARTMS Pre-release Single (2026)',
+    '82MAJOR Comeback Coming Soon (2026)',
+  ]
+  it.each(descripteurs)('reconnait « %s » comme non titré', (t) => {
+    expect(isUntitledRelease(t)).toBe(true)
+  })
+
+  const vraisTitres = [
+    // kpopofficial une fois l'album nommé
+    'NCT 127 7th Album – BLINGY (2026)',
+    'NEXZ 4th Mini Album – SAUCIN’ (2026)',
+    'SF9 2nd Album – TENACITY (2026)',
+    'MINHO (SHINee) 2nd Mini Album – Make it hot (2026)',
+    // Wikipedia : des noms nus, SANS tiret — c'est pourquoi la règle ne peut
+    // pas être « le titre n'a pas de tiret ».
+    'Mark on Me',
+    'Blue Mode',
+    'This & That',
+    'Flavor',
+    'PHASE 1: Soft Violence',
+    // fandom
+    'Hungry (Side A)',
+  ]
+  it.each(vraisTitres)('laisse passer « %s »', (t) => {
+    expect(isUntitledRelease(t)).toBe(false)
+  })
+})
+
+describe('shouldUpgradeTitle — cas NCT 127 / BLINGY', () => {
+  it('remplace le descripteur de format par le nom de l’album', () => {
+    expect(
+      shouldUpgradeTitle(
+        'NCT 127 7th Full Album (2026)',
+        'NCT 127 7th Album – BLINGY (2026)',
+        'NCT 127',
+      ),
+    ).toBe(true)
+  })
+
+  it('ne remplace jamais un vrai titre par un descripteur', () => {
+    expect(
+      shouldUpgradeTitle(
+        'NCT 127 7th Album – BLINGY (2026)',
+        'NCT 127 7th Full Album (2026)',
+        'NCT 127',
+      ),
+    ).toBe(false)
+  })
+
+  it('garde le comportement historique sur « {groupe} debut »', () => {
+    expect(
+      shouldUpgradeTitle(
+        'OURBIRTHDAY debut',
+        'OURBIRTHDAY 1st Single – Our Birthday (2026)',
+        'OURBIRTHDAY',
+      ),
+    ).toBe(true)
   })
 })

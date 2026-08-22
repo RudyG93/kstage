@@ -119,13 +119,49 @@ export type NearDupRow = {
  * ne touchait jamais title et le placeholder restait pour toujours (6 events
  * en prod : V8, Keyveatz, ASCENDER, VAYONN, OURBIRTHDAY, AEN). Pur, testé.
  */
+/**
+ * Titre qui DÉCRIT le format au lieu de nommer la sortie — « NCT 127 7th Full
+ * Album (2026) », « SF9 2nd Album (2026) », « 82MAJOR Comeback Coming Soon ».
+ *
+ * kpopofficial publie l'annonce avant que le label ne révèle le nom, puis
+ * RENOMME sa page une fois l'album titré : `…/nct-127-comeback-2026/` répond
+ * 301 vers `…/nct-127-blingy/` et la page s'intitule « NCT 127 7th Album –
+ * BLINGY (2026) ». Le cron voyait donc bien la correction chaque matin, mais
+ * `shouldUpgradeTitle` ne connaissait qu'une seule forme de placeholder,
+ * « {groupe} debut », et laissait le descripteur en place indéfiniment
+ * (signalé par Rudy le 2026-08-22 ; 6 rows en prod).
+ *
+ * La règle est « le titre se TERMINE par un mot de format » — pas « le titre
+ * n'a pas de tiret » : les entrées Wikipedia sont des noms nus parfaitement
+ * valides (« Mark on Me », « Blue Mode », « This & That »), et 133 des 138
+ * entrées fandom n'ont pas de tiret non plus.
+ */
+const YEAR_SUFFIX_RE = /\s*\(\d{4}\)\s*$/
+const FORMAT_TAIL_RE =
+  /\b(?:full|mini|digital|studio|japanese|japan|korean|chinese|english|pre-?release|special|repackage)?\s*(?:album|single|ep|repackage|mixtape)\s*$/i
+const COMING_SOON_RE = /\bcomeback\s+coming\s+soon\b/i
+
+export function isUntitledRelease(title: string): boolean {
+  const bare = title.replace(YEAR_SUFFIX_RE, '').trim()
+  if (!bare) return false
+  if (COMING_SOON_RE.test(bare)) return true
+  return FORMAT_TAIL_RE.test(bare)
+}
+
+/** Placeholder au sens large : « {groupe} debut » OU descripteur de format. */
+export function isPlaceholderRelease(title: string, groupName: string): boolean {
+  return isPlaceholderTitle(title, groupName) || isUntitledRelease(title)
+}
+
 export function shouldUpgradeTitle(
   nearTitle: string,
   cbTitle: string | null | undefined,
   groupName: string,
 ): boolean {
   return (
-    !!cbTitle && isPlaceholderTitle(nearTitle, groupName) && !isPlaceholderTitle(cbTitle, groupName)
+    !!cbTitle &&
+    isPlaceholderRelease(nearTitle, groupName) &&
+    !isPlaceholderRelease(cbTitle, groupName)
   )
 }
 
@@ -251,7 +287,17 @@ export async function ingestComebacks(
         if (near && shouldUpgradeTitle(near.title, cb.title, group.name)) {
           const { error: tErr } = await supabase
             .from('events')
-            .update({ title: cb.title })
+            .update({
+              title: cb.title,
+              // `source_url` suit le titre : quand kpopofficial nomme l'album,
+              // il RENOMME sa page et l'ancienne URL ne répond plus qu'en 301.
+              // Laisser la clé pointer une URL morte condamnerait la row à
+              // dépendre du near-dup pour l'éternité — et un décalage de date
+              // > 3 j finirait par créer un doublon. On la réaligne sur l'URL
+              // que la source publie aujourd'hui, au moment même où l'on
+              // constate qu'elles décrivent la même sortie.
+              source_url: cb.sourceUrl,
+            })
             .eq('id', near.id)
           if (tErr) console.error(`comeback-ingest title upgrade ${near.id}: ${tErr.message}`)
           else {
