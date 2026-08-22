@@ -72,7 +72,16 @@ const getGroupPageData = cache(async (slug: string, groupId: string) => {
   const events = [...dbEvents, ...anniversaries].sort((a, b) =>
     a.start_at.localeCompare(b.start_at),
   )
-  return { timeZone, events, stages, mvs, members, followCounts }
+  return {
+    timeZone,
+    events,
+    stages: stages.rows,
+    stageTotal: stages.total,
+    mvs: mvs.rows,
+    mvTotal: mvs.total,
+    members,
+    followCounts,
+  }
 })
 
 /** Chip « Comeback D-x » du hero — dépend des events, streamé dans le slot. */
@@ -121,10 +130,8 @@ function GroupBodySkeleton() {
 
 /** Corps (stats, membres, events, MVs) — streamé après le hero (Lot G). */
 async function GroupBody({ group }: { group: Group }) {
-  const { timeZone, events, stages, mvs, members, followCounts } = await getGroupPageData(
-    group.slug,
-    group.id,
-  )
+  const { timeZone, events, stages, stageTotal, mvs, mvTotal, members, followCounts } =
+    await getGroupPageData(group.slug, group.id)
   const [ratings, { profile: viewerProfile }] = await Promise.all([
     getRatingsForEvents(mvs.map((m) => m.id)),
     getViewer(),
@@ -218,12 +225,19 @@ async function GroupBody({ group }: { group: Group }) {
           la place existe, autant tout montrer ; retour Rudy 2026-07-12). */}
       {mvs.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">MVs — {mvs.length}</span>
+          <span className="label-data">MVs — {mvTotal}</span>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {mvs.map((mv) => (
               <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} timeZone={timeZone} />
             ))}
           </div>
+          {/* Le compteur dit le total, la grille est plafonnée : le dire, plutôt
+              que de laisser croire que la page montre tout. */}
+          {mvTotal > mvs.length && (
+            <p className="text-muted-foreground text-[11px]">
+              Showing the {mvs.length} most recent.
+            </p>
+          )}
         </section>
       )}
 
@@ -233,12 +247,17 @@ async function GroupBody({ group }: { group: Group }) {
           avait 24 passages, tous avec vidéo, et une page qui semblait vide. */}
       {stages.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Stages — {stages.length}</span>
+          <span className="label-data">Stages — {stageTotal}</span>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
               <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
             ))}
           </div>
+          {stageTotal > stages.length && (
+            <p className="text-muted-foreground text-[11px]">
+              Showing the {stages.length} most recent.
+            </p>
+          )}
         </section>
       )}
 

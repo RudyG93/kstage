@@ -140,12 +140,16 @@ const MV_SELECT =
  * Tous les MVs d'un groupe (passés inclus), pour la section "Music videos"
  * de la page /groups/[slug]. Garde main + performance (versions de groupe) ;
  * exclut member (réservé à /artists/[slug]) et other_version.
+ *
+ * `total` à part de `rows` pour la même raison que `getGroupStages` : le
+ * titre affiche « Music videos (N) » et 3 groupes dépassent déjà la limite de
+ * 48 (57 au maximum) — ils annonçaient donc 48, le plafond.
  */
 export async function getGroupMvs(slug: string, limit = 48) {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('events')
-    .select(MV_SELECT)
+    .select(MV_SELECT, { count: 'exact' })
     .eq('groups.slug', slug)
     .eq('type', 'mv')
     .in('mv_kind', ['main', 'performance'])
@@ -153,39 +157,49 @@ export async function getGroupMvs(slug: string, limit = 48) {
     .order('start_at', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return data ?? []
+  const rows = data ?? []
+  return { rows, total: count ?? rows.length }
 }
 
 /**
- * Passages music-show PASSÉS d'un groupe qui ont leur vidéo de scène.
+ * Passages music-show PASSÉS d'un groupe.
  *
  * Ces lignes existaient sans surface (2026-08-21) : la page groupe n'affichait
- * que les events à VENIR, donc les 643 scènes liées n'étaient atteignables que
- * par le calendrier, à la bonne date. IDID avait 24 passages, tous avec vidéo,
- * et une page qui semblait vide.
+ * que les events à VENIR, donc les scènes liées n'étaient atteignables que par
+ * le calendrier, à la bonne date.
  *
- * `stage_url` non nul est volontaire : sans vidéo la ligne n'apporte qu'un
- * intitulé de show, et le calendrier la porte déjà.
+ * Deux corrections le 2026-08-22, après un « 13 passages dans le rail, 11 sur
+ * la page » relevé par Rudy sur Kiss of Life :
+ *
+ * - **plus de filtre `stage_url`.** Il masquait les passages dont le diffuseur
+ *   n'a pas encore posté la vidéo — 69 sur 713 — c'est-à-dire justement les
+ *   plus récents, ceux qu'on vient chercher. Le passage a eu lieu : la page le
+ *   dit, et la vignette renvoie vers l'épisode en attendant la vidéo.
+ * - **`total` séparé de `rows`.** Les pages affichaient `rows.length` comme
+ *   compteur, or `rows` est plafonné : 13 groupes dépassaient la limite et
+ *   annonçaient donc le plafond au lieu de leur total.
  */
-export async function getGroupStages(slug: string, limit = 12) {
+export async function getGroupStages(slug: string, limit = 24) {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('events')
     // groups!inner requis : PostgREST ne filtre sur `groups.slug` que si la
-    // relation est EMBARQU00c9E dans le select (PGRST200 sinon).
-    .select('id, title, start_at, episode_number, stage_url, image_url, groups!inner(slug)')
+    // relation est EMBARQUÉE dans le select (PGRST200 sinon).
+    .select('id, title, start_at, episode_number, stage_url, image_url, groups!inner(slug)', {
+      count: 'exact',
+    })
     .eq('groups.slug', slug)
     .eq('type', 'music_show')
     .eq('hidden', false)
-    .not('stage_url', 'is', null)
     .lt('start_at', new Date().toISOString())
     .order('start_at', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return data ?? []
+  const rows = data ?? []
+  return { rows, total: count ?? rows.length }
 }
 
-export type GroupStage = Awaited<ReturnType<typeof getGroupStages>>[number]
+export type GroupStage = Awaited<ReturnType<typeof getGroupStages>>['rows'][number]
 
 /**
  * MVs SOLO d'un membre (mv_kind='member', member_id) — surfacés sur sa page
@@ -440,7 +454,7 @@ export async function getLastReleaseByGroupCached(): Promise<Map<string, string>
 
 export type UpcomingEvent = Awaited<ReturnType<typeof getUpcomingEvents>>[number]
 export type RecentComeback = Awaited<ReturnType<typeof getRecentComebacks>>[number]
-export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>[number]
+export type MvEvent = Awaited<ReturnType<typeof getGroupMvs>>['rows'][number]
 
 /** MVs likés par un user (table mv_like), du plus récent au plus ancien. */
 export async function getLikedMvs(userId: string, limit = 30): Promise<MvEvent[]> {

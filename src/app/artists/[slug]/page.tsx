@@ -145,13 +145,15 @@ function ArtistBodySkeleton() {
 
 /** Corps solo (events, MVs, carrière) — streamé après le hero (Lot G). */
 async function SoloBody({ member, group }: { member: Member; group: ArtistGroup }) {
-  const [events, stages, mvs, career, timeZone] = await Promise.all([
+  const [events, stagesRes, mvsRes, career, timeZone] = await Promise.all([
     getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
     getGroupStages(group.slug),
     getGroupMvs(group.slug, 48),
     getCareerPath(member.id),
     getViewerTimeZone(),
   ])
+  const { rows: stages, total: stageTotal } = stagesRes
+  const { rows: mvs, total: mvTotal } = mvsRes
   const ratings = await getRatingsForEvents(mvs.map((m) => m.id))
 
   return (
@@ -182,8 +184,13 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
 
       {mvs.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium">Music videos ({mvs.length})</h2>
+          <h2 className="text-sm font-medium">Music videos ({mvTotal})</h2>
           <CollapsibleMvs mvs={mvs} ratings={ratings} timeZone={timeZone} />
+          {mvTotal > mvs.length && (
+            <p className="text-muted-foreground text-[11px]">
+              Showing the {mvs.length} most recent.
+            </p>
+          )}
         </section>
       )}
 
@@ -191,12 +198,17 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
           (2026-08-21) : la section events ne montre que l'À VENIR. */}
       {stages.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium">Stages ({stages.length})</h2>
+          <h2 className="text-sm font-medium">Stages ({stageTotal})</h2>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
               <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
             ))}
           </div>
+          {stageTotal > stages.length && (
+            <p className="text-muted-foreground text-[11px]">
+              Showing the {stages.length} most recent.
+            </p>
+          )}
         </section>
       )}
 
@@ -211,7 +223,7 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
  * soit plus un cul-de-sac maigre. Les fetchs indépendants partent ENSEMBLE ;
  * seuls les ratings dépendent des MVs. */
 async function MemberBody({ member, group }: { member: Member; group: ArtistGroup | null }) {
-  const [memberMvs, groupmatesRaw, career, timeZone, upcoming, stages] = await Promise.all([
+  const [memberMvs, groupmatesRaw, career, timeZone, upcoming, stagesRes] = await Promise.all([
     getMemberMvs(member.id),
     group ? getMembersForGroup(group.id) : Promise.resolve([]),
     getCareerPath(member.id),
@@ -224,8 +236,9 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
     group ? getUpcomingEvents({ groupSlug: group.slug, limit: 5 }) : Promise.resolve([]),
     // Les passages music-show couvrent bien plus de monde que l'à-venir :
     // 99 groupes en ont, contre 29 avec un event futur.
-    group ? getGroupStages(group.slug, 8) : Promise.resolve([]),
+    group ? getGroupStages(group.slug, 8) : Promise.resolve(null),
   ])
+  const stages = stagesRes?.rows ?? []
   const memberRatings =
     memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
   const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
