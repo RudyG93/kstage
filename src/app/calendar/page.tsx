@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { JustAnnouncedBlock } from '@/components/rails/event-blocks'
-import { DiscussionsBlock } from '@/components/rails/community-blocks'
+import { RookiesBlock } from '@/components/rails/discovery-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupFilter } from '@/components/home/group-filter'
 import { FilterChips } from '@/components/calendar/filter-chips'
@@ -102,7 +102,9 @@ export default async function CalendarPage({
             <Suspense fallback={<RailSkeleton />}>
               <RailStack>
                 <JustAnnouncedBlock />
-                <DiscussionsBlock />
+                {/* Discussions ne rendait rien ici non plus. La grille du mois
+                    dit ce qui se passe, jamais qui vient d'arriver. */}
+                <RookiesBlock />
               </RailStack>
             </Suspense>
           </aside>

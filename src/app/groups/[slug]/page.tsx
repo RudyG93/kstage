@@ -24,8 +24,7 @@ import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { PageRails } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
-import { SpotlightBlock } from '@/components/rails/discovery-blocks'
-import { DiscussionsBlock } from '@/components/rails/community-blocks'
+import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
 import { getViewer } from '@/lib/supabase/viewer'
 import { SITE_URL } from '@/lib/site'
 
@@ -284,7 +283,7 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
       right={
         <RailStack>
           <SpotlightBlock excludeSlug={group.slug} />
-          <DiscussionsBlock />
+          <DebutClassBlock debutDate={group.debut_date} excludeId={group.id} />
         </RailStack>
       }
     >

@@ -28,8 +28,7 @@ import { groupBannerSrc } from '@/lib/groups/banner'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
 import { RailStack } from '@/components/rails/rail-stack'
-import { SpotlightBlock } from '@/components/rails/discovery-blocks'
-import { DiscussionsBlock } from '@/components/rails/community-blocks'
+import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -118,6 +117,7 @@ type ArtistGroup = {
   banner_url: string | null
   banner_yt_url: string | null
   image_landscape: string | null
+  debut_date: string | null
 }
 
 /** Bouton Follow du hero solo — dépend du viewer, streamé dans le slot (Lot G). */
@@ -327,7 +327,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         right={
           <RailStack>
             <SpotlightBlock excludeSlug={group.slug} />
-            <DiscussionsBlock />
+            <DebutClassBlock debutDate={group.debut_date} excludeId={group.id} />
           </RailStack>
         }
       >
@@ -392,7 +392,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
       right={
         <RailStack>
           <SpotlightBlock excludeSlug={group?.slug} />
-          <DiscussionsBlock />
+          <DebutClassBlock debutDate={group?.debut_date} excludeId={group?.id} />
         </RailStack>
       }
     >

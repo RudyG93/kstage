@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { ComingUpBlock } from '@/components/rails/event-blocks'
-import { DiscussionsBlock } from '@/components/rails/community-blocks'
+import { PromotingNowBlock } from '@/components/rails/discovery-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { HeroBackdrop } from '@/components/home/hero-backdrop'
 import { Panel, PanelHeader } from '@/components/ui/panel'
@@ -148,7 +148,10 @@ export default async function MvsPage({
           <Suspense fallback={<RailSkeleton />}>
             <RailStack>
               <ComingUpBlock />
-              <DiscussionsBlock />
+              {/* Discussions rendait du VIDE ici (6 commentaires en base, seuil a 3).
+                  Le palmarès des passages music-show, lui, est peuplé — et le
+                  centre de /mvs ne montre que des clips. */}
+              <PromotingNowBlock />
             </RailStack>
           </Suspense>
         </aside>
