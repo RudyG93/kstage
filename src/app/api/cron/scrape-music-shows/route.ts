@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/cron/auth'
+import { fetchAllRows } from '@/lib/supabase/paginate'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import {
@@ -139,12 +140,19 @@ export async function GET(req: Request) {
   // silencieusement unmatched alors que leur groupe est en base — en semaine
   // creuse il ne restait presque rien à afficher. Un stage_name ACTIF et sans
   // homonyme inter-groupes mappe vers son groupe (null = ambigu, on s'abstient).
-  const { data: memberRows } = await supabase
-    .from('members')
-    .select('stage_name, group_id, status')
-    .eq('status', 'active')
+  // Paginé : 1218 membres actifs, plafond PostgREST à 1000. Tronqué, l'index
+  // perdait le SECOND porteur d'un nom — la garde anti-homonyme ci-dessous ne
+  // voyait plus l'ambiguïté et attribuait le passage au mauvais groupe.
+  const memberRows = await fetchAllRows<{ stage_name: string; group_id: string }>((from, to) =>
+    supabase
+      .from('members')
+      .select('stage_name, group_id')
+      .eq('status', 'active')
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
   const memberGroupByName = new Map<string, string | null>()
-  for (const m of memberRows ?? []) {
+  for (const m of memberRows) {
     const key = normalize(m.stage_name)
     if (!key) continue
     const cur = memberGroupByName.get(key)

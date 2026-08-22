@@ -22,7 +22,11 @@ export default async function AdminDebutsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Debut candidates</h1>
           {/* Liste de travail : seules les rows EN ATTENTE s'affichent (retour
               Rudy 2026-08-20) — l'historique créé/écarté vit en DB. */}
-          <p className="text-muted-foreground text-sm">{candidates.length} en attente</p>
+          <p className="text-muted-foreground text-sm">
+            {candidates.total} en attente
+            {candidates.total > candidates.rows.length &&
+              ` — ${candidates.rows.length} affichés (les plus récents)`}
+          </p>
         </div>
         {/* Artistes des lineups music-show absents du roster (2026-07-17) :
             triés par récurrence, alimentés par le cron scrape-music-shows. */}
@@ -34,7 +38,7 @@ export default async function AdminDebutsPage() {
         </section>
         <section className="space-y-2">
           <h2 className="text-sm font-semibold">Fandom debut scan</h2>
-          <DebutAdminList items={candidates} />
+          <DebutAdminList items={candidates.rows} />
         </section>
       </div>
     </div>

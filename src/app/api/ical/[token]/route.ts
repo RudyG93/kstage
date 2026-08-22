@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { generateAnniversaries } from '@/lib/events/anniversaries'
+import { fetchActiveMembersWithBirthday, generateAnniversaries } from '@/lib/events/anniversaries'
 import { kstDayKey } from '@/lib/events/date'
 import { isMainOrNonMv } from '@/lib/events/queries'
 import { buildCalendarFeed } from '@/lib/ical/feed'
@@ -46,7 +46,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
 
   if (groupIds.length > 0) {
     const since = new Date(Date.now() - 7 * DAY_MS).toISOString()
-    const [eventsRes, groupsRes, membersRes] = await Promise.all([
+    const [eventsRes, groupsRes, members] = await Promise.all([
       supabase
         .from('events')
         .select(
@@ -65,11 +65,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
           'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
         )
         .in('id', groupIds),
-      supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
+      fetchActiveMembersWithBirthday(supabase, groupIds),
     ])
 
     events = eventsRes.data ?? []
-    anniversaries = generateAnniversaries(groupsRes.data ?? [], membersRes.data ?? [], {
+    anniversaries = generateAnniversaries(groupsRes.data ?? [], members, {
       todayKey: kstDayKey(new Date().toISOString()),
       days: 90,
     })

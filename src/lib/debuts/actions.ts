@@ -76,21 +76,30 @@ export interface DebutCandidateRow {
   group_confidence: string | null
 }
 
-export async function getDebutCandidates(): Promise<DebutCandidateRow[]> {
-  if (!(await requireAdmin())) return []
+export async function getDebutCandidates(): Promise<{
+  rows: DebutCandidateRow[]
+  total: number
+}> {
+  if (!(await requireAdmin())) return { rows: [], total: 0 }
   // Pending SEULEMENT (retour Rudy 2026-08-20) : la file est une liste de
   // travail — une row créée/écartée doit en sortir, l'historique vit en DB.
-  const { data } = await serviceClient()
+  //
+  // `total` en count exact : la page affichait la longueur de la PAGE, donc
+  // « 100 en attente » — le plafond — pendant que le badge de la nav juste
+  // au-dessus, lui compté correctement, en annonçait 306. 281 rows en file
+  // au 2026-08-22.
+  const { data, count } = await serviceClient()
     .from('debut_candidates')
-    .select('id, page_title, status, detected_at, payload, groups(confidence)')
+    .select('id, page_title, status, detected_at, payload, groups(confidence)', { count: 'exact' })
     .eq('status', 'pending')
     .order('detected_at', { ascending: false })
     .limit(100)
-  return (data ?? []).map(({ groups, ...row }) => ({
+  const rows = (data ?? []).map(({ groups, ...row }) => ({
     ...row,
     payload: row.payload as unknown as DebutCandidatePayload | DismissedReasonPayload | null,
     group_confidence: groups?.confidence ?? null,
   }))
+  return { rows, total: count ?? rows.length }
 }
 
 export async function approveDebutCandidate(id: string): Promise<{ error?: string }> {

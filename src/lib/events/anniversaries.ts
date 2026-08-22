@@ -1,6 +1,9 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { fetchAllRows } from '@/lib/supabase/paginate'
 import { kstToUtcISO, localDayKey } from './date'
 import type { UpcomingEvent } from './queries'
+import type { Database } from '@/types/database'
 
 // Génère les events "anniversaire" à la volée (pas de table dédiée) :
 // - anniversaire de debut des groupes,
@@ -136,6 +139,34 @@ export function generateAnniversaries(
   return out.sort((a, b) => a.start_at.localeCompare(b.start_at))
 }
 
+/**
+ * Membres dont l'anniversaire peut devenir un event : ACTIFS et datés.
+ *
+ * - `status='active'` : sans lui, la page groupe rangeait quelqu'un en
+ *   « Former & pre-debut » pendant que le calendrier annonçait son
+ *   anniversaire comme un event à venir du groupe. Pire pour un membre
+ *   `deceased`. Un soliste `former` dans son groupe reste couvert par sa row
+ *   solo, que `dedupePersons` sait choisir.
+ * - paginé : 1218 membres actifs et un plafond PostgREST à 1000 — la requête
+ *   non bornée coupait 121 des 679 anniversaires du calendrier, sans erreur.
+ */
+export async function fetchActiveMembersWithBirthday(
+  supabase: SupabaseClient<Database>,
+  groupIds: string[],
+): Promise<AnnivMember[]> {
+  if (groupIds.length === 0) return []
+  return fetchAllRows<AnnivMember>((from, to) =>
+    supabase
+      .from('members')
+      .select('group_id, stage_name, birthday')
+      .eq('status', 'active')
+      .not('birthday', 'is', null)
+      .in('group_id', groupIds)
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
+}
+
 /** Anniversaires à venir pour des groupes suivis, prêts à fusionner au feed.
  * `timeZone` = fuseau du viewer : « aujourd'hui » est SON jour civil — un
  * anniversaire du 17 doit rester visible toute la journée du 17 à Paris, pas
@@ -147,44 +178,41 @@ export async function getUpcomingAnniversaries(
 ): Promise<UpcomingEvent[]> {
   if (groupIds.length === 0) return []
   const supabase = await createClient()
-  const [{ data: groups }, { data: members }] = await Promise.all([
+  const [{ data: groups }, members] = await Promise.all([
     supabase
       .from('groups')
       .select(
         'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
       )
       .in('id', groupIds),
-    supabase.from('members').select('group_id, stage_name, birthday').in('group_id', groupIds),
+    fetchActiveMembersWithBirthday(supabase, groupIds),
   ])
-  return generateAnniversaries(groups ?? [], members ?? [], {
+  return generateAnniversaries(groups ?? [], members, {
     todayKey: localDayKey(new Date().toISOString(), timeZone),
     days,
   })
 }
 
-/** Nombre d'anniversaires à venir (fenêtre `days`) par group_id — pour le compteur
- * « N upcoming » du bloc My groups (les anniversaires y étaient oubliés). */
+/**
+ * Nombre d'anniversaires à venir (fenêtre `days`) par group_id — compteur
+ * « N upcoming » du bloc My groups (les anniversaires y étaient oubliés).
+ *
+ * Dérivé de `getUpcomingAnniversaries`, pas recalculé : la version parallèle
+ * comptait une ligne `members` par row, sans passer par `dedupePersons`, donc
+ * un soliste présent dans son groupe ET dans son groupe solo comptait DEUX
+ * fois — le compteur annonçait un anniversaire de plus que la liste juste en
+ * dessous. Un compteur et sa liste doivent sortir de la même fonction.
+ */
 export async function getUpcomingAnniversaryCountsByGroup(
   groupIds: string[],
   days = 90,
   timeZone = 'Asia/Seoul',
 ): Promise<Map<string, number>> {
   if (groupIds.length === 0) return new Map()
-  const supabase = await createClient()
-  const { data: members } = await supabase
-    .from('members')
-    .select('group_id, birthday')
-    .in('group_id', groupIds)
-  const [ty, tm, td] = localDayKey(new Date().toISOString(), timeZone).split('-').map(Number)
-  const today = { y: ty, m: tm, d: td }
   const counts = new Map<string, number>()
-  for (const m of members ?? []) {
-    if (!m.birthday) continue
-    const md = parseMonthDay(m.birthday)
-    if (!md) continue
-    const occ = nextOccurrence(md, today)
-    if (occ.diff < 0 || occ.diff > days) continue
-    counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1)
+  for (const a of await getUpcomingAnniversaries(groupIds, days, timeZone)) {
+    if (!a.group_id) continue
+    counts.set(a.group_id, (counts.get(a.group_id) ?? 0) + 1)
   }
   return counts
 }
@@ -211,18 +239,12 @@ export async function getAnniversariesForMonth({
   const gids = (groups ?? []).map((g) => g.id)
   if (gids.length === 0) return []
 
-  const { data: members } = await supabase
-    .from('members')
-    .select('group_id, stage_name, birthday')
-    .in('group_id', gids)
+  const members = await fetchActiveMembersWithBirthday(supabase, gids)
 
   const groupById = new Map((groups ?? []).map((g) => [g.id, g]))
   const out: UpcomingEvent[] = []
   // Dédup soliste/membre (cf. generateAnniversaries) : une personne = un anniv.
-  for (const m of dedupePersons(
-    (members ?? []) as AnnivMember[],
-    groupById as Map<string, AnnivGroup>,
-  )) {
+  for (const m of dedupePersons(members, groupById as Map<string, AnnivGroup>)) {
     const g = groupById.get(m.group_id)!
     const md = parseMonthDay(m.birthday!)
     if (!md || md.month !== month) continue
