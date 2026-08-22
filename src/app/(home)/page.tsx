@@ -116,7 +116,9 @@ export default async function Home({
   let heroMvImage: string | null = null
   let heroMvFallback: string | null = null
   if (nextDrop?.groups?.slug) {
-    const [latestMv] = await getGroupMvs(nextDrop.groups.slug, 1)
+    const {
+      rows: [latestMv],
+    } = await getGroupMvs(nextDrop.groups.slug, 1)
     const videoId = latestMv ? extractYouTubeId(latestMv.source_url) : null
     // maxres n'existe pas pour toutes les vidéos → hqdefault en repli client.
     heroMvImage = videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null

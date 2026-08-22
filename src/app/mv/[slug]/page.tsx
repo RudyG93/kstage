@@ -66,7 +66,7 @@ export async function generateMetadata({
 // Catalogue du groupe (rail droit desktop + grille mobile) : fetch UNIQUE
 // partagé entre les deux sections streamées — cache() dédoublonne par args.
 const getRailData = cache(async (groupSlug: string, excludeId: string) => {
-  const groupMvs = await getGroupMvs(groupSlug, 9)
+  const { rows: groupMvs } = await getGroupMvs(groupSlug, 9)
   const railMvs = groupMvs.filter((m) => m.id !== excludeId)
   const ratings = await getRatingsForEvents(railMvs.map((m) => m.id))
   return { railMvs, ratings }
