@@ -4,6 +4,35 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-22 (nuit, 3) — Audit : neuf lectures fausses en silence
+
+**Commit** : `eeacf70` → `main`. Audit adversarial déclenché par le bug précédent — 5 lentilles indépendantes, un réfuteur par finding, 12 pistes, **9 confirmées en interrogeant la prod**, 3 réfutées (dont deux sur le code livré une heure plus tôt).
+
+### Le plafond PostgREST est DUR
+
+`db-max-rows = 1000`, et `.limit(2000)` ne le lève pas : mesuré, `?limit=2000` sur `members` répond `206` avec `Content-Range: 0-999/1268`. Le client Supabase ne signale rien. Quatre lectures mentaient donc sans lever la moindre erreur :
+
+| Lecture                     | Tronquée                   | Conséquence                                                                                                                            |
+| --------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| cron `scrape-music-shows`   | 1000 / 1218 membres actifs | la garde anti-homonyme ne voyait plus le second porteur d'un nom → 27 noms attribués au mauvais groupe, **écrits en base** chaque jour |
+| `getGroupEventCounts`       | 1000 / 4165 events         | 102 des 260 groupes classés « sans contenu » par le tri de l'onboarding                                                                |
+| anniversaires du calendrier | 1000 / 1268 membres        | 121 des 679 anniversaires absents                                                                                                      |
+| `/admin/images`             | 1000 / 1268 membres        | « Sohyun » à « ZZONE » invisibles, donc incorrigeables                                                                                 |
+
+Correctifs : helper `fetchAllRows` (+ test — _une page pleine ne prouve pas qu'il n'y a plus rien_), et pour les comptes, un RPC (`group_event_counts`, migration 0064) : Postgres agrège, on transporte 260 lignes au lieu de 4165.
+
+### Filtres divergents — deux surfaces qui se contredisent au même instant
+
+- **Anniversaires sans filtre `status`** : la page groupe rangeait quelqu'un en « Former & pre-debut » pendant que le calendrier annonçait son anniversaire. Le **digest push** avait le même défaut — le pire endroit pour annoncer l'anniversaire d'un membre parti. Lecteur partagé `fetchActiveMembersWithBirthday` sur les 5 surfaces (pages, digest, feed iCal).
+- **Compteur « N upcoming »** : comptait une ligne `members` par row sans `dedupePersons` — un soliste comptait deux fois. Il dérive maintenant de la liste elle-même : la divergence n'est plus exprimable.
+- **Page d'un artiste solo** : ne fusionnait pas les anniversaires alors que `/groups/[slug]` y redirige — « No upcoming events » pendant que le compteur en annonçait un.
+- **Badge « En pause »** : `getLastReleasePairsCached` oubliait `isMainOrNonMv`, donc une version `other_version` invisible partout ailleurs faisait passer un groupe pour actif. Exactement **un** groupe change de palier (Candy Shop, active → paused), vérifié en SQL avant merge.
+- **`/admin/debuts`** : « 100 en attente » (le plafond) pendant que le badge de la nav, sur le même écran, affichait 306 — 281 rows en file.
+
+**Vérifié** : le calendrier rend 52 anniversaires en août = exactement les 52 membres actifs datés de la base, les 6 anciens exclus.
+
+**Décision** : toute requête sur une table qui peut dépasser 1000 lignes passe par `fetchAllRows` ou par un RPC d'agrégat. Un compteur et sa liste sortent de la même fonction.
+
 ## 2026-08-22 (nuit, 2) — « 13 stages dans le rail, 11 sur la page »
 
 **Commit** : `0efa740` → `main`.
