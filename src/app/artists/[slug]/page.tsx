@@ -21,6 +21,7 @@ import {
 } from '@/lib/members/queries'
 import { StageCard } from '@/components/group/stage-card'
 import { getUpcomingEvents, getGroupMvs, getGroupStages, getMemberMvs } from '@/lib/events/queries'
+import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -145,13 +146,24 @@ function ArtistBodySkeleton() {
 
 /** Corps solo (events, MVs, carrière) — streamé après le hero (Lot G). */
 async function SoloBody({ member, group }: { member: Member; group: ArtistGroup }) {
-  const [events, stagesRes, mvsRes, career, timeZone] = await Promise.all([
+  // timeZone avant le reste : les anniversaires se calculent dans le jour civil
+  // du viewer (comme getGroupPageData sur la page groupe).
+  const timeZone = await getViewerTimeZone()
+  const [dbEvents, stagesRes, mvsRes, career, anniversaries] = await Promise.all([
     getUpcomingEvents({ groupSlug: group.slug, limit: 20 }),
     getGroupStages(group.slug),
     getGroupMvs(group.slug, 48),
     getCareerPath(member.id),
-    getViewerTimeZone(),
+    // La page groupe fusionne les anniversaires depuis toujours ; la vue solo,
+    // non — et comme /groups/[slug] redirige les solos ici, c'était LEUR seule
+    // page. Un soliste sans event programmé affichait « No upcoming events »
+    // pendant que le compteur « N upcoming » et le calendrier lui comptaient
+    // son anniversaire.
+    getUpcomingAnniversaries([group.id], 90, timeZone),
   ])
+  const events = [...dbEvents, ...anniversaries].sort((a, b) =>
+    a.start_at.localeCompare(b.start_at),
+  )
   const { rows: stages, total: stageTotal } = stagesRes
   const { rows: mvs, total: mvTotal } = mvsRes
   const ratings = await getRatingsForEvents(mvs.map((m) => m.id))

@@ -54,15 +54,15 @@ export async function getUpcomingEvents({
  * du contenu plancher, pas un critère de mise en avant.
  */
 export async function getGroupEventCounts(): Promise<Map<string, number>> {
+  // RPC plutôt qu'un select : la version qui rapatriait les lignes pour les
+  // compter en TS n'en recevait que 1000 sur 4165 (plafond PostgREST, aucune
+  // erreur levée). 102 des 260 groupes ressortaient à 0 et passaient donc pour
+  // « sans contenu » dans le tri de l'onboarding, écran d'accueil des
+  // nouveaux comptes. Postgres agrège, on transporte 260 lignes.
   const supabase = await createClient()
-  const { data, error } = await supabase.from('events').select('group_id').eq('hidden', false)
+  const { data, error } = await supabase.rpc('group_event_counts')
   if (error) throw error
-  const counts = new Map<string, number>()
-  for (const e of data ?? []) {
-    if (!e.group_id) continue
-    counts.set(e.group_id, (counts.get(e.group_id) ?? 0) + 1)
-  }
-  return counts
+  return new Map((data ?? []).map((r) => [r.group_id, Number(r.events)]))
 }
 
 export async function getEventsForMonth({
@@ -433,6 +433,12 @@ const getLastReleasePairsCached = unstable_cache(
         .select('group_id, start_at')
         .in('type', ['mv', 'release'])
         .eq('hidden', false)
+        // Même prédicat de visibilité que partout ailleurs (§8 SCRAPING.md) :
+        // sans lui, une version `other_version` — invisible sur toute autre
+        // surface — passait pour la dernière sortie du groupe et le faisait
+        // paraître actif. Candy Shop était crédité d'une sortie de mars 2026
+        // que personne ne peut voir, au lieu d'un badge « En pause ».
+        .or(isMainOrNonMv)
         .lte('start_at', new Date().toISOString())
         .order('start_at', { ascending: false })
         .range(from, from + 999)

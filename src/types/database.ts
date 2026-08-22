@@ -1092,6 +1092,13 @@ export type Database = {
         Args: { p_action: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      group_event_counts: {
+        Args: never
+        Returns: {
+          events: number
+          group_id: string
+        }[]
+      }
       group_follow_counts: {
         Args: never
         Returns: {

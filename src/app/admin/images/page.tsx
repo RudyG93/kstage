@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { fetchAllRows } from '@/lib/supabase/paginate'
 import { requireAdminPage } from '@/lib/auth/require-admin'
 import { MemberImageEditor } from '@/components/admin/member-image-editor'
 
@@ -8,12 +9,24 @@ export default async function AdminImagesPage() {
   await requireAdminPage()
   const supabase = await createClient()
 
-  const { data: members } = await supabase
-    .from('members')
-    .select('id, stage_name, photo_url, photo_source_key, groups!inner(name)')
-    .order('stage_name')
-    .limit(2000)
-  const rows = (members ?? []).map((m) => ({
+  // `.limit(2000)` ne levait rien : PostgREST re-cape à 1000 et rendait un
+  // 206 muet. Tout le bas de l'alphabet (268 membres, de « Sohyun » à
+  // « ZZONE ») était donc absent de l'éditeur, donc incorrigeable ici.
+  const members = await fetchAllRows<{
+    id: string
+    stage_name: string
+    photo_url: string | null
+    photo_source_key: string | null
+    groups: { name: string }
+  }>((from, to) =>
+    supabase
+      .from('members')
+      .select('id, stage_name, photo_url, photo_source_key, groups!inner(name)')
+      .order('stage_name')
+      .order('id')
+      .range(from, to),
+  )
+  const rows = members.map((m) => ({
     id: m.id,
     name: m.stage_name,
     group: m.groups.name,

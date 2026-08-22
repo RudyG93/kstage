@@ -14,7 +14,7 @@ import { sendPush } from '@/lib/notifications/send'
 import { disabledTypesByUser } from '@/lib/notifications/prefs'
 import { isValidTimeZone } from '@/lib/profiles/timezone'
 import { displayEventTitle } from '@/lib/events/title'
-import { generateAnniversaries } from '@/lib/events/anniversaries'
+import { fetchActiveMembersWithBirthday, generateAnniversaries } from '@/lib/events/anniversaries'
 import { localDayKey } from '@/lib/events/date'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
@@ -103,22 +103,22 @@ export async function GET(req: Request) {
   const followedGroupIds = [...new Set((followsRes.data ?? []).map((f) => f.group_id))]
   let annivEvents: DigestEvent[] = []
   if (followedGroupIds.length > 0) {
-    const [annivGroupsRes, annivMembersRes] = await Promise.all([
+    // Membres via le lecteur partagé : ACTIFS et datés. Un digest est une
+    // notification PUSH — annoncer l'anniversaire d'un membre parti (ou pire,
+    // décédé) est le pire endroit où le faire.
+    const [annivGroupsRes, annivMembers] = await Promise.all([
       supabase
         .from('groups')
         .select(
           'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo, confidence',
         )
         .in('id', followedGroupIds),
-      supabase
-        .from('members')
-        .select('group_id, stage_name, birthday')
-        .in('group_id', followedGroupIds),
+      fetchActiveMembersWithBirthday(supabase, followedGroupIds),
     ])
-    const annivErr = annivGroupsRes.error ?? annivMembersRes.error
+    const annivErr = annivGroupsRes.error
     if (annivErr) return NextResponse.json({ error: annivErr.message }, { status: 500 })
     const confidenceById = new Map((annivGroupsRes.data ?? []).map((g) => [g.id, g.confidence]))
-    annivEvents = generateAnniversaries(annivGroupsRes.data ?? [], annivMembersRes.data ?? [], {
+    annivEvents = generateAnniversaries(annivGroupsRes.data ?? [], annivMembers, {
       todayKey: localDayKey(now.toISOString(), 'Asia/Seoul'),
       days: edition === 'weekly' ? 7 : 2,
     })
