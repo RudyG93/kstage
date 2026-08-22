@@ -12,6 +12,7 @@
     d'ENVOI (notify-comebacks, send-digest — leçon verify-automation-state). */
 export const TRIGGERABLE_CRONS = [
   'refresh-images',
+  'scrape-comebacks',
   'recover-mvs',
   'aired-shows',
   'discover-channels',
@@ -28,6 +29,7 @@ export type TriggerableCron = (typeof TRIGGERABLE_CRONS)[number]
  */
 export const CRON_LOG_SOURCE: Record<TriggerableCron, string> = {
   'refresh-images': 'refresh_images',
+  'scrape-comebacks': 'kpopofficial',
   'recover-mvs': 'recover_mvs',
   'aired-shows': 'aired_shows',
   'discover-channels': 'channel_discovery',
@@ -182,10 +184,10 @@ export const REMEDIES: Record<string, Remedy> = {
     linkLabel: 'Admin events',
   },
   placeholder_titles: {
-    kind: 'review',
-    note: 'Titre générique « X debut » : renseigner le vrai titre depuis l’admin events.',
-    href: '/admin/events',
-    linkLabel: 'Admin events',
+    kind: 'one_click',
+    note: 'Deux cas. « {groupe} debut » vient de l’ingest debuts. Le descripteur de format (« NCT 127 7th Full Album ») vient de kpopofficial, qui annonce avant que le label ne révèle le nom puis RENOMME sa page — le re-scrape reprend le vrai titre et réaligne source_url. Pour une sortie d’un mois passé (hors fenêtre du cron) : `npx tsx scripts/refresh-untitled-releases.ts --apply`.',
+    cron: 'scrape-comebacks',
+    buttonLabel: 'Re-scraper les comebacks',
   },
   predebut_incomplete: {
     kind: 'review',

@@ -18,6 +18,7 @@ import { isSamePerson, normalizeName } from '@/lib/members/matching'
 import { activityStatus } from '@/lib/groups/activity'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { isOfficialMvTitle } from '@/lib/scrapers/is-official-mv'
+import { isPlaceholderRelease } from '@/lib/scrapers/comeback-ingest'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -807,12 +808,15 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       .eq('hidden', false)
       .gte('start_at', since)
       .lte('start_at', until)
+    // Deux formes de placeholder : « {groupe} debut » (ingest debuts) ET le
+    // descripteur de format de kpopofficial, « NCT 127 7th Full Album (2026) »,
+    // qui attend que le label revele le nom (retour Rudy 2026-08-22).
     const placeholders = (releases ?? []).filter((e) =>
-      isPlaceholderTitle(e.title, (e.groups as { name: string }).name),
+      isPlaceholderRelease(e.title, (e.groups as { name: string }).name),
     )
     checks.push({
       id: 'placeholder_titles',
-      label: 'Releases au titre placeholder « X debut » (±30 j)',
+      label: 'Releases sans vrai titre (placeholder ou descripteur de format, ±30 j)',
       severity: 'warn',
       count: placeholders.length,
       sample: placeholders
