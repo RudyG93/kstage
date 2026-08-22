@@ -4,6 +4,28 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-22 (nuit, 2) — « 13 stages dans le rail, 11 sur la page »
+
+**Commit** : `0efa740` → `main`.
+
+Rudy compare le nouveau rail à la page du groupe et trouve deux chiffres qui ne disent pas la même chose. Deux défauts distincts, dans la même fonction `getGroupStages`.
+
+### Le filtre `stage_url` cachait les passages les plus récents
+
+`.not('stage_url','is',null)` : un passage dont le diffuseur n'a pas encore posté la scène n'existait pas pour la page. **69 des 713 passages** en base — et ce sont mécaniquement les plus récents, ceux qu'on vient voir juste après une diffusion. C'est exactement la plainte d'origine sur le scraping des music shows (« il faut attendre trop longtemps avant de voir apparaître sur leur pages respectives ») : la donnée était là, l'affichage la jetait.
+
+La vignette gère désormais les deux états — vidéo publiée → lien externe vers la scène ; pas encore → lien **interne** vers la page épisode et mention « Video soon ». Vérifié avant d'écrire : les 69 passages sans vidéo ont tous une page épisode (`show_episodes` peuplé, 6 titres tous dans les descripteurs), donc aucun lien mort. Un show hors descripteur ET sans vidéo rendrait une carte muette plutôt qu'un `href="#"`.
+
+### Les compteurs affichaient le plafond, pas le total
+
+`Stages — {stages.length}` où `stages` sort d'un `.limit(12)`. Un groupe à 25 passages annonçait 12. Même bug une section plus haut : `Music videos ({mvs.length})` sur `.limit(48)` — **Seventeen et FT Island en ont 56, Jay Park 57**, tous trois affichaient 48.
+
+`getGroupStages` et `getGroupMvs` renvoient maintenant `{ rows, total }`, le `total` étant le `count: 'exact'` de la **même** requête PostgREST (gratuit). Le changement de type force chaque appelant à choisir entre la liste et le total — on ne peut plus réintroduire le bug par distraction. Quand la grille tronque, elle le dit : « Showing the 24 most recent ».
+
+**Vérifié en prod** : Kiss of Life 13 = 13, IDID 25 (grille 24 + mention), Seventeen 56 MVs, Jay Park 57 MVs + 3 passages « Video soon ».
+
+**Décision** : un compteur affiché ne se dérive jamais d'une liste plafonnée. Si la liste est bornée, le total vient d'un `count`, et la troncature est écrite à l'écran.
+
 ## 2026-08-22 (nuit) — Des rails qui parlent enfin de nos données
 
 **Commits** : `7bbdf9e` (titres de sorties) et `207bd85` (blocs de rail) → `main`.
