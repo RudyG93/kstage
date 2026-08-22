@@ -2,8 +2,7 @@ import type { Route } from 'next'
 import { Suspense } from 'react'
 import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
-import { NewGroupsBlock } from '@/components/rails/discovery-blocks'
-import { DiscussionsBlock } from '@/components/rails/community-blocks'
+import { NewGroupsBlock, PromotingNowBlock } from '@/components/rails/discovery-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
 import {
@@ -158,7 +157,9 @@ export default async function GroupsPage({
           <Suspense fallback={<RailSkeleton />}>
             <RailStack>
               <NewGroupsBlock />
-              <DiscussionsBlock />
+              {/* Idem : un annuaire n'affiche aucune activite, le palmarès des
+                  passages dit qui promeut en ce moment. */}
+              <PromotingNowBlock />
             </RailStack>
           </Suspense>
         </aside>
