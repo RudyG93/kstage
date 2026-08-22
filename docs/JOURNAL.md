@@ -4,6 +4,41 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-22 (nuit) — Des rails qui parlent enfin de nos données
+
+**Commits** : `7bbdf9e` (titres de sorties) et `207bd85` (blocs de rail) → `main`.
+
+### 1. Les sorties annoncées avant d'être titrées
+
+kpopofficial annonce « NCT 127 7th Full Album (2026) », puis **renomme sa page** quand le label révèle le nom : `…/nct-127-comeback-2026/` répond 301 vers `…/nct-127-blingy/`. La ligne restait figée sur le descripteur de format.
+
+Deux niveaux : `comeback-ingest` remplace désormais un titre-descripteur par le vrai titre quand la source se corrige (mois courant + suivant, à chaque run du cron), et `scripts/refresh-untitled-releases.ts` rattrape le passé en suivant la redirection et en lisant l'`og:title`. **6 sorties corrigées en prod** — NCT 127 → BLINGY, SF9 → TENACITY… Le `source_url` est mis à jour en même temps, sinon le prochain run repartirait de l'ancienne URL.
+
+### 2. Trois blocs de rail nourris par la base, à la place de blocs morts
+
+Demande de Rudy : des blocs « MV this week », « Releases this week », « Most followed groups / solos ». Mesuré avant d'écrire — et trois de ces quatre idées ne tiennent pas :
+
+- **MV / Releases this week** redisent le centre : `WeekGlance` sur la home, la grille du mois sur `/calendar`, le mur de clips sur `/mvs`.
+- **Most followed** repose sur **52 follows de 3 comptes** ; `/groups` expose déjà ce tri (`pop_desc`).
+- Et `subscriber_count`, qui aurait pu remplacer les follows, porte le nombre du **label** pour ~94 groupes sur 247.
+
+Les blocs livrés sont ceux dont la base a la matière — et les rails en avaient besoin : `event_ratings` compte **2 lignes**, `comments` **6**. « Recent discussions » (seuil 3) ne rendait donc **rien** sur les 6 surfaces où il était monté, « Top rated » rien non plus.
+
+| Bloc                          | Surface                             | Matière                  |
+| ----------------------------- | ----------------------------------- | ------------------------ |
+| `On music shows · 30 days`    | `/mvs`, `/groups`                   | 241 passages, 66 groupes |
+| `Debut class of YYYY`         | `/groups/[slug]`, `/artists/[slug]` | 217 groupes datés        |
+| `Rookies · debuted this year` | `/calendar`                         | 41 debuts sur 12 mois    |
+
+Deux pièges attrapés à la vérification, pas au code :
+
+- **La fenêtre glissait à la seconde** : deux rendus à 15 min d'écart donnaient OURBIRTHDAY à 10 puis 9 passages — l'épisode d'il y a 30 jours sortait de la fenêtre en cours d'heure. Borne alignée sur le jour.
+- **« Debuted around 2013 » ne montrait que du 2015** : la fenêtre ±2 ans triée par date prenait son bord le plus récent. Tri par écart à l'année de référence — BTS voit maintenant Red Velvet, Mamamoo, EXO, BtoB.
+
+Lecture paginée sur les passages : au-delà de 1000 lignes PostgREST tronque **sans erreur** et le palmarès mentirait en silence.
+
+**Décision** : un bloc de rail ne redit jamais le centre de sa page, et ne se monte pas sur une donnée que la base n'a pas. « Recent discussions » ne reste monté que sur la home — la seule surface où il pourra vivre le jour où les commentaires arrivent.
+
 ## 2026-08-22 (soir) — Performances de chargement : JS, polices, images
 
 **Commits** : `92a2638` (Supabase Realtime), `705d89f` (polices + bannière), `e91e4cd` (srcset) → `main`.
