@@ -81,9 +81,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ).then((data) => ({ data })),
   ])
 
-  const statics: MetadataRoute.Sitemap = ['', '/calendar', '/groups', '/mvs', '/search'].map(
-    (path) => ({ url: `${SITE_URL}${path}` }),
-  )
+  const statics: MetadataRoute.Sitemap = [
+    '',
+    '/calendar',
+    '/groups',
+    '/mvs',
+    '/search',
+    '/shows',
+  ].map((path) => ({ url: `${SITE_URL}${path}` }))
   const groups: MetadataRoute.Sitemap = (groupsRes.data ?? []).map((g) => ({
     url: `${SITE_URL}/groups/${g.slug}`,
   }))

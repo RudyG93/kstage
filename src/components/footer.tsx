@@ -3,6 +3,10 @@ import { CONTACT_EMAIL } from '@/lib/site'
 import { FeedbackDialog } from '@/components/feedback/feedback-dialog'
 
 const LINKS = [
+  // `/shows` vit ici et pas dans la nav : les 5 entrées de la barre sont
+  // arrêtées (Data Desk §6). Sans ce lien, l'index des épisodes n'aurait
+  // aucun point d'entrée dans l'app.
+  { href: '/shows', label: 'Music shows' },
   { href: '/about', label: 'About' },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
