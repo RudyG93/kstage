@@ -148,7 +148,7 @@ export function QueueRow({
                 <ExternalLink className="text-faint size-3" aria-label="Opens YouTube" />
               )}
             </span>
-            <span className="tabular text-muted-foreground/70 text-[10px]">
+            <span className="tabular text-muted-foreground text-[10px]">
               {kstTime24h(event.start_at)} KST
             </span>
           </>

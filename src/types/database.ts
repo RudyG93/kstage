@@ -242,6 +242,42 @@ export type Database = {
           },
         ]
       }
+      error_log: {
+        Row: {
+          created_at: string
+          digest: string | null
+          id: number
+          message: string
+          method: string | null
+          path: string | null
+          route_path: string | null
+          route_type: string | null
+          stack: string | null
+        }
+        Insert: {
+          created_at?: string
+          digest?: string | null
+          id?: never
+          message: string
+          method?: string | null
+          path?: string | null
+          route_path?: string | null
+          route_type?: string | null
+          stack?: string | null
+        }
+        Update: {
+          created_at?: string
+          digest?: string | null
+          id?: never
+          message?: string
+          method?: string | null
+          path?: string | null
+          route_path?: string | null
+          route_type?: string | null
+          stack?: string | null
+        }
+        Relationships: []
+      }
       event_notifications: {
         Row: {
           event_id: string

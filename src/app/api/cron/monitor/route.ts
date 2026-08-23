@@ -45,6 +45,17 @@ export async function GET(req: Request) {
   // monitor, et les counts ne déclenchent pas de 500 (backlog ≠ incident).
   let dataHealth: Record<string, number> | null = null
   const startedAt = new Date().toISOString()
+
+  // Rétention du journal d'erreurs : 30 jours. Sans purge, une boucle
+  // d'erreurs sur une page très visitée remplirait la table en silence — et
+  // le check ne lit de toute façon que les 24 dernières heures.
+  try {
+    const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString()
+    await supabase.from('error_log').delete().lt('created_at', cutoff)
+  } catch {
+    // Best-effort : la purge n'a pas à faire échouer le monitor.
+  }
+
   try {
     dataHealth = summarizeReport(await runDataHealthChecks(supabase))
     await logScrapeRun(supabase, {
