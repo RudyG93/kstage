@@ -4,6 +4,42 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-24 — « Pourquoi les anniversaires seulement pour les groupes suivis ? »
+
+**Commit** : `851fa72` → `main`. CI verte.
+
+### La restriction reposait sur un chiffre faux
+
+Le commentaire justifiait le scope par « ~20 anniversaires/semaine sur tout le roster, ce serait du bruit ». Mesuré sur les 604 personnes datées : **11,4 par semaine en moyenne**, minimum 1, maximum 20 — le chiffre cité était le pire cas, pas la normale. Et le raisonnement se mordait la queue : le bloc n'est monté que sur la home CONNECTÉE et se masquait sans follow, donc il n'existait pour à peu près personne.
+
+La réponse n'est ni « suivis » ni « général » mais un **repli** : les groupes suivis d'abord — le signal le plus fort quand il existe — le roster entier sinon, avec un titre qui dit lequel on regarde. Même patron que « Debut class of 2023 » qui s'élargit en « Debuted around 2013 ».
+
+Au passage, la variante tout-roster n'envoie pas de `.in()` sur 250 UUID : **9 249 caractères d'URL**, mesurés, pour un filtre que la Map des groupes refait déjà côté TS.
+
+### La famille de blocs qui manquait
+
+Tous les rails regardaient DEVANT — Coming up, Just announced, Rookies, Upcoming. Rien ne regardait derrière.
+
+| Bloc                          | Où                                | Matière                                |
+| ----------------------------- | --------------------------------- | -------------------------------------- |
+| `Music show wins · this week` | `/shows` (centre), rail `/groups` | 6/semaine, une par show                |
+| `On this day`                 | rail `/mvs`                       | 9,7 clips/jour partagent le jour civil |
+
+« On this day » est la seule mécanique du produit qui donne une raison de revenir **un jour où il ne sort rien**. Rendu réel : _Chewing Gum — NCT DREAM, 10 yrs · IDOL — BTS, 8 yrs_.
+
+Écarté : les anniversaires de DEBUT (3 sur 7 jours) — retirés par décision produit documentée dans `generateAnniversaries`. Et pas d'anniversaires sur `/calendar` : la grille du mois en rend déjà 52 pour août.
+
+### Deux bugs que le rendu du jour ne pouvait pas montrer
+
+La revue adversariale (14 findings) en a sorti deux qui n'étaient visibles aucun des jours où j'ai vérifié :
+
+- **`getOnThisDayMvs` affamait les années anciennes.** La sortie anticipée sur un compteur cumulé descendait de l'année récente et s'arrêtait à 12 lignes ; le tri final prétendait ensuite rendre les 4 **plus anciennes** d'un ensemble jamais interrogé en entier. Un 1er novembre, 2016 n'était jamais lu alors qu'il porte des clips — le bloc affichait « 9 yrs » avec du 10 ans à un `y--` de distance. Trois jours de l'année touchés, et ce nombre grossit à chaque scrape. Les 12 années partent maintenant **en parallèle** : le bug disparaît et 12 aller-retours séquentiels deviennent un round-trip. Vérifié — 1er nov : 9 → 10 ans ; 19 août : 7 → 12 ans.
+- **`getRecentShowWins` comparait une date UTC à la colonne KST `kst_day`.** La fenêtre faisait 8 ou 9 jours civils KST, **jamais 7**. Conséquence : un show préempté (결방, fréquent) faisait remonter son vainqueur de la semaine PRÉCÉDENTE sous un titre affirmant « this week ». Et aucune borne haute, alors que la base porte déjà des épisodes à `kst_day` futur.
+
+Plus : le 29 février débordait sur le 1er mars les années non bissextiles, l'erreur de chaque année était avalée, l'année de référence était lue en UTC quand le jour est ancré KST (« 0 yrs » neuf heures par an), le bloc affichait le nom scrapé (« Ateez ») au lieu de celui du roster (« ATEEZ »), et son titre restait un `<span>` au centre de `/shows`.
+
+**Décision** : une justification chiffrée se re-mesure avant d'être suivie. Le « ~20 par semaine » a bloqué ce bloc pendant des mois pour une valeur qui était le maximum, pas la moyenne.
+
 ## 2026-08-23 (nuit, 2) — Les PR Dependabot, instruites avant d'être suivies
 
 **Commits** : `efe5cd9` (15 bumps + artefact Playwright), `a5d453d` (upload-artifact v7, plugin-react) → `main`. **0 PR ouverte**, CI verte.
