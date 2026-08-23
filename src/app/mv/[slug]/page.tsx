@@ -20,6 +20,7 @@ import { displaySongTitle } from '@/lib/events/title'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { BackButton } from '@/components/back-button'
 import { JsonLd } from '@/components/seo/json-ld'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { Panel } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { YouTubeEmbed } from '@/components/mv/youtube-embed'
@@ -169,6 +170,16 @@ async function MvBody({
 
   return (
     <>
+      <Breadcrumbs
+        trail={[
+          { name: 'Home', path: '/' },
+          { name: 'Drops', path: '/mvs' },
+          ...(group?.slug && group.name
+            ? [{ name: group.name, path: `/groups/${group.slug}` }]
+            : []),
+          { name: title, path: `/mv/${event.slug}` },
+        ]}
+      />
       {videoId && (
         <JsonLd
           data={{
