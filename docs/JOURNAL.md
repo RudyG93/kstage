@@ -4,6 +4,47 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 — Audit produit, puis le lot « ville fantôme »
+
+**Commit** : `ff9c6c6` → `main`. Audit produit en amont (58 agents : 4 lentilles internes, 3 de veille concurrentielle, un juge par recommandation) — 50 pistes, **34 retenues**, puis revue adversariale du diff (22 agents, **11 findings confirmés**, tous corrigés avant merge).
+
+### Le défaut le plus visible n'était pas une feature manquante
+
+Relevé sur `/groups/seventeen` : `1 follow · 0 Followers · — Avg score`. Sur les pages MV : `— / 10 · 0 ratings · Discussion — 0 · No comments yet`. La base porte **2 notes, 6 commentaires, 52 follows sur 3 comptes** — donc ~3 500 pages annonçaient à leur premier visiteur que personne n'est là.
+
+La règle qui l'interdit était **déjà écrite** (`BACKLOG.md:7`, « un compteur à zéro est une anti-preuve sociale ») ; elle n'avait été appliquée qu'aux features gelées, jamais au livré. Ce lot la rejoue : cellules variables sur la strip de stats (avec une nouvelle cellule « Last drop », la seule peuplée pour tout le monde), panneau de notation masqué sous 3 votes (le slider reste), compteur de commentaires masqué à zéro, « N follows » retiré des 4 surfaces de `TrendingList`. Tout est réversible en une ligne le jour où il y a du monde.
+
+### Trois surfaces ne portaient rien
+
+`/search` sans requête rendait **une phrase grise** — alors que c'est le bouton central de la barre mobile. Trois blocs déjà vivants y sont posés en grille. L'onboarding n'offrait que les 222 groupes : un fan de Lisa ou G-Dragon n'avait **aucune** occasion de le suivre au seul moment prévu pour ça. Et 527 pages membre n'affichaient aucun clip (`mv_kind='member'` = 17 lignes en tout) — elles montrent le catalogue de leur groupe.
+
+### Les filets
+
+`global-error.tsx` n'existait pas : une exception dans le root layout échappait à `error.tsx`. Trois détails que la doc Next 16 embarquée tranche : les exports `metadata` n'y sont pas supportés (→ composant React `<title>`), il faut ses propres `<html>`/`<body>`, et **`retry` ≠ `reset`** — `reset` ne fait que vider l'état du boundary et rejoue le même arbre serveur cassé, `retry` rafraîchit d'abord.
+
+`/u/[username]` était la seule page publique sans `metadata` : titre générique et **indexable**, alors que les features sociales sont gelées. Et « En pause »/« Inactif » étaient les deux seuls libellés français rendus aux visiteurs.
+
+### Ce que la revue a rattrapé
+
+Six défauts introduits par le diff lui-même, dont trois que je n'aurais pas vus :
+
+- le **JSON-LD** servait encore `aggregateRating` avec 1 note pendant que la page ne l'affichait plus — or Google exige que le contenu balisé soit visible ;
+- la **MvCard** promettait « ★ 8.5 · 1 » et ouvrait une page sans note : le seuil est passé en constante partagée, dans un module **client-safe** (le poser dans `community.ts` a cassé le build — il tire `next/headers`, et MvCard vit dans le graphe client via `CollapsibleMvs`) ;
+- la grille de la strip **réservait une colonne aux liens même sans liens** : 7 groupes (`links = '{}'`) avaient un panneau à moitié vide. Mobile et `md:` doivent être indexés sur des nombres différents ;
+- l'ordre des cellules sacrifiait « Avg score » à la troncature — c'est « Upcoming » qui saute, la section du même nom étant 300 px plus bas ;
+- « Last drop » était en **KST** quand les vignettes MV de la même page sont dans le fuseau du viewer ;
+- la page groupe paginait les **3 139 lignes** du catalogue en 4 allers-retours pour lire UN timestamp → `getLastReleaseForGroup`, une ligne.
+
+**Vérifié en prod** : `suction` rend `md:grid-cols-1` pour un enfant, `aespa` `md:grid-cols-4` pour quatre, aucun `aggregateRating` sous 3 notes, « Mar 2026 Last drop » sur Seventeen (= la valeur SQL), `/search` vide qui rend ses 3 blocs.
+
+### Diagnostic du push mort (lecture seule, aucun cron déclenché)
+
+`push_subscriptions` = **0 ligne** : voilà pourquoi `candidates: 0` depuis le 21/08. Établi : le code d'envoi ne les a pas supprimées (`removed: 0` partout), aucun compte n'a été supprimé, aucune migration entre le 19 et le 22/08. Il existe un désabonnement utilisateur (cloche/toggle) qui supprime la ligne — l'explication la plus plausible. `digest_log` = 0 **reste inexpliqué** : l'upsert est bien formé (la contrainte unique existe), il a tourné avec `sent: 2` cinq jours de suite, et son erreur est avalée.
+
+Le vrai livrable : trois défauts structurels rendent la panne **invisible** — `push-toggle.tsx` lit l'état du navigateur et jamais la base (il affiche « Disable » sur une table vide), `public/sw.js` n'écoute pas `pushsubscriptionchange`, et **aucun** des 28 checks de `/admin/health` ne regarde la plomberie de notification. C'est le lot suivant, pas celui-ci.
+
+**Décision** : une surface publique n'affiche jamais un compteur à zéro ni une moyenne sous 3 votes, et un seuil d'affichage vit dans UNE constante partagée — sinon la vignette et la page qu'elle ouvre finissent par se contredire.
+
 ## 2026-08-22 (nuit, 3) — Audit : neuf lectures fausses en silence
 
 **Commit** : `eeacf70` → `main`. Audit adversarial déclenché par le bug précédent — 5 lentilles indépendantes, un réfuteur par finding, 12 pistes, **9 confirmées en interrogeant la prod**, 3 réfutées (dont deux sur le code livré une heure plus tôt).
