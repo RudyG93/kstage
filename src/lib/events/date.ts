@@ -2,15 +2,52 @@
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 
+/** Décalage réel d'un fuseau IANA à un instant donné, DST compris, en ms. */
+function zoneOffsetMs(utcMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs))
+  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? '0')
+  const wallAsUtc = Date.UTC(
+    n('year'),
+    n('month') - 1,
+    n('day'),
+    n('hour'),
+    n('minute'),
+    n('second'),
+  )
+  return wallAsUtc - utcMs
+}
+
 /**
- * Bornes d'un mois exprimées en heure de Séoul, renvoyées en UTC ISO
- * pour servir de filtre `.gte(start) / .lt(end)` côté DB.
+ * Bornes d'un mois exprimées dans le fuseau du VIEWER, en UTC ISO.
+ *
+ * Le calendrier interrogeait un mois KST puis rangeait les résultats dans les
+ * jours civils du viewer : un event du 1er du mois à 00:00 KST tombe la veille
+ * partout à l'ouest de Séoul, donc hors de la fenêtre du mois précédent ET
+ * sans cellule dans le mois suivant — il disparaissait des deux pages
+ * (mesuré le 2026-08-23 : la grille d'août montrait 5 events au 1er en
+ * America/Los_Angeles contre 7 en Asia/Seoul, les 2 manquants nulle part).
+ *
+ * Le décalage est relu APRÈS la première estimation : sans ce second passage,
+ * un mois qui commence du mauvais côté d'un changement d'heure est décalé
+ * d'une heure.
  * @param month 1-12
  */
-export function getKstMonthRange(year: number, month: number) {
-  const startISO = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET_MS).toISOString()
-  const endISO = new Date(Date.UTC(year, month, 1) - KST_OFFSET_MS).toISOString()
-  return { startISO, endISO }
+export function getMonthRangeInZone(year: number, month: number, timeZone: string) {
+  const bound = (y: number, m: number) => {
+    const wall = Date.UTC(y, m, 1)
+    const utc = wall - zoneOffsetMs(wall, timeZone)
+    return new Date(wall - zoneOffsetMs(utc, timeZone)).toISOString()
+  }
+  return { startISO: bound(year, month - 1), endISO: bound(year, month) }
 }
 
 /** Date ISO strictement future ? (nowMs injectable — purity lint des RSC.) */
@@ -103,21 +140,33 @@ export function groupEventsByKstDay<T extends { start_at: string }>(
  *   tous les fuseaux). Les générateurs l'ancrent à minuit KST → la lire en KST
  *   retrouve la date civile ; la lire dans le fuseau du viewer la ferait
  *   glisser à J-1 partout à l'ouest de Séoul (bug du 2026-07-17).
+ * - `tentative` à 00:00 KST (« Time TBA ») = DATE PURE elle aussi : le jour est
+ *   annoncé, l'heure ne l'est pas, et l'ancrage à minuit KST est une
+ *   convention de stockage, pas un horaire. La lire dans le fuseau du viewer
+ *   la faisait glisser à J-1 à l'ouest de Séoul — même bug que les
+ *   anniversaires, resté ouvert pour cette famille (47 events en base).
  * - tout le reste = instant réel → jour local du viewer (cohérent avec l'heure
  *   locale mise en avant et le day_of des push).
  */
-export function eventDayKey(
-  event: { start_at: string; type?: string | null },
+export function eventZone(
+  event: { type?: string | null; status?: string | null; start_at?: string | null },
   timeZone: string,
 ): string {
-  return localDayKey(event.start_at, event.type === 'anniversary' ? 'Asia/Seoul' : timeZone)
+  const pureDate = event.type === 'anniversary' || isTimeTBA(event)
+  return pureDate ? 'Asia/Seoul' : timeZone
 }
 
-/** Regroupe des events par jour, dates pures (anniversaires) comprises. */
-export function groupEventsByEventDay<T extends { start_at: string; type?: string | null }>(
-  events: readonly T[],
+export function eventDayKey(
+  event: { start_at: string; type?: string | null; status?: string | null },
   timeZone: string,
-): Map<string, T[]> {
+): string {
+  return localDayKey(event.start_at, eventZone(event, timeZone))
+}
+
+/** Regroupe des events par jour, dates pures (anniversaires, Time TBA) comprises. */
+export function groupEventsByEventDay<
+  T extends { start_at: string; type?: string | null; status?: string | null },
+>(events: readonly T[], timeZone: string): Map<string, T[]> {
   const map = new Map<string, T[]>()
   for (const event of events) {
     const key = eventDayKey(event, timeZone)
@@ -216,7 +265,7 @@ export function formatDDay(iso: string, timeZone: string, nowIso?: string): stri
 
 /** D-day d'un EVENT : date civile pour les anniversaires, jour local sinon (cf. eventDayKey). */
 export function eventDDay(
-  event: { start_at: string; type?: string | null },
+  event: { start_at: string; type?: string | null; status?: string | null },
   timeZone: string,
   nowIso?: string,
 ): string {

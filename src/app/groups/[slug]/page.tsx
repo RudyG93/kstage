@@ -317,7 +317,7 @@ async function GroupBody({ group }: { group: Group }) {
           <h2 className="label-data">Stages — {stageTotal}</h2>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
-              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
+              <StageCard key={stage.id} stage={stage} />
             ))}
           </div>
           {stageTotal > stages.length && (

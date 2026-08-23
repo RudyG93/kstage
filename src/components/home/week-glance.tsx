@@ -32,15 +32,20 @@ export function WeekGlance({
     eventsByDay.set(key, list)
   }
 
+  // Les 7 jours s'énumèrent sur les CLÉS civiles, pas par +24 h d'horloge :
+  // un changement d'heure dans le fuseau du viewer fait qu'ajouter 86 400 000 ms
+  // retombe sur le même jour local (recul) ou en saute un (avance) — la bande
+  // affichait alors deux fois le même jour, ou en perdait un, deux fois par an.
+  // Une clé YYYY-MM-DD lue en UTC n'a pas d'heure, donc pas de DST.
+  const todayKey = localDayKey(now.toISOString(), timeZone)
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now.getTime() + i * 86_400_000)
-    const iso = d.toISOString()
-    const key = localDayKey(iso, timeZone)
+    const d = new Date(Date.parse(todayKey) + i * 86_400_000)
+    const key = d.toISOString().slice(0, 10)
     const dayEvents = eventsByDay.get(key) ?? []
     return {
       key,
-      weekday: new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(d),
-      dayNum: new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone }).format(d),
+      weekday: new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(d),
+      dayNum: new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: 'UTC' }).format(d),
       isToday: i === 0,
       dots: dayEvents.slice(0, 3).map((e) => EVENT_TYPE_COLORS[e.type]),
       count: dayEvents.length,

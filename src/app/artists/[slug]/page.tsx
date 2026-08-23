@@ -214,7 +214,7 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
           <h2 className="text-sm font-medium">Stages ({stageTotal})</h2>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
-              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
+              <StageCard key={stage.id} stage={stage} />
             ))}
           </div>
           {stageTotal > stages.length && (
@@ -297,7 +297,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
           </div>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
-              <StageCard key={stage.id} stage={stage} timeZone={timeZone} />
+              <StageCard key={stage.id} stage={stage} />
             ))}
           </div>
         </section>

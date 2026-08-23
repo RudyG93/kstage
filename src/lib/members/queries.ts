@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { localDayKey } from '@/lib/events/date'
 import type { Database } from '@/types/database'
 
 /**
@@ -102,11 +103,18 @@ export type MemberSummary = Awaited<ReturnType<typeof getMembersForGroup>>[numbe
 export function ageFromBirthday(
   birthday: string | null,
   nowMs: number = Date.now(),
+  timeZone = 'Asia/Seoul',
 ): number | null {
-  if (!birthday) return null
-  const ms = Date.parse(birthday)
-  if (!Number.isFinite(ms)) return null
-  const age = Math.floor((nowMs - ms) / (365.25 * 86_400_000))
+  // Une annee de 365,25 jours derivait : le nombre reel de bissextiles vecues
+  // n'est pas une moyenne, et l'age tombait un an trop bas le jour meme de
+  // l'anniversaire pour 564 des 2 037 couples (membre, annee) mesures en prod.
+  // Un anniversaire est une DATE PURE : on compare des dates civiles, ancrees
+  // en KST comme partout ailleurs dans le produit.
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthday ?? '')
+  if (!m) return null
+  const [by, bm, bd] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const [ty, tm, td] = localDayKey(new Date(nowMs).toISOString(), timeZone).split('-').map(Number)
+  const age = ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0)
   return age >= 0 && age < 100 ? age : null
 }
 

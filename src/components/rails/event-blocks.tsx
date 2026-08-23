@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getRecentComebacks, getRecentlyAddedEvents, getUpcomingEvents } from '@/lib/events/queries'
 import { displaySongTitle } from '@/lib/events/title'
 import { eventHref } from '@/lib/events/href'
-import { formatDDay, relativeTime, shortDate } from '@/lib/events/date'
+import { eventZone, formatDDay, relativeTime, shortDate } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 
 // Blocs événements des rails contextuels (Lot 6 peaufinage 2026-08-20) :
@@ -73,7 +73,7 @@ function RailLine({
 /** Sorties récentes (déjà passées) — home + repli des pages détail. Ne pas
     rendre sur /mvs : son contenu central EST la liste des drops. */
 export async function RecentComebacksBlock() {
-  const recent = await getRecentComebacks(10)
+  const [recent, timeZone] = await Promise.all([getRecentComebacks(10), getViewerTimeZone()])
   if (recent.length === 0) return null
   return (
     <section className="bg-card rounded-lg border p-4">
@@ -82,7 +82,12 @@ export async function RecentComebacksBlock() {
       </div>
       <ul className="space-y-1">
         {recent.map((cb) => (
-          <RailLine key={cb.id} event={cb} image={cb.image_url} meta={shortDate(cb.start_at)} />
+          <RailLine
+            key={cb.id}
+            event={cb}
+            image={cb.image_url}
+            meta={shortDate(cb.start_at, eventZone(cb, timeZone))}
+          />
         ))}
       </ul>
       <Link
@@ -148,7 +153,7 @@ export async function JustAnnouncedBlock() {
             key={e.id}
             event={e}
             image={e.groups?.image_url ?? null}
-            meta={`${shortDate(e.start_at, timeZone)} · ${relativeTime(e.created_at)}`}
+            meta={`${shortDate(e.start_at, eventZone(e, timeZone))} · ${relativeTime(e.created_at)}`}
           />
         ))}
       </ul>

@@ -4,7 +4,7 @@
 // Deux éditions : 'daily' (fenêtre 48 h) et 'weekly' (lundi, fenêtre 7 j,
 // titre « Your k-pop week ») — le choix de l'édition vient du cron.
 
-import { localDayKey } from '@/lib/events/date'
+import { eventZone, localDayKey } from '@/lib/events/date'
 import { withPushSrc } from './push-url'
 import { passesConfidenceGate, coveredByComebackAlert } from './comebacks'
 
@@ -51,10 +51,14 @@ const MAX_LISTED = 3
  * Entrées du digest : un même music show posé sur N groupes (title+startAt
  * identiques) devient UNE entrée « Music Bank (5 artists) » au lieu de N
  * lignes redondantes — même logique que groupMusicShowEpisodes à l'affichage.
- * Chaque entrée garde son startAt pour l'étiquette de jour.
+ * Chaque entrée garde son startAt ET sa sémantique (type/status) pour
+ * l'étiquette de jour : un anniversaire ou une date « Time TBA » est une date
+ * pure ancrée minuit KST, à ne pas relire dans le fuseau de l'abonné.
  */
-function digestEntries(events: readonly DigestEvent[]): { label: string; startAt: string }[] {
-  const entries: { label: string; startAt: string }[] = []
+type DigestEntry = { label: string; startAt: string; type?: string | null; status?: string | null }
+
+function digestEntries(events: readonly DigestEvent[]): DigestEntry[] {
+  const entries: DigestEntry[] = []
   const episodes = new Map<string, { title: string; names: string[]; index: number }>()
   for (const e of events) {
     if (e.type === 'music_show') {
@@ -65,12 +69,14 @@ function digestEntries(events: readonly DigestEvent[]): { label: string; startAt
         continue
       }
       episodes.set(key, { title: e.title, names: [e.groupName ?? '?'], index: entries.length })
-      entries.push({ label: '', startAt: e.startAt }) // rempli après, lineup complet connu
+      entries.push({ label: '', startAt: e.startAt, type: e.type, status: e.status }) // rempli après
       continue
     }
     entries.push({
       label: e.groupName ? `${e.groupName} — ${e.title}` : e.title,
       startAt: e.startAt,
+      type: e.type,
+      status: e.status,
     })
   }
   for (const ep of episodes.values()) {
@@ -84,15 +90,28 @@ function digestEntries(events: readonly DigestEvent[]): { label: string; startAt
   return entries
 }
 
-/** « today » / « tomorrow » / « Sat » — jour de l'event dans le fuseau de l'abonné. */
-function dayTag(startAt: string, timeZone: string, nowIso: string): string {
-  const eventKey = localDayKey(startAt, timeZone)
-  const todayKey = localDayKey(nowIso, timeZone)
+/**
+ * « today » / « tomorrow » / « Sat » — jour de l'event dans le fuseau de
+ * l'abonné, SAUF pour les dates pures (anniversaires, « Time TBA ») que
+ * eventZone renvoie en KST : elles sont annoncées pour un jour civil, pas pour
+ * un instant, et les relire ailleurs les décalait d'un jour à l'ouest de Séoul
+ * — un abonné américain lisait « tomorrow » le jour même.
+ */
+function dayTag(
+  e: { startAt: string; type?: string | null; status?: string | null },
+  timeZone: string,
+  nowIso: string,
+): string {
+  const zone = eventZone({ type: e.type, status: e.status, start_at: e.startAt }, timeZone)
+  const eventKey = localDayKey(e.startAt, zone)
+  const todayKey = localDayKey(nowIso, zone)
   if (eventKey === todayKey) return 'today'
   // Comparaison de clés YYYY-MM-DD en jours (pas d'heure → pas de DST).
   const diff = Math.round((Date.parse(eventKey) - Date.parse(todayKey)) / 86_400_000)
   if (diff === 1) return 'tomorrow'
-  return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(new Date(startAt))
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: zone }).format(
+    new Date(e.startAt),
+  )
 }
 
 /**
@@ -110,11 +129,11 @@ function buildPayload(
 ): DigestPayload {
   const entries = digestEntries(events)
   const n = entries.length
-  const tagOf = (e: { startAt: string }) => dayTag(e.startAt, timeZone, nowIso)
+  const tagOf = (e: DigestEntry) => dayTag(e, timeZone, nowIso)
 
   // Body : « · » plus lisible que la virgule (retour Rudy 2026-07-12) ;
   // l'étiquette de jour n'est répétée que quand elle change (Capitalisée).
-  const bodyOf = (list: readonly { label: string; startAt: string }[], skipped: number) => {
+  const bodyOf = (list: readonly DigestEntry[], skipped: number) => {
     let lastTag = ''
     const parts = list.map((e) => {
       const t = tagOf(e)
