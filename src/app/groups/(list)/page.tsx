@@ -120,7 +120,6 @@ export default async function GroupsPage({
       items: sorted.map(toGridItem),
       trending: trending.map(({ item, reason }) => ({
         groupId: item.id,
-        follows: popOf(item.id),
         reason,
       })),
       countNoun,

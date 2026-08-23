@@ -454,6 +454,34 @@ const getLastReleasePairsCached = unstable_cache(
   { revalidate: 3600, tags: ['events'] },
 )
 
+/**
+ * Dernière sortie visible d'UN groupe — pour la page groupe.
+ *
+ * `getLastReleaseByGroupCached` construit la Map des 262 groupes en paginant
+ * les 3 139 lignes mv/release : 4 allers-retours PostgREST séquentiels, pour
+ * une page qui lit UNE entrée. Correct pour /groups (qui les lit toutes),
+ * absurde ici — et à froid c'est du TTFB en plus sur une page détail.
+ *
+ * Même prédicat de visibilité que la Map, sinon la page et le badge
+ * d'activité de /groups se contrediraient.
+ */
+export async function getLastReleaseForGroup(groupId: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('start_at')
+    .eq('group_id', groupId)
+    .in('type', ['mv', 'release'])
+    .eq('hidden', false)
+    .or(isMainOrNonMv)
+    .lte('start_at', new Date().toISOString())
+    .order('start_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data?.start_at ?? null
+}
+
 export async function getLastReleaseByGroupCached(): Promise<Map<string, string>> {
   return new Map(await getLastReleasePairsCached())
 }

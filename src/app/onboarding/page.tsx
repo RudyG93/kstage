@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getGroupFollowCounts, getNonSoloGroups } from '@/lib/groups/queries'
+import {
+  getGroupFollowCounts,
+  getNonSoloGroupsCached,
+  getSoloArtistsCached,
+} from '@/lib/groups/queries'
 import { getGroupEventCounts } from '@/lib/events/queries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { OnboardingGrid } from '@/components/onboarding/onboarding-grid'
@@ -22,11 +26,19 @@ export default async function OnboardingPage() {
   const followed = await getFollowedGroupIds()
   if (followed.size > 0) redirect('/')
 
-  const [groups, pop, eventCounts] = await Promise.all([
-    getNonSoloGroups(),
+  // Solistes INCLUS (2026-08-23) : la grille n'appelait que les groupes, or
+  // l'onboarding est l'unique entonnoir à follows de l'app et il se saute dès
+  // qu'un follow existe. Un fan de Lisa, G-Dragon ou Jackson Wang n'avait donc
+  // aucune occasion de les suivre au seul moment prévu pour ça — 38 artistes
+  // sur 260 invisibles à l'entrée. Variantes CACHÉES : même data publique pour
+  // tout le monde, et la page était la seule à taper les non-cachées.
+  const [nonSolo, solo, pop, eventCounts] = await Promise.all([
+    getNonSoloGroupsCached(),
+    getSoloArtistsCached(),
     getGroupFollowCounts(),
     getGroupEventCounts(),
   ])
+  const groups = [...nonSolo, ...solo]
   // P0.6 : on met en avant en priorité les groupes au calendrier non vide (events
   // ou catalogue MV) — sinon un nouveau compte suit des groupes qui n'afficheront
   // rien. Tri : follows ↓ (utile dès qu'il y a des users), puis volume de contenu

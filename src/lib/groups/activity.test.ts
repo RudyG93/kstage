@@ -37,7 +37,16 @@ describe('activityLabel', () => {
     expect(activityLabel('active')).toBeNull()
   })
   it('étiquette les autres', () => {
-    expect(activityLabel('paused')).toBe('En pause')
-    expect(activityLabel('dormant')).toBe('Inactif')
+    expect(activityLabel('paused')).toBe('On hiatus')
+    expect(activityLabel('dormant')).toBe('Inactive')
+  })
+
+  // Garde anti-récidive : ces deux libellés sont rendus sur des tuiles
+  // publiques et sont restés en français six passes d'audit durant, parce
+  // qu'ils vivent sous la ligne de flottaison de /groups.
+  it("l'UI publique ne rend pas de français", () => {
+    for (const status of ['active', 'paused', 'dormant'] as const) {
+      expect(activityLabel(status) ?? '').not.toMatch(/[àâäéèêëîïôöùûüçœ]/i)
+    }
   })
 })

@@ -235,24 +235,32 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
  * soit plus un cul-de-sac maigre. Les fetchs indépendants partent ENSEMBLE ;
  * seuls les ratings dépendent des MVs. */
 async function MemberBody({ member, group }: { member: Member; group: ArtistGroup | null }) {
-  const [memberMvs, groupmatesRaw, career, timeZone, upcoming, stagesRes] = await Promise.all([
-    getMemberMvs(member.id),
-    group ? getMembersForGroup(group.id) : Promise.resolve([]),
-    getCareerPath(member.id),
-    getViewerTimeZone(),
-    // La page d'un membre n'affichait AUCUNE date — sur un calendrier de
-    // comebacks (audit 2026-08-21). Les deux requêtes existaient déjà, mais
-    // n'étaient appelées que par la branche SOLO, soit ~40 pages sur 1 250.
-    // Elles portent le nom du GROUPE : ce sont ses dates, pas celles de la
-    // personne, et l'intitulé doit le dire.
-    group ? getUpcomingEvents({ groupSlug: group.slug, limit: 5 }) : Promise.resolve([]),
-    // Les passages music-show couvrent bien plus de monde que l'à-venir :
-    // 99 groupes en ont, contre 29 avec un event futur.
-    group ? getGroupStages(group.slug, 8) : Promise.resolve(null),
-  ])
+  const [memberMvs, groupmatesRaw, career, timeZone, upcoming, stagesRes, groupMvsRes] =
+    await Promise.all([
+      getMemberMvs(member.id),
+      group ? getMembersForGroup(group.id) : Promise.resolve([]),
+      getCareerPath(member.id),
+      getViewerTimeZone(),
+      // La page d'un membre n'affichait AUCUNE date — sur un calendrier de
+      // comebacks (audit 2026-08-21). Les deux requêtes existaient déjà, mais
+      // n'étaient appelées que par la branche SOLO, soit ~40 pages sur 1 250.
+      // Elles portent le nom du GROUPE : ce sont ses dates, pas celles de la
+      // personne, et l'intitulé doit le dire.
+      group ? getUpcomingEvents({ groupSlug: group.slug, limit: 5 }) : Promise.resolve([]),
+      // Les passages music-show couvrent bien plus de monde que l'à-venir :
+      // 99 groupes en ont, contre 29 avec un event futur.
+      group ? getGroupStages(group.slug, 8) : Promise.resolve(null),
+      // Le catalogue du GROUPE : `mv_kind='member'` ne couvre que 17 lignes dans
+      // toute la base, donc 527 pages membre n'affichaient aucun clip alors que
+      // leur groupe en a des dizaines. Les MV du groupe sont ce que le fan vient
+      // chercher sur la page d'un membre, à défaut de contenu solo.
+      group ? getGroupMvs(group.slug, 6) : Promise.resolve(null),
+    ])
   const stages = stagesRes?.rows ?? []
-  const memberRatings =
-    memberMvs.length > 0 ? await getRatingsForEvents(memberMvs.map((m) => m.id)) : null
+  const groupMvs = groupMvsRes?.rows ?? []
+  // Un seul appel ratings pour les deux grilles (solo + groupe).
+  const ratedIds = [...memberMvs, ...groupMvs].map((m) => m.id)
+  const memberRatings = ratedIds.length > 0 ? await getRatingsForEvents(ratedIds) : null
   const groupmates = groupmatesRaw.filter((m) => m.id !== member.id && m.status === 'active')
 
   return (
@@ -299,6 +307,25 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
           <span className="label-data">Solo releases</span>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {memberMvs.map((mv) => (
+              <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} timeZone={timeZone} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {group && groupMvs.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="label-data">Music videos — {group.name}</span>
+            <Link
+              href={`/groups/${group.slug}`}
+              className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
+            >
+              All →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {groupMvs.map((mv) => (
               <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} timeZone={timeZone} />
             ))}
           </div>

@@ -151,7 +151,6 @@ export async function SpotlightBlock({ excludeSlug }: { excludeSlug?: string }) 
   if (trending.length === 0) return null
   const entries: TrendingEntry[] = trending.map(({ item, reason }) => ({
     group: item,
-    follows: popOf(item.id),
     isFollowing: followedIds.has(item.id),
     reason,
   }))

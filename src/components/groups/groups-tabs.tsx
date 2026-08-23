@@ -12,7 +12,7 @@ export type TabKey = 'groups' | 'solo'
 export interface GroupsTabData {
   items: GroupGridItem[]
   /** Top 5 « du moment » — par référence aux `items` (pas de 2e copie flight). */
-  trending: { groupId: string; follows: number; reason: string }[]
+  trending: { groupId: string; reason: string }[]
   /** « groups » / « soloists » — libellé du compteur « All … — N ». */
   countNoun: string
 }
@@ -61,7 +61,6 @@ export function GroupsTabs({
           ? [
               {
                 group: it.group,
-                follows: t.follows,
                 isFollowing: followedSet.has(t.groupId),
                 reason: t.reason,
               },
