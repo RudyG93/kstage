@@ -7,7 +7,7 @@ import { NotifyCta } from './notify-cta'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { displayEventTitle } from '@/lib/events/title'
 import { episodeHref, eventHref, isExternalHref } from '@/lib/events/href'
-import { formatDDay, formatKst, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
+import { eventDDay, eventZone, kstTime24h, localDayKey, isTimeTBA } from '@/lib/events/date'
 import { EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { lineupLabel, type GroupedUpcomingEvent } from '@/lib/events/grouping'
 import { LocalTime } from '@/components/local-time'
@@ -56,7 +56,17 @@ export function NextDropCard({
     : group?.color_hex
       ? `linear-gradient(115deg, ${hex}47 0%, ${hex}1a 55%, transparent 75%)`
       : `linear-gradient(115deg, color-mix(in srgb, var(--primary) 28%, transparent), transparent 75%)`
-  const dateLabel = formatKst(event.start_at, { weekday: 'short', month: 'short', day: 'numeric' })
+  // La date et le D-day doivent nommer le MÊME jour : la date était figée en
+  // KST pendant que le D-day suivait le viewer, et les deux se contredisaient
+  // sur la même ligne pour tout event à minuit KST (416 MV/releases + les 47
+  // « Time TBA »). eventDayKey arbitre : date pure → KST, instant → viewer.
+  const dayZone = eventZone(event, timeZone)
+  const dateLabel = new Intl.DateTimeFormat('en-US', {
+    timeZone: dayZone,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(event.start_at))
 
   return (
     <Panel className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -98,7 +108,7 @@ export function NextDropCard({
                   {EVENT_TYPE_LABELS[event.type]}
                 </span>
                 <span className="label-data-inline bg-page/50 text-primary rounded-[4px] px-1.5 py-0.5 text-[9px] backdrop-blur-sm">
-                  {formatDDay(event.start_at, timeZone)}
+                  {eventDDay(event, timeZone)}
                 </span>
               </div>
               <h2 className="font-heading mt-1.5 text-xl leading-tight font-extrabold tracking-[-0.02em] text-balance">

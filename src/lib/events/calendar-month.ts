@@ -2,7 +2,7 @@ import { getEventsForMonth, type UpcomingEvent } from '@/lib/events/queries'
 import { getAnniversariesForMonth } from '@/lib/events/anniversaries'
 import { generateShowSlots } from '@/lib/events/show-slots'
 import { getUpcomingPreemptions } from '@/lib/events/preemptions'
-import { getKstMonthRange } from '@/lib/events/date'
+import { getMonthRangeInZone } from '@/lib/events/date'
 
 /**
  * Mois calendrier COMPLET (db + anniversaires + slots synthétiques), trié —
@@ -13,13 +13,19 @@ import { getKstMonthRange } from '@/lib/events/date'
 export async function getCalendarMonthEvents(
   year: number,
   month: number,
+  timeZone = 'Asia/Seoul',
 ): Promise<UpcomingEvent[]> {
   const [dbEvents, anniversaries, preempted] = await Promise.all([
-    getEventsForMonth({ year, month }),
+    // La fenêtre suit le fuseau du viewer : la grille range les events par
+    // jour civil LOCAL (groupEventsByEventDay), donc une fenêtre KST laissait
+    // les bords du mois sans cellule nulle part.
+    getEventsForMonth({ year, month, timeZone }),
+    // Les anniversaires sont des dates pures ancrées minuit KST et relus en
+    // KST par eventDayKey : leur mois se calcule bien en KST.
     getAnniversariesForMonth({ year, month }),
     getUpcomingPreemptions(),
   ])
-  const { startISO, endISO } = getKstMonthRange(year, month)
+  const { startISO, endISO } = getMonthRangeInZone(year, month, timeZone)
   const showSlots = generateShowSlots({
     fromIso: startISO,
     toIso: endISO,

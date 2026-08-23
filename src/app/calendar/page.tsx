@@ -58,12 +58,15 @@ export default async function CalendarPage({
   const sp = await searchParams
   const { year, month } = parseMonth(sp.month)
 
-  const [groups, followedIds, events, timeZone] = await Promise.all([
+  // Le fuseau conditionne la FENÊTRE du mois (cf. getCalendarMonthEvents) :
+  // il doit être résolu avant. getViewerTimeZone est mémoïsé par requête, il
+  // ne coûte rien de le sortir du Promise.all.
+  const timeZone = await getViewerTimeZone()
+  const [groups, followedIds, events] = await Promise.all([
     getGroupsCached(),
     getFollowedGroupIds(),
     // Assemblage partagé avec /api/calendar/month (nav de mois client).
-    getCalendarMonthEvents(year, month),
-    getViewerTimeZone(),
+    getCalendarMonthEvents(year, month, timeZone),
   ])
   const followedSlugs = groups.filter((g) => followedIds.has(g.id)).map((g) => g.slug)
 
@@ -82,6 +85,7 @@ export default async function CalendarPage({
       followedSlugs={followedSlugs}
       allGroups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
       initialSlugs={sp.group ? sp.group.split(',').filter(Boolean) : undefined}
+      timeZone={timeZone}
     >
       {followedSlugs.length > 0 && (
         <TrackView

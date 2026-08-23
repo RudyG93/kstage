@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { getKstMonthRange, localDayKey } from './date'
+import { getMonthRangeInZone, localDayKey } from './date'
 import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
@@ -68,16 +68,19 @@ export async function getGroupEventCounts(): Promise<Map<string, number>> {
 export async function getEventsForMonth({
   year,
   month,
+  timeZone = 'Asia/Seoul',
   groupSlugs,
   types,
 }: {
   year: number
   month: number
+  /** Fuseau qui DESSINE la grille : la fenêtre doit être la sienne, pas KST. */
+  timeZone?: string
   groupSlugs?: string[]
   types?: readonly EventType[]
 }) {
   const supabase = await createClient()
-  const { startISO, endISO } = getKstMonthRange(year, month)
+  const { startISO, endISO } = getMonthRangeInZone(year, month, timeZone)
   let query = supabase
     .from('events')
     .select(EVENT_SELECT)

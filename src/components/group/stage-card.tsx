@@ -27,7 +27,12 @@ import type { GroupStage } from '@/lib/events/queries'
  * Sans vidéo, la vignette elle-même pointe l'épisode et affiche « Video soon »
  * au lieu d'un bouton play : le passage a eu lieu, la scène arrivera.
  */
-export function StageCard({ stage, timeZone }: { stage: GroupStage; timeZone: string }) {
+// Le jour affiche est le jour KST, pas celui du viewer : cette vignette nomme
+// un EPISODE, et l'identite d'un episode est sa date de diffusion coreenne —
+// c'est elle qui est dans l'URL (episodeHref → kstDayKey) et sur la page
+// d'episode (formatKst). Le libelle et sa destination se contredisaient d'un
+// jour pour tout viewer a l'ouest de Seoul.
+export function StageCard({ stage }: { stage: GroupStage }) {
   const videoId = extractYouTubeId(stage.stage_url)
   // `image_url` porte la miniature `default.jpg` (120 px) renvoyée par l'API :
   // on remonte en hqdefault quand l'id est lisible.
@@ -95,7 +100,7 @@ export function StageCard({ stage, timeZone }: { stage: GroupStage; timeZone: st
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[12px] leading-snug font-semibold">{title}</span>
         <span className="label-data-inline text-muted-foreground mt-0.5 block text-[9px]">
-          {dayMonthYear(stage.start_at, timeZone)}
+          {dayMonthYear(stage.start_at, 'Asia/Seoul')}
         </span>
       </span>
     </>

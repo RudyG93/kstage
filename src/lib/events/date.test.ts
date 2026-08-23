@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  getKstMonthRange,
+  getMonthRangeInZone,
   kstDayKey,
   kstDayBounds,
   groupEventsByKstDay,
@@ -14,6 +14,7 @@ import {
   relativeTime,
   kstToUtcISO,
   isTimeTBA,
+  eventZone,
 } from './date'
 
 describe('isTimeTBA', () => {
@@ -35,18 +36,31 @@ describe('isTimeTBA', () => {
   })
 })
 
-describe('getKstMonthRange', () => {
+describe('getMonthRangeInZone', () => {
   it('returns the KST month boundaries as UTC ISO', () => {
     // Mai 2026 KST : 1er mai 00:00 KST = 30 avril 15:00 UTC.
-    const { startISO, endISO } = getKstMonthRange(2026, 5)
+    const { startISO, endISO } = getMonthRangeInZone(2026, 5, 'Asia/Seoul')
     expect(startISO).toBe('2026-04-30T15:00:00.000Z')
     expect(endISO).toBe('2026-05-31T15:00:00.000Z')
   })
 
   it('handles the December → January rollover', () => {
-    const { startISO, endISO } = getKstMonthRange(2026, 12)
+    const { startISO, endISO } = getMonthRangeInZone(2026, 12, 'Asia/Seoul')
     expect(startISO).toBe('2026-11-30T15:00:00.000Z')
     expect(endISO).toBe('2026-12-31T15:00:00.000Z')
+  })
+
+  it("suit le fuseau du viewer, pas KST — c'est lui qui dessine la grille", () => {
+    // Août 2026 à Los Angeles : 1er août 00:00 PDT = 1er août 07:00 UTC.
+    const { startISO, endISO } = getMonthRangeInZone(2026, 8, 'America/Los_Angeles')
+    expect(startISO).toBe('2026-08-01T07:00:00.000Z')
+    expect(endISO).toBe('2026-09-01T07:00:00.000Z')
+  })
+
+  it("résout le changement d'heure : mars 2026 à Paris passe de +01:00 à +02:00", () => {
+    const mars = getMonthRangeInZone(2026, 3, 'Europe/Paris')
+    expect(mars.startISO).toBe('2026-02-28T23:00:00.000Z') // CET, UTC+1
+    expect(mars.endISO).toBe('2026-03-31T22:00:00.000Z') // CEST, UTC+2
   })
 })
 
@@ -204,5 +218,33 @@ describe('kstDayBounds', () => {
     })
     // 16:00Z = déjà le lendemain en KST
     expect(kstDayBounds('2026-07-11T16:00:00Z').from).toBe('2026-07-11T15:00:00.000Z')
+  })
+})
+
+describe('eventDayKey / eventZone — dates pures « Time TBA »', () => {
+  // 2026-08-28 00:00 KST = 2026-08-27 15:00 UTC (event réel a5e034db, Jennie).
+  const tba = { start_at: '2026-08-27T15:00:00.000Z', type: 'release', status: 'tentative' }
+
+  it("un event tentative à minuit KST garde son jour civil partout (c'est une date pure)", () => {
+    expect(eventDayKey(tba, 'America/Los_Angeles')).toBe('2026-08-28')
+    expect(eventDayKey(tba, 'Asia/Seoul')).toBe('2026-08-28')
+    expect(eventDayKey(tba, 'Pacific/Auckland')).toBe('2026-08-28')
+  })
+
+  it('un event confirmé au même instant reste un INSTANT, lu dans le fuseau du viewer', () => {
+    const confirme = { ...tba, status: 'confirmed' }
+    expect(eventDayKey(confirme, 'America/Los_Angeles')).toBe('2026-08-27')
+    expect(eventDayKey(confirme, 'Asia/Seoul')).toBe('2026-08-28')
+  })
+
+  it('un tentative à une HEURE réelle (slot music show) reste un instant', () => {
+    // 2026-08-23 15:40 KST = 06:40 UTC — un slot de show, pas une date pure.
+    const slot = { start_at: '2026-08-23T06:40:00.000Z', type: 'music_show', status: 'tentative' }
+    expect(eventZone(slot, 'America/Los_Angeles')).toBe('America/Los_Angeles')
+  })
+
+  it('le D-day suit la même règle que la clé de jour', () => {
+    // Le 2026-08-27 à 20:00 à Los Angeles, la sortie du 28 KST est bien à J-1.
+    expect(eventDDay(tba, 'America/Los_Angeles', '2026-08-28T03:00:00.000Z')).toBe('D-1')
   })
 })

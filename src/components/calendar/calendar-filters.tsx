@@ -62,6 +62,7 @@ export function CalendarFilterProvider({
   followedSlugs,
   allGroups,
   initialSlugs,
+  timeZone,
   children,
 }: {
   /** Mois ENTIER non filtré (db + anniversaires + slots synthétiques). */
@@ -72,6 +73,9 @@ export function CalendarFilterProvider({
   allGroups: { slug: string; name: string }[]
   /** Deep-link ?group=<csv> (liens « Calendar → » des pages groupe). */
   initialSlugs?: string[]
+  /** Fuseau résolu côté serveur : il borne la fenêtre du mois, pas seulement
+      son affichage — il doit donc voyager avec la requête de navigation. */
+  timeZone: string
   children: ReactNode
 }) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(initialSlugs ?? []))
@@ -96,7 +100,7 @@ export function CalendarFilterProvider({
     const cached = monthCache.current.get(key)
     if (cached) return cached
     try {
-      const res = await fetch(`/api/calendar/month?month=${key}`)
+      const res = await fetch(`/api/calendar/month?month=${key}&tz=${encodeURIComponent(timeZone)}`)
       if (!res.ok) return null
       const data = (await res.json()) as { events: UpcomingEvent[] }
       monthCache.current.set(key, data.events)
