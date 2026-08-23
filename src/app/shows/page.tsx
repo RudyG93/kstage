@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata, Route } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -6,6 +7,7 @@ import { Panel, PanelHeader } from '@/components/ui/panel'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { formatKst } from '@/lib/events/date'
 import { SITE_URL } from '@/lib/site'
+import { ShowWinsBlock } from '@/components/rails/recap-blocks'
 
 export const metadata: Metadata = {
   title: 'Music shows',
@@ -50,6 +52,13 @@ export default async function ShowsPage() {
           Weekly stages from the six Korean music shows — every episode with its lineup.
         </p>
       </div>
+
+      {/* Avant la liste des épisodes : le palmarès de la semaine. C'est la
+          question qu'on se pose en arrivant ici, et elle n'avait de réponse
+          nulle part — le vainqueur ne se lisait que page par page. */}
+      <Suspense fallback={null}>
+        <ShowWinsBlock variant="panel" />
+      </Suspense>
 
       {SHOW_DESCRIPTORS.map((show) => {
         const episodes = byShow.get(show.displayName) ?? []

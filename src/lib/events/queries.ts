@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { getKstMonthRange } from './date'
+import { getKstMonthRange, localDayKey } from './date'
 import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
@@ -324,6 +324,116 @@ export async function getLatestShowWin(groupId: string) {
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+/**
+ * Vainqueurs des music shows sur les `days` derniers jours.
+ *
+ * La donnée existe depuis le 2026-08-23 mais n'a AUCUNE vue d'ensemble : le
+ * vainqueur se lit sur la page d'un épisode ou sur la page d'un groupe, jamais
+ * « qui a gagné cette semaine ». C'est pourtant la question que le fandom pose
+ * chaque week-end — 6 lignes par semaine, une par show, mesuré.
+ */
+export async function getRecentShowWins(days = 7, limit = 6) {
+  const supabase = await createClient()
+  // `kst_day` est un jour civil KST : le comparer à une date UTC décalait la
+  // fenêtre de 8 ou 9 jours selon l'heure, JAMAIS 7. Conséquence visible : un
+  // show préempté (결방, fréquent) faisait remonter son vainqueur de la semaine
+  // PRÉCÉDENTE sous un titre affirmant « this week ».
+  const today = localDayKey(new Date().toISOString(), 'Asia/Seoul')
+  const since = new Date(Date.parse(`${today}T00:00:00Z`) - (days - 1) * 86_400_000)
+    .toISOString()
+    .slice(0, 10)
+  const { data, error } = await supabase
+    .from('show_episodes')
+    .select(
+      'show_title, kst_day, episode_number, winner_name, winner_song, winner_nth, groups(slug, name, image_url)',
+    )
+    .not('winner_name', 'is', null)
+    .gte('kst_day', since)
+    // Borne haute : la base porte déjà des épisodes à `kst_day` futur (lineups
+    // scrapés en avance). Le jour où l'un d'eux reçoit un vainqueur, il
+    // prendrait la tête du tri et s'afficherait comme vainqueur « this week ».
+    .lte('kst_day', today)
+    .order('kst_day', { ascending: false })
+    // Marge : la fenêtre inclut ses deux bornes, un show peut donc y avoir
+    // deux épisodes. On récupère large et on déduplique juste après.
+    .limit(limit * 3)
+  if (error) throw error
+  // UNE ligne par show, la plus récente. Sans ça la liste affichait deux fois
+  // Inkigayo (dimanche J et dimanche J-7) pendant qu'un autre show manquait —
+  // « qui a gagné cette semaine » doit répondre show par show.
+  const perShow = new Map<string, NonNullable<typeof data>[number]>()
+  for (const row of data ?? []) {
+    if (!perShow.has(row.show_title)) perShow.set(row.show_title, row)
+  }
+  return [...perShow.values()].slice(0, limit)
+}
+
+export type ShowWin = Awaited<ReturnType<typeof getRecentShowWins>>[number]
+
+/**
+ * « Il y a N ans, jour pour jour » — MVs sortis ce même jour civil KST lors
+ * d'une année précédente.
+ *
+ * Un catalogue de 3 173 clips ne sert que le récent : rien ne fait remonter
+ * l'archive. 9,7 clips partagent le jour civil du jour en moyenne — le tri par
+ * ancienneté décroissante met « il y a 10 ans » devant, la formulation qui
+ * frappe. C'est la seule mécanique du produit qui donne une raison de revenir
+ * un jour où il ne sort rien.
+ */
+const ON_THIS_DAY_YEARS = 12
+
+export async function getOnThisDayMvs(limit = 4) {
+  const supabase = await createClient()
+  // Le jour civil KST, pas UTC : une sortie du 1er à 00:00 KST est le 31 en UTC.
+  const [year, month, day] = localDayKey(new Date().toISOString(), 'Asia/Seoul')
+    .split('-')
+    .map(Number)
+
+  // Une requête par année plutôt qu'un filtre sur mois/jour : PostgREST ne sait
+  // pas exprimer `extract(...)`, et une RPC pour quatre lignes serait une
+  // migration de trop. Les fenêtres sont d'un jour, l'index sur start_at joue.
+  //
+  // TOUTES les années EN PARALLÈLE, et on ne tranche qu'après. Une sortie
+  // anticipée sur un compteur cumulé — la première version — affamait les
+  // années les PLUS ANCIENNES, exactement celles que le bloc existe pour
+  // montrer : en descendant depuis l'année récente, elle s'arrêtait avant
+  // d'avoir interrogé 2016 un 1er novembre, alors que quatre clips y dorment.
+  // Le tri final prétendait alors rendre les plus anciens d'un ensemble
+  // incomplet. Trois jours de l'année étaient déjà touchés, et ce nombre
+  // grossit à chaque scrape.
+  const years = Array.from({ length: ON_THIS_DAY_YEARS }, (_, i) => year - 1 - i)
+  const batches = await Promise.all(
+    years.map(async (y) => {
+      // Le 29 février n'existe pas les années non bissextiles : `Date.UTC`
+      // déborderait silencieusement sur le 1er mars et rendrait les clips du
+      // mauvais jour. On saute l'année plutôt que de mentir.
+      const probe = new Date(Date.UTC(y, month - 1, day))
+      if (probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day) return []
+      const from = new Date(Date.UTC(y, month - 1, day, 0, 0) - 9 * 3_600_000).toISOString()
+      const to = new Date(Date.UTC(y, month - 1, day, 24, 0) - 9 * 3_600_000).toISOString()
+      const { data, error } = await supabase
+        .from('events')
+        .select(MV_SELECT)
+        .eq('type', 'mv')
+        .eq('mv_kind', 'main')
+        .eq('hidden', false)
+        .gte('start_at', from)
+        .lt('start_at', to)
+        .order('start_at', { ascending: false })
+        .limit(3)
+      // Une erreur avalée ici ferait disparaître une année en silence — le
+      // même défaut que l'early-exit, en moins visible encore.
+      if (error) throw error
+      return (data ?? []) as MvEvent[]
+    }),
+  )
+  // Le plus ancien d'abord : « 10 ans » porte plus que « 1 an ». `year` sert
+  // aussi au libellé côté composant : il est rendu ici pour que l'affichage
+  // n'ait pas à le recalculer (en UTC, il se trompait 9 h par an).
+  const rows = batches.flat().sort((a, b) => a.start_at.localeCompare(b.start_at))
+  return { rows: rows.slice(0, limit), referenceYear: year }
 }
 
 /** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */

@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { ComingUpBlock } from '@/components/rails/event-blocks'
+import { OnThisDayBlock } from '@/components/rails/recap-blocks'
 import { PromotingNowBlock } from '@/components/rails/discovery-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { HeroBackdrop } from '@/components/home/hero-backdrop'
@@ -150,6 +151,10 @@ export default async function MvsPage({
           <Suspense fallback={<RailSkeleton />}>
             <RailStack>
               <ComingUpBlock />
+              {/* Le centre de /mvs sert le récent (3 173 clips, les 31 derniers
+                  affichés) : l'archive n'avait aucune surface. Miroir passé du
+                  « Coming up » juste au-dessus. */}
+              <OnThisDayBlock />
               {/* Discussions rendait du VIDE ici (6 commentaires en base, seuil a 3).
                   Le palmarès des passages music-show, lui, est peuplé — et le
                   centre de /mvs ne montre que des clips. */}
