@@ -2,6 +2,18 @@ import type { Database } from '@/types/database'
 
 type EventType = Database['public']['Enums']['event_type']
 
+/**
+ * En dessous, une moyenne n'est pas un score : c'est l'avis d'UNE personne
+ * présenté comme un score. Partagé par la page MV et la vignette MvCard —
+ * sinon la carte promet « ★ 8.5 · 1 » et la page qu'elle ouvre n'affiche plus
+ * rien (constaté à la revue du 2026-08-23).
+ *
+ * Ici et pas dans `community.ts` : ce dernier importe le client Supabase
+ * serveur (`next/headers`), et MvCard vit dans le graphe CLIENT via
+ * CollapsibleMvs — l'import faisait échouer le build.
+ */
+export const MIN_RATINGS_SHOWN = 3
+
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   mv: 'MV',
   release: 'Release',

@@ -5,6 +5,7 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
 import { monthYear } from '@/lib/events/date'
 import type { MvEvent } from '@/lib/events/queries'
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 
 export type Rating = { avg: number; count: number }
 
@@ -87,8 +88,10 @@ export function MvCard({
   )
 }
 
+/** Même seuil que la page MV : une vignette qui annonce « ★ 8.5 · 1 » et qui
+    ouvre une page sans aucune note fait mentir les deux. */
 function RatingLabel({ r }: { r?: Rating }) {
-  const hasVotes = r && r.count > 0
+  const hasVotes = r && r.count >= MIN_RATINGS_SHOWN
   if (!hasVotes) {
     return <span className="text-muted-foreground text-[10px]">Be the first to rate</span>
   }

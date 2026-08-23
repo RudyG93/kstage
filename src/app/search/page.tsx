@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import type { Route } from 'next'
 import Link from 'next/link'
@@ -8,6 +9,9 @@ import { QueueRow } from '@/components/events/queue-row'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RailSkeleton } from '@/components/ui/rail-skeleton'
+import { NewGroupsBlock, PromotingNowBlock } from '@/components/rails/discovery-blocks'
+import { ComingUpBlock } from '@/components/rails/event-blocks'
 import { searchGroups, searchMvs, searchEvents, searchMembers } from '@/lib/search/queries'
 import { groupMusicShowEpisodes } from '@/lib/events/grouping'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
@@ -22,6 +26,10 @@ import { cn } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Search',
   description: 'Search k-pop groups, artists, MVs and events on KStage.',
+  // Une seule URL canonique pour les 4 variantes `?seg=` et n'importe quel
+  // `?q=` reçu en backlink — sinon chaque requête indexée est une page mince
+  // de plus en concurrence avec les vraies.
+  alternates: { canonical: '/search' },
 }
 
 type Segment = 'all' | 'groups' | 'artists' | 'mvs' | 'events'
@@ -76,28 +84,51 @@ export default async function SearchPage({
       <div className="space-y-3">
         <SearchInput />
 
-        <nav aria-label="Search scope" className="flex gap-1">
-          {SEGMENTS.map((s) => (
-            <Link
-              key={s}
-              href={segHref(s) as Route}
-              aria-current={seg === s ? 'true' : undefined}
-              className={cn(
-                'label-data-inline rounded-sm px-2.5 py-1.5 text-[9px] transition-colors',
-                seg === s
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {s === 'mvs' ? 'MVs' : s}
-            </Link>
-          ))}
-        </nav>
+        {/* Segments masqués tant que la requête est vide : ils ne filtrent
+            rien et occupent le premier écran de la page la plus ouverte de
+            l'app (le bouton central de la barre mobile pointe ici). */}
+        {q && (
+          <nav aria-label="Search scope" className="flex gap-1">
+            {SEGMENTS.map((s) => (
+              <Link
+                key={s}
+                href={segHref(s) as Route}
+                aria-current={seg === s ? 'true' : undefined}
+                className={cn(
+                  'label-data-inline rounded-sm px-2.5 py-1.5 text-[9px] transition-colors',
+                  seg === s
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {s === 'mvs' ? 'MVs' : s}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {!q ? (
-          <p className="text-faint pt-6 text-center text-xs">
-            Search covers groups, artists, MVs and events — one box for everything.
-          </p>
+          <>
+            <p className="text-faint pt-2 text-center text-xs">
+              Search covers groups, artists, MVs and events — one box for everything.
+            </p>
+            {/* Une recherche vide rendait UNE phrase grise sur tout l'écran.
+                Ces trois blocs existent déjà, sont cachés et vivants en prod —
+                on ne fait que les poser là où il n'y avait rien. En grille :
+                ils sont dessinés pour un rail de 320 px, empilés dans une
+                colonne de 768 px ils liraient comme une sidebar orpheline. */}
+            <div className="grid gap-3 pt-2 md:grid-cols-2">
+              <Suspense fallback={<RailSkeleton />}>
+                <PromotingNowBlock />
+              </Suspense>
+              <Suspense fallback={<RailSkeleton />}>
+                <NewGroupsBlock />
+              </Suspense>
+              <Suspense fallback={<RailSkeleton />}>
+                <ComingUpBlock />
+              </Suspense>
+            </div>
+          </>
         ) : !hasResults ? (
           <EmptyState
             title={`No results for “${q}”`}

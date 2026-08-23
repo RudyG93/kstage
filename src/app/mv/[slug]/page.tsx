@@ -27,6 +27,7 @@ import { RatingSlider } from '@/components/mv/rating-slider'
 import { RatingHistogram } from '@/components/mv/rating-histogram'
 import { LikeButton } from '@/components/mv/like-button'
 import { MvCard } from '@/components/group/mv-card'
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 import { MvRightRail } from '@/components/mv/mv-right-rail'
 import { PageRails } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
@@ -178,7 +179,10 @@ async function MvBody({
             thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
             uploadDate: event.start_at,
             embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
-            ...(rating.count > 0 && rating.avg !== null
+            // MÊME seuil que le panneau visible : Google exige que le contenu
+            // balisé soit affiché, et servir aux crawlers la note d'UNE personne
+            // qu'on vient de retirer de l'écran est précisément ce qu'on refuse.
+            ...(rating.count >= MIN_RATINGS_SHOWN && rating.avg !== null
               ? {
                   aggregateRating: {
                     '@type': 'AggregateRating',
@@ -226,23 +230,29 @@ async function MvBody({
         />
       </header>
 
-      {/* Panneau notation : moyenne + étoiles | histogramme, puis slider (§7.7.3). */}
+      {/* Panneau notation : moyenne + histogramme SEULEMENT au-delà du seuil,
+          puis slider (§7.7.3). En dessous, « — / 10 · 0 ratings » + 20 barres
+          vides s'affichaient sur les 3 173 pages MV : un score absent présenté
+          comme un score, et une anti-preuve sociale sur tout le catalogue. Le
+          slider, lui, reste toujours là — c'est l'appel à l'action. */}
       <Panel>
-        <div className="flex items-center justify-between gap-4 p-3.5">
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="tabular text-[32px] leading-none font-bold">
-                {rating.avg !== null ? rating.avg.toFixed(1) : '—'}
-              </span>
-              <span className="text-muted-foreground text-xs">/ 10</span>
+        {rating.count >= MIN_RATINGS_SHOWN ? (
+          <div className="flex items-center justify-between gap-4 p-3.5">
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="tabular text-[32px] leading-none font-bold">
+                  {rating.avg!.toFixed(1)}
+                </span>
+                <span className="text-muted-foreground text-xs">/ 10</span>
+              </div>
+              <p className="tabular text-muted-foreground mt-1 text-[10px]">
+                {rating.count} rating{rating.count === 1 ? '' : 's'}
+              </p>
             </div>
-            <p className="tabular text-muted-foreground mt-1 text-[10px]">
-              {rating.count} rating{rating.count === 1 ? '' : 's'}
-            </p>
+            <RatingHistogram scores={rating.scores} />
           </div>
-          <RatingHistogram scores={rating.scores} />
-        </div>
-        <div className="border-t p-3.5">
+        ) : null}
+        <div className={rating.count >= MIN_RATINGS_SHOWN ? 'border-t p-3.5' : 'p-3.5'}>
           <RatingSlider
             eventId={event.id}
             slug={event.slug as string}

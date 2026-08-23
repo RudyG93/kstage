@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -234,6 +235,28 @@ async function ProfileBody({ profile }: { profile: Profile }) {
       )}
     </>
   )
+}
+
+/**
+ * Seule page publique de l'app sans `metadata` : les profils héritaient du
+ * titre par défaut (« KStage — your k-pop calendar ») et étaient INDEXABLES.
+ * Deux pages MV exposent déjà un `href="/u/…"` en SSR, donc le crawl y arrive.
+ *
+ * `noindex` assumé : les features sociales sont gelées, un profil n'a rien à
+ * apporter en SERP tant qu'il n'y a pas de communauté. `follow: true` laisse
+ * le crawler ressortir par les liens de la page.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>
+}): Promise<Metadata> {
+  const { username } = await params
+  return {
+    title: `@${username}`,
+    alternates: { canonical: `/u/${username}` },
+    robots: { index: false, follow: true },
+  }
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {

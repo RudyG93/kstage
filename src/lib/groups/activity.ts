@@ -48,7 +48,10 @@ export const ACTIVITY_RANK: Record<ActivityStatus, number> = {
 
 /** Libellé affiché sur une tuile — `null` pour les actifs (pas de bruit visuel). */
 export function activityLabel(status: ActivityStatus): string | null {
-  if (status === 'paused') return 'En pause'
-  if (status === 'dormant') return 'Inactif'
+  // Anglais comme tout le reste de l'UI publique — « En pause »/« Inactif »
+  // étaient les deux seuls libellés français rendus aux visiteurs (56 tuiles).
+  // « On hiatus » est le terme du fandom, pas la traduction littérale.
+  if (status === 'paused') return 'On hiatus'
+  if (status === 'dormant') return 'Inactive'
   return null
 }

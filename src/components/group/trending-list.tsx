@@ -3,12 +3,11 @@ import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
-import { cn, compactNumber } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { GroupCardData } from '@/components/group-card'
 
 export interface TrendingEntry {
   group: GroupCardData
-  follows: number
   isFollowing: boolean
   /** Pourquoi le groupe est « du moment » — résolu côté serveur (uniforme). */
   reason: string
@@ -19,6 +18,12 @@ export interface TrendingEntry {
 // ligne porte sa raison en sous-titre ; les follows restent en info
 // secondaire. Le lien « All » (qui re-triait la même page) est retiré : sur
 // ~80 groupes, le top 5 EST la liste trending.
+//
+// 2026-08-23 : le compteur de follows est retiré de la LIGNE (il restait de la
+// version « classée par follows »). Sur 4 surfaces, il affichait « 1 follow »
+// — l'avis d'un compte, présenté comme de la popularité. Les follows servent
+// toujours de départage dans `pickTrending`, invisiblement ; la ligne porte
+// déjà sa vraie raison en sous-titre (« Music show · D-2 »).
 export function TrendingList({
   entries,
   isAuthed,
@@ -34,7 +39,7 @@ export function TrendingList({
           promettait de la popularité. */}
       <PanelHeader label="In the spotlight" />
       <ol>
-        {entries.map(({ group, follows, isFollowing, reason }, i) => (
+        {entries.map(({ group, isFollowing, reason }, i) => (
           <li key={group.id} className="relative border-b last:border-b-0">
             <Link
               href={`/groups/${group.slug}`}
@@ -69,9 +74,6 @@ export function TrendingList({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-semibold">{group.name}</span>
                 <span className="text-muted-foreground block truncate text-[10px]">{reason}</span>
-              </span>
-              <span className="tabular text-teal shrink-0 text-[10px] font-semibold">
-                {compactNumber(follows)} follow{follows === 1 ? '' : 's'}
               </span>
             </Link>
             <div className="absolute top-1/2 right-2 -translate-y-1/2">

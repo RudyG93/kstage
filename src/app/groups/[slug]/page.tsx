@@ -8,17 +8,22 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FollowButton } from '@/components/follow-button'
 import { QueueRow } from '@/components/events/queue-row'
 import { ArtistHero } from '@/components/group/artist-hero'
-import { StatsStrip } from '@/components/group/stats-strip'
+import { StatsStrip, type StatCell } from '@/components/group/stats-strip'
 import { MvCard } from '@/components/group/mv-card'
 import { MembersGrid } from '@/components/member/members-grid'
 import { getGroupBySlug, getGroupFollowCounts } from '@/lib/groups/queries'
 import { StageCard } from '@/components/group/stage-card'
-import { getUpcomingEvents, getGroupMvs, getGroupStages } from '@/lib/events/queries'
+import {
+  getUpcomingEvents,
+  getGroupMvs,
+  getGroupStages,
+  getLastReleaseForGroup,
+} from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getMembersForGroup, getSoloMemberSlugByGroupId } from '@/lib/members/queries'
-import { formatDDay, isFutureDate } from '@/lib/events/date'
+import { formatDDay, isFutureDate, monthYear } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
@@ -27,6 +32,7 @@ import { RailStack } from '@/components/rails/rail-stack'
 import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
 import { getViewer } from '@/lib/supabase/viewer'
 import { SITE_URL } from '@/lib/site'
+import { compactNumber } from '@/lib/utils'
 
 export async function generateMetadata({
   params,
@@ -128,13 +134,18 @@ function GroupBodySkeleton() {
   )
 }
 
+/** En dessous, une moyenne n'est pas une information : c'est l'avis d'une
+    personne présenté comme un score (2 notes en base au 2026-08-22). */
+const MIN_VOTES_FOR_AVG = 3
+
 /** Corps (stats, membres, events, MVs) — streamé après le hero (Lot G). */
 async function GroupBody({ group }: { group: Group }) {
   const { timeZone, events, stages, stageTotal, mvs, mvTotal, members, followCounts } =
     await getGroupPageData(group.slug, group.id)
-  const [ratings, { profile: viewerProfile }] = await Promise.all([
+  const [ratings, { profile: viewerProfile }, lastDrop] = await Promise.all([
     getRatingsForEvents(mvs.map((m) => m.id)),
     getViewer(),
+    getLastReleaseForGroup(group.id),
   ])
   const slug = group.slug
   const activeMembers = members.filter((m) => m.status === 'active')
@@ -156,16 +167,31 @@ async function GroupBody({ group }: { group: Group }) {
     weightedSum += avg * count
     totalVotes += count
   }
-  const avgScore = totalVotes > 0 ? weightedSum / totalVotes : null
+  const avgScore = totalVotes >= MIN_VOTES_FOR_AVG ? weightedSum / totalVotes : null
+
+  // Cellules de la strip : uniquement celles qui ont une valeur. Un « 0
+  // Followers » ou un « — Avg score » sur Seventeen dit au premier visiteur
+  // que personne n'est là — la règle du BACKLOG (« un compteur à zéro est une
+  // anti-preuve sociale ») vaut aussi pour les surfaces déjà livrées.
+  //
+  // ORDRE = valeur informative décroissante, parce que la strip tronque à
+  // MAX_CELLS : la cellule sacrifiée doit être la moins utile. « Upcoming »
+  // passe donc en dernier — la section « Upcoming » est rendue 300 px plus
+  // bas sur la même page. « Avg score » est rare et mérité, il ne doit pas
+  // être celui qu'on coupe.
+  //
+  // Fuseau du VIEWER, comme les dates des vignettes MV juste en dessous : en
+  // KST, une sortie du 1er mars à 00:00 s'affichait « MAR » ici et « FEB »
+  // sur la carte, pour le même clip.
+  const stats: StatCell[] = []
+  if (lastDrop) stats.push({ value: monthYear(lastDrop, timeZone), label: 'Last drop' })
+  if (avgScore !== null) stats.push({ value: avgScore.toFixed(1), label: 'Avg score' })
+  if (followers > 0) stats.push({ value: compactNumber(followers), label: 'Followers' })
+  if (events.length > 0) stats.push({ value: String(events.length), label: 'Upcoming' })
 
   return (
     <div className="space-y-3 px-3 md:px-0">
-      <StatsStrip
-        followers={followers}
-        upcoming={events.length}
-        avgScore={avgScore}
-        links={links}
-      />
+      <StatsStrip stats={stats} links={links} />
 
       {/* Ordre Members > Former > Upcoming > MVs (retours Rudy 2026-07-12
           et 13) : les visages d'abord — anciens membres juste sous les

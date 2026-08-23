@@ -47,8 +47,11 @@ export function CommentSection({
   return (
     <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
+        {/* Le compteur n'apparaît qu'à partir du premier commentaire :
+            « Discussion — 0 » juste au-dessus de « No comments yet » disait
+            deux fois la même absence, sur 3 173 pages MV et 64 épisodes. */}
         <h2 id="comments-heading" className="label-data">
-          Discussion — {count}
+          Discussion{count > 0 ? ` — ${count}` : ''}
         </h2>
         <SortToggle sort={sort} onChange={setSort} />
       </div>
