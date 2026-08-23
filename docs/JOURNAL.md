@@ -4,6 +4,40 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 (nuit, 2) — Les PR Dependabot, instruites avant d'être suivies
+
+**Commits** : `efe5cd9` (15 bumps + artefact Playwright), `a5d453d` (upload-artifact v7, plugin-react) → `main`. **0 PR ouverte**, CI verte.
+
+Trois PR traînaient, deux avec la CI rouge. Chacune a été instruite avant décision — 50 agents, 29 constats retenus sur 46.
+
+### #110 (jest-dom 6 → 7) : le rouge n'était pas la dépendance, c'était NOTRE test
+
+Diff des tarballs npm officiels : **33 matchers en v6, 49 en v7, zéro suppression, zéro renommage**. La map `exports` est identique, le paquet n'est pas passé ESM-only. Les deux seules ruptures : `@testing-library/dom` en peer obligatoire (10.4.1 déjà présent) et Node ≥ 22 (la CI est en 22). Le repo l'importe en **un** endroit, `vitest.setup.ts:1`, que Playwright ne charge jamais.
+
+Sur le run rouge, le job `check` était **intégralement vert** — TypeScript, Vitest et build compris. Seul `e2e` échouait. Et la branche était basée sur `61fa624`, c'est-à-dire la version INITIALE de `tests/e2e/a11y.spec.ts` : celle qui scannait `/calendar` sans attendre la fin du streaming. Le commit suivant (`5704b28`) ajoute précisément `settle()`. **La PR est morte de notre propre flake**, treize jours durant.
+
+Vérification indépendante avant de suivre : jest-dom 7 greffé sur main → 917 unitaires, 35 E2E, tsc, lint, build.
+
+### #115 (16 paquets) : verte, et ma première alerte était fausse
+
+J'avais cru voir un blocage — `@vitejs/plugin-react@6.1.0` tirant `@babel/core@8.0.0-rc.4`, une release candidate. Faux : le lockfile de la PR le résout en **7.29.7**. C'était mon `npm install` incrémental, depuis un arbre déjà modifié, qui fabriquait le conflit. Vérifié avec son propre lockfile : 914 unitaires, 35 E2E, tsc, lint, build.
+
+15 des 16 bumps appliqués. `@vitejs/plugin-react` a résisté sur mon arbre et est arrivé le lendemain par #117, dont le lockfile, lui, se résout.
+
+### #112 (`@types/node` 22 → 26) : écartée, et la règle posée
+
+Sûr au sens étroit (TS 5.9.3 ≥ 5.6 requis, surface consommée inchangée, refactor `web-globals` déjà rétro-porté dans la ligne 22), mais **incohérent au sens utile** : typer contre Node 26 en exécutant Node 22, c'est demander à TypeScript de décrire des API que la machine ne sait pas exécuter, sur quatre majeures d'écart. DefinitelyTyped maintient justement une ligne `v22` vivante — six publications en quatre mois.
+
+`dependabot.yml` ignore désormais les majeures de `@types/node`, avec la consigne de retirer la ligne le jour où la CI passera à Node 26. Dependabot a fermé la PR de lui-même.
+
+### Le vrai correctif : de quoi diagnostiquer le prochain e2e rouge
+
+`ci.yml` n'uploadait pas le rapport Playwright. Un e2e rouge était donc **indiagnosticable de l'extérieur** : l'API des logs répond `403 Must have admin rights`, et le mécanisme de commit comment n'existe que dans `db.yml`. C'est exactement ce qui a laissé #110 rouge sans que personne puisse nommer le test fautif — moi compris, qui en ai conclu à tort « échec sur le job e2e, cause inconnue ».
+
+Le rapport part maintenant en artefact sur échec (7 jours). L'ajout a immédiatement déclenché #116 (`upload-artifact` v4 → v7), vérifiée puis suivie : v7 conserve les quatre entrées utilisées.
+
+**Décision** : une PR de dépendance rouge s'instruit — quelle rupture réelle, où le repo touche le paquet, quel job échoue — avant d'être mergée OU refusée. Ici, deux des trois « échecs » ne venaient pas des dépendances.
+
 ## 2026-08-23 (nuit) — Observabilité, a11y outillée, agences complétées
 
 **Commits** : `61fa624` (erreurs serveur + axe), `7ad0ece` (PWA + agences) → `main`. CI verte.
