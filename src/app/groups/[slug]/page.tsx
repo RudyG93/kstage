@@ -27,6 +27,7 @@ import { formatDDay, isFutureDate, monthYear } from '@/lib/events/date'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { PageRails } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
@@ -332,6 +333,13 @@ export default async function GroupPage({ params }: { params: Promise<{ slug: st
         </RailStack>
       }
     >
+      <Breadcrumbs
+        trail={[
+          { name: 'Home', path: '/' },
+          { name: 'Groups', path: '/groups' },
+          { name: group.name, path: `/groups/${group.slug}` },
+        ]}
+      />
       <JsonLd
         data={{
           '@context': 'https://schema.org',

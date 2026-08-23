@@ -14,6 +14,7 @@ import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { BackButton } from '@/components/back-button'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CommentSection } from '@/components/mv/comments/comment-section'
@@ -277,6 +278,14 @@ export default async function ShowEpisodePage({
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6">
+      <Breadcrumbs
+        trail={[
+          { name: 'Home', path: '/' },
+          { name: 'Music shows', path: '/shows' },
+          { name: episode.show_title, path: '/shows' },
+          { name: label, path },
+        ]}
+      />
       <BackButton fallbackHref="/calendar" />
 
       <header className="flex items-start gap-3">

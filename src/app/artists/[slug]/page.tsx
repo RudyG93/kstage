@@ -26,6 +26,7 @@ import { getRatingsForEvents } from '@/lib/events/community'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { groupBannerSrc } from '@/lib/groups/banner'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
 import { RailStack } from '@/components/rails/rail-stack'
@@ -383,6 +384,13 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
           </RailStack>
         }
       >
+        <Breadcrumbs
+          trail={[
+            { name: 'Home', path: '/' },
+            { name: 'Groups', path: '/groups' },
+            { name: member.stage_name, path: `/artists/${slug}` },
+          ]}
+        />
         <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-0">
           <div className="space-y-6">
             {/* SHELL : hero + fiche depuis la row membre/groupe ; le follow
@@ -448,6 +456,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </RailStack>
       }
     >
+      <Breadcrumbs
+        trail={[
+          { name: 'Home', path: '/' },
+          { name: 'Groups', path: '/groups' },
+          ...(group ? [{ name: group.name, path: `/groups/${group.slug}` }] : []),
+          { name: member.stage_name, path: `/artists/${slug}` },
+        ]}
+      />
       <div className="space-y-6 px-4 md:px-0">
         {/* SHELL : header + fiche depuis la row membre ; le corps (solo
             releases, carrière, groupmates) streame (Lot G). */}
