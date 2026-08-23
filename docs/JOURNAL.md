@@ -4,6 +4,39 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 (suite) — Cinq lots enchaînés sur les findings de l'audit
+
+**Commits** : `9562089` (push), `788e6da` (alias), `c1d217f` (shows), `44ef1ca` (pagination), `40e60ef` (SEO) → `main`. CI verte sur chacun.
+
+### La boucle push pouvait mourir sans que rien ne le dise
+
+`push_subscriptions` = 0 depuis le 21/08, donc `candidates: 0`, donc aucun envoi — et les crons rapportaient « ok ». La cause de la disparition n'est **pas** établie (le code d'envoi ne les a pas supprimées, aucun compte supprimé, aucune migration entre le 19 et le 22/08 ; le désabonnement depuis la cloche reste l'explication la plus plausible). Ce qui est corrigé, c'est l'invisibilité :
+
+- l'interface lisait le **navigateur**, jamais la base — le bouton affichait « Disable » sur une table vide. `usePushState` réconcilie et tente **un** rattrapage (la server action est plafonnée à 20/24 h, une boucle brûlerait le quota) ; si le rattrapage échoue on affiche l'état réel plutôt que de mentir dans l'autre sens ;
+- `public/sw.js` n'écoutait pas `pushsubscriptionchange` : toute rotation d'endpoint était perdue. Un service worker ne peut pas appeler une server action → route dédiée, authentifiée par le cookie de session, qui écrit le nouvel endpoint **avant** de supprimer l'ancien ;
+- 29ᵉ check santé `push_loop_dead` : il croise « zéro abonné » avec « un envoi a pourtant réussi cette semaine », donc il ne crie pas tant que personne n'a jamais activé les notifs. Vérifié contre la prod : count 1 ;
+- l'upsert `digest_log` avalait son erreur, alors que cette table porte l'**idempotence** du digest — une écriture ratée en silence fait ré-envoyer à tout le monde au run suivant. L'erreur passe le run en `partial`.
+
+### La recherche ignorait 135 alias
+
+« ZB1 » et « tomorrow x together » renvoyaient « No results » en prod. Aucun des trois chemins de recherche ne lisait `name_aliases`. Égalité ou containment uniquement, **jamais** le repli approximatif : plusieurs alias sont des romanisations bruitées (« Kiseu obeu raipeu Kisuoburaifu ») qui feraient matcher n'importe quoi.
+
+Le vrai piège était ailleurs : le `normLite` du header réduisait `[^a-z0-9]`, donc « 방탄소년단 » y devenait la **chaîne vide** — une saisie en hangul ne pouvait rien matcher, alias ou pas. Il suit maintenant la règle de `normalize()` serveur, et le payload client porte les alias déjà normalisés.
+
+### Les 64 pages épisode étaient des culs-de-sac
+
+Aucun index, aucun voisin, et 658 passages qui ne pointaient que vers YouTube. Trois gestes : `StageCard` porte désormais **deux** destinations (la vignette → la scène du diffuseur, le pied → la page épisode ; deux liens frères, pas imbriqués), prev/next + « All episodes » dans le header d'un épisode, et une page `/shows` listant les 6 shows et leurs 64 épisodes. Entrée dans le footer — les 5 items de la barre sont arrêtés (Data Desk §6) — et dans le sitemap.
+
+### `/mvs` servait 31 clips sur 2 920
+
+Pagination par **curseur composite** `(start_at, id)` : 27 valeurs de `start_at` sont en doublon en base, un curseur sur la seule date sauterait des lignes. Vérifié sur 6 pages consécutives — 180 lignes, 0 doublon, 0 rupture d'ordre — puis au navigateur : 31 → 61 → 91 vignettes, toutes distinctes. Server action et pas `?page=` (R5 avait démonté les pills `<Link>` pour cette raison). Les notes voyagent avec la page, sinon tout clip chargé après le premier écran afficherait « Be the first to rate ».
+
+### SEO : deux familles de pages sans visuel propre
+
+Les 64 pages épisode servaient l'OG de la **home** ; les ~1 250 pages artiste déclaraient un bloc `openGraph` **sans `images`**, ce qui casse l'héritage de l'`opengraph-image` racine. Chacune a maintenant la sienne, en version texte. Plus un `BreadcrumbList` sur groupe / artiste / MV / épisode — le seul balisage envisagé que Google rende visiblement en SERP.
+
+**Décision** : un état affiché à l'utilisateur se réconcilie avec la source de vérité, il ne se déduit pas d'un cache local (navigateur, liste plafonnée, seuil dupliqué). Les trois bugs de la journée sont la même erreur sous trois formes.
+
 ## 2026-08-23 — Audit produit, puis le lot « ville fantôme »
 
 **Commit** : `ff9c6c6` → `main`. Audit produit en amont (58 agents : 4 lentilles internes, 3 de veille concurrentielle, un juge par recommandation) — 50 pistes, **34 retenues**, puis revue adversariale du diff (22 agents, **11 findings confirmés**, tous corrigés avant merge).
