@@ -4,6 +4,48 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 (soir) — La chasse : 33 bugs qu'aucune page ne signalait
+
+**Commits** : `f58765d`, `a2b9d4c`, `341bdda`, `844bb82` → `main`. CI verte.
+
+Demande de Rudy : « fais un tour de l'app pour voir si tu arrives à en voir d'autres ». Neuf lentilles indépendantes lancées en parallèle, chaque finding passé à un réfuteur, puis **chaque survivant re-vérifié à la main** avant d'être corrigé — sur la base réelle ou sur la prod, jamais sur la parole d'un agent. 33 confirmés, 33 traités.
+
+### Ce que la mesure a changé par rapport au rapport
+
+Trois findings ont été **requalifiés** en les mesurant :
+
+- « Le calendrier perd des events » était annoncé sans chiffre. Mesuré sur la prod : `America/Los_Angeles` voit **148 events en juillet et 146 en août** là où `Asia/Seoul` en voit 148 + 148. Deux events invisibles, sur aucune des deux pages.
+- « Lineup TBA recouvre un lineup connu » était marqué _visible_ ; il ne l'est pas aujourd'hui. La marge mesurée est de **7 lignes** (47 events à venir, dont 30 shows, pour un plafond de 40). Latent, pas visible — corrigé quand même, mais dit comme tel.
+- « Le matching des stages est trop laxiste » aurait pu coûter de la couverture. Titres des **667 stages déjà liés** relus par oembed : **666/666 passent déjà le strict**. Basculer ne perd rien. Sans cette mesure, le doute aurait bloqué le correctif.
+
+### Les quatre familles
+
+**Dates et fuseaux** — la plus grave. Le calendrier interrogeait un mois KST puis rangeait dans les jours civils du VIEWER : les bords du mois n'avaient de cellule nulle part. `isTimeTBA` décrivait une date pure depuis toujours sans que `eventDayKey` la traite comme telle (47 events). Le hero affichait une date KST à côté d'un D-day local. « This week » avançait de 24 h d'horloge, donc dupliquait ou sautait un jour au changement d'heure. L'âge d'un membre se calculait en années de 365,25 jours : **564 des 2 037 couples (membre, année)** tombaient un an trop bas le jour même de l'anniversaire.
+
+**Vie privée** — le feed iCal servait un calendrier VIDE (donc effaçait celui de l'abonné) sur une simple lecture en échec, et le CDN gardait ce vide 1 h à 24 h. Le même cache faisait que « Reset URL » ne révoquait rien. Rien n'empêchait d'upvoter son propre commentaire — les 4 votes en base sont 4 auto-votes. La policy d'update des commentaires n'immobilisait aucune colonne. Le bucket `avatars` n'avait ni limite ni liste MIME, et son ménage ne supprimait jamais rien : **12 des 14 objets sont des orphelins publiquement servis**.
+
+**Surfaces** — un soliste sortait trois fois de `/search` (deux cartes groupe vers une 307, une carte artiste). « Lea » ne trouvait pas « Léa ». Une note s'affichait dans `/search` sous le seuil que sa propre page applique — trois seuils pour une seule règle. Une réponse qu'on venait de poster restait cachée derrière « Show N replies ». La page épisode nommait le vainqueur « Idntt » quand le roster dit « idntt ».
+
+**Écritures scrapers** — un épisode Inkigayo vivait à deux horaires (6 lignes à 15:25, le créneau officiel, toutes stage-linkées ; 10 lignes créées **après diffusion** à 12:20). La marque d'idempotence des push se posait après l'envoi sans qu'on lise son erreur. « (KR) » n'était pas un suffixe d'édition, donc le comeback était jeté. Le solo d'un membre allait au groupe parent même quand le soliste a sa fiche.
+
+### Vérification
+
+Serveur de prod local + curl sur quatre fuseaux : 296 events sur juillet+août partout, aucun perdu. `/search?q=taeyeon` passe de 2 cartes à 1 ; `q=lea` rend enfin Léa. `/show/the-show/2026-07-28` affiche « idntt » et non « Idntt ». Migration `0067` appliquée puis relue en base (limite 2 Mo, 3 MIME, trigger présent, policies de vote renommées). `repair-split-episodes.ts` a réaligné 16 lignes, re-vérification à 0. 962 tests verts, build prod OK, CI verte après chaque merge.
+
+### Décisions
+
+- **Un seuil, une règle.** `MIN_RATINGS_SHOWN` est désormais la seule autorité sur « montre-t-on une note ». Trois surfaces en avaient trois lectures.
+- **Une donnée privée ne se met pas sur une étagère partagée.** Le feed iCal perd son cache CDN : révocable immédiatement, et le volume (1 feed) ne justifiait rien.
+- **Une lecture en échec ne se déguise pas en résultat vide.** Le feed répond 503 plutôt que de rendre un calendrier valide et vide.
+- **L'épisode fait autorité sur son heure**, pas le lineup qui passe. Une révision reste possible tant qu'il est à venir ; une fois diffusé, l'heure est de l'histoire.
+- **Mesurer avant de basculer un matching.** 666/666 a transformé un correctif risqué en correctif gratuit.
+- **Suppression laissée à Rudy.** `prune-orphan-avatars.ts` est écrit et sa revue tourne (12 orphelins, 1 155 Ko) ; le `--apply` n'a pas été lancé.
+
+### Reste ouvert
+
+- `eventHref` renvoie `/groups/[slug]` pour l'event d'un soliste, donc une 307 interne. Le corriger demande de faire voyager `is_solo` et le slug d'artiste dans toutes les requêtes d'events.
+- Les 12 avatars orphelins, en attente du `--apply`.
+
 ## 2026-08-24 — « Pourquoi les anniversaires seulement pour les groupes suivis ? »
 
 **Commit** : `851fa72` → `main`. CI verte.
