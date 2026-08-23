@@ -4,6 +4,45 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 (fin) — Les vainqueurs de music show, et le feed sorti de sa cachette
+
+**Commits** : `5547f28` (vainqueurs), `4556431` (iCal + a11y) → `main`. CI verte.
+
+### Le vainqueur transitait dans le parseur et finissait à la poubelle
+
+`parseChartWinnersWikitext` ne gardait que `{episode, date}` — alors que la MÊME ligne de wikitext porte l'artiste, le titre et le rang, et que la page est déjà téléchargée pour la numérotation. Zéro source nouvelle, zéro requête en plus. Le « Nth win » est la monnaie du fandom (kprofiles en publie une page par mois) et n'existait nulle part chez nous.
+
+Le parseur a été écrit **contre les 6 pages réelles**. Chaque piège ci-dessous a d'abord produit une sortie fausse — aucun n'aurait été trouvé sur une fixture inventée :
+
+| Piège                           | Sortie fausse observée                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `rowspan` sur artiste + chanson | « 6,045 » (les POINTS) vainqueur d'Inkigayo #1295                               |
+| `colspan="3" {{N/a              | No show…}}`                                                                     | « No show, winner not announced » vainqueur sur 4 shows |
+| `{{dagger}}{{Efn                | …}}`, dague en caractère, `style="background:#FFDEAD;` (guillemet jamais fermé) | « Good Goodbye" {{dagger}}… » puis « Pretty Girl" † »   |
+
+Le bug de rowspan était un **problème de timing** : décrémenter les reports après placement faisait expirer un `rowspan="2"` dans la ligne même qui le déclarait. Le commentaire `<!-- 11th, 12th-->` distribue ensuite un rang par ligne couverte.
+
+Deux décisions :
+
+- **Résolution vers le roster par ÉGALITÉ seulement** (nom ou alias) — un vainqueur mal attribué serait affiché comme un fait sourcé. Les 10 non résolus sont tous légitimes : « Le Sserafim, Illit and Katseye » (collab), Taeyong, Yeonjun, I.O.I (hors roster). On garde le nom brut, sans lien.
+- **Les vainqueurs sont lus même sur une page à numérotation incohérente.** Music Core 2026 écrit « 952 » deux fois — une coquille de la colonne épisode, qui ne dit rien de « I.O.I a gagné le 27/06 », ligne sourcée par deux références. Les deux faits sont indépendants et clés différemment. La règle sur les NUMÉROS ne bouge pas.
+
+Affichage : bandeau sur la page épisode, ligne « Nth win — {show} » sur la page groupe. **Jamais un cumul maison** : notre base ne couvre que quelques mois, le rang vient de Wikipedia qui compte depuis les débuts. 61 vainqueurs écrits ; le cron `aired-shows` les rafraîchit.
+
+### Le feed iCal était l'atout que personne n'a livré, et il était enterré
+
+Un abonnement pour 3 comptes, et un seul point d'entrée : la 4ᵉ carte de `/account`. C'est pourtant la boucle de retour la plus robuste du produit — ni permission navigateur, ni PWA installée, contrairement au push iOS. Et le marché est vide : K-Event Calendar annonce la sync Google en « phase 2 » non livrée, kpopping n'a ni export ni abonnement, Blip est notif in-app et couvre 133 artistes contre nos 260.
+
+Bloc sur `/calendar` (gaté connecté + ≥1 follow — le feed est scopé aux follows), **deux abonnements en un geste** (`webcal://` que macOS/iOS ouvrent directement, URL d'ajout Google) au lieu d'une URL à recopier, et `enableCalendarFeed` qui revalide enfin les deux surfaces. Modèle : Bandsintown, qui propose l'ICS juste après le choix des artistes.
+
+L'**étape ③ de la landing** promettait « The Letterboxd of k-pop: score it, discuss it » — avec 2 notes et 6 commentaires en base. Remplacée par la capacité qui est réellement livrée.
+
+### Douze titres de section étaient des `<span>`
+
+Le correctif a11y §8.6 avait converti `PanelHeader` en `<h2>` mais laissé douze `label-data` écrits à la main sur les pages détail. Invisibles à la revue puisque le rendu est identique (Preflight neutralise taille et marge des headings), et aucune règle jsx-a11y ne les détecte — d'où un test de scan de source.
+
+**Décision** : un parseur se valide contre la SOURCE RÉELLE avant d'exister en fixture. Les trois pièges de Wikipedia sont dans les tests parce qu'ils ont d'abord cassé en vrai.
+
 ## 2026-08-23 (suite) — Cinq lots enchaînés sur les findings de l'audit
 
 **Commits** : `9562089` (push), `788e6da` (alias), `c1d217f` (shows), `44ef1ca` (pagination), `40e60ef` (SEO) → `main`. CI verte sur chacun.
