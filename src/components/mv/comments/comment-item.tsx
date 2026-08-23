@@ -256,6 +256,7 @@ export function CommentItem({
                 initialScore={node.score}
                 initialUserVote={node.userVote}
                 isAuthed={isAuthed}
+                isOwn={isOwn}
               />
               {isAuthed && (
                 <button

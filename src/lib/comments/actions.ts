@@ -156,6 +156,16 @@ export async function voteComment(_prev: CommentState, formData: FormData): Prom
   if ('error' in parsed) return { error: parsed.error }
   const { commentId, value } = parsed.value
 
+  // Le score d'un commentaire est un signal SOCIAL : son auteur n'en est pas
+  // une source. La policy RLS le refuse depuis 0067 ; ici on le dit en clair
+  // plutot que de laisser remonter une erreur de base.
+  const { data: cible } = await supabase
+    .from('comments')
+    .select('user_id')
+    .eq('id', commentId)
+    .maybeSingle()
+  if (cible?.user_id === user.id) return { error: 'You cannot vote on your own comment.' }
+
   const { data: existing } = await supabase
     .from('comment_votes')
     .select('value')

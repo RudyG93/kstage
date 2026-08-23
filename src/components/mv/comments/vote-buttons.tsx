@@ -13,6 +13,8 @@ interface Props {
   initialScore: number
   initialUserVote: -1 | 1 | null
   isAuthed: boolean
+  /** Le viewer est l'auteur : score affiche, fleches retirees. */
+  isOwn?: boolean
 }
 
 type OptimisticState = { score: number; userVote: -1 | 1 | null }
@@ -29,6 +31,7 @@ export function VoteButtons({
   initialScore,
   initialUserVote,
   isAuthed,
+  isOwn = false,
 }: Props) {
   const [, startTransition] = useTransition()
   const [opt, setOpt] = useOptimistic<OptimisticState, -1 | 1>(
@@ -45,7 +48,7 @@ export function VoteButtons({
   )
 
   function submit(value: -1 | 1) {
-    if (!isAuthed) return
+    if (!isAuthed || isOwn) return
     startTransition(async () => {
       setOpt(value)
       const fd = new FormData()
@@ -55,6 +58,16 @@ export function VoteButtons({
       fd.set('value', String(value))
       await voteComment(null, fd)
     })
+  }
+
+  // Son propre commentaire : le score reste lisible, les fleches disparaissent
+  // — proposer une action que la base refuse ne rend service a personne.
+  if (isOwn) {
+    return (
+      <span className="text-muted-foreground tabular text-xs" aria-label={`Score ${opt.score}`}>
+        {opt.score}
+      </span>
+    )
   }
 
   return (
