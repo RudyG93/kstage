@@ -558,6 +558,10 @@ export type Database = {
           kst_day: string
           show_title: string
           start_at: string
+          winner_group_id: string | null
+          winner_name: string | null
+          winner_nth: number | null
+          winner_song: string | null
         }
         Insert: {
           created_at?: string
@@ -566,6 +570,10 @@ export type Database = {
           kst_day: string
           show_title: string
           start_at: string
+          winner_group_id?: string | null
+          winner_name?: string | null
+          winner_nth?: number | null
+          winner_song?: string | null
         }
         Update: {
           created_at?: string
@@ -574,8 +582,20 @@ export type Database = {
           kst_day?: string
           show_title?: string
           start_at?: string
+          winner_group_id?: string | null
+          winner_name?: string | null
+          winner_nth?: number | null
+          winner_song?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "show_episodes_winner_group_id_fkey"
+            columns: ["winner_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       show_preemptions: {
         Row: {

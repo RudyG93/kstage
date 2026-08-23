@@ -1,6 +1,7 @@
 import { cache, Suspense } from 'react'
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import Link from 'next/link'
+import { Trophy } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Panel, PanelHeader } from '@/components/ui/panel'
@@ -18,6 +19,7 @@ import {
   getGroupMvs,
   getGroupStages,
   getLastReleaseForGroup,
+  getLatestShowWin,
 } from '@/lib/events/queries'
 import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
 import { getRatingsForEvents } from '@/lib/events/community'
@@ -28,6 +30,7 @@ import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { groupBannerSrc } from '@/lib/groups/banner'
 import { JsonLd } from '@/components/seo/json-ld'
 import { Breadcrumbs } from '@/components/seo/breadcrumbs'
+import { SHOW_ID_BY_TITLE } from '@/lib/scrapers/music-shows/types'
 import { PageRails } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
@@ -135,6 +138,19 @@ function GroupBodySkeleton() {
   )
 }
 
+/** `/show/m-countdown/2026-08-20` depuis une row show_episodes. */
+function episodeHrefOf(win: { show_title: string; kst_day: string }): string {
+  return `/show/${SHOW_ID_BY_TITLE[win.show_title] ?? ''}/${win.kst_day}`
+}
+
+/** 1st, 2nd, 3rd, 4th… — 11/12/13 font exception. */
+function ordinalWin(n: number): string {
+  const m100 = n % 100
+  if (m100 >= 11 && m100 <= 13) return `${n}th`
+  const m10 = n % 10
+  return `${n}${m10 === 1 ? 'st' : m10 === 2 ? 'nd' : m10 === 3 ? 'rd' : 'th'}`
+}
+
 /** En dessous, une moyenne n'est pas une information : c'est l'avis d'une
     personne présenté comme un score (2 notes en base au 2026-08-22). */
 const MIN_VOTES_FOR_AVG = 3
@@ -143,10 +159,11 @@ const MIN_VOTES_FOR_AVG = 3
 async function GroupBody({ group }: { group: Group }) {
   const { timeZone, events, stages, stageTotal, mvs, mvTotal, members, followCounts } =
     await getGroupPageData(group.slug, group.id)
-  const [ratings, { profile: viewerProfile }, lastDrop] = await Promise.all([
+  const [ratings, { profile: viewerProfile }, lastDrop, latestWin] = await Promise.all([
     getRatingsForEvents(mvs.map((m) => m.id)),
     getViewer(),
     getLastReleaseForGroup(group.id),
+    getLatestShowWin(group.id),
   ])
   const slug = group.slug
   const activeMembers = members.filter((m) => m.status === 'active')
@@ -193,6 +210,29 @@ async function GroupBody({ group }: { group: Group }) {
   return (
     <div className="space-y-3 px-3 md:px-0">
       <StatsStrip stats={stats} links={links} />
+
+      {/* Dernière victoire en music show — la monnaie du fandom, et la seule
+          donnée de la page qui vienne d'une source tierce sourcée. Une ligne,
+          pas un compteur cumulé : le rang est celui de Wikipedia. */}
+      {latestWin?.winner_nth != null && (
+        <Link
+          href={episodeHrefOf(latestWin) as Route}
+          className="border-amber/25 bg-amber/[0.06] hover:border-amber/50 flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-colors"
+        >
+          <Trophy className="text-amber size-4 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-xs">
+            <span className="font-semibold">
+              {ordinalWin(latestWin.winner_nth)} win — {latestWin.show_title}
+            </span>
+            {latestWin.winner_song && (
+              <span className="text-muted-foreground"> · {latestWin.winner_song}</span>
+            )}
+          </span>
+          <span className="tabular text-muted-foreground shrink-0 text-[11px]">
+            {monthYear(`${latestWin.kst_day}T00:00:00Z`, 'UTC')}
+          </span>
+        </Link>
+      )}
 
       {/* Ordre Members > Former > Upcoming > MVs (retours Rudy 2026-07-12
           et 13) : les visages d'abord — anciens membres juste sous les
