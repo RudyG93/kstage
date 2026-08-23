@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 import type { Metadata } from 'next'
 import type { Route } from 'next'
 import Link from 'next/link'
@@ -59,7 +60,11 @@ export default async function SearchPage({
       ])
     : [[], [], [], [], new Set<string>()]
 
-  const hasResults = groups.length > 0 || members.length > 0 || mvs.length > 0 || events.length > 0
+  // Un soliste déjà listé côté Groupes ne repasse pas côté Artists : c'est la
+  // même page, et sa carte groupe pointe désormais droit dessus.
+  const soloSlugs = new Set(groups.map((g) => g.artist_slug).filter(Boolean))
+  const artists = members.filter((m) => !m.slug || !soloSlugs.has(m.slug))
+  const hasResults = groups.length > 0 || artists.length > 0 || mvs.length > 0 || events.length > 0
 
   // Signal produit « trou de catalogue » (audit §10.3) : chaque recherche vide
   // compte (pas de dédup) — c'est la liste brute qui intéresse l'admin.
@@ -148,7 +153,9 @@ export default async function SearchPage({
                 <div className="relative">
                   <Link
                     href={
-                      topResult.is_solo ? `/groups/${topResult.slug}` : `/groups/${topResult.slug}`
+                      (topResult.artist_slug
+                        ? `/artists/${topResult.artist_slug}`
+                        : `/groups/${topResult.slug}`) as Route
                     }
                     className="hover:bg-secondary/60 flex items-center gap-3 p-3 pr-24 transition-colors"
                   >
@@ -197,7 +204,9 @@ export default async function SearchPage({
                   {groups.slice(1).map((g) => (
                     <Link
                       key={g.id}
-                      href={`/groups/${g.slug}`}
+                      href={
+                        (g.artist_slug ? `/artists/${g.artist_slug}` : `/groups/${g.slug}`) as Route
+                      }
                       className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 px-3 py-1.5 transition-colors"
                     >
                       {g.image_url ? (
@@ -231,11 +240,11 @@ export default async function SearchPage({
               </Panel>
             )}
 
-            {members.length > 0 && (
+            {artists.length > 0 && (
               <Panel>
                 <PanelHeader label="Artists" />
                 <div className="divide-y">
-                  {members.map((m) => (
+                  {artists.map((m) => (
                     <Link
                       key={m.id}
                       href={`/artists/${m.slug}`}
@@ -305,7 +314,7 @@ export default async function SearchPage({
                             {mv.groups?.name}
                           </span>
                         </span>
-                        {mv.rating && mv.rating.count > 0 && (
+                        {mv.rating && mv.rating.count >= MIN_RATINGS_SHOWN && (
                           <span className="flex shrink-0 items-center gap-1">
                             <Star className="fill-amber text-amber size-3" aria-hidden />
                             <span className="tabular text-xs font-semibold">

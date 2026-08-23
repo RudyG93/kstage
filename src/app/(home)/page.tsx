@@ -79,18 +79,32 @@ export default async function Home({
   // que 2 allers-retours séquentiels sur la page connectée la plus chargée.
   const [timeZone, followedIds] = await Promise.all([getViewerTimeZone(), getFollowedGroupIds()])
   const ids = [...followedIds]
-  const [dbEvents, anniversaries, followedMvs, recentMvs, globalEvents, followCounts] =
-    await Promise.all([
-      ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
-      ids.length > 0 && wantAnniversaries
-        ? getUpcomingAnniversaries(ids, 90, timeZone)
-        : Promise.resolve([]),
-      ids.length > 0 ? getAllMvs({ groupIds: ids, limit: 4 }) : Promise.resolve([]),
-      getAllMvs({ limit: 4 }),
-      // Ticker : annonces globales « qui tapent » (tous types, suivi ou non).
-      getUpcomingEvents({ limit: 40 }),
-      getGroupFollowCounts(),
-    ])
+  const [
+    dbEvents,
+    anniversaries,
+    followedMvs,
+    recentMvs,
+    globalEvents,
+    followCounts,
+    upcomingShows,
+  ] = await Promise.all([
+    ids.length > 0 ? getUpcomingEvents({ groupIds: ids, types, limit: 50 }) : Promise.resolve([]),
+    ids.length > 0 && wantAnniversaries
+      ? getUpcomingAnniversaries(ids, 90, timeZone)
+      : Promise.resolve([]),
+    ids.length > 0 ? getAllMvs({ groupIds: ids, limit: 4 }) : Promise.resolve([]),
+    getAllMvs({ limit: 4 }),
+    // Ticker : annonces globales « qui tapent » (tous types, suivi ou non).
+    getUpcomingEvents({ limit: 40 }),
+    getGroupFollowCounts(),
+    // Épisodes de music show à venir, SANS partager la limite du ticker :
+    // c'est cette liste qui dit à generateShowSlots quels créneaux ont déjà
+    // un lineup connu. Branchée sur les 40 du ticker, il suffisait de 41
+    // events plus proches pour qu'un épisode réel devienne invisible et
+    // qu'un slot fantôme « Lineup TBA » s'affiche par-dessus. Marge actuelle
+    // mesurée : 47 events à venir dont 30 shows — 7 lignes de battement.
+    getUpcomingEvents({ types: ['music_show'], limit: 120 }),
+  ])
 
   // Fresh drops : les MVs des groupes suivis d'abord, complétés au global (4 max).
   const freshMvs: MvEvent[] = [...followedMvs]
@@ -160,7 +174,7 @@ export default async function Home({
   // (préemptions officielles SBS) ne génèrent pas de slot fantôme.
   const weekSlots = wantShows
     ? generateShowSlots({
-        existing: [...dbEvents, ...globalEvents],
+        existing: [...dbEvents, ...globalEvents, ...upcomingShows],
         preempted: await getUpcomingPreemptions(),
       })
     : []

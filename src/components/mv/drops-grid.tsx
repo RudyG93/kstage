@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 import { MvCard } from '@/components/group/mv-card'
 import { cn } from '@/lib/utils'
 import type { MvEvent } from '@/lib/events/queries'
@@ -46,11 +47,28 @@ export function DropsGrid({
 
   const allRatings = useMemo(() => ({ ...ratings, ...extraRatings }), [ratings, extraRatings])
 
+  // Le tri « top » ne voit QUE les pages chargées — il n'y a pas de classement
+  // global côté client. Il ne doit donc au moins pas mentir sur la note : même
+  // seuil que la page d'un MV, sinon la pill classait des clips dont la page
+  // ne montre aucun score.
+  const noted = (id: string) => {
+    const r = allRatings[id]
+    return r && r.count >= MIN_RATINGS_SHOWN ? r.avg : -1
+  }
   const grid = useMemo(() => {
     const source = feed === 'following' ? following : [...all, ...extra]
     if (sort === 'new') return source
-    return [...source].sort((a, b) => (allRatings[b.id]?.avg ?? -1) - (allRatings[a.id]?.avg ?? -1))
+    return [...source].sort((a, b) => noted(b.id) - noted(a.id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [all, extra, following, allRatings, feed, sort])
+
+  // Aucun clip chargé n'atteint le seuil : la pill « top » n'aurait rien à
+  // classer. On ne propose pas une commande sans effet.
+  const canSortByTop = useMemo(
+    () => [...all, ...extra, ...following].some((m) => noted(m.id) >= 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [all, extra, following, allRatings],
+  )
 
   async function onLoadMore() {
     if (!cursor || loading) return
@@ -101,7 +119,12 @@ export function DropsGrid({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1" role="radiogroup" aria-label="Sort drops">
+        <div
+          className="flex items-center gap-1"
+          role="radiogroup"
+          aria-label="Sort drops"
+          hidden={!canSortByTop}
+        >
           <span className="label-data-inline text-faint text-[9px]">Sort:</span>
           {(['new', 'top'] as const).map((s) => (
             <button

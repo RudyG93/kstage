@@ -219,7 +219,10 @@ export function displaySongTitle(title: string, groupName?: string | null): stri
     // Strip `${groupName} ` ou `${groupName} (...) ` en début, case-insensitive.
     // La paire de parens optionnelle couvre les nom hangul/japonais : "ILLIT
     // (아일릿) Magnetic" → "Magnetic" ; "aespa (에스파) WDA" → "WDA".
-    t = t.replace(new RegExp(`^${escaped}\\s*(?:\\([^)]+\\)\\s*)?`, 'i'), '')
+    // `(?![A-Za-z0-9])` : le nom doit finir sur une FRONTIÈRE. Sans elle,
+    // « Kep1erving 케플러빙 | Kep1er's DIY M/V » (4 titres en prod) s'affichait
+    // « ving 케플러빙 … » — le strip mordait dans le mot suivant.
+    t = t.replace(new RegExp(`^${escaped}(?![A-Za-z0-9])\\s*(?:\\([^)]+\\)\\s*)?`, 'i'), '')
     // « 하이라이트(Highlight) - Song » / « (ONF)_Song » : le nom coréen
     // d'abord échappe au strip ci-dessus — si la partie GAUCHE du premier
     // séparateur porte le nom du groupe, la chanson est à droite. Le `_`

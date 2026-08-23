@@ -1,3 +1,4 @@
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 import { createClient } from '@/lib/supabase/server'
 
 // TOP RATED (§7.4.2, refonte périodes 2026-07-11) : agrégation en TS depuis
@@ -49,7 +50,9 @@ const NEW_DAYS = 7
 
 /**
  * Classe les events notés par moyenne (puis nb de votes), par période de sortie.
- * `minCount = 2` (audit §8.7) : un MV noté UNE fois ne peut plus être n°1.
+ * Le seuil est `MIN_RATINGS_SHOWN`, le MÊME que celui qui décide d'afficher une
+ * moyenne sur la page d'un MV : à 2, le classement listait des clips dont la
+ * page refusait ensuite de montrer le moindre score.
  * Pas de moyenne bayésienne à ce volume — le prior dominerait tout le
  * classement ; à revisiter quand une période porte ~50+ notes.
  */
@@ -57,7 +60,7 @@ export function bucketByReleaseWindow(
   aggs: readonly RatedEventAgg[],
   nowMs: number = Date.now(),
   limit = 5,
-  minCount = 2,
+  minCount = MIN_RATINGS_SHOWN,
 ): Record<TopRatedPeriod, TopRatedItem[]> {
   const ranked = [...aggs]
     .filter((a) => a.count >= minCount)

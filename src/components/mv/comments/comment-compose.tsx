@@ -18,6 +18,8 @@ interface Props {
   /** Focus le textarea au mount via ref (pas via prop autoFocus, qui a11y-warn). */
   focusOnMount?: boolean
   onCancel?: () => void
+  /** Appele UNIQUEMENT sur succes (onCancel l'est aussi a l'annulation). */
+  onPosted?: () => void
   placeholder?: string
 }
 
@@ -35,6 +37,7 @@ export function CommentCompose({
   parentId,
   focusOnMount,
   onCancel,
+  onPosted,
   placeholder = 'Share your thoughts…',
 }: Props) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(postComment, null)
@@ -52,9 +55,10 @@ export function CommentCompose({
       lastHandledState.current = state
       formRef.current?.reset()
       setChars(0)
+      onPosted?.()
       onCancel?.()
     }
-  }, [state, onCancel])
+  }, [state, onCancel, onPosted])
 
   useEffect(() => {
     if (focusOnMount) taRef.current?.focus()
