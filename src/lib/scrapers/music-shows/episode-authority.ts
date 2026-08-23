@@ -14,6 +14,8 @@
 import type { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { parseChartWinnersWikitext, validateAuthority } from './episode-numbers'
+import { parseChartWinners, type ChartWinner } from './chart-winners'
+import { normalize } from '@/lib/scrapers/group-match'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -37,7 +39,34 @@ export interface AuthorityResult {
   cleared: number
   /** Pages écartées car internement contradictoires. */
   incoherent: string[]
+  /** Épisodes dont le vainqueur a été écrit ou mis à jour. */
+  winnersSet: number
+  /** Vainqueurs dont le nom ne correspond à aucun groupe du roster. */
+  winnersUnmatched: string[]
   changes: string[]
+}
+
+/**
+ * Résout le nom d'artiste écrit par Wikipedia vers un groupe du roster.
+ *
+ * ÉGALITÉ normalisée uniquement, sur le nom ou un alias — jamais de
+ * containment, jamais d'approximation. Un vainqueur mal attribué serait
+ * affiché comme un fait sourcé. Sans correspondance on garde le nom BRUT : la
+ * page dit qui a gagné, elle ne prétend simplement pas que c'est quelqu'un de
+ * notre roster.
+ */
+export function resolveWinnerGroup(
+  artist: string,
+  groups: readonly { id: string; name: string; name_aliases: string[] | null }[],
+): string | null {
+  const needle = normalize(artist)
+  if (!needle) return null
+  const hits = groups.filter(
+    (g) =>
+      normalize(g.name) === needle || (g.name_aliases ?? []).some((a) => normalize(a) === needle),
+  )
+  // Deux groupes au même nom normalisé : ambigu, on s'abstient.
+  return hits.length === 1 ? hits[0].id : null
 }
 
 async function fetchWikitext(pageTitle: string): Promise<string | null> {
@@ -69,16 +98,23 @@ export async function applyEpisodeAuthority(
     stillMissing: 0,
     cleared: 0,
     incoherent: [],
+    winnersSet: 0,
+    winnersUnmatched: [],
     changes: [],
   }
 
   let query = supabase
     .from('show_episodes')
-    .select('id, show_title, kst_day, episode_number')
+    .select(
+      'id, show_title, kst_day, episode_number, winner_group_id, winner_name, winner_song, winner_nth',
+    )
     .order('kst_day')
   if (opts.sinceKstDay) query = query.gte('kst_day', opts.sinceKstDay)
   const { data: episodes } = await query
   if (!episodes || episodes.length === 0) return result
+
+  // Roster chargé une fois pour la résolution des vainqueurs (260 lignes).
+  const { data: roster } = await supabase.from('groups').select('id, name, name_aliases')
 
   const yearsByShow = new Map<string, Set<number>>()
   for (const e of episodes) {
@@ -91,11 +127,25 @@ export async function applyEpisodeAuthority(
     const pageOf = WIKI_PAGES[show]
     if (!pageOf) continue
     const authority = new Map<string, number>()
+    const winners = new Map<string, ChartWinner>()
     for (const year of years) {
       const title = pageOf(year)
       const wikitext = await fetchWikitext(title)
       result.pagesRead++
       if (!wikitext) continue
+      // La MÊME page porte le vainqueur : on le lit dans la foulée, sans
+      // requête supplémentaire.
+      //
+      // Et on le lit MÊME si la numérotation de la page est incohérente : les
+      // deux faits sont indépendants et clés différemment (le vainqueur par
+      // DATE, le numéro par colonne épisode). Cas réel : la page Music Core
+      // 2026 écrit « 952 » sur le 27/06 ET le 04/07 — une coquille de la
+      // colonne épisode, qui ne dit rien de « I.O.I a gagné le 27/06 », ligne
+      // par ailleurs sourcée par deux références. Écarter la page entière
+      // priverait un show sur six de ses ~30 vainqueurs pour une faute de
+      // frappe dans une autre colonne.
+      for (const w of parseChartWinners(wikitext, year)) winners.set(w.date, w)
+
       const parsed = parseChartWinnersWikitext(wikitext, year)
       const problems = validateAuthority(parsed)
       if (problems.length > 0) {
@@ -155,6 +205,36 @@ export async function applyEpisodeAuthority(
         .eq('title', show)
         .gte('start_at', from)
         .lt('start_at', to)
+    }
+
+    // ── Vainqueurs ──────────────────────────────────────────────────────
+    for (const row of episodes.filter((e) => e.show_title === show)) {
+      const w = winners.get(row.kst_day)
+      if (!w) continue
+      const groupId = resolveWinnerGroup(w.artist, roster ?? [])
+      const unchanged =
+        row.winner_name === w.artist &&
+        row.winner_song === w.song &&
+        row.winner_nth === w.nth &&
+        row.winner_group_id === groupId
+      if (unchanged) continue
+      result.winnersSet++
+      if (!groupId) result.winnersUnmatched.push(`${show} ${row.kst_day} : ${w.artist}`)
+      result.changes.push(
+        `${show} ${row.kst_day} : vainqueur ${w.artist}${w.nth ? ` (#${w.nth})` : ''}${
+          groupId ? '' : ' [hors roster]'
+        }`,
+      )
+      if (!apply) continue
+      await supabase
+        .from('show_episodes')
+        .update({
+          winner_group_id: groupId,
+          winner_name: w.artist,
+          winner_song: w.song,
+          winner_nth: w.nth,
+        })
+        .eq('id', row.id)
     }
   }
 

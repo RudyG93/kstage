@@ -15,6 +15,7 @@ import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { faceCrop } from '@/lib/images/cloudinary'
 import { BackButton } from '@/components/back-button'
 import { Breadcrumbs } from '@/components/seo/breadcrumbs'
+import { WinnerBanner } from '@/components/show/winner-banner'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CommentSection } from '@/components/mv/comments/comment-section'
@@ -33,7 +34,9 @@ async function loadEpisode(show: string, day: string) {
   const supabase = await createClient()
   const { data: episode } = await supabase
     .from('show_episodes')
-    .select('id, show_title, kst_day, episode_number, start_at')
+    .select(
+      'id, show_title, kst_day, episode_number, start_at, winner_name, winner_song, winner_nth, winner_group_id',
+    )
     .eq('show_title', descriptor.displayName)
     .eq('kst_day', day)
     .maybeSingle()
@@ -106,6 +109,33 @@ const getEpisodeLineup = cache(async (episode: Episode) => {
     .order('start_at', { ascending: true })
   return rows ?? []
 })
+
+/** Bandeau vainqueur — streamé : une requête pour l'image du groupe, qui n'a
+ * pas à retarder le header. */
+async function Winner({ episode }: { episode: Episode }) {
+  if (!episode.winner_name) return null
+  let slug: string | null = null
+  let image: string | null = null
+  if (episode.winner_group_id) {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('groups')
+      .select('slug, image_url')
+      .eq('id', episode.winner_group_id)
+      .maybeSingle()
+    slug = data?.slug ?? null
+    image = data?.image_url ?? null
+  }
+  return (
+    <WinnerBanner
+      name={episode.winner_name}
+      song={episode.winner_song}
+      nth={episode.winner_nth}
+      groupSlug={slug}
+      groupImage={image}
+    />
+  )
+}
 
 /** Prev / next épisode — streamé : deux requêtes qui n'ont pas à retarder le
  * premier octet. Libellé = le numéro quand il existe (5 épisodes sur 64 n'en
@@ -314,6 +344,10 @@ export default async function ShowEpisodePage({
 
       <Suspense fallback={null}>
         <EpisodeNav showId={descriptor.id} episode={episode} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <Winner episode={episode} />
       </Suspense>
 
       <Suspense

@@ -304,6 +304,28 @@ export async function getMvsPage(options: { cursor?: MvCursor | null; limit?: nu
   }
 }
 
+/**
+ * Dernière victoire en music show d'un groupe — source Wikipedia, écrite par
+ * `applyEpisodeAuthority` dans `show_episodes`.
+ *
+ * On rend la DERNIÈRE, jamais un cumul : notre base ne couvre que quelques
+ * mois de passages, un total calculé chez nous serait faux tout en ayant l'air
+ * sourcé. Le rang (« 16th win ») vient de Wikipedia, qui compte depuis les
+ * débuts du groupe.
+ */
+export async function getLatestShowWin(groupId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('show_episodes')
+    .select('show_title, kst_day, episode_number, winner_song, winner_nth')
+    .eq('winner_group_id', groupId)
+    .order('kst_day', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 /** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */
 export async function getEventsCount(): Promise<number> {
   const supabase = await createClient()
