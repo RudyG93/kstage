@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, BellRing, HeartIcon, Star } from 'lucide-react'
+import { ArrowRight, BellRing, CalendarPlus, HeartIcon } from 'lucide-react'
 import { Countdown } from '@/components/home/countdown'
 import { TrackedLink } from '@/components/analytics/tracked-link'
 import { isTimeTBA } from '@/lib/events/date'
@@ -27,9 +27,14 @@ const STEPS = [
     desc: 'Day before and day of every drop — in your timezone.',
   },
   {
-    icon: Star,
-    title: 'Rate every drop /10',
-    desc: 'The Letterboxd of k-pop: score it, discuss it, own your taste.',
+    icon: CalendarPlus,
+    // L'étape 3 promettait « The Letterboxd of k-pop: score it, discuss it » —
+    // avec 2 notes et 6 commentaires en base, une promesse que le produit ne
+    // tient pas encore. Le feed iCal, lui, est livré, unique sur le marché
+    // (ni kpopping ni K-Event Calendar ne l'ont) et ne demande aucune
+    // permission navigateur ni PWA installée.
+    title: 'Sync it to your calendar',
+    desc: 'One URL — your groups land in Google or Apple Calendar, always up to date.',
   },
 ] as const
 

@@ -277,7 +277,7 @@ async function MvBody({
       {moreFromGroup.length > 0 && (
         <section className="space-y-2 lg:hidden">
           <div className="flex items-baseline justify-between">
-            <span className="label-data">More from {group?.name}</span>
+            <h2 className="label-data">More from {group?.name}</h2>
             <Link
               href={`/groups/${group?.slug ?? ''}`}
               className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"

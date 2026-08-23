@@ -3,6 +3,10 @@ import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { JustAnnouncedBlock } from '@/components/rails/event-blocks'
 import { RookiesBlock } from '@/components/rails/discovery-blocks'
+import { CalendarFeed } from '@/components/account/calendar-feed'
+import { getViewer } from '@/lib/supabase/viewer'
+import { createClient } from '@/lib/supabase/server'
+import { SITE_URL } from '@/lib/site'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupFilter } from '@/components/home/group-filter'
 import { FilterChips } from '@/components/calendar/filter-chips'
@@ -34,6 +38,18 @@ export const metadata = {
 // lente ») : le serveur charge le mois ENTIER non filtré (events + anniv +
 // slots, ~50-130 rows) ; groupes/types se filtrent en mémoire dans
 // CalendarFilterProvider. L'URL ne porte plus que ?month (+ ?day deep-link).
+/** Bloc « Subscribe your groups » — gate connecté + au moins un follow. */
+async function CalendarFeedRail() {
+  const { user } = await getViewer()
+  if (!user) return null
+  const followed = await getFollowedGroupIds()
+  if (followed.size === 0) return null
+  const supabase = await createClient()
+  const { data } = await supabase.from('calendar_feeds').select('token').maybeSingle()
+  const feedUrl = data?.token ? `${SITE_URL}/api/ical/${data.token}` : null
+  return <CalendarFeed feedUrl={feedUrl} compact />
+}
+
 export default async function CalendarPage({
   searchParams,
 }: {
@@ -101,6 +117,15 @@ export default async function CalendarPage({
           <aside className="order-3 shrink-0 lg:w-80">
             <Suspense fallback={<RailSkeleton />}>
               <RailStack>
+                {/* Le feed iCal est la boucle de retour la plus robuste du
+                    produit — ni permission navigateur, ni PWA installée — et
+                    son unique point d'entrée était la 4ᵉ carte de /account
+                    (1 abonnement pour 3 comptes). Ici, et seulement pour un
+                    connecté qui suit au moins un groupe : le feed est scopé
+                    aux follows, il n'a rien à offrir à un compte vide. */}
+                <Suspense fallback={null}>
+                  <CalendarFeedRail />
+                </Suspense>
                 <JustAnnouncedBlock />
                 {/* Discussions ne rendait rien ici non plus. La grille du mois
                     dit ce qui se passe, jamais qui vient d'arriver. */}

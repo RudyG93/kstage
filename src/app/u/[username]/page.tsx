@@ -207,7 +207,7 @@ async function ProfileBody({ profile }: { profile: Profile }) {
 
       {/* Ordre voulu (retour Rudy 2026-07-17) : ratings → Liked MVs → Followed groups. */}
       <section className="space-y-2">
-        <span className="label-data">Liked MVs</span>
+        <h2 className="label-data">Liked MVs</h2>
         {likedMvs.length === 0 ? (
           <EmptyState
             title="No liked MVs yet"
@@ -225,7 +225,7 @@ async function ProfileBody({ profile }: { profile: Profile }) {
 
       {isOwner && followedGroups.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Followed groups — {followedGroups.length}</span>
+          <h2 className="label-data">Followed groups — {followedGroups.length}</h2>
           <div className="grid grid-cols-3 gap-[9px] sm:grid-cols-4">
             {followedGroups.map((g) => (
               <GroupCard key={g.id} group={g} isFollowing isAuthed timeZone={timeZone} />
