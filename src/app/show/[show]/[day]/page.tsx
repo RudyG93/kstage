@@ -2,6 +2,7 @@ import { cache, Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Route } from 'next'
 import Image from 'next/image'
 import { ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -57,6 +58,34 @@ export async function generateMetadata({
   }
 }
 
+/**
+ * Épisodes voisins du même show — la page était un cul-de-sac : on y arrivait
+ * par le calendrier, à la bonne date, et on n'en sortait que par « retour ».
+ * Deux requêtes bornées à 1 ligne sur `show_episodes` (64 lignes en base).
+ */
+const getNeighbourEpisodes = cache(async (showTitle: string, day: string) => {
+  const supabase = await createClient()
+  const [prev, next] = await Promise.all([
+    supabase
+      .from('show_episodes')
+      .select('kst_day, episode_number')
+      .eq('show_title', showTitle)
+      .lt('kst_day', day)
+      .order('kst_day', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('show_episodes')
+      .select('kst_day, episode_number')
+      .eq('show_title', showTitle)
+      .gt('kst_day', day)
+      .order('kst_day', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  return { prev: prev.data, next: next.data }
+})
+
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadEpisode>>>
 type Episode = Loaded['episode']
 
@@ -76,6 +105,38 @@ const getEpisodeLineup = cache(async (episode: Episode) => {
     .order('start_at', { ascending: true })
   return rows ?? []
 })
+
+/** Prev / next épisode — streamé : deux requêtes qui n'ont pas à retarder le
+ * premier octet. Libellé = le numéro quand il existe (5 épisodes sur 64 n'en
+ * ont pas), la date sinon. */
+async function EpisodeNav({ showId, episode }: { showId: string; episode: Episode }) {
+  const { prev, next } = await getNeighbourEpisodes(episode.show_title, episode.kst_day)
+  const label = (e: { kst_day: string; episode_number: number | null }) =>
+    e.episode_number ? `#${e.episode_number}` : e.kst_day
+  const cls =
+    'label-data-inline text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-sm px-2 py-1 text-[10px] font-semibold transition-colors outline-none focus-visible:ring-2'
+  return (
+    <nav aria-label="Episode navigation" className="flex items-center justify-between gap-2">
+      {prev ? (
+        <Link href={`/show/${showId}/${prev.kst_day}` as Route} className={cls}>
+          ← {label(prev)}
+        </Link>
+      ) : (
+        <span />
+      )}
+      <Link href="/shows" className={cls}>
+        All episodes
+      </Link>
+      {next ? (
+        <Link href={`/show/${showId}/${next.kst_day}` as Route} className={cls}>
+          {label(next)} →
+        </Link>
+      ) : (
+        <span />
+      )}
+    </nav>
+  )
+}
 
 /** Ligne des noms du header — streamée (fallback null, aucun shift : elle
  * s'ajoute sous la date). */
@@ -241,6 +302,10 @@ export default async function ShowEpisodePage({
           </Suspense>
         </div>
       </header>
+
+      <Suspense fallback={null}>
+        <EpisodeNav showId={descriptor.id} episode={episode} />
+      </Suspense>
 
       <Suspense
         fallback={
