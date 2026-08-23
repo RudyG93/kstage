@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { LeftRail } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { NewGroupsBlock, PromotingNowBlock } from '@/components/rails/discovery-blocks'
+import { ShowWinsBlock } from '@/components/rails/recap-blocks'
 import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { GroupsTabs, type GroupsTabData, type TabKey } from '@/components/groups/groups-tabs'
 import {
@@ -155,6 +156,9 @@ export default async function GroupsPage({
         <aside className="order-3 shrink-0 lg:w-80">
           <Suspense fallback={<RailSkeleton />}>
             <RailStack>
+              {/* Un annuaire ne dit rien de l'actualité : le palmarès de la
+                  semaine est la seule chose qui date cette page. */}
+              <ShowWinsBlock />
               <NewGroupsBlock />
               {/* Idem : un annuaire n'affiche aucune activite, le palmarès des
                   passages dit qui promeut en ce moment. */}

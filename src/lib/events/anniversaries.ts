@@ -152,19 +152,24 @@ export function generateAnniversaries(
  */
 export async function fetchActiveMembersWithBirthday(
   supabase: SupabaseClient<Database>,
-  groupIds: string[],
+  /** `null` = tout le roster. Filtrer sur 250 UUID produirait un `.in()` de
+      9 249 caractères d'URL — mesuré : ça passe, mais c'est à un cheveu des
+      plafonds de proxy, pour un filtre que la Map des groupes refait de toute
+      façon côté TS (`generateAnniversaries` ignore un membre dont le groupe
+      est absent). */
+  groupIds: string[] | null,
 ): Promise<AnnivMember[]> {
-  if (groupIds.length === 0) return []
-  return fetchAllRows<AnnivMember>((from, to) =>
-    supabase
+  if (groupIds !== null && groupIds.length === 0) return []
+  return fetchAllRows<AnnivMember>((from, to) => {
+    const q = supabase
       .from('members')
       .select('group_id, stage_name, birthday')
       .eq('status', 'active')
       .not('birthday', 'is', null)
-      .in('group_id', groupIds)
+    return (groupIds === null ? q : q.in('group_id', groupIds))
       .order('id', { ascending: true })
-      .range(from, to),
-  )
+      .range(from, to)
+  })
 }
 
 /** Anniversaires à venir pour des groupes suivis, prêts à fusionner au feed.
@@ -187,6 +192,45 @@ export async function getUpcomingAnniversaries(
       .in('id', groupIds),
     fetchActiveMembersWithBirthday(supabase, groupIds),
   ])
+  return generateAnniversaries(groups ?? [], members, {
+    todayKey: localDayKey(new Date().toISOString(), timeZone),
+    days,
+  })
+}
+
+/**
+ * Anniversaires à venir sur TOUT le roster actif.
+ *
+ * Le bloc « Birthdays this week » ne lisait que les groupes suivis, et se
+ * masquait sinon. Or la home connectée est la seule surface qui le monte, et
+ * un compte sans follow n'y voyait rien — le bloc était donc invisible pour
+ * presque tout le monde.
+ *
+ * L'objection d'origine (« le bloc global serait du bruit, ~20 par semaine »)
+ * visait le PIRE cas : mesuré le 2026-08-23 sur 604 personnes datées, la
+ * moyenne est de **11,4 par semaine**, minimum 1, et 7 sur les 7 prochains
+ * jours. Plafonné à 5 lignes, c'est un bloc ordinaire, pas un déluge.
+ */
+export async function getUpcomingAnniversariesAll(
+  days = 7,
+  timeZone = 'Asia/Seoul',
+): Promise<UpcomingEvent[]> {
+  const supabase = await createClient()
+  // En parallèle, comme la variante scopée : les deux lectures sont
+  // indépendantes, les enchaîner doublait la latence pour rien.
+  // `null` : pas de filtre par id — la Map des groupes ci-dessous écarte déjà
+  // les membres hors périmètre (disbanded, candidate).
+  const [{ data: groups }, members] = await Promise.all([
+    supabase
+      .from('groups')
+      .select(
+        'id, slug, name, color_hex, image_url, image_landscape, banner_url, debut_date, is_solo',
+      )
+      .is('disbanded_on', null)
+      .neq('confidence', 'candidate'),
+    fetchActiveMembersWithBirthday(supabase, null),
+  ])
+  if ((groups ?? []).length === 0) return []
   return generateAnniversaries(groups ?? [], members, {
     todayKey: localDayKey(new Date().toISOString(), timeZone),
     days,

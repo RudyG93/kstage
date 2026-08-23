@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getRecentlyCommentedEvents, type CommentedEvent } from '@/lib/events/queries'
 import { getTopRatedByPeriods } from '@/lib/events/top-rated'
-import { getUpcomingAnniversaries } from '@/lib/events/anniversaries'
+import { getUpcomingAnniversaries, getUpcomingAnniversariesAll } from '@/lib/events/anniversaries'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { displaySongTitle } from '@/lib/events/title'
@@ -159,19 +159,41 @@ export async function TopRatedBlock() {
   )
 }
 
-/** Anniversaires des 7 prochains jours parmi les groupes SUIVIS — home.
-    Masqué pour les viewers sans follow (le bloc global serait du bruit :
-    ~20 anniversaires/semaine sur tout le roster). */
+/**
+ * Anniversaires des 7 prochains jours.
+ *
+ * Les groupes SUIVIS d'abord — c'est le signal le plus fort quand il existe.
+ * À défaut, le roster entier plutôt que rien : le bloc ne se montrait qu'aux
+ * comptes ayant au moins un follow, sur la seule surface qui le monte (la home
+ * connectée), donc en pratique il était invisible.
+ *
+ * L'objection d'origine (« ~20 par semaine, ce serait du bruit ») décrivait le
+ * pire cas. Mesuré le 2026-08-23 sur 604 personnes datées : **11,4 par semaine
+ * en moyenne**, minimum 1, 7 sur les 7 prochains jours. Plafonné à 5 lignes,
+ * c'est un bloc ordinaire.
+ *
+ * Le titre dit LAQUELLE des deux listes est affichée — un fan qui suit
+ * 5 groupes ne doit pas croire que ce sont les siens.
+ */
+const BIRTHDAYS_MAX = 5
+
 export async function BirthdaysBlock() {
   const followedIds = await getFollowedGroupIds()
-  if (followedIds.size === 0) return null
   const timeZone = await getViewerTimeZone()
-  const annivs = await getUpcomingAnniversaries([...followedIds], 7, timeZone)
+  const followed =
+    followedIds.size > 0 ? await getUpcomingAnniversaries([...followedIds], 7, timeZone) : []
+  const scoped = followed.length > 0
+  const annivs = (scoped ? followed : await getUpcomingAnniversariesAll(7, timeZone)).slice(
+    0,
+    BIRTHDAYS_MAX,
+  )
   if (annivs.length === 0) return null
   return (
     <section className="bg-card rounded-lg border p-4">
       <div className="mb-3">
-        <span className="label-data">Birthdays this week</span>
+        <span className="label-data">
+          {scoped ? 'Birthdays this week' : 'Birthdays this week · all artists'}
+        </span>
       </div>
       <ul className="space-y-1">
         {annivs.map((a) => (
