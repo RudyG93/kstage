@@ -1016,6 +1016,49 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
+  // 13. Boucle de notification MORTE (2026-08-23).
+  //
+  // Les 28 checks précédents regardent la DONNÉE ; aucun ne regardait la
+  // plomberie. Constaté en prod : `push_subscriptions` vidée sans que le code
+  // d'envoi l'ait fait (`removed: 0` partout), les crons tournant « ok » avec
+  // `candidates: 0` — un succès qui ne dit rien, et une panne muette pendant
+  // deux jours. Un abonné qui disparaît doit se voir.
+  {
+    const { count: subs } = await supabase
+      .from('push_subscriptions')
+      .select('*', { count: 'exact', head: true })
+    const sinceIso = new Date(now.getTime() - 7 * 24 * 3_600_000).toISOString()
+    const { data: sendRuns } = await supabase
+      .from('scrape_log')
+      .select('source, started_at, details')
+      .in('source', ['send_digest', 'notify_comebacks'])
+      .gte('started_at', sinceIso)
+      .order('started_at', { ascending: false })
+      .limit(30)
+
+    const runs = sendRuns ?? []
+    const lastSend = runs.find((r) => {
+      const d = r.details as { sent?: number } | null
+      return (d?.sent ?? 0) > 0
+    })
+    // Une file vide alors que des envois ont réussi dans la semaine = les
+    // abonnements ont disparu entre deux runs. Sans abonné DEPUIS TOUJOURS,
+    // il n'y a rien à signaler : personne n'a encore activé les notifs.
+    const brokeRecently = (subs ?? 0) === 0 && Boolean(lastSend)
+    checks.push({
+      id: 'push_loop_dead',
+      label: "Boucle push sans abonné alors qu'elle envoyait encore",
+      severity: 'warn',
+      count: brokeRecently ? 1 : 0,
+      sample: brokeRecently
+        ? [
+            `push_subscriptions = 0 ; dernier envoi réussi : ${lastSend!.source} ${lastSend!.started_at.slice(0, 16)}`,
+            `runs d'envoi sur 7 j : ${runs.length} (tous à candidates: 0 depuis)`,
+          ]
+        : [],
+    })
+  }
+
   return { generatedAt: nowIso, checks }
 }
 

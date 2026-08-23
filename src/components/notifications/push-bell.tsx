@@ -1,35 +1,19 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { BellIcon, BellOffIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  getExistingSubscription,
-  pushSupported,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from '@/lib/notifications/subscribe'
+import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/subscribe'
+import { usePushState } from '@/lib/notifications/use-push-state'
 import { cn } from '@/lib/utils'
 
 // Cloche compacte (header profil) : active/désactive les notifs push. La version
 // détaillée (explication + hint iOS) vit sur /account.
 export function PushBell() {
-  const [supported, setSupported] = useState<boolean | null>(null)
-  const [enabled, setEnabled] = useState(false)
+  // Même état réconcilié que /account : la cloche ne doit pas dire « activé »
+  // quand la base n'a aucune ligne pour cet endpoint.
+  const { supported, enabled, setEnabled } = usePushState()
   const [pending, startTransition] = useTransition()
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const sub = await getExistingSubscription()
-      if (cancelled) return
-      setSupported(pushSupported())
-      setEnabled(Boolean(sub))
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   if (!supported) return null
 

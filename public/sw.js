@@ -50,3 +50,48 @@ self.addEventListener('notificationclick', (event) => {
     }),
   )
 })
+
+// Rotation d'endpoint (2026-08-23). Un navigateur peut invalider une
+// souscription à tout moment — mise à jour, purge du profil, expiration côté
+// service de push — et émet alors `pushsubscriptionchange`. Sans ce listener,
+// la nouvelle souscription n'était connue de personne : le navigateur se
+// croyait abonné, la base gardait un endpoint mort, plus rien n'arrivait.
+//
+// Un SW ne peut pas appeler une server action → route dédiée, authentifiée par
+// le cookie de session (même origine, il est envoyé).
+function base64ToUint8Array(base64) {
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(b64)
+  const arr = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i += 1) arr[i] = raw.charCodeAt(i)
+  return arr
+}
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      const oldEndpoint = event.oldSubscription?.endpoint ?? null
+      let sub = event.newSubscription ?? null
+      if (!sub) {
+        // La clé de l'ancienne souscription quand le navigateur la fournit,
+        // sinon on la redemande au serveur : re-souscrire sans clé échoue.
+        let key = event.oldSubscription?.options?.applicationServerKey ?? null
+        if (!key) {
+          const res = await fetch('/api/push/rotate')
+          if (!res.ok) return
+          key = base64ToUint8Array((await res.json()).key)
+        }
+        sub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: key,
+        })
+      }
+      await fetch('/api/push/rotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldEndpoint, subscription: sub.toJSON() }),
+      })
+    })(),
+  )
+})
