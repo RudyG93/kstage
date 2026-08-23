@@ -242,6 +242,68 @@ export async function getAllMvs(options: { groupIds?: string[]; limit?: number }
   return data ?? []
 }
 
+/**
+ * Page de MVs pour la grille « Latest drops », curseur en main.
+ *
+ * `/mvs` servait 31 clips sur les 3 173 du catalogue, sans aucun moyen d'aller
+ * plus loin. Pagination par CURSEUR COMPOSITE `(start_at, id)` et pas par
+ * offset : 27 valeurs de `start_at` sont en doublon en base, un curseur sur la
+ * seule date sauterait des lignes ou en répéterait. Pas de `?page=` non plus —
+ * R5 a démonté les pills `<Link>` parce que chaque clic re-rendait la page.
+ */
+export interface MvCursor {
+  startAt: string
+  id: string
+}
+
+export function encodeMvCursor(c: MvCursor): string {
+  return `${c.startAt}|${c.id}`
+}
+
+export function decodeMvCursor(raw: string): MvCursor | null {
+  const at = raw.indexOf('|')
+  if (at <= 0) return null
+  const startAt = raw.slice(0, at)
+  const id = raw.slice(at + 1)
+  // Format strict : ces valeurs partent dans un filtre PostgREST.
+  if (!/^[\d:.TZ+-]{10,40}$/.test(startAt)) return null
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null
+  return { startAt, id }
+}
+
+export async function getMvsPage(options: { cursor?: MvCursor | null; limit?: number } = {}) {
+  const { cursor, limit = 30 } = options
+  const supabase = await createClient()
+  let query = supabase
+    .from('events')
+    .select(MV_SELECT)
+    .eq('type', 'mv')
+    .eq('mv_kind', 'main')
+    .eq('hidden', false)
+    .order('start_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(limit)
+  if (cursor) {
+    // `start_at < X OR (start_at = X AND id < Y)` — la clause keyset. Ni la
+    // date ISO ni l'UUID ne contiennent de virgule, qui casserait le `.or()`.
+    query = query.or(
+      `start_at.lt.${cursor.startAt},and(start_at.eq.${cursor.startAt},id.lt.${cursor.id})`,
+    )
+  }
+  const { data, error } = await query
+  if (error) throw error
+  const rows = data ?? []
+  const last = rows[rows.length - 1]
+  return {
+    rows,
+    // Curseur nul dès qu'une page est incomplète : c'était la dernière.
+    nextCursor:
+      rows.length === limit && last
+        ? encodeMvCursor({ startAt: last.start_at, id: last.id })
+        : null,
+  }
+}
+
 /** Nombre total d'events suivis (proof bar de la landing §7.9). Head-only. */
 export async function getEventsCount(): Promise<number> {
   const supabase = await createClient()

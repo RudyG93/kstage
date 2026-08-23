@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { MvCard } from '@/components/group/mv-card'
 import { cn } from '@/lib/utils'
 import type { MvEvent } from '@/lib/events/queries'
+import { loadMoreDrops } from '@/lib/events/drops-actions'
 
 // Grille Latest drops CONTRÔLÉE (R5) : les pills All|Following et new|top
 // étaient des <Link> ?feed=&sort= → chaque clic re-rendait la page côté
@@ -21,6 +22,7 @@ export function DropsGrid({
   hasFollows,
   initialFeed,
   initialSort,
+  initialCursor,
   timeZone,
 }: {
   all: MvEvent[]
@@ -29,16 +31,41 @@ export function DropsGrid({
   hasFollows: boolean
   initialFeed: 'all' | 'following'
   initialSort: 'new' | 'top'
+  /** Curseur de la page suivante, null quand le catalogue est épuisé. */
+  initialCursor: string | null
   timeZone: string
 }) {
   const [feed, setFeed] = useState(initialFeed)
   const [sort, setSort] = useState(initialSort)
+  // Pages chargées à la demande : la grille servait 30 clips sur 3 173 sans
+  // aucun moyen d'aller plus loin.
+  const [extra, setExtra] = useState<MvEvent[]>([])
+  const [extraRatings, setExtraRatings] = useState<Record<string, DropsRating>>({})
+  const [cursor, setCursor] = useState(initialCursor)
+  const [loading, setLoading] = useState(false)
+
+  const allRatings = useMemo(() => ({ ...ratings, ...extraRatings }), [ratings, extraRatings])
 
   const grid = useMemo(() => {
-    const source = feed === 'following' ? following : all
+    const source = feed === 'following' ? following : [...all, ...extra]
     if (sort === 'new') return source
-    return [...source].sort((a, b) => (ratings[b.id]?.avg ?? -1) - (ratings[a.id]?.avg ?? -1))
-  }, [all, following, ratings, feed, sort])
+    return [...source].sort((a, b) => (allRatings[b.id]?.avg ?? -1) - (allRatings[a.id]?.avg ?? -1))
+  }, [all, extra, following, allRatings, feed, sort])
+
+  async function onLoadMore() {
+    if (!cursor || loading) return
+    setLoading(true)
+    try {
+      const page = await loadMoreDrops(cursor)
+      setExtra((prev) => [...prev, ...page.rows])
+      setExtraRatings((prev) => ({ ...prev, ...page.ratings }))
+      setCursor(page.nextCursor)
+    } catch {
+      // Réseau : on garde le curseur, un second clic retente la même page.
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const pill = (active: boolean) =>
     cn(
@@ -100,10 +127,24 @@ export function DropsGrid({
         <ul className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {grid.map((mv) => (
             <li key={mv.id}>
-              <MvCard mv={mv} rating={ratings[mv.id]} timeZone={timeZone} />
+              <MvCard mv={mv} rating={allRatings[mv.id]} timeZone={timeZone} />
             </li>
           ))}
         </ul>
+      )}
+      {/* Uniquement sur « All » : le flux Following arrive complet du serveur,
+          un bouton y promettrait une suite qui n'existe pas. */}
+      {feed === 'all' && cursor && (
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => void onLoadMore()}
+            disabled={loading}
+            className="border-border hover:bg-hover focus-visible:ring-ring/50 w-full cursor-pointer rounded-lg border py-2.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 disabled:opacity-60"
+          >
+            {loading ? 'Loading…' : 'Load more'}
+          </button>
+        </div>
       )}
     </section>
   )

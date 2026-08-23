@@ -11,7 +11,7 @@ import { HeroBackdrop } from '@/components/home/hero-backdrop'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { MvChart } from '@/components/mv/mv-chart'
 import { DropsGrid } from '@/components/mv/drops-grid'
-import { getAllMvs } from '@/lib/events/queries'
+import { getAllMvs, getMvsPage } from '@/lib/events/queries'
 import { getRatingsForEvents } from '@/lib/events/community'
 import { getTopRatedByPeriods } from '@/lib/events/top-rated'
 import { getFollowedGroupIds } from '@/lib/follows/queries'
@@ -45,7 +45,8 @@ export default async function MvsPage({
   // Les DEUX jeux (All + Following) partent au client : les pills filtrent en
   // mémoire (R5) au lieu d'une navigation ?feed=&sort= qui re-rendait la page.
   const [latest, followingMvs, topRated, timeZone] = await Promise.all([
-    getAllMvs({ limit: 31 }),
+    // 31 = le hero + 30 de grille ; le curseur prend le relais au clic.
+    getMvsPage({ limit: 31 }),
     followedIds.size > 0
       ? getAllMvs({ groupIds: [...followedIds], limit: 30 })
       : Promise.resolve([]),
@@ -53,8 +54,8 @@ export default async function MvsPage({
     getViewerTimeZone(),
   ])
 
-  const hero = latest[0] ?? null
-  const allGrid = latest.filter((m) => m.id !== hero?.id)
+  const hero = latest.rows[0] ?? null
+  const allGrid = latest.rows.filter((m) => m.id !== hero?.id)
   const ratings = await getRatingsForEvents([
     ...(hero ? [hero.id] : []),
     ...allGrid.map((m) => m.id),
@@ -137,6 +138,7 @@ export default async function MvsPage({
             hasFollows={followedIds.size > 0}
             initialFeed={feed}
             initialSort={sort}
+            initialCursor={latest.nextCursor}
             timeZone={timeZone}
           />
         </div>
