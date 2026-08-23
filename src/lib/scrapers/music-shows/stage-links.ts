@@ -128,7 +128,13 @@ export function rankStageCandidates(
     const published = new Date(u.publishedAt).getTime()
     if (Number.isNaN(published)) continue
     if (published < airTime - BEFORE_MS || published > airTime + AFTER_MS) continue
-    const score = stageScore(u.title, groupName, otherGroupNames, aliases)
+    // Matching STRICT : cette fonction décide d'une ÉCRITURE (stage_url,
+    // image_url). La règle du projet est « sous-chaîne pour confirmer, mots
+    // entiers pour créer », et le défaut permissif la contredisait depuis
+    // toujours. Mesuré avant bascule sur les 667 stages déjà liés (titres
+    // relus par oembed) : 666/666 passent DÉJÀ le strict — le laxisme
+    // n'apportait aucune couverture, seulement du risque.
+    const score = stageScore(u.title, groupName, otherGroupNames, aliases, true)
     if (score == null || score < MIN_STAGE_SCORE) continue
     scored.push({ upload: u, score, published })
   }

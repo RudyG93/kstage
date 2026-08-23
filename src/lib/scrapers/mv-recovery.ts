@@ -55,6 +55,33 @@ async function resolveFandomPage(name: string): Promise<string | null> {
  * 'PLUMA' MV » ne s'attribue jamais à MiiWAN : le gate `matchesGroup` ne
  * connaît que le nom latin. Fusion additive — les alias déjà saisis restent.
  */
+// Un alias sert de PRÉDICAT (matching des stages, recherche) : trop court il
+// matche tout, trop long ce n'est plus un nom, et les mots génériques d'une
+// infobox fandom (« Korean », « stage name »…) ne désignent personne.
+const ALIAS_STOPWORDS = new Set([
+  'korean',
+  'japanese',
+  'chinese',
+  'english',
+  'stage name',
+  'birth name',
+  'real name',
+  'former',
+  'aka',
+  'also known as',
+  'n/a',
+  'none',
+  'tbа',
+  'tba',
+])
+
+function isUsableAlias(alias: string): boolean {
+  if (alias.length < 2 || alias.length > 60) return false
+  if (ALIAS_STOPWORDS.has(alias.toLowerCase())) return false
+  // Au moins une lettre ou un chiffre : « — », « (?) » ne sont pas des noms.
+  return /[\p{L}\p{N}]/u.test(alias)
+}
+
 async function syncGroupAliases(
   supabase: SupabaseClient,
   groupId: string,
@@ -65,8 +92,14 @@ async function syncGroupAliases(
     const { infobox } = await fetchInfobox(pageid)
     if (!infobox?.name || normalizeDebutName(infobox.name) !== normalizeDebutName(pageTitle))
       continue
+    // L'infobox fandom est une donnée EXTERNE, éditée par n'importe qui : ses
+    // alias entraient bruts dans groups.name_aliases, qui sert ensuite de
+    // PRÉDICAT au matching des stages et de la recherche. Un alias vide, long
+    // ou générique y fait des dégâts silencieux — on le borne avant d'écrire.
     const merged = [...current]
-    for (const alias of infobox.aliases) {
+    for (const brut of infobox.aliases) {
+      const alias = brut.trim().replace(/\s+/g, ' ')
+      if (!isUsableAlias(alias)) continue
       if (!merged.some((a) => a.toLowerCase() === alias.toLowerCase())) merged.push(alias)
     }
     if (merged.length > current.length) {
