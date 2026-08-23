@@ -79,7 +79,7 @@ export function DropsGrid({
     <section className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <span className="label-data">Latest drops</span>
+          <h2 className="label-data">Latest drops</h2>
           {hasFollows && (
             <div
               className="ml-2 flex items-center gap-1"

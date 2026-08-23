@@ -11,7 +11,16 @@ import { enableCalendarFeed, regenerateCalendarFeedToken } from '@/lib/ical/acti
  * V1 free intégral — un feed « mes groupes suivis » ; les feeds filtrés
  * multi-calendriers sont l'idée premium (BACKLOG).
  */
-export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
+export function CalendarFeed({
+  feedUrl,
+  compact = false,
+}: {
+  feedUrl: string | null
+  /** Variante /calendar : le titre dit « your groups », pas « this calendar »
+      (le feed est scopé aux follows), et les instructions détaillées restent
+      sur /account. */
+  compact?: boolean
+}) {
   const [pending, startTransition] = useTransition()
 
   function enable() {
@@ -57,7 +66,9 @@ export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
     <div className="rounded-lg border p-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-0.5">
-          <p className="text-sm font-medium">Calendar feed</p>
+          <p className="text-sm font-medium">
+            {compact ? 'Subscribe your groups' : 'Calendar feed'}
+          </p>
           <p className="text-muted-foreground text-sm">
             Subscribe from Google or Apple Calendar — your groups&apos; events, always in sync.
           </p>
@@ -98,19 +109,43 @@ export function CalendarFeed({ feedUrl }: { feedUrl: string | null }) {
               <Copy aria-hidden />
             </Button>
           </div>
-          <p className="text-muted-foreground text-xs">
-            Google Calendar: Settings → Add calendar → From URL. Apple Calendar: File → New Calendar
-            Subscription.
-          </p>
-          <button
-            type="button"
-            onClick={regenerate}
-            disabled={pending}
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs underline underline-offset-4"
-          >
-            <RefreshCw className="size-3" aria-hidden />
-            Reset URL (if it leaked)
-          </button>
+          {/* Deux abonnements EN UN GESTE plutôt qu'une URL à recopier :
+              `webcal://` est le schéma que macOS/iOS ouvrent directement dans
+              Calendar, et Google a une URL d'ajout dédiée. Le champ reste, pour
+              les clients qui n'en veulent pas (Outlook, Thunderbird). */}
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={feedUrl.replace(/^https?:/, 'webcal:')}
+              className="border-border hover:bg-hover focus-visible:ring-ring/50 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2"
+            >
+              Add to Apple Calendar
+            </a>
+            <a
+              href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border-border hover:bg-hover focus-visible:ring-ring/50 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2"
+            >
+              Add to Google Calendar
+            </a>
+          </div>
+          {!compact && (
+            <p className="text-muted-foreground text-xs">
+              Or paste the URL manually — Google Calendar: Settings → Add calendar → From URL. Apple
+              Calendar: File → New Calendar Subscription.
+            </p>
+          )}
+          {!compact && (
+            <button
+              type="button"
+              onClick={regenerate}
+              disabled={pending}
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs underline underline-offset-4"
+            >
+              <RefreshCw className="size-3" aria-hidden />
+              Reset URL (if it leaked)
+            </button>
+          )}
         </div>
       )}
     </div>

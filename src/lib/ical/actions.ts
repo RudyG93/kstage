@@ -19,7 +19,10 @@ export async function enableCalendarFeed() {
     .upsert({ user_id: user.id }, { onConflict: 'user_id', ignoreDuplicates: true })
   if (error) throw error
   await trackEvent('ical_enabled', { userId: user.id })
+  // Les DEUX surfaces qui montent le composant — sans `/calendar`, activer
+  // depuis le calendrier n'affichait jamais l'URL générée.
   revalidatePath('/account')
+  revalidatePath('/calendar')
 }
 
 /** Régénère le token (URL fuitée) — l'ancienne URL meurt immédiatement. */
@@ -36,4 +39,5 @@ export async function regenerateCalendarFeedToken() {
     .eq('user_id', user.id)
   if (error) throw error
   revalidatePath('/account')
+  revalidatePath('/calendar')
 }

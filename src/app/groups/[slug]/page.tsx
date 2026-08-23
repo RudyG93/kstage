@@ -239,7 +239,7 @@ async function GroupBody({ group }: { group: Group }) {
           actuels, pas relégués en fond de page. */}
       {activeMembers.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Members — {activeMembers.length}</span>
+          <h2 className="label-data">Members — {activeMembers.length}</h2>
           <MembersGrid
             members={activeMembers}
             groupColorHex={group.color_hex}
@@ -250,14 +250,14 @@ async function GroupBody({ group }: { group: Group }) {
 
       {memorialMembers.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">In memoriam</span>
+          <h2 className="label-data">In memoriam</h2>
           <MembersGrid members={memorialMembers} groupColorHex={group.color_hex} />
         </section>
       )}
 
       {inactiveMembers.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Former & pre-debut</span>
+          <h2 className="label-data">Former & pre-debut</h2>
           <MembersGrid members={inactiveMembers} groupColorHex={group.color_hex} />
         </section>
       )}
@@ -292,7 +292,7 @@ async function GroupBody({ group }: { group: Group }) {
           la place existe, autant tout montrer ; retour Rudy 2026-07-12). */}
       {mvs.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">MVs — {mvTotal}</span>
+          <h2 className="label-data">MVs — {mvTotal}</h2>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {mvs.map((mv) => (
               <MvCard key={mv.id} mv={mv} rating={ratings.get(mv.id)} timeZone={timeZone} />
@@ -314,7 +314,7 @@ async function GroupBody({ group }: { group: Group }) {
           avait 24 passages, tous avec vidéo, et une page qui semblait vide. */}
       {stages.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Stages — {stageTotal}</span>
+          <h2 className="label-data">Stages — {stageTotal}</h2>
           <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-3 md:grid-cols-4">
             {stages.map((stage) => (
               <StageCard key={stage.id} stage={stage} timeZone={timeZone} />

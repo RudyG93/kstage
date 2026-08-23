@@ -305,7 +305,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
 
       {memberMvs.length > 0 && (
         <section className="space-y-2">
-          <span className="label-data">Solo releases</span>
+          <h2 className="label-data">Solo releases</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {memberMvs.map((mv) => (
               <MvCard key={mv.id} mv={mv} rating={memberRatings?.get(mv.id)} timeZone={timeZone} />
@@ -317,7 +317,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
       {group && groupMvs.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="label-data">Music videos — {group.name}</span>
+            <h2 className="label-data">Music videos — {group.name}</h2>
             <Link
               href={`/groups/${group.slug}`}
               className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
@@ -337,7 +337,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
 
       {groupmates.length > 0 && group && (
         <section className="space-y-2">
-          <span className="label-data">{group.name} members</span>
+          <h2 className="label-data">{group.name} members</h2>
           <MembersGrid members={groupmates} groupColorHex={group.color_hex} />
         </section>
       )}
