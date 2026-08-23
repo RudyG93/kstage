@@ -88,3 +88,22 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           E2E_AUTH_EMAIL: ${{ vars.E2E_AUTH_EMAIL }}
           E2E_AUTH_PASSWORD: ${{ secrets.E2E_AUTH_PASSWORD }}
+
+      # Sans ça, un e2e rouge est INDIAGNOSTICABLE de l'extérieur : l'API des
+      # logs répond « Must have admin rights to Repository » (403), et ci.yml
+      # n'a pas le mécanisme de commit comment de db.yml. La PR Dependabot #110
+      # est restée rouge treize jours sans que personne puisse nommer le test
+      # qui échouait — c'était un flake de notre propre spec a11y.
+      #
+      # Le rapport porte les traces, les captures et le nom du cas. Rétention
+      # courte : c'est un artefact de diagnostic, pas une archive.
+      - name: Rapport Playwright (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

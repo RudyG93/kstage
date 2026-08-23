@@ -13,6 +13,16 @@ updates:
     groups:
       minor-and-patch:
         update-types: ['minor', 'patch']
+    ignore:
+      # @types/node suit la majeure du RUNTIME, pas la dernière publiée.
+      # DefinitelyTyped maintient une ligne par majeure de Node (dossier
+      # types/node/v22, six publications 22.x sur les quatre derniers mois) :
+      # poser des types Node 26 sur un runtime Node 22 ferait décrire à
+      # TypeScript des API que la machine ne sait pas exécuter — quatre
+      # majeures d'écart. Le jour où la CI passe à Node 26, retirer cette
+      # ligne et bumper les deux ensemble. (PR #112, écartée le 2026-08-23.)
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
