@@ -15,15 +15,23 @@ type Group = {
   isSolo: boolean
   /** Slug /artists/ du membre canonique quand le « groupe » est un soliste. */
   artistSlug: string | null
+  /** Alias déjà normalisés côté serveur (hangul, « ZB1 », ancien nom). */
+  aliases: string[]
 }
 type Mv = { slug: string | null; title: string; group: string | null; videoId: string | null }
 type Member = { slug: string | null; name: string; group: string | null; photo: string | null }
 
+// `[^a-z0-9]` réduisait « 방탄소년단 » ou « 에스파 » à la chaîne vide : une saisie
+// en hangul ne pouvait RIEN matcher. On garde toutes les lettres et tous les
+// chiffres, quel que soit l'alphabet — même règle que `normalize()` côté
+// serveur, dont les alias envoyés par /api/search/groups sortent déjà.
 const normLite = (s: string) =>
   s
-    .toLowerCase()
     .normalize('NFKD')
-    .replace(/[^a-z0-9]/g, '')
+    .toLowerCase()
+    .replace(/\p{M}+/gu, '')
+    .normalize('NFC')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
 
 /**
  * Recherche live du header (desktop). Segment GROUPES filtré 100 % côté client
@@ -80,7 +88,10 @@ export function HeaderSearch() {
         (g) =>
           normLite(g.name).includes(n) ||
           normLite(g.name).includes(target) ||
-          normLite(g.slug).includes(target),
+          normLite(g.slug).includes(target) ||
+          // Alias en containment seulement — jamais d'approximation : plusieurs
+          // sont des romanisations bruitées qui matcheraient tout.
+          g.aliases.some((a) => a.includes(n)),
       )
       .slice(0, 5)
   }

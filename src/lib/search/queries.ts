@@ -23,6 +23,29 @@ export function sanitizeIlike(q: string): string {
     .slice(0, 80)
 }
 
+/**
+ * Le needle désigne-t-il ce groupe par un de ses ALIAS ?
+ *
+ * 135 groupes portent un `name_aliases` — le hangul (« 방탄소년단 »), les
+ * abréviations du fandom (« ZB1 » pour ZEROBASEONE) et l'ancien nom
+ * (« TOMORROW X TOGETHER » pour TXT). La recherche ne les lisait pas : ces
+ * trois saisies ne renvoyaient RIEN, vérifié en prod le 2026-08-23.
+ *
+ * Égalité ou containment UNIQUEMENT, jamais le repli approximatif : plusieurs
+ * alias sont des romanisations bruitées (« Kiseu obeu raipeu Kisuoburaifu »
+ * pour Kiss of Life) et feraient matcher à peu près n'importe quoi.
+ */
+export function aliasMatches(norm: string, aliases: readonly string[] | null): boolean {
+  if (!norm || !aliases?.length) return false
+  return aliases.some((a) => {
+    const n = normalize(a)
+    return n.length > 0 && (n === norm || n.includes(norm))
+  })
+}
+
+/** Un alias ne doit jamais passer devant une correspondance de NOM. */
+const ALIAS_RANK = 2.5
+
 /** Tokens de recherche (mots ≥ 2 chars, saisie déjà sanitizée). */
 export function tokenize(needle: string): string[] {
   return needle.split(/\s+/).filter((t) => t.length >= 2)
@@ -36,7 +59,7 @@ export function tokenize(needle: string): string[] {
  */
 export function resolveGroupTokens(
   tokens: readonly string[],
-  groups: readonly { id: string; name: string }[],
+  groups: readonly { id: string; name: string; name_aliases?: string[] | null }[],
 ): { groupIds: string[]; titleTokens: string[] } {
   const groupIds = new Set<string>()
   const titleTokens: string[] = []
@@ -45,7 +68,11 @@ export function resolveGroupTokens(
     if (!norm) continue
     let hits = groups.filter((g) => {
       const name = normalize(g.name)
-      return name === norm || (norm.length >= 4 && name.includes(norm))
+      return (
+        name === norm ||
+        (norm.length >= 4 && name.includes(norm)) ||
+        aliasMatches(norm, g.name_aliases ?? null)
+      )
     })
     // Repli APPROXIMATIF, seulement si rien n'a matché franchement : « aepsa »
     // ou « babymonstre » doivent désigner leur groupe (demande Rudy
@@ -64,7 +91,7 @@ export function resolveGroupTokens(
   return { groupIds: [...groupIds], titleTokens }
 }
 
-const GROUP_SELECT = 'id, slug, name, agency, image_url, color_hex, is_solo'
+const GROUP_SELECT = 'id, slug, name, agency, image_url, color_hex, is_solo, name_aliases'
 
 // Alias de graphies courantes que la normalisation seule ne couvre pas
 // ((G)I-DLE → « gidle » ≠ « idle »). Aligné sur GROUP_ALIASES du scraping.
@@ -117,6 +144,8 @@ export async function searchGroups(q: string, limit = 5) {
         g,
         rank: Math.min(matchRank(norm, n), matchRank(target, n), matchRank(target, s)),
       })
+    } else if (aliasMatches(norm, g.name_aliases)) {
+      scored.push({ g, rank: ALIAS_RANK })
     } else if (fuzzyMatches(norm, n) || fuzzyMatches(target, n) || fuzzyMatches(target, s)) {
       scored.push({ g, rank: FUZZY_RANK })
     }
@@ -143,7 +172,7 @@ export const allGroupsForClient = unstable_cache(
     // dans unstable_cache). Groupes + subs en une passe, tri par notoriété.
     const supabase = anon()
     const [{ data: groups }, { data: sources }] = await Promise.all([
-      supabase.from('groups').select('id, slug, name, image_url, is_solo'),
+      supabase.from('groups').select('id, slug, name, image_url, is_solo, name_aliases'),
       supabase
         .from('sources')
         .select('group_id, subscriber_count')
@@ -180,6 +209,11 @@ export const allGroupsForClient = unstable_cache(
           isSolo: g.is_solo,
           // Href canonique d'un soliste (/groups/[slug] redirige déjà dessus).
           artistSlug: solo?.slug ?? null,
+          // Alias NORMALISÉS côté serveur : le filtre du header utilise un
+          // `normLite` en `[^a-z0-9]`, qui réduit « 방탄소년단 » à la chaîne
+          // vide. On envoie donc la forme déjà comparable, et le client se
+          // contente d'un includes().
+          aliases: (g.name_aliases ?? []).map(normalize).filter((a) => a.length > 0),
         }
       })
   },
@@ -198,7 +232,7 @@ const MV_SELECT = 'id, slug, title, type, start_at, source_url, groups!inner(nam
  */
 const allGroupRefs = unstable_cache(
   async () => {
-    const { data } = await anon().from('groups').select('id, name')
+    const { data } = await anon().from('groups').select('id, name, name_aliases')
     return data ?? []
   },
   ['search-group-refs'],

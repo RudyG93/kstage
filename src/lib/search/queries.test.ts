@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeIlike, tokenize, resolveGroupTokens } from './queries'
+import { aliasMatches, sanitizeIlike, tokenize, resolveGroupTokens } from './queries'
+import { normalize } from '@/lib/scrapers/group-match'
 
 describe('sanitizeIlike', () => {
   it('escapes ilike wildcards', () => {
@@ -87,5 +88,56 @@ describe('resolveGroupTokens — tolérance aux fautes (retour Rudy 2026-08-21)'
   it('ne transforme pas un mot quelconque en groupe', () => {
     expect(resolveGroupTokens(['comeback'], groups).groupIds).toEqual([])
     expect(resolveGroupTokens(['comeback'], groups).titleTokens).toEqual(['comeback'])
+  })
+})
+
+describe('aliasMatches (hangul, abréviations, ancien nom — 2026-08-23)', () => {
+  it('reconnaît une abréviation du fandom', () => {
+    expect(aliasMatches('zb1', ['제로베이스원', 'ZB1'])).toBe(true)
+  })
+
+  it('reconnaît le hangul', () => {
+    expect(aliasMatches(normalize('방탄소년단'), ['방탄소년단'])).toBe(true)
+    expect(aliasMatches(normalize('에스파'), ['에스파'])).toBe(true)
+  })
+
+  it("reconnaît l'ancien nom en containment", () => {
+    expect(aliasMatches('tomorrowxtogether', ['투모로우바이투게더', 'TOMORROW X TOGETHER'])).toBe(
+      true,
+    )
+  })
+
+  it('ne matche PAS de façon approximative', () => {
+    // « Kiseu obeu raipeu Kisuoburaifu » est un alias réel de Kiss of Life :
+    // une tolérance aux fautes dessus ferait matcher à peu près n'importe quoi.
+    expect(aliasMatches('kiseuxbeu', ['Kiseu obeu raipeu Kisuoburaifu'])).toBe(false)
+  })
+
+  it('ignore les listes vides et les needles vides', () => {
+    expect(aliasMatches('', ['ZB1'])).toBe(false)
+    expect(aliasMatches('zb1', null)).toBe(false)
+    expect(aliasMatches('zb1', [])).toBe(false)
+  })
+})
+
+describe('resolveGroupTokens — les alias comptent comme le nom', () => {
+  const groups = [
+    { id: 'zb1', name: 'ZEROBASEONE', name_aliases: ['제로베이스원', 'ZB1'] },
+    { id: 'txt', name: 'TXT', name_aliases: ['TOMORROW X TOGETHER'] },
+    { id: 'ae', name: 'aespa', name_aliases: null },
+  ]
+
+  it('« zb1 » désigne ZEROBASEONE', () => {
+    expect(resolveGroupTokens(['zb1'], groups).groupIds).toEqual(['zb1'])
+  })
+
+  it('« tomorrow x together » désigne TXT sans laisser de token de titre', () => {
+    const { groupIds, titleTokens } = resolveGroupTokens(['tomorrow', 'together'], groups)
+    expect(groupIds).toEqual(['txt'])
+    expect(titleTokens).toEqual([])
+  })
+
+  it('un groupe sans alias reste inchangé', () => {
+    expect(resolveGroupTokens(['aespa'], groups).groupIds).toEqual(['ae'])
   })
 })
