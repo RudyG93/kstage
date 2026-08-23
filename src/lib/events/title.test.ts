@@ -206,3 +206,153 @@ describe('displaySongTitle — classes du balayage R6 (168 titres prod mal rendu
     expect(displaySongTitle('THE BOYZ(더보이즈) ’Nectar’ MV', 'THE BOYZ')).toBe('Nectar')
   })
 })
+
+describe('displaySongTitle — classes du balayage du 2026-08-23 (3 465 events prod)', () => {
+  describe('label de clip emballé dans une paire', () => {
+    it('(Official Video) — 95 titres le gardaient en prod', () => {
+      expect(displaySongTitle('JENNIE - Mantra (Official Video)', 'JENNIE')).toBe('Mantra')
+    })
+    it('[Official Video]', () => {
+      expect(displaySongTitle('Colde - Sunflower [Official Video]', 'Colde')).toBe('Sunflower')
+    })
+    it('qualificatif inconnu après « Official »', () => {
+      expect(displaySongTitle('XG - NEW DANCE (Official Multiverse Music Video)', 'XG')).toBe(
+        'NEW DANCE',
+      )
+    })
+    it('un crédit entre parenthèses survit au retrait du label', () => {
+      expect(displaySongTitle('pH-1 - MR. BAD (Feat. Blase) (Official Video)', 'pH-1')).toBe(
+        'MR. BAD (Feat. Blase)',
+      )
+    })
+    it('« Official » postposé (convention Play M)', () => {
+      expect(displaySongTitle('BIBI - Sugar Rush Official M/V', 'BIBI')).toBe('Sugar Rush')
+    })
+    it('le retrait du label ne rend jamais une chaîne vide', () => {
+      expect(displaySongTitle('PINKVERSE official Cherry blossom MV', 'PINKVERSE')).not.toBe('')
+    })
+  })
+
+  describe('deux segments cités dans le même titre', () => {
+    it('le greedy enjambait les deux paires (&TEAM)', () => {
+      expect(
+        displaySongTitle(
+          "&TEAM 'Bewitched' Official MV | 'The Witch of Yerasah' Animated Film",
+          '&TEAM',
+        ),
+      ).toBe('Bewitched')
+    })
+    it('une parenthèse citée après la chanson (BTS)', () => {
+      expect(displaySongTitle("BTS (방탄소년단) 'Dynamite' ('70s remix) MV", 'BTS')).toBe(
+        'Dynamite',
+      )
+    })
+    it('apostrophe possessive après la fermante (OnlyOneOf)', () => {
+      expect(displaySongTitle("[MV] OnlyOneOf 'suit dance' (lyOn's Den Ver.)", 'OnlyOneOf')).toBe(
+        'suit dance',
+      )
+    })
+    it("nom de groupe à apostrophe avant la citation (STARSEED'Z)", () => {
+      expect(
+        displaySongTitle("STARSEED'Z - SLIP N' SLIDE (Official Music Video)", "STARSEED'Z"),
+      ).toBe("SLIP N' SLIDE")
+    })
+  })
+
+  describe('apostrophes internes conservées', () => {
+    it("élision suivie de la fermante (Ridin')", () => {
+      expect(displaySongTitle("NCT DREAM 엔시티 드림 'Ridin'' MV", 'NCT DREAM')).toBe("Ridin'")
+    })
+    it("deux élisions (WHAT'S GOIN' ON)", () => {
+      expect(displaySongTitle("OMEGA X 'WHAT'S GOIN' ON' Official MV (B-side)", 'OMEGA X')).toBe(
+        "WHAT'S GOIN' ON",
+      )
+    })
+    it("possessif interne (Girls' Night)", () => {
+      expect(displaySongTitle("Loossemble (루셈블) - 'Girls' Night' MV", 'Loossemble')).toBe(
+        "Girls' Night",
+      )
+    })
+  })
+
+  describe("courbes et crochets d'angle", () => {
+    it('ouvrante courbe collée au nom du groupe (GENBLUE)', () => {
+      expect(displaySongTitle('GENBLUE‘1000次也不夠的想念’ Official Music Video', 'GENBLUE')).toBe(
+        '1000次也不夠的想念',
+      )
+    })
+    it('deux ouvrantes courbes (CLASS:y)', () => {
+      expect(displaySongTitle('CLASS:y(클라씨) “CLASSY“ M/V', 'CLASS:y')).toBe('CLASSY')
+    })
+    it('barre verticale hangul avant la citation (OMEGA X)', () => {
+      expect(displaySongTitle("OMEGA X (오메가엑스)ㅣ'HEY!' Special Video", 'OMEGA X')).toBe('HEY!')
+    })
+    it("crochets d'angle collés au nom (LUN8)", () => {
+      expect(displaySongTitle('LUN8「MOTLEY CREW」(Official MV)', 'LUN8')).toBe('MOTLEY CREW')
+    })
+    it("crochets d'angle DANS une parenthèse = le single, pas la chanson (iKON)", () => {
+      expect(
+        displaySongTitle(
+          'iKON - #WYD M/V Japanese Short Ver. (from Single「DUMB & DUMBER」)',
+          'iKON',
+        ),
+      ).not.toBe('DUMB & DUMBER')
+    })
+  })
+
+  describe('collaborations', () => {
+    it('& co-artiste (JENNIE & Dua Lipa)', () => {
+      expect(displaySongTitle('JENNIE & Dua Lipa - Handlebars (Official Video)', 'JENNIE')).toBe(
+        'Handlebars',
+      )
+    })
+    it('virgule co-artiste (IVE, David Guetta)', () => {
+      expect(
+        displaySongTitle('IVE, David Guetta - Supernova Love Official Music Video', 'IVE'),
+      ).toBe('Supernova Love')
+    })
+    it('slash sous-unité (FTISLAND / FT.triple)', () => {
+      expect(displaySongTitle('FTISLAND / FT.triple - 러브레터 M/V', 'FTISLAND')).toBe('러브레터')
+    })
+    it('un tiret INTERNE au co-artiste ne coupe pas', () => {
+      expect(displaySongTitle('AOMG & pH-1 - Song Name (Official Video)', 'AOMG')).toBe('Song Name')
+    })
+  })
+
+  describe('glose entre parenthèses : romanisation ou crédit ?', () => {
+    it('romanisation préférée', () => {
+      expect(displaySongTitle('BIBI - 밤양갱(Bam Yang Gang) Official M/V', 'BIBI')).toBe(
+        'Bam Yang Gang',
+      )
+    })
+    it('crédit instrumental refusé (Guitar by …)', () => {
+      expect(
+        displaySongTitle(
+          "JEONGHAN X WONWOO (SEVENTEEN) '어젯밤 (Guitar by 박주원)' Official MV",
+          'SEVENTEEN',
+        ),
+      ).toBe('어젯밤 (Guitar by 박주원)')
+    })
+    it('un titre commençant par « By » reste une romanisation', () => {
+      expect(
+        displaySongTitle(
+          'Hi-Fi Un!corn - “어쩌다가(By Chance)” Performance Video',
+          'Hi-Fi Un!corn',
+        ),
+      ).toBe('By Chance')
+    })
+    it('OST refusé : la parenthèse nomme la série', () => {
+      expect(
+        displaySongTitle(
+          'ADYA (에이디야) - 눈부신 날 (이사장님은 9등급 OST) [Music Video]',
+          'ADYA',
+        ),
+      ).toBe('눈부신 날 (이사장님은 9등급 OST)')
+    })
+    it('label refusé : la parenthèse nomme le format, pas la chanson', () => {
+      // La parenthèse survit (elle n'est pas un suffixe reconnu), mais elle ne
+      // REMPLACE plus le titre — le rendu montrait « BTS:Music Video » seul.
+      expect(displaySongTitle('BTOB - 스릴러 (BTS:Music Video)', 'BTOB')).toContain('스릴러')
+    })
+  })
+})
