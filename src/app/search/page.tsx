@@ -82,6 +82,11 @@ export default async function SearchPage({
   return (
     <div className="mx-auto w-full max-w-3xl px-3 py-4 md:px-4 md:py-6">
       <div className="space-y-3">
+        {/* La page n'avait aucun titre de niveau 1 : un lecteur d'écran y
+            arrivait sans savoir où il était, et c'est la destination du bouton
+            central de la barre mobile. `sr-only` parce que le champ de saisie
+            EST le titre visuel de cette page. */}
+        <h1 className="sr-only">Search</h1>
         <SearchInput />
 
         {/* Segments masqués tant que la requête est vide : ils ne filtrent

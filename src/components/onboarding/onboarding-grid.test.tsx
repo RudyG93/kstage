@@ -17,7 +17,7 @@ vi.mock('next/navigation', () => ({
 
 import { OnboardingGrid } from './onboarding-grid'
 
-// jsdom n'implémente pas matchMedia (utilisé par IosInstallHint au step
+// jsdom n'implémente pas matchMedia (utilisé par InstallPrompt au step
 // notifications) — shim minimal non-matché.
 window.matchMedia = vi.fn().mockImplementation((query: string) => ({
   matches: false,

@@ -8,7 +8,7 @@ import { RailSkeleton } from '@/components/ui/rail-skeleton'
 import { NextDropCard } from '@/components/home/next-drop-card'
 import { WeekGlance } from '@/components/home/week-glance'
 import { FreshDrops } from '@/components/home/fresh-drops'
-import { IosInstallHint } from '@/components/notifications/ios-install-hint'
+import { InstallPrompt } from '@/components/notifications/install-prompt'
 import { QueueRow } from '@/components/events/queue-row'
 import { Ticker } from '@/components/ticker'
 import { Panel, PanelHeader } from '@/components/ui/panel'
@@ -241,7 +241,7 @@ export default async function Home({
             <FreshDrops mvs={freshMvs} ratings={ratings} timeZone={timeZone} note={dropsNote} />
             {/* Safari iOS hors standalone uniquement (auto-gated) — fin de scroll,
                 l'user a déjà consommé sa valeur, zéro pollution du premier écran. */}
-            <IosInstallHint />
+            <InstallPrompt />
           </div>
           {/* Recent comebacks + Recent discussions (retour Rudy 2026-07-03) :
               sidebar en desktop, sections empilées sous le centre en mobile. */}

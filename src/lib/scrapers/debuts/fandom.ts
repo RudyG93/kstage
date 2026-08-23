@@ -69,6 +69,10 @@ export interface FandomInfobox {
       « members vide » ne veut PAS dire soliste (incident Yuqi/TOZ 2026-08-20 :
       groupes pré-debut sans lineup parsé créés is_solo à tort). */
   kind: 'group' | 'artist' | 'unknown'
+  /** Nom du fandom (« ARMY », « MY ») — champ `fandom` de l'infobox. Il ne
+      remplit que 6 lignes sur 259 alors que la page fandom le porte presque
+      toujours. */
+  fandomName: string | null
   /** Autres graphies officielles du nom (hangul, hanja, romanisation) — les
       chaînes coréennes titrent leurs MV « 미완소년(未完少年) 'PLUMA' MV », que
       le nom latin seul ne matche pas (MiiWAN : 0 MV malgré 33 vidéos trouvées,
@@ -104,9 +108,21 @@ export function parseDebutDate(raw: string): string | null {
 }
 
 /** Valeur d'un champ d'infobox : de `|field =` jusqu'au prochain `|xxx =` de premier niveau. */
-function field(wikitext: string, name: string): string | null {
+/**
+ * Valeur d'un champ d'infobox.
+ *
+ * `[ \t]*` après le `=`, surtout PAS `\s*` : un `\s*` gourmand traverse le
+ * saut de ligne quand le champ est VIDE, et la capture démarre alors sur le
+ * champ SUIVANT — le lookahead de fin ne peut plus s'appliquer à la position 0
+ * et avale tout jusqu'au champ d'après.
+ *
+ * Constaté le 2026-08-23 sur `| label       = \n| current     = ` (page QQQ) :
+ * l'agence enregistrée valait « | current = · * KB · * Jisung · * Nine ». Le
+ * défaut valait pour TOUT champ vide — alias, membres, image compris.
+ */
+export function field(wikitext: string, name: string): string | null {
   const re = new RegExp(
-    `\\|\\s*${name}\\s*=\\s*([\\s\\S]*?)(?=\\n\\s*\\|\\s*[a-z_]+\\s*=|\\n\\}\\})`,
+    `\\|\\s*${name}\\s*=[ \\t]*([\\s\\S]*?)(?=\\n\\s*\\|\\s*[a-z_]+\\s*=|\\n\\}\\})`,
     'i',
   )
   const m = re.exec(wikitext)
@@ -242,6 +258,7 @@ export async function fetchInfobox(
     .filter(isUsableAlias)
 
   const nameRaw = field(wt, 'name')
+  const fandomRaw = field(wt, 'fandom')
   const debutRaw = field(wt, 'debut')
   const labelRaw = field(wt, 'label') ?? field(wt, 'agency')
   const sns = `${field(wt, 'sns') ?? ''}\n${wt.slice(0, 4000)}`
@@ -253,6 +270,17 @@ export async function fetchInfobox(
       name: nameRaw ? stripMarkup(nameRaw) : '',
       debutDate: debutRaw ? parseDebutDate(debutRaw) : null,
       label: labelRaw ? parseAgency(labelRaw) : null,
+      // Même nettoyage que les alias : le champ déborde régulièrement sur le
+      // suivant, et « South Korea » comme nom de fandom serait absurde.
+      fandomName: (() => {
+        if (!fandomRaw) return null
+        // Le champ s'écrit « NOM (KR: 한글; JP: カナ)<ref>… » : on garde le nom
+        // AVANT la parenthèse. Découper sur `;` laissait « aoring (KR: 아오링 »,
+        // parenthèse ouverte comprise — et la forme `NOM (한글)` est celle de
+        // presque toutes les pages (LUNÉ, 5TARZ, TURNING…).
+        const v = stripMarkup(fandomRaw).split('(')[0]?.trim() ?? ''
+        return isUsableAlias(v) ? v : null
+      })(),
       members,
       kind,
       aliases: aliases.filter(
