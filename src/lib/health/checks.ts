@@ -1059,6 +1059,35 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
+  // 14. Erreurs serveur des 24 h (2026-08-23).
+  //
+  // `scrape_errors_recent` ne regarde que les crons ; une exception dans une
+  // page ou une server action n'apparaissait nulle part. Pas d'agrégat par
+  // route : à trois comptes il n'y a rien à agréger, l'échantillon brut est
+  // plus utile qu'un top.
+  {
+    const since = new Date(now.getTime() - 24 * 3_600_000).toISOString()
+    const { data: errors } = await supabase
+      .from('error_log')
+      .select('message, path, route_type, created_at')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    const rows = errors ?? []
+    checks.push({
+      id: 'server_errors_24h',
+      label: 'Erreurs serveur (24 h)',
+      severity: 'warn',
+      count: rows.length,
+      sample: rows
+        .slice(0, 5)
+        .map(
+          (e) =>
+            `${e.created_at.slice(5, 16)} ${e.route_type ?? '?'} ${e.path ?? '?'} — ${e.message.slice(0, 120)}`,
+        ),
+    })
+  }
+
   return { generatedAt: nowIso, checks }
 }
 
