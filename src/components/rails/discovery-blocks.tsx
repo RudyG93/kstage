@@ -20,6 +20,7 @@ import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
 import { relativeTime } from '@/lib/events/date'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { groupHref } from '@/lib/events/href'
 
 // Blocs découverte des rails contextuels (Lot 6 peaufinage 2026-08-20).
 
@@ -38,7 +39,7 @@ export async function NewGroupsBlock() {
         {newest.map((g) => (
           <li key={g.id}>
             <Link
-              href={`/groups/${g.slug}` as Route}
+              href={groupHref(g) as Route}
               className="hover:bg-hover -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
             >
               {g.image_url ? (
@@ -97,7 +98,7 @@ export async function PromotingNowBlock() {
         {groups.map((g) => (
           <li key={g.id}>
             <Link
-              href={`/groups/${g.slug}` as Route}
+              href={groupHref(g) as Route}
               className="hover:bg-hover -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
             >
               {g.image_url ? (
@@ -161,7 +162,7 @@ function CohortLine({ g }: { g: CohortGroup }) {
   return (
     <li>
       <Link
-        href={`/groups/${g.slug}` as Route}
+        href={groupHref(g) as Route}
         className="hover:bg-hover -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
       >
         {g.image_url ? (

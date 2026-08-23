@@ -29,6 +29,38 @@ describe('eventHref', () => {
     expect(eventHref({ ...base, type: 'anniversary' })).toBe('/groups/aespa')
   })
 
+  // /groups/<slug> d'un SOLISTE répond 307 vers /artists/<artist_slug> : un
+  // lien interne doit désigner la page finale, pas la redirection (0068).
+  it('groupe solo → page ARTISTE directement, pas la redirection', () => {
+    const solo = { slug: 'ph1', artist_slug: 'ph1-ph-1' }
+    expect(eventHref({ ...base, type: 'release', slug: 'x', groups: solo })).toBe(
+      '/artists/ph1-ph-1',
+    )
+    expect(eventHref({ ...base, type: 'anniversary', groups: solo })).toBe('/artists/ph1-ph-1')
+  })
+
+  it('un groupe non solo garde sa page groupe (artist_slug null)', () => {
+    expect(
+      eventHref({
+        ...base,
+        type: 'release',
+        slug: 'x',
+        groups: { slug: 'aespa', artist_slug: null },
+      }),
+    ).toBe('/groups/aespa')
+  })
+
+  it("un MV de soliste reste sur sa page MV — artist_slug n'écrase rien", () => {
+    expect(
+      eventHref({
+        ...base,
+        type: 'mv',
+        slug: 'ph1-nerdy',
+        groups: { slug: 'ph1', artist_slug: 'ph1-ph-1' },
+      }),
+    ).toBe('/mv/ph1-nerdy')
+  })
+
   it('music_show connu → page ÉPISODE interne (Lot N 2026-07-17), stage_url ou pas', () => {
     // 06:25Z le 19/07 = 15:25 KST le 19/07 → jour KST 2026-07-19.
     expect(

@@ -6,6 +6,7 @@ import { faceCrop } from '@/lib/images/cloudinary'
 import { formatDDay } from '@/lib/events/date'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/events/labels'
 import { activityLabel, type ActivityStatus } from '@/lib/groups/activity'
+import { groupHref } from '@/lib/events/href'
 import type { GroupSummary } from '@/lib/groups/queries'
 import type { Database } from '@/types/database'
 
@@ -20,7 +21,10 @@ export type NextEventInfo = {
  * items) ne doivent embarquer QUE ces champs (audit perf 2026-08-20 : 550 Ko
  * de HTML dont 127 Ko de flight RSC, chaque item sérialisé 3×).
  */
-export type GroupCardData = Pick<GroupSummary, 'id' | 'slug' | 'name' | 'color_hex' | 'image_url'>
+export type GroupCardData = Pick<
+  GroupSummary,
+  'id' | 'slug' | 'artist_slug' | 'name' | 'color_hex' | 'image_url'
+>
 
 /**
  * Tuile groupe carrée Data Desk (§7.5) : photo + scrim vers --page, nom
@@ -101,7 +105,7 @@ export function GroupCard({
 
       {/* zone cliquable plein cadre (sous le cœur) */}
       <Link
-        href={href ?? `/groups/${group.slug}`}
+        href={href ?? (groupHref(group) as Route)}
         aria-label={group.name}
         className="focus-visible:ring-ring/60 absolute inset-0 rounded-xl outline-none focus-visible:ring-2"
       />

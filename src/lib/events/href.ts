@@ -30,7 +30,7 @@ export function eventHref(event: {
   title?: string | null
   start_at?: string | null
   stage_url?: string | null
-  groups?: { slug?: string | null } | null
+  groups?: { slug?: string | null; artist_slug?: string | null } | null
 }): string {
   if (event.type === 'mv' && event.slug) {
     return `/mv/${event.slug}`
@@ -40,10 +40,23 @@ export function eventHref(event: {
     if (episode) return episode
     if (event.stage_url && YOUTUBE_RE.test(event.stage_url)) return event.stage_url
   }
-  return `/groups/${event.groups?.slug ?? ''}`
+  return groupHref(event.groups ?? {})
 }
 
 /** Un href externe (http[s]) doit s'ouvrir dans un nouvel onglet. */
 export function isExternalHref(href: string): boolean {
   return /^https?:\/\//.test(href)
+}
+
+/**
+ * Href canonique d'un GROUPE. Un groupe solo n'a pas de page groupe :
+ * `/groups/<slug>` répond 307 vers `/artists/<artist_slug>`. Tout lien interne
+ * doit désigner la page finale — sinon on paie un aller-retour au clic, et un
+ * crawler suit une redirection pour rien. Le slug de l'artiste n'est pas
+ * déductible de celui du groupe (9 des 38 solistes diffèrent), d'où la colonne
+ * dénormalisée `groups.artist_slug` (migration 0068).
+ */
+export function groupHref(group: { slug?: string | null; artist_slug?: string | null }): string {
+  if (group.artist_slug) return `/artists/${group.artist_slug}`
+  return `/groups/${group.slug ?? ''}`
 }

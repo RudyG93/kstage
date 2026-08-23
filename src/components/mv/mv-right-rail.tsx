@@ -1,4 +1,6 @@
+import type { Route } from 'next'
 import Link from 'next/link'
+import { groupHref } from '@/lib/events/href'
 import { MvCard } from '@/components/group/mv-card'
 import type { MvEvent } from '@/lib/events/queries'
 
@@ -11,12 +13,15 @@ import type { MvEvent } from '@/lib/events/queries'
 export function MvRightRail({
   groupName,
   groupSlug,
+  groupArtistSlug,
   mvs,
   ratings,
   timeZone,
 }: {
   groupName: string
   groupSlug: string
+  /** Cible réelle d'un soliste : /groups/<slug> redirige (cf. groupHref). */
+  groupArtistSlug?: string | null
   mvs: MvEvent[]
   ratings: Map<string, { avg: number; count: number }>
   timeZone: string
@@ -26,7 +31,7 @@ export function MvRightRail({
       <div className="flex items-baseline justify-between">
         <span className="label-data">More from {groupName}</span>
         <Link
-          href={`/groups/${groupSlug}`}
+          href={groupHref({ slug: groupSlug, artist_slug: groupArtistSlug }) as Route}
           className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
         >
           All MVs →

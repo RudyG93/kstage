@@ -103,6 +103,7 @@ export default async function GroupsPage({
         group: {
           id: item.id,
           slug: item.slug,
+          artist_slug: item.artist_slug,
           name: item.name,
           color_hex: item.color_hex,
           image_url: item.image_url,

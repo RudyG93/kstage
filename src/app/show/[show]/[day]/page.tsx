@@ -20,6 +20,7 @@ import { Panel, PanelHeader } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CommentSection } from '@/components/mv/comments/comment-section'
 import { LocalTime } from '@/components/local-time'
+import { groupHref } from '@/lib/events/href'
 
 // Page ÉPISODE de music show (Lot N, demande Rudy 2026-07-17) : logo du show,
 // numéro/date, lineup complet, stages YouTube des participants, commentaires.
@@ -115,16 +116,18 @@ const getEpisodeLineup = cache(async (episode: Episode) => {
 async function Winner({ episode }: { episode: Episode }) {
   if (!episode.winner_name) return null
   let slug: string | null = null
+  let artistSlug: string | null = null
   let image: string | null = null
   let name = episode.winner_name
   if (episode.winner_group_id) {
     const supabase = await createClient()
     const { data } = await supabase
       .from('groups')
-      .select('slug, name, image_url')
+      .select('slug, artist_slug, name, image_url')
       .eq('id', episode.winner_group_id)
       .maybeSingle()
     slug = data?.slug ?? null
+    artistSlug = data?.artist_slug ?? null
     image = data?.image_url ?? null
     // Wikipedia écrit « Ateez » et « Zerobaseone » là où l'app dit « ATEEZ » et
     // « ZEROBASEONE ». Le groupe est déjà résolu ici : autant le NOMMER comme
@@ -137,6 +140,7 @@ async function Winner({ episode }: { episode: Episode }) {
       song={episode.winner_song}
       nth={episode.winner_nth}
       groupSlug={slug}
+      groupArtistSlug={artistSlug}
       groupImage={image}
     />
   )
@@ -232,7 +236,7 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
                   )}
                   <div className="min-w-0 flex-1">
                     <Link
-                      href={`/groups/${e.groups?.slug ?? ''}`}
+                      href={groupHref(e.groups ?? {}) as Route}
                       className="hover:text-primary block truncate text-sm font-semibold transition-colors"
                     >
                       {e.groups?.name ?? '?'}

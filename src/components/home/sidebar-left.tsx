@@ -9,6 +9,7 @@ import { getUpcomingEventCountsByGroup } from '@/lib/events/queries'
 import { getUpcomingAnniversaryCountsByGroup } from '@/lib/events/anniversaries'
 import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
+import { groupHref } from '@/lib/events/href'
 
 // Cap d'affichage des groupes suivis dans le rail (au-delà : lien « + N more »
 // vers le profil). Limite d'affichage neutre, indépendante du compte.
@@ -83,7 +84,7 @@ export async function SidebarLeft({
               {visibleFollowed.map((group) => (
                 <li key={group.id}>
                   <Link
-                    href={`/groups/${group.slug}`}
+                    href={groupHref(group) as Route}
                     className="hover:bg-hover -mx-2 flex h-10 items-center gap-2.5 rounded-md px-2 transition-colors"
                   >
                     {group.image_url ? (

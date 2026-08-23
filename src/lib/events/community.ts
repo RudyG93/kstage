@@ -135,7 +135,7 @@ export const getEventBySlug = cache(async (slug: string) => {
   const { data } = await supabase
     .from('events')
     .select(
-      'id, slug, title, type, start_at, status, source_url, description, groups!inner(slug, name, color_hex, image_url, banner_url, confidence)',
+      'id, slug, title, type, start_at, status, source_url, description, groups!inner(slug, artist_slug, name, color_hex, image_url, banner_url, confidence)',
     )
     .eq('slug', slug)
     .eq('hidden', false)

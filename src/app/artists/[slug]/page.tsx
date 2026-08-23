@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Route } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -31,6 +32,7 @@ import { getViewerTimeZone } from '@/lib/profiles/timezone'
 import { getViewer } from '@/lib/supabase/viewer'
 import { RailStack } from '@/components/rails/rail-stack'
 import { DebutClassBlock, SpotlightBlock } from '@/components/rails/discovery-blocks'
+import { groupHref } from '@/lib/events/href'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -70,7 +72,10 @@ const statusLabel = {
 type Member = NonNullable<Awaited<ReturnType<typeof getMemberBySlug>>>
 type CareerStep = Awaited<ReturnType<typeof getCareerPath>>[number]
 
-function CareerSection({ career }: { career: CareerStep[] }) {
+// `currentSlug` : une étape de carrière qui désigne la page COURANTE ne doit
+// pas être un lien. C'est le cas de l'étape solo d'un soliste — /groups/<slug>
+// redirige vers /artists/<slug>, donc le lien pointait sur lui-même.
+function CareerSection({ career, currentSlug }: { career: CareerStep[]; currentSlug: string }) {
   if (career.length <= 1) return null
   return (
     <section className="space-y-3">
@@ -80,11 +85,14 @@ function CareerSection({ career }: { career: CareerStep[] }) {
           const stepGroupRaw = (step as { groups: unknown }).groups
           const stepGroup = (Array.isArray(stepGroupRaw) ? stepGroupRaw[0] : stepGroupRaw) as {
             slug: string
+            artist_slug: string | null
             name: string
             color_hex: string | null
           } | null
           if (!stepGroup) return null
           const label = statusLabel[step.status] ?? 'Active'
+          const cible = groupHref(stepGroup)
+          const soiMeme = cible === `/artists/${currentSlug}`
           return (
             <li key={step.id} className="text-sm">
               <span
@@ -92,9 +100,13 @@ function CareerSection({ career }: { career: CareerStep[] }) {
                 style={{ backgroundColor: stepGroup.color_hex ?? 'var(--muted-foreground)' }}
                 aria-hidden
               />
-              <Link href={`/groups/${stepGroup.slug}`} className="font-medium hover:underline">
-                {stepGroup.name}
-              </Link>
+              {soiMeme ? (
+                <span className="font-medium">{stepGroup.name}</span>
+              ) : (
+                <Link href={cible as Route} className="font-medium hover:underline">
+                  {stepGroup.name}
+                </Link>
+              )}
               <span className="text-muted-foreground"> — {label}</span>
               {step.former_reason && (
                 <p className="text-muted-foreground mt-0.5 ml-4 text-xs">{step.former_reason}</p>
@@ -110,6 +122,7 @@ function CareerSection({ career }: { career: CareerStep[] }) {
 type ArtistGroup = {
   id: string
   slug: string
+  artist_slug: string | null
   name: string
   color_hex: string | null
   agency: string | null
@@ -225,7 +238,7 @@ async function SoloBody({ member, group }: { member: Member; group: ArtistGroup 
         </section>
       )}
 
-      <CareerSection career={career} />
+      <CareerSection career={career} currentSlug={member.slug ?? ''} />
     </>
   )
 }
@@ -289,7 +302,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-sm font-medium">Recent stages — {group.name}</h2>
             <Link
-              href={`/groups/${group.slug}`}
+              href={groupHref(group) as Route}
               className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
             >
               All →
@@ -319,7 +332,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="label-data">Music videos — {group.name}</h2>
             <Link
-              href={`/groups/${group.slug}`}
+              href={groupHref(group) as Route}
               className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
             >
               All →
@@ -333,7 +346,7 @@ async function MemberBody({ member, group }: { member: Member; group: ArtistGrou
         </section>
       )}
 
-      <CareerSection career={career} />
+      <CareerSection career={career} currentSlug={member.slug ?? ''} />
 
       {groupmates.length > 0 && group && (
         <section className="space-y-2">
@@ -460,7 +473,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         trail={[
           { name: 'Home', path: '/' },
           { name: 'Groups', path: '/groups' },
-          ...(group ? [{ name: group.name, path: `/groups/${group.slug}` }] : []),
+          ...(group ? [{ name: group.name, path: groupHref(group) }] : []),
           { name: member.stage_name, path: `/artists/${slug}` },
         ]}
       />
@@ -485,7 +498,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             <h1 className="text-2xl font-bold tracking-tight">{member.stage_name}</h1>
             {group && (
               <p className="text-muted-foreground mt-0.5 text-sm">
-                <Link href={`/groups/${group.slug}`} className="hover:underline">
+                <Link href={groupHref(group) as Route} className="hover:underline">
                   {group.name}
                 </Link>
               </p>

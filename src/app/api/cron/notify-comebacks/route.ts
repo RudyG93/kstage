@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const now = new Date()
   const EVENT_FIELDS =
-    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug, confidence, image_url, image_landscape, banner_url), sources(type)'
+    'id, group_id, slug, type, title, start_at, status, source_url, groups!inner(name, slug, artist_slug, confidence, image_url, image_landscape, banner_url), sources(type)'
 
   // Superset d'events comeback (mv/release) sur la fenêtre [now-1j, now+3j) ;
   // resolveKind fait le test de jour exact PAR FUSEAU. La fenêtre couvre tous

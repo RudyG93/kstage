@@ -4,7 +4,9 @@ import { createClient as createAnonClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 
-const GROUP_FIELDS = 'id, slug, name, fandom_name, debut_date, color_hex, image_url'
+const GROUP_FIELDS =
+  // `artist_slug` : cible réelle d'un soliste — cf. groupHref (0068).
+  'id, slug, artist_slug, name, fandom_name, debut_date, color_hex, image_url'
 
 /**
  * Liste publique des groupes, mise en cache (§2 perf). Data identique pour tous

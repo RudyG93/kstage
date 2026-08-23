@@ -1,5 +1,6 @@
 import type { Route } from 'next'
 import Link from 'next/link'
+import { groupHref } from '@/lib/events/href'
 import Image from 'next/image'
 import { Trophy } from 'lucide-react'
 import { faceCrop } from '@/lib/images/cloudinary'
@@ -20,12 +21,15 @@ export function WinnerBanner({
   song,
   nth,
   groupSlug,
+  groupArtistSlug,
   groupImage,
 }: {
   name: string
   song: string | null
   nth: number | null
   groupSlug: string | null
+  /** Cible reelle d'un soliste : /groups/<slug> redirige (cf. groupHref). */
+  groupArtistSlug?: string | null
   groupImage: string | null
 }) {
   const ordinal = nth ? `${nth}${suffix(nth)} win` : null
@@ -69,7 +73,7 @@ export function WinnerBanner({
   if (!groupSlug) return <div className={className}>{body}</div>
   return (
     <Link
-      href={`/groups/${groupSlug}` as Route}
+      href={groupHref({ slug: groupSlug, artist_slug: groupArtistSlug }) as Route}
       className={`${className} hover:border-amber/50 transition-colors`}
     >
       {body}
