@@ -4,6 +4,45 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-23 (nuit) — Observabilité, a11y outillée, agences complétées
+
+**Commits** : `61fa624` (erreurs serveur + axe), `7ad0ece` (PWA + agences) → `main`. CI verte.
+
+### Le mot de passe E2E n'était pas périmé — dotenv le coupait
+
+Diagnostic dû à une question de Rudy. `E2E_AUTH_PASSWORD=9XhEpdvQ54#h` fait 12 caractères dans le fichier ; l'application en recevait **10** :
+
+```
+fichier : 57,88,104,69,112,100,118,81,53,52,35,104
+process : 57,88,104,69,112,100,118,81,53,52
+```
+
+**dotenv traite `#` comme un début de commentaire inline, même sans espace devant.** Et le piège qui masquait tout : **la CI restait verte**, parce qu'un secret GitHub est injecté brut sans passer par dotenv. D'où ma conclusion erronée, répétée pendant des heures, de « credentials périmés en local ». Correctif : des guillemets. **27/27 en local**, golden path auth compris, pour la première fois de la session. Avertissement posé dans `.env.example` (versionné) et en mémoire.
+
+### L'app ne voyait pas ses propres erreurs
+
+Une exception dans un Server Component, une Server Action ou un route handler partait dans les logs Vercel — rétention courte, aucun check ne les lit. `src/instrumentation.ts` (`onRequestError`) les pose dans `error_log` (migration 0066) : best-effort et jamais throw, no-op sous `GITHUB_ACTIONS`, ni IP ni User-Agent, chemin tronqué à son pathname. Rétention 30 j dans le cron monitor, 30ᵉ check `server_errors_24h`. Vérifié de bout en bout avec une route jetable, ligne de test supprimée après.
+
+### axe en CI, et ce qu'il a trouvé
+
+`@axe-core/playwright` sur 6 gabarits + page groupe (slug découvert par clic) + les deux thèmes. **Premier run : 3 violations réelles** — `text-muted-foreground/70` sur du 10 px donne 4.20:1 en sombre et **3.12:1 en clair**, quand AA exige 4.5. Même à 85 % le clair reste sous le seuil : l'opacité était le mauvais levier.
+
+Puis un second enseignement, plus intéressant : le test était à la fois **flaky et indulgent** parce qu'axe scannait des squelettes de streaming. Avec un `settle()` qui attend la fin du rendu, `/calendar` révèle **19 violations** sur les jetons de palette (`--faint` 2.47:1, `--teal` 3.90, `--amber` 3.58 en petit texte). C'est une décision de design, pas un correctif : le test verrouille donc que le contraste est le SEUL problème sérieux de cette page, dans les deux thèmes. Toute violation d'une autre nature échoue.
+
+Et `/search` n'avait **aucun `h1`** — la destination du bouton central de la barre mobile.
+
+### La couverture des agences était à l'envers
+
+`agency` vient du scraper de debuts, qui ne visite que les nouveaux groupes : **97/106 rookies contre 5/41 vétérans**. Après backfill (matching strict, jamais d'écrasement, throttle 1 s) : **219/221 groupes actifs**, 40/40 vétérans, et `fandom_name` de 6 à 175. 31ᵉ check pour surveiller.
+
+Le sondage des valeurs écrites — 2 mauvaises sur 221 — a mené à un défaut plus profond : dans `field()`, le `\s*` après le `=` est **gourmand et traverse le saut de ligne quand le champ est VIDE**. La capture démarrait sur le champ suivant, le lookahead de fin ne pouvait plus s'appliquer, et QQQ enregistrait « | current = · * KB · * Jisung · * Nine » comme agence. `[ \t]*` corrige — et le défaut valait pour TOUT champ vide de l'infobox : alias, membres, image compris.
+
+### Invite d'installation PWA
+
+`beforeinstallprompt` n'apparaissait pas une seule fois dans `src/` : hors iOS, l'installation n'était jamais proposée. Un composant unique remplace le hint iOS, les trois points de montage héritent du bouton.
+
+**Décision** : un test qui passe sur une page en cours de streaming ne prouve rien. Attendre la fin du rendu avant de mesurer — c'est ce qui a transformé un test flaky et complaisant en test utile.
+
 ## 2026-08-23 (fin) — Les vainqueurs de music show, et le feed sorti de sa cachette
 
 **Commits** : `5547f28` (vainqueurs), `4556431` (iCal + a11y) → `main`. CI verte.
