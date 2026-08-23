@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { MIN_RATINGS_SHOWN } from '@/lib/events/labels'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -119,7 +120,7 @@ export default async function MvsPage({
                         {displaySongTitle(hero.title, heroGroup.name)}
                       </h2>
                     </div>
-                    {heroRating && heroRating.count > 0 && (
+                    {heroRating && heroRating.count >= MIN_RATINGS_SHOWN && (
                       <span className="label-data-inline bg-page/60 text-primary shrink-0 rounded-[4px] px-2 py-1 text-[10px] font-semibold backdrop-blur-sm">
                         {heroRating.avg.toFixed(1)}
                       </span>

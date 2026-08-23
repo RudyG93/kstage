@@ -116,19 +116,24 @@ async function Winner({ episode }: { episode: Episode }) {
   if (!episode.winner_name) return null
   let slug: string | null = null
   let image: string | null = null
+  let name = episode.winner_name
   if (episode.winner_group_id) {
     const supabase = await createClient()
     const { data } = await supabase
       .from('groups')
-      .select('slug, image_url')
+      .select('slug, name, image_url')
       .eq('id', episode.winner_group_id)
       .maybeSingle()
     slug = data?.slug ?? null
     image = data?.image_url ?? null
+    // Wikipedia écrit « Ateez » et « Zerobaseone » là où l'app dit « ATEEZ » et
+    // « ZEROBASEONE ». Le groupe est déjà résolu ici : autant le NOMMER comme
+    // partout ailleurs. Le nom scrapé ne survit que hors roster.
+    name = data?.name ?? name
   }
   return (
     <WinnerBanner
-      name={episode.winner_name}
+      name={name}
       song={episode.winner_song}
       nth={episode.winner_nth}
       groupSlug={slug}

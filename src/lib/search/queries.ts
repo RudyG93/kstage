@@ -152,10 +152,26 @@ export async function searchGroups(q: string, limit = 5) {
   }
   // Tri par pertinence puis par notoriété (subs YouTube max par groupe) plutôt
   // qu'alphabétique : « les plus connus d'abord » (retour Rudy 2026-07-03).
-  return scored
+  const top = scored
     .sort((a, b) => a.rank - b.rank || (subs.get(b.g.id) ?? 0) - (subs.get(a.g.id) ?? 0))
     .slice(0, limit)
     .map(({ g }) => g)
+
+  // Un soliste n'a pas de page groupe : /groups/[slug] REDIRIGE (307) vers
+  // /artists/[slug]. Sans son slug d'artiste, /search offrait deux cartes vers
+  // la même page — dont une redirection — et le dropdown du header, lui, le
+  // résout déjà (allGroupsForClient.artistSlug). Mesuré sur la prod :
+  // « jennie » rendait /groups/jennie deux fois ET /artists/jennie.
+  const soloIds = top.filter((g) => g.is_solo).map((g) => g.id)
+  if (soloIds.length === 0) return top.map((g) => ({ ...g, artist_slug: null as string | null }))
+  const { data: soloMembers } = await anon()
+    .from('members')
+    .select('group_id, slug')
+    .in('group_id', soloIds)
+    .is('canonical_id', null)
+    .not('slug', 'is', null)
+  const byGroup = new Map((soloMembers ?? []).map((m) => [m.group_id, m.slug]))
+  return top.map((g) => ({ ...g, artist_slug: g.is_solo ? (byGroup.get(g.id) ?? null) : null }))
 }
 
 export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]
@@ -384,15 +400,34 @@ export async function searchMembers(q: string, limit = 8) {
   // EXACTE. « asa » renvoyait Asahi / Masato / Jo — jamais Asa. Le tri par
   // pertinence doit voir un vivier, pas trois lignes arbitraires.
   const pool = Math.max(limit * 4, 24)
-  const [byName, grouped] = await Promise.all([
+
+  // ILIKE ne neutralise pas les diacritiques : « Lea » ne trouvait pas « Léa »
+  // (Léa de STARSEED'Z, introuvable en prod au 2026-08-23), et « Léa » ne
+  // trouvait pas les Lea sans accent. La liste des membres canoniques est déjà
+  // en cache 1 h — on y fait une passe NORMALISÉE, unie aux résultats ILIKE
+  // avant classement plutôt qu'en dernier recours.
+  const norm = normalize(needle)
+  const accentSlugs = norm
+    ? (await getAllMembers())
+        .filter((m) => m.slug && normalize(m.stage_name).includes(norm))
+        .slice(0, pool)
+        .map((m) => m.slug as string)
+    : []
+
+  const [byName, grouped, byAccent] = await Promise.all([
     base()
       .or(`stage_name.ilike.%${needle}%,real_name.ilike.%${needle}%`)
       .order('stage_name')
       .limit(pool),
     byGroup ?? Promise.resolve({ data: [] }),
+    accentSlugs.length > 0 ? base().in('slug', accentSlugs) : Promise.resolve({ data: [] }),
   ])
 
-  const merged = dedupeMembers([...(byName.data ?? []), ...(grouped.data ?? [])])
+  const merged = dedupeMembers([
+    ...(byName.data ?? []),
+    ...(grouped.data ?? []),
+    ...(byAccent.data ?? []),
+  ])
   if (merged.length > 0) return rankMembers(merged, needle).slice(0, limit)
 
   // Rien de franc : dernier recours, approximation sur le nom de scène. La

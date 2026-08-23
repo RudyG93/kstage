@@ -294,6 +294,14 @@ export function CommentItem({
                 parentId={node.id}
                 focusOnMount
                 onCancel={() => setShowReply(false)}
+                // Les reponses sont triees top-first et une racine n'en montre
+                // qu'UNE : une reponse neuve (score 0) partait derriere
+                // « Show N replies » et le formulaire se fermait sur du vide.
+                // Poster ouvre donc le fil.
+                onPosted={() => {
+                  setRepliesOpen(true)
+                  setShowAllReplies(true)
+                }}
                 placeholder={`Reply to ${author}…`}
               />
             </div>
