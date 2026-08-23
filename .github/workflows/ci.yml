@@ -99,7 +99,7 @@ jobs:
       # courte : c'est un artefact de diagnostic, pas une archive.
       - name: Rapport Playwright (si échec)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ github.run_attempt }}
           path: |
