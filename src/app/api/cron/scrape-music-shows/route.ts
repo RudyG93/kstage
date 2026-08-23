@@ -183,19 +183,31 @@ export async function GET(req: Request) {
     // COMBLE que le null — un numéro existant est l'autorité (backfill
     // Wikipedia, round 2026-07-18 : le carrd s'est avéré décalé, « 1295 » du
     // 17/07 = épisode 1299) et ne doit jamais être ré-écrasé.
+    // L'ÉPISODE fait autorité sur l'heure du jour, pas le lineup qui passe.
+    // Sans ça, une source plus tardive qui déclare une autre heure insérait
+    // ses groupes à CETTE heure : l'épisode Inkigayo du 16/08 s'est retrouvé
+    // coupé en deux (6 lignes à 15:25, le vrai créneau, toutes stage-linkées,
+    // et 10 lignes créées le 22/08 — après diffusion — à 12:20). La
+    // réconciliation ne voyait rien : elle dédoublonne PAR GROUPE, et chaque
+    // groupe n'avait bien qu'une ligne.
+    const kstDay = kstDayKey(lineup.startAtIso)
+    let episodeStartIso = lineup.startAtIso
     try {
-      const kstDay = kstDayKey(lineup.startAtIso)
       const { data: existingEp } = await supabase
         .from('show_episodes')
-        .select('episode_number')
+        .select('episode_number, start_at')
         .eq('show_title', showLabel)
         .eq('kst_day', kstDay)
         .maybeSingle()
+      // Une révision d'horaire n'est légitime que TANT QUE l'épisode est à
+      // venir ; une fois diffusé, l'heure enregistrée est de l'histoire.
+      const dejaDiffuse = Date.parse(lineup.startAtIso) < Date.now()
+      if (existingEp?.start_at && dejaDiffuse) episodeStartIso = existingEp.start_at
       await supabase.from('show_episodes').upsert(
         {
           show_title: showLabel,
           kst_day: kstDay,
-          start_at: lineup.startAtIso,
+          start_at: episodeStartIso,
           ...(lineup.episodeNumber != null && existingEp?.episode_number == null
             ? { episode_number: lineup.episodeNumber }
             : {}),
@@ -238,7 +250,7 @@ export async function GET(req: Request) {
       // ni l'index unique ni la réconciliation (keyés start_at) ne voyaient.
       // Un show n'a jamais deux épisodes le même jour : la row du jour est LA
       // row de l'épisode → time-shift = UPDATE, surplus historique = purge.
-      const { from: dayFrom, to: dayTo } = kstDayBounds(lineup.startAtIso)
+      const { from: dayFrom, to: dayTo } = kstDayBounds(episodeStartIso)
       const { data: existingRows } = await supabase
         .from('events')
         .select('id, start_at, episode_number')
@@ -251,7 +263,7 @@ export async function GET(req: Request) {
         .order('created_at', { ascending: true })
       const sameDay = existingRows ?? []
       const exact = sameDay.find(
-        (r) => new Date(r.start_at).getTime() === Date.parse(lineup.startAtIso),
+        (r) => new Date(r.start_at).getTime() === Date.parse(episodeStartIso),
       )
       const surplus = sameDay.filter((r) => r !== (exact ?? sameDay[0]))
 
@@ -274,7 +286,7 @@ export async function GET(req: Request) {
         const { error: updErr } = await supabase
           .from('events')
           .update({
-            start_at: lineup.startAtIso,
+            start_at: episodeStartIso,
             // Même règle que show_episodes : le carrd ne comble que le null
             // (et ne peut plus NULLIFIER un numéro existant — bug corrigé).
             ...(sameDay[0].episode_number == null && lineup.episodeNumber != null
@@ -298,7 +310,7 @@ export async function GET(req: Request) {
         type: 'music_show',
         title: showLabel,
         episode_number: lineup.episodeNumber,
-        start_at: lineup.startAtIso,
+        start_at: episodeStartIso,
         status: lineup.isHighlight ? 'tentative' : 'confirmed',
       })
       if (insertErr) {

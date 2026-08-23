@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isUntitledRelease,
+  matchGroups,
   resolveNearDup,
   shouldUpgradeTitle,
   type NearDupRow,
@@ -134,5 +135,48 @@ describe('shouldUpgradeTitle — cas NCT 127 / BLINGY', () => {
         'OURBIRTHDAY',
       ),
     ).toBe(true)
+  })
+})
+
+// Attribution d'un comeback à un ou plusieurs groupes (balayage 2026-08-23).
+describe('matchGroups', () => {
+  const G = [
+    { id: 'bp', slug: 'blackpink', name: 'BLACKPINK' },
+    { id: 'jn', slug: 'jennie', name: 'Jennie' },
+    { id: 'sk', slug: 'stray-kids', name: 'Stray Kids' },
+    { id: 'ae', slug: 'aespa', name: 'aespa' },
+  ]
+
+  it('match direct', () => {
+    expect(matchGroups('aespa', G).map((g) => g.slug)).toEqual(['aespa'])
+  })
+
+  it("l'édition japonaise ne change pas le groupe", () => {
+    expect(matchGroups('aespa (JP)', G).map((g) => g.slug)).toEqual(['aespa'])
+  })
+
+  it("l'édition CORÉENNE non plus — elle était lue comme un nom de groupe et le comeback tombait", () => {
+    expect(matchGroups('aespa (KR)', G).map((g) => g.slug)).toEqual(['aespa'])
+    expect(matchGroups('aespa (Korean)', G).map((g) => g.slug)).toEqual(['aespa'])
+  })
+
+  it('une collab donne un event par groupe', () => {
+    expect(
+      matchGroups('aespa x BLACKPINK', G)
+        .map((g) => g.slug)
+        .sort(),
+    ).toEqual(['aespa', 'blackpink'])
+  })
+
+  it("un soliste qui a sa fiche garde sa sortie : elle n'appartient pas au groupe parent", () => {
+    expect(matchGroups('Jennie (BLACKPINK)', G).map((g) => g.slug)).toEqual(['jennie'])
+  })
+
+  it("un membre SANS fiche se rattache au parent (le repli d'origine)", () => {
+    expect(matchGroups('HAN (Stray Kids)', G).map((g) => g.slug)).toEqual(['stray-kids'])
+  })
+
+  it('un artiste inconnu ne rattache rien', () => {
+    expect(matchGroups('Groupe Inexistant', G)).toEqual([])
   })
 })

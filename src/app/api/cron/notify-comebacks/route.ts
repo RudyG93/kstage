@@ -137,22 +137,34 @@ export async function GET(req: Request) {
   let removed = 0
   let failed = 0
   for (const { subscription, payload, record } of messages) {
+    // La marque d'idempotence se pose AVANT l'envoi. Posée après, son échec
+    // passait inaperçu (l'`error` n'était jamais lu) et le MÊME push J-1
+    // repartait à chaque run : l'unique ne protège que d'un insert qui
+    // aboutit. Un conflit ici = un autre run vient de traiter ce trigger.
+    const marque = { user_id: record.userId, event_id: record.eventId, kind: record.kind }
+    const { error: markErr } = await supabase.from('event_notifications').insert(marque)
+    if (markErr) {
+      // 23505 = déjà marqué par un run concurrent : ce n'est pas un échec.
+      if (markErr.code !== '23505') failed += 1
+      continue
+    }
+
     const res = await sendPush(supabase, subscription, payload)
-    if (res === 'removed') {
-      removed += 1
+    if (res === 'sent') {
+      sent += 1
       continue
     }
-    if (res !== 'sent') {
-      failed += 1
-      continue
-    }
-    sent += 1
-    // Marque le trigger comme envoyé (l'unique couvre les races inter-runs).
-    await supabase.from('event_notifications').insert({
-      user_id: record.userId,
-      event_id: record.eventId,
-      kind: record.kind,
-    })
+    // Envoi raté : on retire la marque pour que le prochain run retente.
+    // « removed » (endpoint mort) n'est pas un échec — la souscription vient
+    // d'être purgée, il n'y a rien à retenter.
+    await supabase
+      .from('event_notifications')
+      .delete()
+      .eq('user_id', marque.user_id)
+      .eq('event_id', marque.event_id)
+      .eq('kind', marque.kind)
+    if (res === 'removed') removed += 1
+    else failed += 1
   }
 
   // Observabilité (Lot 4/5) : le run alimente scrape_log comme les scrapers —

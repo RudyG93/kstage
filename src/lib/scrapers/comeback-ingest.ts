@@ -48,7 +48,11 @@ export function matchGroup(artist: string, groups: readonly GroupRef[]): GroupRe
 }
 
 // Suffixes d'édition accolés au nom : « aespa (JP) », « ATEEZ (JP) »…
-const EDITION_SUFFIX_RE = /\s*\((JP|Japan|CN|China|US|EN|Virtual)\)\s*$/i
+// « KR » manquait : la branche suivante lit alors « KR » comme un NOM DE
+// GROUPE entre parenthèses, ne trouve rien, et le comeback est jeté sans un
+// mot. Les éditions coréennes sont annoncées comme les autres.
+const EDITION_SUFFIX_RE =
+  /\s*\((JP|Japan|Japanese|KR|Korea|Korean|CN|China|Chinese|US|EN|English|Virtual)\)\s*$/i
 
 /**
  * Matching élargi (P0.5) — récupère 3 patterns en plus du match exact :
@@ -77,10 +81,15 @@ export function matchGroups(artist: string, groups: readonly GroupRef[]): GroupR
     }
   }
 
-  // Solo de membre : « NAME (GROUP) » → match du groupe entre parenthèses.
-  const paren = artist.match(/^.+?\(([^)]+)\)\s*$/)?.[1]
+  // Solo de membre : « NAME (GROUP) ». Le soliste D'ABORD — s'il a sa propre
+  // fiche au roster, la sortie est la sienne : l'attribuer au groupe parent
+  // la posait sur la mauvaise page ET la dupliquait au calendrier de qui suit
+  // les deux. Le parent ne sert que de repli, pour un membre sans fiche.
+  const paren = artist.match(/^(.+?)\(([^)]+)\)\s*$/)
   if (paren) {
-    const parent = matchGroup(paren, groups)
+    const soliste = matchGroup(paren[1], groups)
+    if (soliste) return [soliste]
+    const parent = matchGroup(paren[2], groups)
     if (parent) return [parent]
   }
 
