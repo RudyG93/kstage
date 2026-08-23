@@ -192,21 +192,37 @@ export async function GET(req: Request) {
 
   // Une ligne par user servi (multi-device = 1 seule ligne) ; ignoreDuplicates
   // couvre la course inter-runs sur l'unique (user_id, day_key, edition).
+  let logError: string | null = null
   if (servedUsers.size > 0) {
-    await supabase.from('digest_log').upsert(
+    // L'erreur n'est plus avalée : `digest_log` porte l'IDEMPOTENCE du digest.
+    // Si l'écriture échoue en silence, le run suivant ré-envoie à tout le
+    // monde — et personne ne le sait. La table était à 0 ligne le 2026-08-23
+    // alors que cinq runs avaient rapporté `sent: 2`.
+    const { error: logErr } = await supabase.from('digest_log').upsert(
       [...servedUsers].map((userId) => ({ user_id: userId, day_key: dayKey, edition })),
       { onConflict: 'user_id,day_key,edition', ignoreDuplicates: true },
     )
+    if (logErr) {
+      logError = logErr.message
+      console.error('[send-digest] digest_log upsert failed', logErr)
+    }
   }
 
   // Observabilité (Lot 4/5) : alimente scrape_log pour le cron monitor.
   const status =
-    messages.length > 0 && sent === 0 && failed > 0 ? 'error' : failed > 0 ? 'partial' : 'ok'
+    messages.length > 0 && sent === 0 && failed > 0
+      ? 'error'
+      : failed > 0 || logError
+        ? 'partial'
+        : 'ok'
   await logScrapeRun(supabase, {
     source: 'send_digest',
     status,
     startedAt: now.toISOString(),
-    errorMsg: failed > 0 ? `${failed} push failed` : undefined,
+    errorMsg:
+      [failed > 0 ? `${failed} push failed` : null, logError && `digest_log: ${logError}`]
+        .filter(Boolean)
+        .join(' · ') || undefined,
     details: { edition, candidates: messages.length, sent, removed, failed, skipped },
   })
 

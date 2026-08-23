@@ -44,6 +44,30 @@ export async function savePushSubscription(sub: PushSubscriptionInput) {
   if (error) throw error
 }
 
+/**
+ * La base connaît-elle CET endpoint pour CE user ?
+ *
+ * Les deux composants d'opt-in décidaient de l'état affiché à partir du seul
+ * `pushManager.getSubscription()` — l'état du NAVIGATEUR. Le 2026-08-23, la
+ * table était vide alors que le bouton affichait « Disable » : l'utilisateur
+ * se croyait abonné, aucun envoi n'était possible, et rien ne le disait.
+ */
+export async function isPushEndpointRegistered(endpoint: string): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint')
+    .eq('user_id', user.id)
+    .eq('endpoint', endpoint)
+    .maybeSingle()
+  if (error) throw error
+  return Boolean(data)
+}
+
 // Types acceptés par l'action. L'UI expose les quatre catégories du lancement ;
 // live reste accepté pour les anciennes préférences et la compatibilité interne.
 const PREF_TYPES = ['mv', 'release', 'music_show', 'anniversary', 'live'] as const

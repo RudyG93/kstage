@@ -1,36 +1,17 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { BellIcon, BellOffIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  getExistingSubscription,
-  pushSupported,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from '@/lib/notifications/subscribe'
+import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/subscribe'
+import { usePushState } from '@/lib/notifications/use-push-state'
 
 export function PushToggle() {
-  const [supported, setSupported] = useState<boolean | null>(null)
-  const [enabled, setEnabled] = useState(false)
-  const [denied, setDenied] = useState(false)
+  // État réconcilié navigateur ↔ base : un abonnement navigateur sans ligne
+  // en base ne reçoit rien, et le bouton affichait quand même « Disable ».
+  const { supported, enabled, denied, setEnabled, setDenied } = usePushState()
   const [failed, setFailed] = useState(false)
   const [pending, startTransition] = useTransition()
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const sub = await getExistingSubscription()
-      if (cancelled) return
-      const sup = pushSupported()
-      setSupported(sup)
-      setEnabled(Boolean(sub))
-      if (sup && Notification.permission === 'denied') setDenied(true)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   if (supported === null) return null
 
