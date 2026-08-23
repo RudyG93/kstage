@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectInfoboxKind, parseAgency } from './fandom'
+import { detectInfoboxKind, field, parseAgency } from './fandom'
 
 describe('detectInfoboxKind', () => {
   it('{{Infobox person}} = artiste (Yves, pages membres)', () => {
@@ -58,5 +58,35 @@ describe('parseAgency', () => {
 
   it('champ vide → null', () => {
     expect(parseAgency('  ')).toBeNull()
+  })
+})
+
+describe('field — un champ vide ne déborde pas sur le suivant', () => {
+  // Wikitext RECOPIÉ de la page QQQ (2026-08-23) : `| label` est vide et le
+  // champ suivant partait dans l'agence. Le défaut valait pour tout champ vide.
+  const QQQ = `{{Group infobox
+| name        = QQQ
+| years       = 2025–present
+| label       = 
+| current     = 
+* [[KB]]
+* [[Jisung (QQQ)|Jisung]]
+| fandom      = 
+| colors      = 
+}}`
+
+  it('rend une chaîne vide, pas le contenu du champ suivant', () => {
+    expect(field(QQQ, 'label')).toBe('')
+    expect(field(QQQ, 'fandom')).toBe('')
+  })
+
+  it('lit toujours correctement un champ renseigné', () => {
+    expect(field(QQQ, 'name')).toBe('QQQ')
+    expect(field(QQQ, 'years')).toBe('2025–present')
+    expect(field(QQQ, 'current')).toContain('[[KB]]')
+  })
+
+  it('un champ absent reste null', () => {
+    expect(field(QQQ, 'agency')).toBeNull()
   })
 })

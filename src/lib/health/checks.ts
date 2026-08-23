@@ -1088,6 +1088,34 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
+  // 15. Couverture des métadonnées de groupe (2026-08-23).
+  //
+  // `agency` vient du scraper de debuts, qui ne visite QUE les nouveaux
+  // groupes : la couverture était à l'envers (97/106 rookies contre 5/41
+  // vétérans). Sans ce check, elle re-pourrit au fil des ajouts manuels et
+  // personne ne le voit — la page d'un groupe culte affiche « debut 2013 » nu
+  // pendant qu'un rookie inconnu affiche son agence.
+  // `info` : c'est un backlog de complétude, pas un incident.
+  {
+    const { data: metaRows } = await supabase
+      .from('groups')
+      .select('name, agency, fandom_name, debut_date')
+      .eq('is_solo', false)
+      .is('disbanded_on', null)
+      .neq('confidence', 'candidate')
+    const rows = metaRows ?? []
+    const missing = rows.filter((g) => !g.agency?.trim())
+    checks.push({
+      id: 'group_meta_coverage',
+      label: 'Groupes sans agence',
+      severity: 'info',
+      count: missing.length,
+      sample: missing
+        .slice(0, SAMPLE_MAX)
+        .map((g) => `${g.name}${g.debut_date ? ` (debut ${g.debut_date.slice(0, 4)})` : ''}`),
+    })
+  }
+
   return { generatedAt: nowIso, checks }
 }
 

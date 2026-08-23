@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { BellIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { IosInstallHint } from '@/components/notifications/ios-install-hint'
+import { InstallPrompt } from '@/components/notifications/install-prompt'
 import { pushSupported, subscribeToPush } from '@/lib/notifications/subscribe'
 import { sendProductEvent } from '@/components/analytics/beacon'
 
@@ -100,7 +100,7 @@ export function NotificationsOptIn({ onDone }: { onDone: () => void }) {
         <div className="mx-auto flex max-w-sm flex-col items-center gap-4">
           {/* iOS Safari hors standalone : le push exige l'install — on guide.
               Autres environnements non supportés : le hint ne rend rien. */}
-          <IosInstallHint />
+          <InstallPrompt />
           <Button type="button" onClick={onDone}>
             Continue
           </Button>

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { AccountForm } from '@/components/account/account-form'
 import { ChangePasswordForm } from '@/components/account/change-password-form'
-import { IosInstallHint } from '@/components/notifications/ios-install-hint'
+import { InstallPrompt } from '@/components/notifications/install-prompt'
 import { PushToggle } from '@/components/notifications/push-toggle'
 import { NotificationPrefs } from '@/components/notifications/notification-prefs'
 import { CalendarFeed } from '@/components/account/calendar-feed'
@@ -46,7 +46,7 @@ export default async function AccountPage() {
 
         <section className="space-y-3">
           <h2 className="font-heading text-lg font-semibold tracking-tight">Notifications</h2>
-          <IosInstallHint />
+          <InstallPrompt />
           <PushToggle />
           <NotificationPrefs initial={notificationPrefs} />
           <CalendarFeed feedUrl={feedUrl} />
