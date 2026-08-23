@@ -91,7 +91,8 @@ export function resolveGroupTokens(
   return { groupIds: [...groupIds], titleTokens }
 }
 
-const GROUP_SELECT = 'id, slug, name, agency, image_url, color_hex, is_solo, name_aliases'
+const GROUP_SELECT =
+  'id, slug, artist_slug, name, agency, image_url, color_hex, is_solo, name_aliases'
 
 // Alias de graphies courantes que la normalisation seule ne couvre pas
 // ((G)I-DLE → « gidle » ≠ « idle »). Aligné sur GROUP_ALIASES du scraping.
@@ -152,26 +153,14 @@ export async function searchGroups(q: string, limit = 5) {
   }
   // Tri par pertinence puis par notoriété (subs YouTube max par groupe) plutôt
   // qu'alphabétique : « les plus connus d'abord » (retour Rudy 2026-07-03).
-  const top = scored
+  // `artist_slug` (0068) porte la cible réelle d'un soliste : /groups/[slug]
+  // REDIRIGE (307) vers /artists/[slug]. Sans elle, /search offrait deux
+  // cartes vers la même page — dont une redirection. La colonne remplace la
+  // requête `members` que cette fonction faisait à chaque frappe.
+  return scored
     .sort((a, b) => a.rank - b.rank || (subs.get(b.g.id) ?? 0) - (subs.get(a.g.id) ?? 0))
     .slice(0, limit)
     .map(({ g }) => g)
-
-  // Un soliste n'a pas de page groupe : /groups/[slug] REDIRIGE (307) vers
-  // /artists/[slug]. Sans son slug d'artiste, /search offrait deux cartes vers
-  // la même page — dont une redirection — et le dropdown du header, lui, le
-  // résout déjà (allGroupsForClient.artistSlug). Mesuré sur la prod :
-  // « jennie » rendait /groups/jennie deux fois ET /artists/jennie.
-  const soloIds = top.filter((g) => g.is_solo).map((g) => g.id)
-  if (soloIds.length === 0) return top.map((g) => ({ ...g, artist_slug: null as string | null }))
-  const { data: soloMembers } = await anon()
-    .from('members')
-    .select('group_id, slug')
-    .in('group_id', soloIds)
-    .is('canonical_id', null)
-    .not('slug', 'is', null)
-  const byGroup = new Map((soloMembers ?? []).map((m) => [m.group_id, m.slug]))
-  return top.map((g) => ({ ...g, artist_slug: g.is_solo ? (byGroup.get(g.id) ?? null) : null }))
 }
 
 export type SearchGroup = Awaited<ReturnType<typeof searchGroups>>[number]
@@ -188,7 +177,9 @@ export const allGroupsForClient = unstable_cache(
     // dans unstable_cache). Groupes + subs en une passe, tri par notoriété.
     const supabase = anon()
     const [{ data: groups }, { data: sources }] = await Promise.all([
-      supabase.from('groups').select('id, slug, name, image_url, is_solo, name_aliases'),
+      supabase
+        .from('groups')
+        .select('id, slug, artist_slug, name, image_url, is_solo, name_aliases'),
       supabase
         .from('sources')
         .select('group_id, subscriber_count')
@@ -200,18 +191,19 @@ export const allGroupsForClient = unstable_cache(
       if (!row.group_id || row.subscriber_count == null) continue
       subs.set(row.group_id, Math.max(subs.get(row.group_id) ?? 0, row.subscriber_count))
     }
-    // Solistes : résoudre le membre canonique (slug /artists/ + photo self-host)
-    // — un soliste apparaissait en DOUBLE (groupe + membre) dans le dropdown,
-    // avec deux photos et deux hrefs vers la même page (retour Rudy 2026-07-17).
+    // Solistes : la PHOTO self-hostée vit sur le membre (le slug, lui, est
+    // maintenant sur groups.artist_slug — 0068). Un soliste apparaissait en
+    // DOUBLE (groupe + membre) dans le dropdown, avec deux photos et deux
+    // hrefs vers la même page (retour Rudy 2026-07-17).
     const soloIds = (groups ?? []).filter((g) => g.is_solo).map((g) => g.id)
     const { data: soloMembers } = soloIds.length
       ? await supabase
           .from('members')
-          .select('group_id, slug, photo_url')
+          .select('group_id, photo_url')
           .in('group_id', soloIds)
           .is('canonical_id', null)
           .not('slug', 'is', null)
-      : { data: [] as { group_id: string; slug: string | null; photo_url: string | null }[] }
+      : { data: [] as { group_id: string; photo_url: string | null }[] }
     const soloByGroup = new Map((soloMembers ?? []).map((m) => [m.group_id, m]))
     return (groups ?? [])
       .map((g) => ({ g, subs: subs.get(g.id) ?? 0 }))
@@ -224,7 +216,7 @@ export const allGroupsForClient = unstable_cache(
           image: solo?.photo_url ?? g.image_url,
           isSolo: g.is_solo,
           // Href canonique d'un soliste (/groups/[slug] redirige déjà dessus).
-          artistSlug: solo?.slug ?? null,
+          artistSlug: g.artist_slug,
           // Alias NORMALISÉS côté serveur : le filtre du header utilise un
           // `normLite` en `[^a-z0-9]`, qui réduit « 방탄소년단 » à la chaîne
           // vide. On envoie donc la forme déjà comparable, et le client se
@@ -333,7 +325,7 @@ export async function searchMvs(q: string, limit = 6, opts: { withRatings?: bool
 export type SearchMv = Awaited<ReturnType<typeof searchMvs>>[number]
 
 const EVENT_SELECT =
-  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, stage_url, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, stage_url, groups!inner(slug, artist_slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 export async function searchEvents(q: string, limit = 6) {
   const needle = sanitizeIlike(q)

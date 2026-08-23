@@ -7,7 +7,7 @@ import type { Database } from '@/types/database'
 type EventType = Database['public']['Enums']['event_type']
 
 const EVENT_SELECT =
-  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, stage_url, groups!inner(slug, name, color_hex, image_url, image_landscape, banner_url)'
+  'id, group_id, slug, title, type, start_at, status, episode_number, source_url, stage_url, groups!inner(slug, artist_slug, name, color_hex, image_url, image_landscape, banner_url)'
 
 // Predicate appliqué partout sauf getGroupMvs (cf. matrice §8 SCRAPING.md) :
 // les MVs `main` + les non-MV (mv_kind=NULL) sont visibles. Les versions
@@ -137,7 +137,7 @@ export async function getRecentComebacks(limit = 3) {
 }
 
 const MV_SELECT =
-  'id, slug, title, type, start_at, source_url, image_url, mv_kind, groups!inner(slug, name, color_hex, image_url)'
+  'id, slug, title, type, start_at, source_url, image_url, mv_kind, groups!inner(slug, artist_slug, name, color_hex, image_url)'
 
 /**
  * Tous les MVs d'un groupe (passés inclus), pour la section "Music videos"
@@ -730,7 +730,7 @@ export async function getRecentlyCommentedEvents(limit = 12) {
   const [eventsRes, countsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, slug, title, type, image_url, source_url, groups!inner(slug, name)')
+      .select('id, slug, title, type, image_url, source_url, groups!inner(slug, artist_slug, name)')
       .in('id', ids)
       .eq('hidden', false),
     supabase.from('comments').select('event_id').is('deleted_at', null).in('event_id', ids),

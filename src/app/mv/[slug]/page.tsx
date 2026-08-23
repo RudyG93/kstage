@@ -34,6 +34,7 @@ import { PageRails } from '@/components/layout/page-rails'
 import { RailStack } from '@/components/rails/rail-stack'
 import { SpotlightBlock } from '@/components/rails/discovery-blocks'
 import { CommentSection } from '@/components/mv/comments/comment-section'
+import { groupHref } from '@/lib/events/href'
 
 async function loadMv(slug: string) {
   const event = await getEventBySlug(slug)
@@ -77,10 +78,12 @@ const getRailData = cache(async (groupSlug: string, excludeId: string) => {
 /** Rail droit streamé — catalogue du groupe, repli SidebarRight si vide. */
 async function MvRail({
   groupSlug,
+  groupArtistSlug,
   groupName,
   excludeId,
 }: {
   groupSlug: string
+  groupArtistSlug: string | null
   groupName: string
   excludeId: string
 }) {
@@ -103,6 +106,7 @@ async function MvRail({
     <MvRightRail
       groupName={groupName}
       groupSlug={groupSlug}
+      groupArtistSlug={groupArtistSlug}
       mvs={railMvs.slice(0, 9)}
       ratings={ratings}
       timeZone={timeZone}
@@ -174,9 +178,7 @@ async function MvBody({
         trail={[
           { name: 'Home', path: '/' },
           { name: 'Drops', path: '/mvs' },
-          ...(group?.slug && group.name
-            ? [{ name: group.name, path: `/groups/${group.slug}` }]
-            : []),
+          ...(group?.slug && group.name ? [{ name: group.name, path: groupHref(group) }] : []),
           { name: title, path: `/mv/${event.slug}` },
         ]}
       />
@@ -213,7 +215,7 @@ async function MvBody({
           </h1>
           <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-[10px]">
             <Link
-              href={`/groups/${group?.slug ?? ''}`}
+              href={groupHref(group ?? {}) as Route}
               className="hover:text-foreground inline-flex items-center gap-1.5 font-medium"
             >
               {group?.image_url ? (
@@ -279,7 +281,7 @@ async function MvBody({
           <div className="flex items-baseline justify-between">
             <h2 className="label-data">More from {group?.name}</h2>
             <Link
-              href={`/groups/${group?.slug ?? ''}`}
+              href={groupHref(group ?? {}) as Route}
               className="label-data-inline text-primary hover:text-primary/80 text-[10px] font-semibold transition-colors"
             >
               All MVs →
@@ -337,7 +339,12 @@ export default async function MvPage({
     <PageRails
       right={
         group?.slug ? (
-          <MvRail groupSlug={group.slug} groupName={group.name} excludeId={event.id} />
+          <MvRail
+            groupSlug={group.slug}
+            groupArtistSlug={group.artist_slug}
+            groupName={group.name}
+            excludeId={event.id}
+          />
         ) : undefined
       }
     >
@@ -357,7 +364,7 @@ export default async function MvPage({
             )}
             <BackButton
               className="absolute top-3 left-3 z-10"
-              fallbackHref={group?.slug ? (`/groups/${group.slug}` as Route) : '/'}
+              fallbackHref={group?.slug ? (groupHref(group) as Route) : '/'}
             />
           </div>
 

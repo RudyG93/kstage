@@ -69,7 +69,9 @@ export async function getCareerPath(canonicalId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('members')
-    .select('id, slug, status, former_reason, position, groups!inner(slug, name, color_hex)')
+    .select(
+      'id, slug, status, former_reason, position, groups!inner(slug, artist_slug, name, color_hex)',
+    )
     .or(`id.eq.${canonicalId},canonical_id.eq.${canonicalId}`)
   if (error) throw error
   const priority: Record<string, number> = { active: 0, deceased: 0, pre_debut: 1, former: 2 }

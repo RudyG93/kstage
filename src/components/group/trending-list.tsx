@@ -1,8 +1,10 @@
 import Image from 'next/image'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { Panel, PanelHeader } from '@/components/ui/panel'
 import { FollowButton } from '@/components/follow-button'
 import { faceCrop } from '@/lib/images/cloudinary'
+import { groupHref } from '@/lib/events/href'
 import { cn } from '@/lib/utils'
 import type { GroupCardData } from '@/components/group-card'
 
@@ -42,7 +44,7 @@ export function TrendingList({
         {entries.map(({ group, isFollowing, reason }, i) => (
           <li key={group.id} className="relative border-b last:border-b-0">
             <Link
-              href={`/groups/${group.slug}`}
+              href={groupHref(group) as Route}
               className="hover:bg-secondary/60 flex min-h-[44px] items-center gap-2.5 py-1.5 pr-12 pl-3 transition-colors"
             >
               <span

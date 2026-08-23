@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, BellRing, CalendarPlus, HeartIcon } from 'lucide-react'
@@ -12,6 +13,7 @@ import type { GroupSummary } from '@/lib/groups/queries'
 import type { UpcomingEvent } from '@/lib/events/queries'
 import type { SourcesStatus } from '@/lib/sources/queries'
 import { compactNumber } from '@/lib/utils'
+import { groupHref } from '@/lib/events/href'
 
 const STEPS = [
   {
@@ -140,7 +142,7 @@ export function Landing({
             {wallGroups.map((g) => (
               <Link
                 key={g.id}
-                href={`/groups/${g.slug}`}
+                href={groupHref(g) as Route}
                 aria-label={g.name}
                 className="focus-visible:ring-ring/50 group relative aspect-square overflow-hidden rounded-lg outline-none focus-visible:ring-2"
               >
