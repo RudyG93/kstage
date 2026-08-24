@@ -1067,9 +1067,13 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
   // plus utile qu'un top.
   {
     const since = new Date(now.getTime() - 24 * 3_600_000).toISOString()
-    const { data: errors } = await supabase
+    // `count: 'exact'` et non `rows.length` : la requête ramène 50 lignes pour
+    // l'échantillon, et compter ces lignes-là affichait « 50 » qu'il y en ait
+    // 50 ou 5 000. Le chiffre est resté figé à 50 pendant un mois — un
+    // indicateur qui ne bouge jamais n'informe plus, il décore.
+    const { data: errors, count: total } = await supabase
       .from('error_log')
-      .select('message, path, route_type, created_at')
+      .select('message, path, route_type, created_at', { count: 'exact' })
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -1078,7 +1082,7 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
       id: 'server_errors_24h',
       label: 'Erreurs serveur (24 h)',
       severity: 'warn',
-      count: rows.length,
+      count: total ?? rows.length,
       sample: rows
         .slice(0, 5)
         .map(

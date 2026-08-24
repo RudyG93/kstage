@@ -20,6 +20,26 @@ import type { Instrumentation } from 'next'
  *  - **aucune donnée personnelle** : ni IP, ni User-Agent, ni corps de requête.
  *    Le chemin peut porter une query — on le tronque à son pathname.
  */
+
+/**
+ * Ce qui n'est PAS une erreur serveur.
+ *
+ * « The destination stream closed early » = le visiteur a fermé l'onglet ou
+ * navigué ailleurs pendant qu'une page streamait. C'est un comportement
+ * normal, pas un incident — et sur les pages en Suspense c'est même fréquent.
+ *
+ * Non filtré, ça a rempli **517 lignes sur 517** du journal en 24 h : 100 % du
+ * bruit, 0 % de signal. Le check `server_errors_24h` affichait donc un ambre
+ * permanent qui ne voulait rien dire, et noyait ce qu'il fallait voir.
+ */
+const BRUIT_CLIENT = [
+  'The destination stream closed early',
+  'aborted',
+  'ECONNRESET',
+  'The user aborted a request',
+]
+
+const estDuBruit = (message: string) => BRUIT_CLIENT.some((m) => message.includes(m))
 export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
   if (process.env.GITHUB_ACTIONS === 'true') return
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -28,6 +48,7 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
 
   try {
     const message = err instanceof Error ? err.message : String(err)
+    if (estDuBruit(message)) return
     const digest =
       typeof err === 'object' && err !== null && 'digest' in err ? String(err.digest) : null
     const stack = err instanceof Error ? (err.stack ?? null) : null
