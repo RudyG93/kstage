@@ -1,14 +1,14 @@
 'use client'
 
-// Client depuis R5 : le tri Top/New se fait en mémoire (sortTree pur) au lieu
+// Client depuis R5 : le tri Top/New se fait en mémoire (tri pur) au lieu
 // d'une navigation ?sort= qui re-rendait la page entière.
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CommentCompose } from './comment-compose'
-import { CommentItem } from './comment-item'
+import { CommentThread } from './comment-thread'
 import { SortToggle } from './sort-toggle'
-import { countVisible, sortTree, type CommentNode, type SortMode } from '@/lib/comments/tree'
+import { countVisible, sortThreads, type CommentNode, type SortMode } from '@/lib/comments/tree'
 
 interface Props {
   // Cible : event (MV) OU épisode de music show (Lot N 2026-07-17).
@@ -19,7 +19,7 @@ interface Props {
   path?: string
   isAuthed: boolean
   viewerId: string | null
-  roots: CommentNode[]
+  threads: CommentNode[]
   initialSort: SortMode
   // Note posée par chaque auteur sur CET event → badge amber (§7.7.4).
   ratingsByUser?: Record<string, number>
@@ -32,18 +32,19 @@ export function CommentSection({
   path = '',
   isAuthed,
   viewerId,
-  roots,
+  threads,
   initialSort,
   ratingsByUser = {},
 }: Props) {
   const [sort, setSort] = useState<SortMode>(initialSort)
-  // Le serveur livre l'arbre déjà trié selon initialSort → premier rendu
+  // Le serveur livre les fils déjà triés selon initialSort → premier rendu
   // identique (pas de mismatch d'hydratation) ; on ne re-trie qu'au toggle.
-  const sorted = useMemo(
-    () => (sort === initialSort ? roots : sortTree(roots, sort)),
-    [roots, sort, initialSort],
+  const tries = useMemo(
+    () => (sort === initialSort ? threads : sortThreads(threads, sort)),
+    [threads, sort, initialSort],
   )
-  const count = countVisible(sorted)
+  const count = countVisible(tries)
+
   return (
     <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -53,18 +54,40 @@ export function CommentSection({
         <h2 id="comments-heading" className="label-data">
           Discussion{count > 0 ? ` — ${count}` : ''}
         </h2>
-        <SortToggle sort={sort} onChange={setSort} />
+        {/* Trier deux commentaires n'a pas de sens : le contrôle n'apparaît
+            qu'à partir du moment où il change quelque chose. */}
+        {tries.length > 2 && <SortToggle sort={sort} onChange={setSort} />}
       </div>
 
-      {sorted.length === 0 ? (
+      {/* Le composer passe EN TÊTE : il était en pied, donc sous la liste
+          entière — sur une page qui invite à réagir, l'invitation ne se lit
+          pas après avoir fait défiler la discussion. */}
+      {isAuthed ? (
+        <CommentCompose
+          eventId={eventId}
+          episodeId={episodeId}
+          slug={slug}
+          path={path}
+          placeholder="Share what you think about this release…"
+        />
+      ) : (
+        <p className="text-muted-foreground bg-card/40 rounded-lg border p-3 text-sm">
+          <Link href="/login" className="text-primary underline underline-offset-2">
+            Sign in
+          </Link>{' '}
+          to join the discussion.
+        </p>
+      )}
+
+      {tries.length === 0 ? (
         <EmptyState
           title="No comments yet"
           description="Be the first to share what you think about this release."
         />
       ) : (
-        <div className="space-y-4">
-          {sorted.map((node) => (
-            <CommentItem
+        <div className="space-y-2.5">
+          {tries.map((node) => (
+            <CommentThread
               key={node.id}
               node={node}
               eventId={eventId}
@@ -77,26 +100,6 @@ export function CommentSection({
             />
           ))}
         </div>
-      )}
-
-      {/* Composer en pied de discussion (§7.7.4). */}
-      {isAuthed ? (
-        <div className="border-t pt-3">
-          <CommentCompose
-            eventId={eventId}
-            episodeId={episodeId}
-            slug={slug}
-            path={path}
-            placeholder="Join the discussion…"
-          />
-        </div>
-      ) : (
-        <p className="text-muted-foreground border-t pt-3 text-sm">
-          <Link href="/login" className="text-primary underline-offset-2 hover:underline">
-            Sign in
-          </Link>{' '}
-          to join the discussion.
-        </p>
       )}
     </section>
   )

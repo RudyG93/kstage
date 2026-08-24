@@ -1151,6 +1151,13 @@ export type Database = {
         Args: { p_action: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      comment_scores: {
+        Args: { ids: string[] }
+        Returns: {
+          comment_id: string
+          score: number
+        }[]
+      }
       group_event_counts: {
         Args: never
         Returns: {

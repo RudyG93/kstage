@@ -1,6 +1,6 @@
 'use client'
 
-import { useOptimistic, useTransition } from 'react'
+import { useOptimistic, useState, useTransition } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { voteComment } from '@/lib/comments/actions'
@@ -47,6 +47,8 @@ export function VoteButtons({
     },
   )
 
+  const [erreur, setErreur] = useState<string | null>(null)
+
   function submit(value: -1 | 1) {
     if (!isAuthed || isOwn) return
     startTransition(async () => {
@@ -56,7 +58,10 @@ export function VoteButtons({
       fd.set('slug', slug)
       fd.set('path', path)
       fd.set('value', String(value))
-      await voteComment(null, fd)
+      const res = await voteComment(null, fd)
+      // Un vote refusé revenait en silence : le chiffre sautait à sa valeur
+      // d'origine sans un mot, et l'utilisateur croyait à un bug d'affichage.
+      setErreur(res && 'error' in res ? res.error : null)
     })
   }
 
@@ -82,7 +87,7 @@ export function VoteButtons({
         aria-pressed={opt.userVote === 1}
         aria-label="Upvote"
         className={cn(
-          'focus-visible:ring-primary/50 rounded p-1 outline-none focus-visible:ring-2',
+          'focus-visible:ring-primary/50 flex min-h-6 min-w-6 items-center justify-center rounded outline-none focus-visible:ring-2',
           opt.userVote === 1 ? 'text-teal' : 'hover:text-foreground',
           !isAuthed && 'cursor-not-allowed opacity-60',
         )}
@@ -107,13 +112,18 @@ export function VoteButtons({
         aria-pressed={opt.userVote === -1}
         aria-label="Downvote"
         className={cn(
-          'focus-visible:ring-primary/50 rounded p-1 outline-none focus-visible:ring-2',
+          'focus-visible:ring-primary/50 flex min-h-6 min-w-6 items-center justify-center rounded outline-none focus-visible:ring-2',
           opt.userVote === -1 ? 'text-destructive' : 'hover:text-foreground',
           !isAuthed && 'cursor-not-allowed opacity-60',
         )}
       >
         <ArrowDown className="size-3.5" strokeWidth={2} aria-hidden />
       </button>
+      {erreur && (
+        <span role="alert" className="text-destructive ml-1 text-[11px]">
+          {erreur}
+        </span>
+      )}
     </div>
   )
 }

@@ -62,16 +62,24 @@ export async function getCommentsForTarget(
   const ids = list.map((r) => r.id)
   const userIds = [...new Set(list.map((r) => r.user_id))]
 
-  const [votesRes, profilesRes] = await Promise.all([
-    supabase.from('comment_votes').select('comment_id, user_id, value').in('comment_id', ids),
+  // Le SCORE est public, le DÉTAIL des votes ne l'est pas : `comment_votes`
+  // était lisible par tous, donc `?user_id=eq.<uuid>` sur PostgREST rendait
+  // l'historique de vote complet de n'importe qui. Depuis 0070 la table n'est
+  // lisible que pour ses propres lignes, et l'agrégat passe par une fonction
+  // dédiée. Deux appels au lieu d'un, mais dans le même Promise.all.
+  const [scoresRes, votesRes, profilesRes] = await Promise.all([
+    supabase.rpc('comment_scores', { ids }),
+    supabase.from('comment_votes').select('comment_id, value').in('comment_id', ids),
     supabase.from('profiles').select('id, username, avatar_url').in('id', userIds),
   ])
 
   const scoreByComment = new Map<string, number>()
+  for (const s of scoresRes.data ?? []) scoreByComment.set(s.comment_id, s.score)
+
   const userVoteByComment = new Map<string, -1 | 1>()
-  for (const v of votesRes.data ?? []) {
-    scoreByComment.set(v.comment_id, (scoreByComment.get(v.comment_id) ?? 0) + v.value)
-    if (viewerId && v.user_id === viewerId) {
+  // La RLS ne rend que les lignes du viewer : pas de filtre à refaire ici.
+  if (viewerId) {
+    for (const v of votesRes.data ?? []) {
       userVoteByComment.set(v.comment_id, v.value === 1 ? 1 : -1)
     }
   }
@@ -88,7 +96,10 @@ export async function getCommentsForTarget(
       event_id: r.event_id,
       user_id: r.user_id,
       parent_id: r.parent_id,
-      body: r.body,
+      // Le corps d'un commentaire RETIRÉ ne quitte pas le serveur. Il était
+      // masqué au rendu mais partait quand même dans le payload RSC, donc
+      // lisible dans la source de la page — « supprimé » ne l'était pas.
+      body: r.deleted_at ? '' : r.body,
       created_at: r.created_at,
       updated_at: r.updated_at,
       deleted_at: r.deleted_at,

@@ -45,7 +45,7 @@ export function RatingSlider({ eventId, slug, initialScore, isAuthed }: Props) {
   if (!isAuthed) {
     return (
       <p className="text-muted-foreground text-sm">
-        <Link href="/login" className="text-primary underline-offset-2 hover:underline">
+        <Link href="/login" className="text-primary underline underline-offset-2">
           Sign in
         </Link>{' '}
         to rate this drop.

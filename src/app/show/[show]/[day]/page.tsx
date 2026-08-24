@@ -8,7 +8,7 @@ import { ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getViewer } from '@/lib/supabase/viewer'
 import { getCommentsForTarget } from '@/lib/comments/queries'
-import { buildCommentTree, sortTree } from '@/lib/comments/tree'
+import { buildCommentThreads, sortThreads } from '@/lib/comments/tree'
 import { kstDayBounds, kstTime24h, formatKst } from '@/lib/events/date'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
@@ -200,7 +200,7 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
     getEpisodeLineup(episode),
     getCommentsForTarget({ episodeId: episode.id }, viewerId),
   ])
-  const commentRoots = sortTree(buildCommentTree(flatComments), 'top')
+  const commentThreads = sortThreads(buildCommentThreads(flatComments), 'top')
 
   return (
     <>
@@ -286,7 +286,7 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
         path={path}
         isAuthed={!!user}
         viewerId={viewerId}
-        roots={commentRoots}
+        threads={commentThreads}
         initialSort="top"
       />
     </>

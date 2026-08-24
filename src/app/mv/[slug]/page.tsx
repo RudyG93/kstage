@@ -13,7 +13,7 @@ import {
   getRatingsForEvents,
 } from '@/lib/events/community'
 import { getCommentsForEvent } from '@/lib/comments/queries'
-import { buildCommentTree, sortTree, type SortMode } from '@/lib/comments/tree'
+import { buildCommentThreads, sortThreads, type SortMode } from '@/lib/comments/tree'
 import { getGroupMvs } from '@/lib/events/queries'
 import { extractYouTubeId } from '@/lib/events/youtube-id'
 import { displaySongTitle } from '@/lib/events/title'
@@ -161,7 +161,7 @@ async function MvBody({
           ratings: new Map<string, { avg: number; count: number }>(),
         }),
   ])
-  const commentRoots = sortTree(buildCommentTree(flatComments), sort)
+  const commentThreads = sortThreads(buildCommentThreads(flatComments), sort)
   // « More from {group} » : grille mobile (le rail droit couvre le desktop).
   const moreFromGroup = railData.railMvs.slice(0, 4)
 
@@ -305,7 +305,7 @@ async function MvBody({
         slug={event.slug as string}
         isAuthed={isAuthed}
         viewerId={viewerId}
-        roots={commentRoots}
+        threads={commentThreads}
         initialSort={sort}
         ratingsByUser={rating.scoreByUser}
       />
