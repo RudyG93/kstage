@@ -4,6 +4,62 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-24 (soir) — Le quota n'était pas la contrainte, deux plafonds plus bas mordaient déjà
+
+**Commits** : `3e98082`, `89bc19b` → `main`. CI verte. Commentaires de test purgés (9 lignes, dont 2 charges XSS publiques).
+
+### La question posée
+
+Rudy craint de saturer les quotas API si le roster grossit, et constate une inversion de priorité : des groupes inconnus en base pendant que TUIDE (HYBE) manque. Il pose aussi une règle ferme — **tout artiste qui passe dans une émission a sa fiche, complète**.
+
+### Le quota YouTube n'est pas le problème, et le dire est utile
+
+|                   |                                                                  |
+| ----------------- | ---------------------------------------------------------------- |
+| Coût récurrent    | **3,9 units par source et par jour** (352 sources → 1 370 units) |
+| Un groupe         | 1,39 source × 3,9 = **5,4 units/jour**                           |
+| Jours de routine  | 1 250 à 2 000 units sur 10 000 → **13-20 %**                     |
+| Tripler le roster | ~4 300 units/jour, encore sous la moitié                         |
+
+Le seul dépassement (11 889 units le 20/08) venait de **5 runs déclenchés à la main depuis `/admin/health`**, dont deux `channel-discovery` à 4 000 units — pas du régime permanent. Ces boutons n'ont ni cooldown ni garde-fou de budget.
+
+### Mais deux plafonds bien plus bas étaient atteints, en silence
+
+**`recover-mvs` échouait 3 runs planifiés sur 4.** Le cron enchaîne jusqu'à 120 groupes × plusieurs requêtes fandom séquentielles contre 300 s de `maxDuration`. Et **un run tué n'écrit aucun `scrape_log`** : l'échec était invisible côté base. Il a fallu compter les runs GitHub au créneau 10:20 UTC pour le voir — 3 `failure`, 1 `success`. C'est pourtant le cron qui remplit les catalogues vides.
+
+Corrigé par un **butoir de temps** (230 s) plutôt qu'un nombre magique : il s'ajuste quand la latence bouge ou que le pool grossit, le run journalise ce qu'il a fait, le reste passe au lendemain.
+
+**Spotify est le plafond le plus bas de toute la chaîne — et il ne rapportait rien.** 173 appels par jour pour **0 à 4 images** mises à jour, et deux coupures ce mois-ci dont une avec `Retry-After: 45 635` — **12 h 40 de blocage** le 21/08, 254 groupes sautés. Au passage : `spotify_followers` est NULL sur **268/268**, l'API ne l'expose plus en dev-mode. Migration 0073 (`image_checked_at` + index partiel) : 40 groupes par run, les moins récemment vérifiés d'abord. Roster couvert en ~5 jours pour un quart des appels.
+
+### L'inversion de priorité est réelle, mais pas là où elle se voyait
+
+TUIDE : ABD est une filiale de **Pledis, donc HYBE** — la maison mère était bien celle-là. Mais le groupe a **débuté le jour même** ; ce matin, il n'y avait rien à rater. Créé quand même, dossier complet.
+
+La vraie inversion : **13 candidats à 5 000-85 000 fans Deezer dorment en `pending`** et ne sont pas au roster — Chanyeol (84 621), Suga (78 284), Cha Eun Woo (32 384), Taeyong (30 960), Ten, Jaehyun, Irene. Tous bloqués par la même chose : **`debutDate` est nul**. La porte exige une date concrète ET un signal d'audience ; un membre qui part en solo a une fiche fandom sans champ « debut », donc il ne passe jamais — pendant qu'un groupe inconnu avec une date propre et 5 001 fans passe. Le filtre n'est pas biaisé vers l'obscurité par choix : **il est biaisé contre les solistes**.
+
+### « Fiche complète » : le vrai trou n'était pas le nombre de groupes
+
+Les pages de shows maigres sont presque toutes Show Champion (7,3 artistes de moyenne contre 14,3 pour M Countdown) — et elles ont **100 % de couverture** (6/6, 7/7). MBC M ne poste que 6-7 vidéos ; depuis la bascule du 21/08 la vidéo fait autorité, donc un artiste annoncé mais non filmé n'a plus de fiche du tout. `docs/SCRAPING.md` le disait déjà : « un diffuseur ne poste pas toutes ses scènes ».
+
+Le trou mesurable était ailleurs : **623 membres sur 1 290 sans date de naissance** (48 %, 137 groupes). Ce n'est pas un ornement — c'est la date qui produit l'event anniversaire. La moitié du moteur tournait à vide.
+
+Cause : l'enrichissement passait par MusicBrainz seul, qui référence mal les groupes récents (TUIDE est reparti avec 7 membres et zéro date). **Fandom porte l'information et son API est gratuite** : 19/20 à l'essai. Deux gardes, parce qu'une date fausse crée un anniversaire fantôme que personne ne remarque — anti-homonyme (« Yuna » existe dans trois groupes) et anti-date impossible (un `Date` brut change le 31 février en 3 mars sans un mot). Branché à la création **et** en rattrapage.
+
+**Résultat : 526 dates écrites sur 623.** Les 97 restants sont pour l'essentiel des groupes VIRTUELS (StelLive, MAVE:, PLAVE, PINKVERSE) — ils n'ont pas de date à trouver.
+
+### Décisions
+
+- **Mesurer avant de rassurer OU d'alarmer.** La crainte du quota ne tenait pas (14 % d'usage) ; mais en la vérifiant, deux plafonds réels sont apparus, dont un qui faisait déjà échouer 3 runs sur 4.
+- **Un run tué ne journalise rien.** L'absence de ligne dans `scrape_log` est un signal, pas un silence. Compter les runs GitHub fait partie de la vérification.
+- **Un butoir de temps vaut mieux qu'un plafond en unités** quand c'est le wall-clock qui contraint : il ne se périme pas.
+- **Une seconde source vaut mieux qu'une source parfaite.** MusicBrainz est plus propre que fandom, mais il ignore le récent — et le récent est précisément ce qu'un calendrier doit couvrir.
+
+### Reste à arbitrer
+
+1. **La porte d'admission doit-elle accepter une forte audience SANS date de début ?** Ce seul changement fait entrer Suga, Chanyeol, Cha Eun Woo, Taeyong, Ten, Jaehyun.
+2. **Un artiste annoncé mais non filmé garde-t-il sa fiche ?** La règle produit dit oui, mais cela réintroduit les fantômes que la bascule du 21/08 avait supprimés.
+3. Les boutons remède de `/admin/health` n'ont ni cooldown ni budget — c'est ce qui a fait le pic du 20/08.
+
 ## 2026-08-24 (après-midi) — Le backlog vérifié, et une dette de design qui n'en était pas une
 
 **Commits** : `ffda28c`, `506083a` → `main`. CI verte.
