@@ -4,6 +4,61 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-24 (nuit) — La sortie de Miyeon était déjà en base, elle n'avait nulle part où atterrir
+
+**Commits** : `6673537`, `93996ac`, `ff1d149` → `ff50ca6` sur `main`.
+
+### Le constat qui renverse la question
+
+Rudy : « Miyeon en a sorti un récemment et il n'est pas recensé. » Vérifié en base : **il l'était**. « MIYEON Japan Digital Single – RUN AWAY (2026) » existait depuis le 09/08, rangé sur le groupe **i-dle**, `member_id NULL` — il s'affichait donc comme une sortie d'i-dle. Même symptôme sur 2 events de Yeonjun (rangés sur TXT) et sur « Idle Song » de Soyeon.
+
+Le problème n'était pas la découverte. C'était l'**atterrissage** : sans fiche solo, une sortie de soliste n'a aucun endroit où se poser.
+
+Sur i-dle, la prémisse de Rudy est vraie à 4/5 : Miyeon, Minnie, Soyeon et Yuqi sont solistes ; **Shuhua ne l'est pas** (aucune sortie solo, seulement un OST en duo avec Minnie).
+
+### Une mine était amorcée, découverte en vérifiant autre chose
+
+`link-canonical-members` prend la row la **plus ancienne** comme canonique. Pour un soliste, la row de groupe précède forcément la fiche solo : le script aurait donc posé `canonical_id` **sur la fiche solo elle-même**.
+
+La cascade est complète : `getSoloArtists` et le trigger `compute_group_artist_slug` filtrent tous deux sur `canonical_id IS NULL` → `groups.artist_slug` s'efface → `/artists/tzuyu` redirige vers `/artists/twice-tzuyu` → la fiche, ses MV et sa page deviennent inatteignables.
+
+`tzuyu` et `yuta` étaient tous deux amorcés (même birthday **et** même stage_name que leur row de groupe). Le dry-run par défaut est ce qui a sauvé la mise. Une fiche solo est désormais la **cible** quelle que soit son ancienneté ; un cluster à deux fiches solo est refusé plutôt qu'arbitré au hasard.
+
+Au passage : la fiche `jisoo` portait `1994-02-11`. C'est la date d'un homonyme, ramenée par un repli dégénéré — `createFromPayload` appelle `fetchMemberBirthday(stage_name, payload.name)` avec les deux arguments **égaux** pour un soliste, si bien que le garde anti-homonyme rejette la page correctement désambiguïsée et retient la page nue, celle de l'homonyme le plus célèbre. Corrigée en `1995-01-03` ; c'est cette date fausse qui empêchait le lien d'être déductible.
+
+### Le modèle : un soliste n'est pas un groupe à un membre
+
+C'est une **personne déjà en base**. `promote-member-to-soloist` part donc du slug de sa row `members`, jamais d'un nom — ce qui neutralise l'homonymie à la source (« Soyeon » existe chez i-dle ET LABOUM, « Jaehyun » sur 4 rows). `real_name` et `birthday` sont **recopiés** de la row source, jamais redevinés : c'est aussi ce qui rend le lien canonical déductible ensuite.
+
+Les events sont récupérés sur un match **mot entier** du titre, pas une sous-chaîne — une sortie attribuée à la mauvaise personne coûte bien plus cher qu'une sortie manquante.
+
+`enrich-group-media` rend `enrichNewGroupMedia` appelable sur un artiste déjà en base : sans lui une fiche promue à la main restait vide jusqu'au cron du lundi, c'est-à-dire exactement la « fiche bâclée » que Rudy refuse.
+
+### Les alias hangul : le préalable, pas un à-côté
+
+**131 groupes sur 268 sans aucun alias hangul.** Les chaînes KBS / SBS / MBC titrent en coréen : sans alias, la vidéo qui _prouve_ le passage ne matche pas et le groupe passe pour « annoncé mais jamais diffusé ». 23 des 30 passages non confirmés visaient des groupes à `name_aliases = []`. Étiqueter avant de combler ce trou aurait marqué « non diffusé » des passages **réels**, à l'échelle du roster.
+
+**93 récupérés** — 59 par fandom, 34 par MusicBrainz, les deux sources étant complémentaires et aucune suffisante.
+
+### Vérification
+
+- `/artists/miyeon` 200 : 2 MV (RUN AWAY + F.F.L.Y, la vidéo de coulisses écartée par la blacklist), 3 liens streaming, agence CUBE, vrai nom, date de naissance. 213 units YouTube.
+- `/artists/{jisoo,tzuyu,yuta,yuqi}` 200 ; `/groups/{jisoo,tzuyu,yuta}` 307.
+- `artist_slug` intact après les liens ; `twice` et `nct127` restent à NULL.
+- Les 9 groupes qui produisaient les faux non-confirmés portent tous leur hangul.
+- 996 tests verts, format et lint propres.
+
+### Décisions
+
+- **Une fiche solo prime sur l'ancienneté.** La convention « la plus ancienne est canonique » vaut pour deux memberships ; elle s'inverse dès qu'une des deux rows EST la fiche de la personne.
+- **Recopier plutôt que redevenir.** Toute donnée d'identité déjà en base se recopie ; la redemander à une source externe rouvre l'homonymie qu'on venait de fermer.
+- **Un échec réseau n'est pas une absence de donnée.** `.catch(() => null)` faisait passer un 503 MusicBrainz pour « pas trouvé » et avait fait rater Oh My Girl, dont le hangul existe pourtant.
+- **Refuser plutôt que deviner** sur un alias ambigu : ces alias servent un matching en sous-chaîne, où un parasite contamine tout titre qui le contient.
+
+### Reste à faire
+
+**Les fantômes de lineup.** La prémisse « la bascule du 21/08 a supprimé l'annoncé » est fausse : l'annoncé n'a jamais cessé d'écrire. Le vrai défaut est l'inverse — des passages annoncés jamais diffusés s'affichent en prod comme réels. Prouvé sur M Countdown du 13/08 : 22 stages, dont **12 créés par la preuve vidéo le 21/08 (tous avec vidéo) et 10 par l'annonce le 07/08, dont 9 sans aucune vidéo**. `/groups/kissoflife` lie 4 fois vers ce passage qui n'a pas eu lieu. Le préalable (alias hangul) est maintenant levé ; reste le mécanisme d'étiquetage `lineup_state` + l'affichage.
+
 ## 2026-08-24 (soir) — Le quota n'était pas la contrainte, deux plafonds plus bas mordaient déjà
 
 **Commits** : `3e98082`, `89bc19b` → `main`. CI verte. Commentaires de test purgés (9 lignes, dont 2 charges XSS publiques).
