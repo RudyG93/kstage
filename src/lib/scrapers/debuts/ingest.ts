@@ -22,6 +22,7 @@ import { findCanonicalMatch, type PersonEvidence } from '@/lib/members/matching'
 import { samePersonName, unsortPersonName } from '@/lib/scrapers/person-name'
 import { fetchMbEnrichment } from '@/lib/scrapers/musicbrainz'
 import { fetchDebutCategory, fetchInfobox, resolveImageUrl, searchPageIds } from './fandom'
+import { fetchMemberBirthday } from './fandom-birthdays'
 import { fetchWikipediaDebutNames, normalizeDebutName } from './wikipedia-debuts'
 import { discoverChannelsForGroup, seedAndBackfillChannel } from '@/lib/scrapers/channel-discovery'
 import { scrapeGroup } from '@/lib/scrapers/youtube'
@@ -392,6 +393,28 @@ export async function createFromPayload(
     }
   } catch (e) {
     stepErrors.push(`musicbrainz: ${String(e)}`)
+  }
+
+  // Repli fandom sur les dates que MusicBrainz n'a pas. MB référence mal les
+  // groupes récents : TUIDE, créé le jour de son début, est reparti avec 7
+  // membres et zéro date. Or sans date de naissance un membre n'existe pas
+  // dans le calendrier — c'est elle qui produit l'event anniversaire.
+  // Mesuré sur 20 membres tirés des 623 sans date : 19 récupérés sur fandom.
+  try {
+    const { data: sansDate } = await supabase
+      .from('members')
+      .select('id, stage_name')
+      .eq('group_id', groupId)
+      .is('canonical_id', null)
+      .is('birthday', null)
+    for (const m of sansDate ?? []) {
+      const b = await fetchMemberBirthday(m.stage_name, payload.name)
+      if (!b) continue
+      const { error: bErr } = await supabase.from('members').update({ birthday: b }).eq('id', m.id)
+      if (bErr) stepErrors.push(`fandom birthday ${m.stage_name}: ${bErr.message}`)
+    }
+  } catch (e) {
+    stepErrors.push(`fandom birthdays: ${String(e)}`)
   }
 
   // Dédup de personnes cross-groupe (round 2026-07-18, cas SuA/JiU/Yoohyeon
