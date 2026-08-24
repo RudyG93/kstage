@@ -20,6 +20,14 @@ import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 export const maxDuration = 300
 
+// Spotify est le plafond le PLUS BAS de toute la chaîne d'ingestion : l'API a
+// coupé 12 h 40 le 2026-08-21 (`Retry-After: 45 635`), emportant 254 groupes.
+// Interroger les 173 groupes liés chaque jour rapportait 0 à 4 images — on en
+// prend 40, les moins récemment vérifiés d'abord : le roster entier est couvert
+// en ~5 jours, pour un quart des appels. La marge récupérée finance
+// l'élargissement du roster, qui est la vraie contrainte produit.
+const SPOTIFY_PAR_RUN = 40
+
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,7 +44,7 @@ export async function GET(req: Request) {
   )
   const startedAt = new Date().toISOString()
   const url = new URL(req.url)
-  const limit = Number(url.searchParams.get('limit') ?? '0') || undefined
+  const limit = Number(url.searchParams.get('limit') ?? '0') || SPOTIFY_PAR_RUN
   const photoBatch = Number(url.searchParams.get('photo_batch') ?? '0') || undefined
 
   const images = await refreshGroupImages(supabase, token, { limit })

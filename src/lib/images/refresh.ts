@@ -140,8 +140,11 @@ export async function refreshGroupImages(
     // name_aliases : le garde de nom doit connaître le hangul officiel, sinon
     // un artiste titré « 스텔라이브 » ne matchera jamais « StelLive ».
     .from('groups')
-    .select('id, slug, name, name_aliases, links, image_url')
-    .order('name')
+    .select('id, slug, name, name_aliases, links, image_url, image_checked_at')
+    // Les moins récemment vérifiés d'abord, jamais-vérifiés en tête. Trier par
+    // nom revenait à interroger Spotify sur les 268 mêmes groupes chaque jour
+    // pour 0 à 4 images changées — et l'API a coupé 12 h 40 le 2026-08-21.
+    .order('image_checked_at', { ascending: true, nullsFirst: true })
   if (opts.limit) query = query.limit(opts.limit)
   const { data: groups, error } = await query
   if (error) throw new Error(`groups select: ${error.message}`)
@@ -185,14 +188,18 @@ export async function refreshGroupImages(
       await sleep(200)
       continue
     }
-    const patch: { image_url?: string; spotify_followers?: number } = {}
+    // L'horodatage est posé même quand rien ne change : c'est lui qui fait
+    // tourner la file, pas le succès de la mise à jour.
+    const patch: {
+      image_url?: string
+      spotify_followers?: number
+      image_checked_at: string
+    } = { image_checked_at: new Date().toISOString() }
     if (artist.image && artist.image !== g.image_url) patch.image_url = artist.image
     if (artist.followers != null) patch.spotify_followers = artist.followers
-    if (Object.keys(patch).length > 0) {
-      const { error: upErr } = await supabase.from('groups').update(patch).eq('id', g.id)
-      if (upErr) console.error(`refresh-images update ${g.slug}: ${upErr.message}`)
-      else summary.updated++
-    }
+    const { error: upErr } = await supabase.from('groups').update(patch).eq('id', g.id)
+    if (upErr) console.error(`refresh-images update ${g.slug}: ${upErr.message}`)
+    else if (patch.image_url) summary.updated++
     await sleep(200)
   }
   return summary
