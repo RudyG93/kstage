@@ -5,6 +5,13 @@
 // (convention seed-canonical-artists : le groupe principal précède le side
 // project). Dry-run par défaut ; --apply pour écrire.
 //
+// EXCEPTION — une fiche solo est TOUJOURS la cible, quelle que soit son
+// ancienneté. `getSoloArtists` et le trigger `compute_group_artist_slug`
+// filtrent tous deux sur `canonical_id IS NULL` : poser un canonical_id sur la
+// row Soloist efface `groups.artist_slug` et rend la fiche inatteignable. La
+// convention « la plus ancienne » aurait cassé `tzuyu` et `yuta` (rows solo du
+// 2026-08-20, rows de groupe de mai/juin, même birthday + même stage_name).
+//
 //   npx tsx scripts/link-canonical-members.ts            (dry-run)
 //   npx tsx scripts/link-canonical-members.ts --apply
 //   npx tsx scripts/link-canonical-members.ts --apply --only=uau-sua,uau-jiu
@@ -25,7 +32,13 @@ const ONLY =
     .map((s) => s.trim())
     .filter(Boolean) ?? null
 
-type Row = PersonEvidence & { slug: string; created_at: string; group_name: string }
+type Row = PersonEvidence & {
+  slug: string
+  created_at: string
+  group_name: string
+  /** La row porte la fiche solo de la personne (groups.is_solo). */
+  est_fiche_solo: boolean
+}
 
 async function main() {
   const supabase = createClient<Database>(
@@ -38,7 +51,7 @@ async function main() {
     const { data, error } = await supabase
       .from('members')
       .select(
-        'id, slug, stage_name, real_name, birthday, canonical_id, group_id, created_at, groups!inner(name)',
+        'id, slug, stage_name, real_name, birthday, canonical_id, group_id, created_at, groups!inner(name, is_solo)',
       )
       .range(from, from + 999)
     if (error) throw new Error(error.message)
@@ -52,7 +65,8 @@ async function main() {
         canonical_id: m.canonical_id,
         group_id: m.group_id,
         created_at: m.created_at,
-        group_name: (m.groups as { name: string }).name,
+        group_name: (m.groups as { name: string; is_solo: boolean | null }).name,
+        est_fiche_solo: (m.groups as { name: string; is_solo: boolean | null }).is_solo === true,
       })
     }
     if (!data || data.length < 1000) break
@@ -82,14 +96,26 @@ async function main() {
   }
 
   let applied = 0
+  let ignores = 0
+  let proposes = 0
   for (const cluster of clusters) {
     const sorted = [...cluster].sort((a, b) => a.created_at.localeCompare(b.created_at))
-    const target = sorted[0]
-    const links = sorted.slice(1)
+    const fichesSolo = sorted.filter((r) => r.est_fiche_solo)
+    if (fichesSolo.length > 1) {
+      console.log(
+        `\nPersonne : ${sorted[0].stage_name} — IGNORÉE : ${fichesSolo.length} fiches solo dans le même cluster (${fichesSolo.map((r) => r.slug).join(', ')}). À arbitrer à la main.`,
+      )
+      ignores++
+      continue
+    }
+    // Une fiche solo prime sur l'ancienneté : elle seule doit rester canonique.
+    const target = fichesSolo[0] ?? sorted[0]
+    const links = sorted.filter((r) => r !== target)
     console.log(
-      `\nPersonne : ${target.stage_name} — canonique = ${target.slug} (${target.group_name}, ${target.created_at.slice(0, 10)})`,
+      `\nPersonne : ${target.stage_name} — canonique = ${target.slug} (${target.group_name}, ${target.created_at.slice(0, 10)})${fichesSolo[0] ? ' [fiche solo]' : ''}`,
     )
     for (const l of links) {
+      proposes++
       const write = APPLY && (!ONLY || ONLY.includes(l.slug))
       console.log(
         `  ${write ? '→' : '[dry]'} ${l.slug || l.stage_name} (${l.group_name}) → canonical ${target.slug || target.stage_name}`,
@@ -105,7 +131,7 @@ async function main() {
     }
   }
   console.log(
-    `\n${clusters.length} cluster(s), ${clusters.reduce((a, c) => a + c.size - 1, 0)} lien(s) ${APPLY ? `— ${applied} appliqués` : '(dry-run, rien écrit)'}`,
+    `\n${clusters.length} cluster(s)${ignores ? `, ${ignores} ignoré(s)` : ''}, ${proposes} lien(s) ${APPLY ? `— ${applied} appliqués` : '(dry-run, rien écrit)'}`,
   )
 }
 
