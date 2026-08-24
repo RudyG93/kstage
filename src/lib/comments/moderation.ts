@@ -6,6 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import { isAdmin } from '@/lib/auth/admin'
+import { SHOW_ID_BY_TITLE } from '@/lib/scrapers/music-shows/types'
 
 type ActionResult = { error: string } | { ok: true }
 
@@ -34,8 +35,39 @@ export interface OpenReport {
   body: string
   deleted: boolean
   authorUsername: string | null
-  eventSlug: string | null
-  eventTitle: string | null
+  /**
+   * Cible du commentaire, MV ou ÉPISODE de music show. Les deux existent
+   * depuis 0060 ; la file n'embarquait que la première, donc un signalement
+   * portant sur un commentaire d'épisode arrivait sans lien ni contexte — et
+   * 65 pages épisode sont ouvertes aux commentaires.
+   */
+  targetHref: string | null
+  targetLabel: string | null
+}
+
+/**
+ * Où mène ce commentaire ? Un MV a son slug ; un épisode se retrouve par
+ * (show, jour KST), la paire qui compose son URL.
+ */
+function cibleDe(
+  comment: {
+    event: { slug: string | null; title: string } | null
+    episode: { show_title: string; kst_day: string; episode_number: number | null } | null
+  } | null,
+): { targetHref: string | null; targetLabel: string | null } {
+  if (comment?.event?.slug) {
+    return { targetHref: `/mv/${comment.event.slug}`, targetLabel: comment.event.title }
+  }
+  const ep = comment?.episode
+  const showId = ep ? SHOW_ID_BY_TITLE[ep.show_title] : undefined
+  if (ep && showId) {
+    const numero = ep.episode_number ? ` #${ep.episode_number}` : ''
+    return {
+      targetHref: `/show/${showId}/${ep.kst_day}`,
+      targetLabel: `${ep.show_title}${numero} — ${ep.kst_day}`,
+    }
+  }
+  return { targetHref: null, targetLabel: null }
 }
 
 /** Signalements ouverts pour la page admin (service role). */
@@ -48,7 +80,7 @@ export async function getOpenReports(): Promise<OpenReport[]> {
   const { data, error } = await admin
     .from('comment_report')
     .select(
-      'id, reason, created_at, comment:comments(id, body, user_id, deleted_at, event:events(slug, title))',
+      'id, reason, created_at, comment:comments(id, body, user_id, deleted_at, event:events(slug, title), episode:show_episodes(show_title, kst_day, episode_number))',
     )
     .eq('status', 'open')
     .order('created_at', { ascending: true })
@@ -64,6 +96,7 @@ export async function getOpenReports(): Promise<OpenReport[]> {
       user_id: string
       deleted_at: string | null
       event: { slug: string | null; title: string } | null
+      episode: { show_title: string; kst_day: string; episode_number: number | null } | null
     } | null
   }>
 
@@ -85,8 +118,7 @@ export async function getOpenReports(): Promise<OpenReport[]> {
     body: r.comment?.body ?? '[deleted]',
     deleted: Boolean(r.comment?.deleted_at),
     authorUsername: r.comment ? (usernameById.get(r.comment.user_id) ?? null) : null,
-    eventSlug: r.comment?.event?.slug ?? null,
-    eventTitle: r.comment?.event?.title ?? null,
+    ...cibleDe(r.comment),
   }))
 }
 

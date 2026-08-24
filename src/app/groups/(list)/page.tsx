@@ -31,7 +31,7 @@ type SortKey = 'activity' | 'az' | 'za' | 'pop_desc' | 'pop_asc'
 // du mois et un groupe silencieux depuis trois ans. Les tris explicites (A-Z,
 // popularité) restent PURS : qui veut l'annuaire alphabétique complet le
 // demande, et retrouve NewJeans à la lettre N.
-const SORT_KEYS: readonly SortKey[] = ['activity', 'az', 'za', 'pop_desc', 'pop_asc']
+const SORT_KEYS: readonly SortKey[] = ['activity', 'az', 'za']
 
 export default async function GroupsPage({
   searchParams,

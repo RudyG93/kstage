@@ -43,8 +43,17 @@ export const EVENT_TYPE_COLORS: Record<EventType, string> = {
   other: 'var(--faint)',
 }
 
-/** Fond translucide d'un tag/chip de type (color-mix — compatible var()). */
-export function eventTypeTint(color: string, percent = 12): string {
+/**
+ * Fond translucide d'un tag/chip de type (color-mix — compatible var()).
+ *
+ * 8 % et non 12 % : le fond est teinté avec le MÊME jeton que le texte posé
+ * dessus, donc chaque point de teinte mange du contraste. À 12 %, un tag
+ * « Anniversary » (`--faint`) tombait à 4.42:1 en thème sombre — sous les
+ * 4.5:1 exigés à 9 px. Mesuré sur les couleurs réelles : à 8 % il remonte à
+ * 4.67, et les autres jetons y gagnent aussi (rose 4.92 → 5.18, amber 7.21 →
+ * 7.77, teal 8.83 → 9.74).
+ */
+export function eventTypeTint(color: string, percent = 8): string {
   return `color-mix(in srgb, ${color} ${percent}%, transparent)`
 }
 

@@ -29,20 +29,19 @@ const GABARITS: { nom: string; path: string }[] = [
 ]
 
 /**
- * `/calendar` a une DETTE de palette, pas un défaut de structure.
+ * DETTE DE PALETTE SOLDÉE le 2026-08-24 — cette liste est vide et doit le
+ * rester.
  *
- * Une fois le streaming attendu (cf. `settle`), axe y trouve 19 violations de
- * contraste, toutes sur des jetons de design utilisés en petit texte :
- * `--faint` à 2.47:1 sur les chips de filtre, `--teal` à 3.90, `--amber` à
- * 3.58, et `text-faint/60` à 2.60 sur les cases de jour vides. Corriger
- * demande de retoucher la palette — une décision de design, pas un correctif.
+ * `/calendar` tolérait `color-contrast` : 19 violations sur des jetons en
+ * petit texte. Elles avaient trois causes, pas une : (1) un `text-faint/60`
+ * sur les jours hors-mois, (2) un `opacity-60` qui était le seul signal
+ * actif/inactif des chips de filtre, (3) trois jetons du thème clair posés sur
+ * leur PROPRE teinte, qui perdaient 0,5 point de ratio à chaque fois. Les
+ * trois sont corrigés ; le scan rend 0 nœud sérieux sur 5 pages × 2 thèmes.
  *
- * Le test ne l'ignore donc pas : il verrouille le fait que le contraste est le
- * SEUL problème sérieux de cette page. Toute violation d'une autre nature
- * (nom accessible manquant, rôle incohérent, hiérarchie de titres) fera
- * échouer. Le jour où la palette passe, cette liste redevient vide.
+ * Y remettre `color-contrast` reviendrait à ré-autoriser la classe entière.
  */
-const DETTE_CALENDRIER = ['color-contrast']
+const DETTE_CALENDRIER: readonly string[] = []
 
 /**
  * Attendre que la page ait FINI de streamer avant de scanner.
@@ -94,13 +93,23 @@ test.describe('Accessibilité', () => {
     expect(await scan(page)).toEqual([])
   })
 
-  // Le calendrier, dans les deux thèmes : seule la dette de palette est tolérée.
+  // Le calendrier, dans les deux thèmes — et ce sont bien DEUX thèmes depuis
+  // le 2026-08-24 : `emulateMedia` n'avait jamais rien changé.
   for (const theme of ['dark', 'light'] as const) {
-    test(`calendrier (${theme}) : aucune violation hors dette de palette`, async ({ page }) => {
+    test(`calendrier (${theme}) : aucune violation sérieuse`, async ({ page }) => {
       test.skip(test.info().project.name !== 'chromium', 'axe : chromium seulement')
-      await page.emulateMedia({ colorScheme: theme })
+      // `emulateMedia` ne pouvait RIEN : le layout monte next-themes avec
+      // `enableSystem={false}` (layout.tsx), donc `prefers-color-scheme` est
+      // ignoré et les deux runs scannaient le sombre. Le thème se pose là où
+      // l'application le lit — le stockage, avant le premier rendu.
+      await page.addInitScript((t) => {
+        window.localStorage.setItem('theme', t)
+      }, theme)
       await page.goto('/calendar')
       await settle(page)
+      // Garde-fou : si le thème ne s'applique pas, le test doit échouer ici et
+      // non se transformer en second scan du sombre.
+      await expect(page.locator('html')).toHaveClass(new RegExp(`(^|\\s)${theme}(\\s|$)`))
       const ids = (await scan(page)).map((v) => v.split(' ')[0])
       expect([...new Set(ids)].filter((id) => !DETTE_CALENDRIER.includes(id))).toEqual([])
     })

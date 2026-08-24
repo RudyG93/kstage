@@ -102,13 +102,16 @@
   /* couleurs sémantiques d'event — assombries pour ≥ 4.5:1 en texte sur blanc
      (WCAG AA, audit contraste 2026-07-03 : les valeurs handoff faisaient
      2.9-3.4:1 sur les tags/chips du thème clair). */
-  --teal: oklch(0.51 0.11 172.6); /* MV / release — 4.5:1 aussi sur --secondary (a11y §8.6) */
-  --amber: oklch(0.53 0.115 74.2); /* music show */
+  /* Assombris de 0.03-0.04 en luminance le 2026-08-24 : posés sur leur PROPRE
+     teinte (un tag de type peint son fond avec 8 % de sa couleur), ils
+     tombaient à 3.98 et 4.05 pour 4.5 requis à 9 px. Même teinte, même chroma —
+     seule la luminance bouge, et elle ne peut qu'améliorer les autres fonds. */
+  --teal: oklch(0.47 0.11 172.6); /* MV / release — 4.60:1 sur sa propre teinte */
+  --amber: oklch(0.49 0.115 74.2); /* music show — 4.60:1 sur sa propre teinte */
   --rose: oklch(0.54 0.17 1.5); /* live / concert */
   --live: oklch(0.593 0.211 26.5); /* LIVE NOW (dot only, jamais texte) */
-  --faint: oklch(
-    0.52 0.025 262
-  ); /* micro-labels — 4.5:1 aussi sur --secondary (a11y §8.6, avant : 4.12) */
+  /* micro-labels — 4.60:1 sur sa propre teinte (avant 0.52 : 4.18). */
+  --faint: oklch(0.49 0.025 262);
 
   --chart-1: oklch(0.519 0.23 276);
   --chart-2: oklch(0.53 0.11 172.6);
