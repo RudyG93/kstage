@@ -38,6 +38,9 @@ const MIN_YT_SUBS = 10_000
 // désormais un signal d'AUDIENCE réel (YT subs OU fans Deezer) — l'ancien
 // « label déjà en base » laissait passer tout nugu d'une major (biais 2026).
 const MIN_DEEZER_FANS = 5_000
+// Sans date de début, l'audience doit porter la décision seule : on double la
+// barre. 10 000 fans Deezer ou 20 000 abonnés, ce n'est plus un nugu.
+const STRONG_AUDIENCE_FACTOR = 2
 const GROUP_PHOTO_BUCKET = 'group-photos'
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
@@ -86,21 +89,38 @@ export interface DebutCandidatePayload {
 
 /**
  * Décision du gate d'auto-création (Phase 3 Lot 3 — pur, testable) :
- * autoCreate = date concrète ET audience réelle (YT ≥ 10k subs OU Deezer
- * ≥ 5k fans) ; confidence = `monitored` si chaîne vérifiée (canal MV sûr),
- * sinon `candidate` (quarantaine : noindex, hors sitemap, jamais notifié).
- * C'est LE point unique qui incarne le garde-fou de l'audit : « ne jamais
- * publier une identité ambiguë pour augmenter le compteur ».
+ * confidence = `monitored` si chaîne vérifiée (canal MV sûr), sinon
+ * `candidate` (quarantaine : noindex, hors sitemap, jamais notifié). C'est LE
+ * point unique qui incarne le garde-fou de l'audit : « ne jamais publier une
+ * identité ambiguë pour augmenter le compteur ».
+ *
+ * **La date de début n'est plus exigée quand l'audience est FORTE** (décision
+ * Rudy 2026-08-24). L'exiger dans tous les cas biaisait la porte contre les
+ * SOLISTES : la fiche fandom d'un membre parti en solo n'a pas de champ
+ * « debut », alors que celle d'un groupe en a un. Résultat mesuré au moment de
+ * la décision : 13 candidats à 5 000-85 000 fans Deezer dormaient en `pending`
+ * — Chanyeol (84 621), Suga (78 284), Cha Eun Woo (32 384), Taeyong (30 960),
+ * Ten, Jaehyun, Irene — pendant qu'un groupe inconnu avec une date propre et
+ * 5 001 fans passait. Le filtre n'écartait pas l'obscurité, il écartait une
+ * FORME de fiche.
+ *
+ * Deux barres, donc :
+ *   - audience normale + date concrète → on crée (règle d'origine) ;
+ *   - audience FORTE (2× la barre) → on crée même sans date.
+ * Le second seuil est délibérément haut : sans date, on perd un signal de
+ * vérification, l'audience doit le compenser.
  */
 export function debutGateDecision(
   payload: Pick<DebutCandidatePayload, 'debutDate' | 'ytVerified'>,
   deezerFanCount: number,
 ): { autoCreate: boolean; confidence: 'monitored' | 'candidate' } {
-  const audience =
-    (payload.ytVerified !== null && payload.ytVerified.subs >= MIN_YT_SUBS) ||
-    deezerFanCount >= MIN_DEEZER_FANS
+  const subs = payload.ytVerified?.subs ?? 0
+  const audience = subs >= MIN_YT_SUBS || deezerFanCount >= MIN_DEEZER_FANS
+  const audienceForte =
+    subs >= MIN_YT_SUBS * STRONG_AUDIENCE_FACTOR ||
+    deezerFanCount >= MIN_DEEZER_FANS * STRONG_AUDIENCE_FACTOR
   return {
-    autoCreate: payload.debutDate !== null && audience,
+    autoCreate: (payload.debutDate !== null && audience) || audienceForte,
     confidence: payload.ytVerified ? 'monitored' : 'candidate',
   }
 }
