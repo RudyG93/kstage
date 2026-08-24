@@ -6,6 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import {
   CRON_LOG_SOURCE,
+  REMEDY_COOLDOWN_MIN,
   summarizeRun,
   TRIGGERABLE_CRONS,
   type TriggerableCron,
@@ -30,6 +31,21 @@ export async function triggerRemedyCron(
 
   // Origin du déploiement COURANT (pas SITE_URL) : en local/preview, le bouton
   // doit déclencher CE serveur, jamais la prod.
+  // COOLDOWN — le même cron ne se rejoue pas à volonté. Cinq relances à la
+  // main le 2026-08-20 ont porté la consommation YouTube à 11 889 units, soit
+  // au-dessus du quota gratuit. Le dernier run fait foi, qu'il vienne du
+  // planificateur ou d'un clic : rejouer un cron qui vient de tourner ne peut
+  // rien apporter de neuf, seulement coûter.
+  const attente = await minutesAvantRejeu(cron)
+  if (attente > 0) {
+    return {
+      error:
+        attente >= 60
+          ? `Ce cron vient de tourner. Réessayer dans ${Math.ceil(attente / 60)} h.`
+          : `Ce cron vient de tourner. Réessayer dans ${attente} min.`,
+    }
+  }
+
   const h = await headers()
   const proto = h.get('x-forwarded-proto') ?? 'https'
   const host = h.get('host')
@@ -48,6 +64,30 @@ export async function triggerRemedyCron(
     }
   })
   return { ok: true }
+}
+
+/**
+ * Minutes restantes avant qu'un nouveau déclenchement manuel soit permis.
+ * 0 = disponible. Lit `scrape_log`, donc compte AUSSI les runs planifiés.
+ */
+export async function minutesAvantRejeu(cron: TriggerableCron): Promise<number> {
+  const source = CRON_LOG_SOURCE[cron]
+  const cooldown = REMEDY_COOLDOWN_MIN[cron]
+  if (!source || !cooldown) return 0
+  const supabase = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const { data } = await supabase
+    .from('scrape_log')
+    .select('started_at')
+    .eq('source', source)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!data?.started_at) return 0
+  const ecoule = (Date.now() - Date.parse(data.started_at)) / 60_000
+  return Math.max(0, Math.ceil(cooldown - ecoule))
 }
 
 /**

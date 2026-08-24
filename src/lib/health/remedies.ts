@@ -37,6 +37,29 @@ export const CRON_LOG_SOURCE: Record<TriggerableCron, string> = {
   'scrape-music-shows': 'music_shows',
 }
 
+/**
+ * Délai minimal entre deux déclenchements MANUELS du même cron, en minutes.
+ *
+ * Le 2026-08-20, cinq runs lancés à la main depuis cette page ont porté la
+ * consommation YouTube à **11 889 units** — au-dessus des 10 000 gratuits.
+ * Deux `discover-channels` à eux seuls en ont coûté 8 052, et le second a fini
+ * en `search HTTP 429`. Le régime automatique, lui, tient à 13-20 % du quota :
+ * ce ne sont pas les crons qui débordent, c'est de pouvoir les rejouer d'un
+ * clic sans rien qui s'y oppose.
+ *
+ * Les valeurs suivent le COÛT, pas la durée : `discover-channels` paie 200
+ * units par groupe (search.list), les autres 1 à 4.
+ */
+export const REMEDY_COOLDOWN_MIN: Record<TriggerableCron, number> = {
+  'discover-channels': 360, // 200 units/groupe — c'est lui qui a fait sauter le quota
+  'scrape-youtube': 120, // ~1 370 units par passage
+  'refresh-images': 120, // Spotify coupe à ~500 appels / 24 h
+  'recover-mvs': 60,
+  'scrape-comebacks': 30,
+  'aired-shows': 30,
+  'scrape-music-shows': 30,
+}
+
 /** Résumé lisible d'un run, pour l'afficher à côté du bouton. */
 export function summarizeRun(
   source: string,

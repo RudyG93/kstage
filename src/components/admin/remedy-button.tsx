@@ -1,7 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { getRemedyRunResult, triggerRemedyCron } from '@/app/admin/health/actions'
+import {
+  getRemedyRunResult,
+  minutesAvantRejeu,
+  triggerRemedyCron,
+} from '@/app/admin/health/actions'
 import type { TriggerableCron } from '@/lib/health/remedies'
 
 /**
@@ -23,6 +27,20 @@ export function RemedyButton({ cron, label }: { cron: TriggerableCron; label: st
   const [message, setMessage] = useState<string | null>(null)
   const since = useRef<string | null>(null)
   const stopAt = useRef<number>(0)
+  // Délai restant AVANT le clic : « j'ai peur de cliquer sur des boutons
+  // remède alors qu'il n'y en a pas besoin » (Rudy, 2026-08-24). Un bouton qui
+  // dit lui-même qu'il ne servira à rien enlève la question.
+  const [attenteMin, setAttenteMin] = useState<number | null>(null)
+
+  useEffect(() => {
+    let actif = true
+    minutesAvantRejeu(cron).then((m) => {
+      if (actif) setAttenteMin(m)
+    })
+    return () => {
+      actif = false
+    }
+  }, [cron])
 
   // Poll tant qu'un run postérieur au clic n'est pas visible.
   useEffect(() => {
@@ -54,20 +72,41 @@ export function RemedyButton({ cron, label }: { cron: TriggerableCron; label: st
       if ('error' in res) {
         setPhase('error')
         setMessage(res.error)
+        void minutesAvantRejeu(cron).then(setAttenteMin)
         return
       }
+      setAttenteMin(null)
       setPhase('running')
     })
+
+  const enAttente = (attenteMin ?? 0) > 0 && phase === 'idle'
+  const delai =
+    attenteMin === null
+      ? ''
+      : attenteMin >= 60
+        ? `${Math.ceil(attenteMin / 60)} h`
+        : `${attenteMin} min`
 
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <button
         type="button"
-        disabled={pending || phase === 'running'}
+        disabled={pending || phase === 'running' || enAttente}
         onClick={run}
+        title={
+          enAttente
+            ? `Ce cron vient de tourner — le relancer maintenant ne produirait rien de neuf.`
+            : undefined
+        }
         className="bg-secondary hover:bg-hover disabled:text-muted-foreground cursor-pointer rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-default"
       >
-        {phase === 'running' ? 'En cours…' : pending ? 'Lancement…' : label}
+        {phase === 'running'
+          ? 'En cours…'
+          : pending
+            ? 'Lancement…'
+            : enAttente
+              ? `Déjà à jour · ${delai}`
+              : label}
       </button>
       {message && (
         <span

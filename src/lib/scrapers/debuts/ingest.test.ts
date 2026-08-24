@@ -20,11 +20,27 @@ describe('debutGateDecision (le score/quarantaine — pur)', () => {
     expect(d).toEqual({ autoCreate: true, confidence: 'candidate' })
   })
 
-  it('SENS AMBIGU : pas de date concrète → jamais auto-créé, quel que soit le signal', () => {
+  // Règle changée le 2026-08-24 : exiger une date DANS TOUS LES CAS biaisait la
+  // porte contre les SOLISTES — une fiche fandom de membre parti en solo n'a
+  // pas de champ « debut », celle d'un groupe si. 13 candidats à 5 000-85 000
+  // fans Deezer (Chanyeol, Suga, Cha Eun Woo, Taeyong…) dormaient en pending
+  // pour cette seule raison.
+  it('audience FORTE sans date → auto-créé (le cas des membres partis en solo)', () => {
     expect(debutGateDecision({ debutDate: null, ytVerified: yt(1_000_000) }, 999_999)).toEqual({
-      autoCreate: false,
+      autoCreate: true,
       confidence: 'monitored',
     })
+    // Deezer seul, au-dessus de la barre forte (2 × 5 000).
+    expect(debutGateDecision({ debutDate: null, ytVerified: null }, 10_000).autoCreate).toBe(true)
+  })
+
+  it('audience NORMALE sans date → toujours pending : la date reste exigée', () => {
+    // Juste au-dessus de la barre simple mais sous la barre forte : sans date,
+    // il manque un signal de vérification, l'audience ne le compense pas.
+    expect(debutGateDecision({ debutDate: null, ytVerified: yt(15_000) }, 6_000).autoCreate).toBe(
+      false,
+    )
+    expect(debutGateDecision({ debutDate: null, ytVerified: null }, 9_999).autoCreate).toBe(false)
   })
 
   it('SENS AMBIGU : audience sous les seuils (YT 9 999, Deezer 4 999) → pending', () => {
