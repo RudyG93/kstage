@@ -4,6 +4,61 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-24 — La zone commentaires, et un trigger que j'avais cassé la veille
+
+**Commits** : `c0d7949`, `e01faf7` → `main`. CI verte.
+
+### D'abord : j'avais cassé la prod
+
+Le balayage de la zone commentaires a commencé par trouver ma propre régression. La migration `0067`, appliquée la veille, posait un trigger `comments_freeze_identity` référençant `new.mv_id` — colonne qui n'existe pas, elle s'appelle `event_id`.
+
+PL/pgSQL est à liaison **tardive** : le corps d'une fonction n'est analysé qu'au premier appel. `create function` a accepté la faute, la migration a rendu `success`, et j'ai annoncé le correctif comme livré. Tout UPDATE sur `comments` échouait ensuite en `42703` — édition, soft-delete par l'auteur, et modération admin, puisqu'un trigger s'applique aussi au `service_role` (qui ne contourne que la RLS).
+
+Reproduit en prod avant correctif, corrigé (`0069`), puis **exercé** sur cinq cas. L'exercice vit désormais dans la migration elle-même : un bloc `do $$` qui tente le cas passant et le cas refusé, puis annule tout. Une migration qui pose un trigger ne peut plus rendre « appliquée » sans l'avoir prouvé.
+
+### Le fil Reddit, mesuré puis abandonné
+
+Rudy voulait du thread imbriqué « si ce n'est pas trop galère ». Ce n'est pas la difficulté qui tranche, c'est la mesure : chaque niveau coûtait 28 px, soit **155 px de colonne de texte au plancher** sur un écran de 375 px — ~22 caractères par ligne, quand la bande de lecture confortable est de 45 à 75. Et le volume ne demandait rien : 6 commentaires en base pour 3 173 pages MV et 65 épisodes. L'implémentation était calibrée pour dompter l'abondance (repli automatique, une seule réponse visible, pagination en trois paliers) sur un produit qui cherche encore sa première conversation.
+
+Pire : à `depth ≥ 1`, `replyPreview` valait **0**. Aucune réponse n'était affichée avant un clic, un clic par niveau. Sur l'unique vrai fil de la prod, 1 commentaire sur 4 n'était pas lisible au chargement.
+
+**Fil plat à un niveau.** Une tête, puis toute sa descendance au même niveau, dans l'ordre où elle s'est écrite. Le contexte que portait l'indentation devient explicite — « ↳ @destinataire », en lien vers l'ancre du parent. C'est le modèle Substack/YouTube, et c'est un **retrait** de code : `MAX_INDENT_DEPTH`, `REPLY_LIMIT`, `REPLY_PREVIEW_ROOT`, la récursion du composant et les deux boutons « Show N replies » disparaissent.
+
+Le `parent_id` reste écrit et intact : le rendu change, pas la donnée. Re-basculer vers de l'imbriqué le jour où un MV dépasse la centaine de commentaires ne demanderait aucune migration.
+
+Mesuré après refonte, connecté, à 375 px : **287 px** de colonne pour une tête, **269 px** pour une réponse, **0 px** de débordement horizontal.
+
+### Quatre trous en base
+
+| Trou                                    | Ce qu'il permettait                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Policy INSERT de `comment_edit_history` | Poser un faux « historique d'édition » sur le commentaire d'un autre — public, et non retirable par la victime                  |
+| `parent_id` non borné                   | Une chaîne de réponses assez longue faisait sauter la pile côté serveur : page morte pour tout le monde, irréversible par l'app |
+| `comment_votes` en SELECT public        | Énumérer l'historique de vote complet de n'importe qui, clé anon en main                                                        |
+| Corps d'un commentaire retiré           | Masqué au rendu, mais présent dans le payload — « supprimé » ne l'était pas                                                     |
+
+L'archive d'édition n'est plus écrite par l'utilisateur mais par un trigger `security definer` : elle cesse d'être « best-effort applicatif » (un insert hors transaction dont l'échec était assumé dans le code) pour devenir un invariant. La profondeur est bornée par une colonne `depth` posée à l'insert, avec refus d'un parent appartenant à une autre cible. Le score passe par `comment_scores`, une fonction qui ne rend que l'agrégat.
+
+Et `resolveReport` ne lisait pas l'erreur de son retrait : quand il échouait — ce que le trigger cassé faisait **systématiquement** — l'action rendait `ok`, le signalement passait en `resolved` et disparaissait de la file. Le commentaire restait en ligne, et l'unique `(comment_id, reporter_id)` empêchait de le re-signaler.
+
+### Liens internes vers une redirection
+
+`/groups/<slug>` répond **307** vers `/artists/<slug>` pour un soliste. Vingt sites construisaient l'URL à la main, donc pointaient sur la redirection ; sur la page d'un soliste, la ligne « Career » liait vers **elle-même**. Le slug d'artiste n'étant pas déductible de celui du groupe (9 des 38 solistes diffèrent), il a fallu le porter : colonne `groups.artist_slug` tenue par trigger, et un helper `groupHref` unique. Sweep de 13 pages × 20 solistes : **10 liens avant, 0 après**.
+
+La colonne **retire** au passage deux résolutions ad-hoc qui refaisaient le travail à chaque frappe dans la recherche.
+
+### Décisions
+
+- **Le rendu peut être plat sans que la donnée le soit.** Garder `parent_id` coûte zéro et garde la porte ouverte.
+- **Un contrôle qui ne change rien ne s'affiche pas.** Le tri Top/New n'apparaît qu'au-delà de deux fils ; la pill « top » de `/mvs` se retire quand rien n'atteint le seuil de note.
+- **Une migration qui pose un trigger doit l'exercer.** Le succès d'une migration ne dit rien du trigger qu'elle pose.
+- **Un test qui écrit en base écrit vraiment.** Mon exercice de vérification a soft-supprimé un vrai commentaire ; il a fallu le restaurer. Toujours envelopper dans une transaction annulée.
+
+### Reste ouvert
+
+- Les 6 commentaires en base sont des tests de Rudy, dont **deux charges XSS** — inoffensives (React échappe) mais publiques, et l'une est le seul contenu visible de `/mv/aespa-lemonade-mv`. Purge non faite : c'est une suppression, elle lui revient.
+- Les commentaires d'épisode n'ont jamais tourné sur une donnée réelle (0 sur 65 épisodes) : le versant épisode de la file de modération n'affiche pas de lien cliquable vers la cible.
+
 ## 2026-08-23 (soir) — La chasse : 33 bugs qu'aucune page ne signalait
 
 **Commits** : `f58765d`, `a2b9d4c`, `341bdda`, `844bb82` → `main`. CI verte.
