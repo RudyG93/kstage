@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { faceCrop } from '@/lib/images/cloudinary'
+import { faceCrop, isOwnStorageUrl } from '@/lib/images/cloudinary'
 
 function getInitials(source: string): string {
   const base = source.includes('@') ? (source.split('@')[0] ?? '') : source
@@ -25,8 +25,12 @@ export function Avatar({
     // member-photos, 98 % du roster depuis R4) doivent être recadrées aussi :
     // servies brutes, le picker bias chargeait 60+ photos pleine résolution
     // (retour Rudy 2026-07-17, listes lentes).
+    // `isOwnStorageUrl` compare l'ORIGINE, pas une sous-chaîne : un
+    // `avatar_url` posé à `https://attaquant.example/storage/v1/object/x.png`
+    // passait l'ancien test et était servi BRUT au navigateur de chaque
+    // lecteur — soit une récolte d'IP par l'auteur d'un commentaire.
     const src =
-      avatarUrl.includes('/storage/v1/object/') && !avatarUrl.includes('/member-photos/')
+      isOwnStorageUrl(avatarUrl) && !avatarUrl.includes('/member-photos/')
         ? avatarUrl
         : faceCrop(avatarUrl, size * 2, size * 2)
     return (

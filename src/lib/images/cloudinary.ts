@@ -10,6 +10,27 @@ const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 const isRemote = (url: string): boolean => /^https?:\/\//i.test(url)
 
 /**
+ * L'URL est-elle servie par NOTRE bucket public Supabase ?
+ *
+ * Ancré sur l'origine, jamais sur une sous-chaîne : `avatar_url` est écrit par
+ * l'utilisateur (la policy `profiles: update own` ne contrôle pas les
+ * colonnes), et un `https://attaquant.example/storage/v1/object/...` passait le
+ * test « l'URL contient /storage/v1/object/ ». Servie brute, elle faisait
+ * récolter l'IP de chaque lecteur par l'attaquant. La base le refuse depuis la
+ * migration 0072 ; ceci est la seconde barrière, et elle couvre aussi les
+ * lignes écrites avant.
+ */
+export function isOwnStorageUrl(url: string): boolean {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return false
+  try {
+    return new URL(url).origin === new URL(base).origin
+  } catch {
+    return false
+  }
+}
+
+/**
  * Recadre une image distante (ex. Deezer) via Cloudinary fetch, centré
  * automatiquement sur le sujet/visage (`g_auto`). `f_auto,q_auto` = format et
  * qualité optimisés par Cloudinary. Si le cloud name n'est pas configuré, on
