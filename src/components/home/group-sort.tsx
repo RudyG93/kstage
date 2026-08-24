@@ -9,8 +9,10 @@ const OPTIONS = [
   { value: 'activity', label: 'Activity' },
   { value: 'az', label: 'A–Z' },
   { value: 'za', label: 'Z–A' },
-  { value: 'pop_desc', label: 'Most followed' },
-  { value: 'pop_asc', label: 'Least followed' },
+  // « Most followed » retiré (2026-08-24) : 79 follows posés par 3 comptes sur
+  // 267 groupes, dont 195 à zéro — les trois quarts de la page étaient un A–Z
+  // déguisé en classement de popularité. Le tri reviendra quand le signal
+  // existera. `?sort=pop_desc` retombe sur `activity` (garde de la page).
 ] as const
 
 export function GroupSort({ value }: { value: string }) {

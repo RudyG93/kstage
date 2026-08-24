@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import type { Route } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { resolveReport, dismissReport, type OpenReport } from '@/lib/comments/moderation'
@@ -39,11 +40,11 @@ function ReportItem({ report }: { report: OpenReport }) {
       </p>
       <p className="text-muted-foreground text-xs">
         by {report.authorUsername ?? 'unknown'}
-        {report.eventSlug && (
+        {report.targetHref && (
           <>
             {' · '}
-            <Link href={`/mv/${report.eventSlug}`} className="underline">
-              {report.eventTitle ?? 'event'}
+            <Link href={report.targetHref as Route} className="underline">
+              {report.targetLabel ?? 'target'}
             </Link>
           </>
         )}

@@ -52,9 +52,7 @@ export function parseTheShowPostLineup(postMarkdown: string): string[] {
 }
 
 export async function fetchTheShow(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const result = await fetchSbsBoardLatestPost(BOARD_URL)
-  if (!result) return []
-  const { meta, postMarkdown } = result
+  const { meta, postMarkdown } = await fetchSbsBoardLatestPost(BOARD_URL)
 
   const artistsRaw = parseTheShowPostLineup(postMarkdown)
   if (artistsRaw.length === 0) return []

@@ -49,9 +49,7 @@ export function parseInkigayoPostLineup(postMarkdown: string): string[] {
 }
 
 export async function fetchInkigayo(now: Date = new Date()): Promise<ParsedLineup[]> {
-  const result = await fetchSbsBoardLatestPost(BOARD_URL)
-  if (!result) return []
-  const { meta, postMarkdown } = result
+  const { meta, postMarkdown } = await fetchSbsBoardLatestPost(BOARD_URL)
 
   const artistsRaw = parseInkigayoPostLineup(postMarkdown)
   if (artistsRaw.length === 0) return []

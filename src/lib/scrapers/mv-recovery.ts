@@ -75,12 +75,46 @@ const ALIAS_STOPWORDS = new Set([
   'tba',
 ])
 
+/**
+ * Débris de syntaxe wikitext. La première version de ce garde ne testait que
+ * « contient au moins une lettre » — deux fragments d'infobox sont donc passés
+ * en base et y sont restés : `| katakana =` sur V8, et `에이엔 )}}` sur AEN,
+ * où le NOM est bon mais traîne une fermeture de template. Ces alias servent de
+ * PRÉDICAT au matching des MV et des stages : un `=` ou un `}}` n'y a rien à
+ * faire, et un nom correct suivi de débris ne matchera jamais rien.
+ */
+const DEBRIS_WIKITEXT = /[|={}[\]<>]/
+
+/**
+ * Retire les débris en tête et en queue sans toucher au nom lui-même.
+ *
+ * Un brut qui contient `=` ou `|` est jeté SANS nettoyage : ces deux caractères
+ * n'appartiennent jamais à un nom d'artiste, ils marquent une affectation de
+ * champ d'infobox. Les nettoyer produirait un faux nom parfaitement plausible —
+ * `| katakana =` devenait `katakana`, un alias que rien n'aurait ensuite
+ * distingué d'un vrai.
+ */
+function nettoyerAlias(brut: string): string {
+  if (/[=|]/.test(brut)) return ''
+  return brut
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s{}[\]()<>,;:·—–-]+/, '')
+    .replace(/[\s{}[\]()<>,;:·—–-]+$/, '')
+    .trim()
+}
+
 function isUsableAlias(alias: string): boolean {
   if (alias.length < 2 || alias.length > 60) return false
   if (ALIAS_STOPWORDS.has(alias.toLowerCase())) return false
+  // Un débris SUBSISTANT après nettoyage (au milieu du nom) le disqualifie.
+  if (DEBRIS_WIKITEXT.test(alias)) return false
   // Au moins une lettre ou un chiffre : « — », « (?) » ne sont pas des noms.
   return /[\p{L}\p{N}]/u.test(alias)
 }
+
+/** Exposé pour les tests : ces deux gardes décident ce qui entre en base. */
+export const __testables = { nettoyerAlias, isUsableAlias }
 
 async function syncGroupAliases(
   supabase: SupabaseClient,
@@ -98,7 +132,7 @@ async function syncGroupAliases(
     // ou générique y fait des dégâts silencieux — on le borne avant d'écrire.
     const merged = [...current]
     for (const brut of infobox.aliases) {
-      const alias = brut.trim().replace(/\s+/g, ' ')
+      const alias = nettoyerAlias(brut)
       if (!isUsableAlias(alias)) continue
       if (!merged.some((a) => a.toLowerCase() === alias.toLowerCase())) merged.push(alias)
     }

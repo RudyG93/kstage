@@ -74,13 +74,13 @@ async function main() {
     title: string
     source_url: string | null
     mv_kind: string | null
-    groups: { name: string } | null
+    groups: { name: string; name_aliases: string[] | null } | null
   }
   const events: Row[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from('events')
-      .select('id, title, source_url, mv_kind, groups!inner(name)')
+      .select('id, title, source_url, mv_kind, groups!inner(name, name_aliases)')
       .eq('type', 'mv')
       .order('id')
       .range(from, from + 999)
@@ -104,7 +104,12 @@ async function main() {
       flag(e, check.reason)
       continue
     }
-    if (e.groups?.name && !matchesGroup(e.title, e.groups.name)) {
+    // Les ALIAS comptent, et ce script SUPPRIME (FK en CASCADE). Sans eux, 19
+    // MV parfaitement légitimes étaient marqués « group-mismatch » — ceux dont
+    // le titre YouTube ne porte que le nom hangul ou celui d'un membre
+    // soliste : TXT (연준) ×5, MONSTA X (기현) ×3, Mamamoo (마마무) ×2… Tous
+    // ingérés APRÈS que le scraper, lui, ait appris à lire les alias.
+    if (e.groups?.name && !matchesGroup(e.title, e.groups.name, e.groups.name_aliases ?? [])) {
       flag(e, 'group-mismatch (hashtag-only)')
       continue
     }

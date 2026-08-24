@@ -47,11 +47,17 @@ export function FilterChips() {
               type="button"
               onClick={() => toggleType(type)}
               aria-pressed={active}
-              className={cn(chipBase, !active && 'opacity-60 hover:opacity-100')}
+              // Le signal actif/inactif vit sur la BORDURE, plus sur l'opacité.
+              // `opacity-60` était le seul signal ET la cause des 4 dernières
+              // violations AA du calendrier : à 60 %, le libellé d'une chip
+              // inactive tombait à 2.14-2.21:1 en clair. Une bordure pleine
+              // couleur contre une bordure à 25 % se lit aussi bien, et le
+              // texte garde son contraste dans les deux états.
+              className={cn(chipBase, 'transition-colors')}
               style={{
                 color,
                 backgroundColor: eventTypeTint(color),
-                border: `1px solid ${eventTypeTint(color, 30)}`,
+                border: `1px solid ${active ? color : eventTypeTint(color, 25)}`,
               }}
             >
               <span

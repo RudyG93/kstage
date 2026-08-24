@@ -175,7 +175,7 @@ export function CalendarMonth({
               return (
                 <div
                   key={`out-${i}`}
-                  className="tabular text-faint/60 flex h-11 items-start justify-center pt-1.5 text-[11px]"
+                  className="tabular text-faint flex h-11 items-start justify-center pt-1.5 text-[11px]"
                   aria-hidden
                 >
                   {day}
