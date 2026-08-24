@@ -4,6 +4,69 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-24 (après-midi) — Le backlog vérifié, et une dette de design qui n'en était pas une
+
+**Commits** : `ffda28c`, `506083a` → `main`. CI verte.
+
+### Deux items sur sept n'existaient plus
+
+Le BACKLOG listait trois items « vraiment ouverts, vérifiés » depuis le triage du 2026-07-20. **Deux étaient corrigés depuis le 2026-08-07** — le toggle « Birthdays » (commit `91bc483`, chaîne complète de la case cochée jusqu'au filtre du digest, test de non-régression inclus) et `name_aliases` dans le matching des titres MV (commit `09f2be7`). Ce n'est pas le code qui avait pris du retard, c'est le triage.
+
+La preuve du second ne vient pas du code mais de la donnée : **19 MV n'existent en base que grâce au chemin alias** — leur titre YouTube ne porte que le nom hangul ou celui d'un soliste (TXT `연준` ×5, MONSTA X `기현` ×3, Mamamoo `마마무` ×2…), et tous ont été ingérés APRÈS le correctif.
+
+### Une mine dormante
+
+Ces mêmes 19 lignes sont exactement ce que `scripts/audit-mv-catalog.ts` aurait supprimé. Il appelle `matchesGroup` **sans les alias**, juste avant un `DELETE` réel avec FK en CASCADE. Le script n'est câblé à aucun cron : c'était une mine, pas un incendie — mais elle attendait la prochaine fois que quelqu'un lancerait un audit de catalogue.
+
+### Un tri qui ne trie rien, un scraper qui ment
+
+« Most followed » classait 267 groupes sur **79 follows posés par 3 comptes**, dont 195 à zéro : les trois quarts de la page étaient un A–Z déguisé en classement de popularité. Retiré jusqu'à ce que le signal existe.
+
+`fetchSbsBoardLatestPost` : board HTTP 200 mais 0 post parsé → `console.warn` puis `return null`. Un `console.warn` ne sort nulle part, et le run se déclarait `ok` : **66 runs `ok` sur 69 depuis le 21/07 avec The Show silencieux**. La fonction lève maintenant, l'erreur part dans `scrape_log.details` et le run bascule en `partial`.
+
+### Ma propre fonction de garde, prise en défaut le jour même
+
+`isUsableAlias`, écrite le matin, ne testait que « contient au moins une lettre ». Deux fragments de wikitext étaient donc en base : `| katakana =` sur V8 et `에이엔 )}}` sur AEN — des chaînes qui servent de PRÉDICAT au matching des MV et des stages.
+
+Le nettoyage des bords ne suffisait pas : il transformait `| katakana =` en `katakana`, un faux nom que plus rien n'aurait distingué d'un vrai. Un `=` ou un `|` marque une affectation de champ d'infobox et n'appartient jamais à un nom — le brut est donc **rejeté à la source**, pas nettoyé.
+
+### La base autorisait ce que le code refuse
+
+`profiles: update own` ne vérifie que la propriété de la ligne. Une policy RLS ne travaille pas colonne par colonne, et la clé anon est dans le bundle : un compte pouvait donc écrire directement en PATCH PostgREST.
+
+Le composant Avatar sert l'URL **brute**, sans proxy, dès qu'elle contient `/storage/v1/object/`. Un `avatar_url` posé à `https://attaquant.example/storage/v1/object/pixel.png` satisfaisait ce test : le navigateur de chaque lecteur du fil allait chercher l'image chez l'attaquant, qui récoltait les IP. **Il suffisait d'un commentaire pour se faire une liste de visiteurs.**
+
+Et l'exercice de la migration a attrapé une faille **dans ma propre contrainte** : la première version disait `like '%/storage/v1/object/…'`, dont le `%` de tête matchait aussi l'hôte de l'attaquant. Elle laissait passer très exactement ce qu'elle devait bloquer. C'est le deuxième trou de la journée que le fait d'exercer une migration révèle.
+
+### La dette de palette avait trois causes, dont deux n'étaient pas la palette
+
+Elle était classée « décision de design à prendre ». En la mesurant :
+
+| Cause                                        | Nœuds | Ce que c'était vraiment                                                                        |
+| -------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------- |
+| Le scan « clair » ne testait pas le clair    | tous  | `emulateMedia` ne peut rien contre `enableSystem={false}` — les deux runs scannaient le sombre |
+| Deux modificateurs d'alpha                   | 9     | `text-faint/60` et `opacity-60`, qu'aucune retouche de palette n'aurait corrigés               |
+| Un tag peint son fond avec sa PROPRE couleur | 4+    | chaque tag mangeait son propre contraste                                                       |
+
+L'`opacity-60` des chips était le **seul** signal actif/inactif ET la cause de leur échec : il est passé sur la bordure, qui ne coûte rien en lisibilité. La teinte des tags descend de 12 % à 8 %. Et les trois jetons du thème clair sont assombris de 0,03 en luminance — même teinte, même chroma.
+
+Les valeurs sont calculées, pas devinées : le modèle oklch→sRGB écrit pour l'occasion reproduit **exactement** les hex et les ratios mesurés par axe (`#007a5f`/3.98, `#926000`/4.05, `#616978`/4.18), ce qui rend la prédiction fiable avant de toucher au CSS.
+
+Résultat : **0 nœud sérieux sur 5 pages × 2 thèmes**, et `DETTE_CALENDRIER` passe à la liste vide — le test ne tolère plus la classe `color-contrast`.
+
+### Décisions
+
+- **Un backlog se re-vérifie avant d'être suivi.** Deux items sur sept décrivaient un état vieux de trois semaines. Coder d'après la note plutôt que d'après le code, c'était refaire du travail fait.
+- **Un garde-fou se prouve.** Deux fois aujourd'hui, l'exercice d'une migration a montré que le garde-fou lui-même était troué. Sans le bloc `do $$`, je livrais de la décoration.
+- **« Décision de design » mérite d'être mesuré avant d'être accepté.** Sur trois causes, une seule relevait vraiment d'un arbitrage — et elle se réglait à 0,03 de luminance.
+- **Un signal d'interface ne se porte pas par l'opacité.** C'était à la fois le seul indicateur et la cause de l'échec AA.
+
+### Reste ouvert — arbitrage produit
+
+- **`lineup_unmatched`** : 27 en attente, ~3 nouveaux noms distincts par jour. 7 visent une cible déjà au roster (bug de matching récupérable), 7 sont des doublons de graphie, 12 sont de vrais absents → élargir le roster ou pas.
+- **`episodes_unconfirmed_lineup`** : 30 passages sur 8 épisodes, en hausse. 10 d'entre eux sont des slots solo structurellement inconfirmables tant que les solistes concernés n'ont pas de fiche.
+- **Purge des 6 commentaires de test** (dont 2 charges XSS publiques) — suppression, elle revient à Rudy.
+
 ## 2026-08-24 — La zone commentaires, et un trigger que j'avais cassé la veille
 
 **Commits** : `c0d7949`, `e01faf7` → `main`. CI verte.
