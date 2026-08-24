@@ -13,6 +13,12 @@ export type CommentState = { error: string } | { ok: true; commentId?: string } 
 // parallèle ne peut pas dépasser le cap, contrairement à l'ancien count+insert.
 const COMMENT_RATE_WINDOW_SECONDS = 60
 const COMMENT_RATE_MAX = 5
+// Le signalement était la seule écriture SANS limite : un compte pouvait
+// noyer la file de modération d'un signalement par commentaire du site.
+// Plus large que le commentaire — signaler plusieurs messages d'un même fil
+// abusif est légitime — mais borné.
+const REPORT_RATE_WINDOW_SECONDS = 300
+const REPORT_RATE_MAX = 20
 
 function revalidateSlug(formData: FormData) {
   const slug = String(formData.get('slug') ?? '').trim()
@@ -215,6 +221,14 @@ export async function reportComment(
 
   const parsed = parseCommentId({ commentId })
   if ('error' in parsed) return { error: parsed.error }
+
+  const { data: autorise, error: rateErr } = await supabase.rpc('consume_rate_limit', {
+    p_action: 'comment_report',
+    p_max: REPORT_RATE_MAX,
+    p_window_seconds: REPORT_RATE_WINDOW_SECONDS,
+  })
+  if (rateErr) return { error: 'Could not submit your report. Please try again.' }
+  if (!autorise) return { error: 'Too many reports at once. Please wait a moment.' }
 
   const { error } = await supabase.from('comment_report').insert({
     comment_id: parsed.value.commentId,

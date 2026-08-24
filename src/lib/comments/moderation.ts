@@ -102,10 +102,16 @@ export async function resolveReport(reportId: string): Promise<ActionResult> {
     .maybeSingle()
   if (!report) return { error: 'Report not found.' }
 
-  await admin
+  // L'erreur n'était pas lue : quand le retrait échouait (le trigger cassé de
+  // 0067 le faisait échouer SYSTÉMATIQUEMENT), l'action rendait `ok`, le
+  // signalement passait en `resolved` et disparaissait de la file — le
+  // commentaire restait en ligne, et l'unique(comment_id, reporter_id)
+  // empêchait de le re-signaler.
+  const { error: retraitErr } = await admin
     .from('comments')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', report.comment_id)
+  if (retraitErr) return { error: 'Could not remove the comment.' }
 
   const { error } = await admin
     .from('comment_report')

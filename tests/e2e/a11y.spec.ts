@@ -22,6 +22,10 @@ const GABARITS: { nom: string; path: string }[] = [
   { nom: 'drops', path: '/mvs' },
   { nom: 'recherche (vide)', path: '/search' },
   { nom: 'index des shows', path: '/shows' },
+  // Les deux pages qui portent la zone COMMENTAIRES n'étaient pas scannées —
+  // c'est là que vivent les formulaires, donc les noms accessibles.
+  { nom: 'page MV (discussion)', path: '/mv/aespa-rich-man-yellow-claw-remix-mv' },
+  { nom: 'page épisode (discussion)', path: '/show/inkigayo/2026-08-16' },
 ]
 
 /**

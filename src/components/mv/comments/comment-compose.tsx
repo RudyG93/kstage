@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { postComment, type CommentState } from '@/lib/comments/actions'
 import { BODY_MAX } from '@/lib/comments/validation'
 import { cn } from '@/lib/utils'
@@ -18,8 +18,6 @@ interface Props {
   /** Focus le textarea au mount via ref (pas via prop autoFocus, qui a11y-warn). */
   focusOnMount?: boolean
   onCancel?: () => void
-  /** Appele UNIQUEMENT sur succes (onCancel l'est aussi a l'annulation). */
-  onPosted?: () => void
   placeholder?: string
 }
 
@@ -37,14 +35,19 @@ export function CommentCompose({
   parentId,
   focusOnMount,
   onCancel,
-  onPosted,
   placeholder = 'Share your thoughts…',
 }: Props) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(postComment, null)
   const formRef = useRef<HTMLFormElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const [chars, setChars] = useState(0)
+  // Le composer occupait ~200 px de haut sur mobile pour un champ vide, en
+  // tête de discussion. Il tient sur une ligne tant qu'on ne s'en sert pas —
+  // c'est ce que font YouTube et Instagram, et ça rend la discussion visible
+  // sans faire défiler.
+  const [deplie, setDeplie] = useState(Boolean(focusOnMount))
   const lastHandledState = useRef<CommentState>(null)
+  const champId = useId()
 
   // Post-submit reset : on déclenche depuis l'effet seulement quand le `state`
   // change vers un nouveau succès, et on guard avec un ref pour ne pas re-fire
@@ -55,10 +58,10 @@ export function CommentCompose({
       lastHandledState.current = state
       formRef.current?.reset()
       setChars(0)
-      onPosted?.()
+      setDeplie(false)
       onCancel?.()
     }
-  }, [state, onCancel, onPosted])
+  }, [state, onCancel])
 
   useEffect(() => {
     if (focusOnMount) taRef.current?.focus()
@@ -72,24 +75,38 @@ export function CommentCompose({
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="path" value={path} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
+      {/* Le placeholder ne fait pas un nom accessible : il disparaît à la
+          première frappe, et le champ redevient anonyme au lecteur d'écran. */}
+      <label htmlFor={champId} className="sr-only">
+        {parentId ? 'Write a reply' : 'Write a comment'}
+      </label>
       <textarea
+        id={champId}
         ref={taRef}
         name="body"
         required
-        rows={3}
+        rows={deplie ? 3 : 1}
         maxLength={BODY_MAX + 100}
         placeholder={placeholder}
+        onFocus={() => setDeplie(true)}
         onChange={(e) => setChars(e.target.value.length)}
         className={cn(
           'border-border bg-background focus-visible:ring-primary/50 w-full resize-y rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2',
           tooLong && 'border-destructive',
         )}
       />
-      <div className="flex items-center justify-between gap-3 text-xs">
+      <div className={cn('items-center justify-between gap-3 text-xs', deplie ? 'flex' : 'hidden')}>
+        {/* Le compteur ne s'affiche qu'à l'approche de la limite : « 0/2000 »
+            sous un champ vide n'apprend rien. Annoncé seulement au dépassement
+            — en aria-live permanent, il criait un nombre à chaque frappe. */}
         <span
-          aria-live="polite"
-          aria-atomic="true"
-          className={cn('text-muted-foreground tabular-nums', tooLong && 'text-destructive')}
+          aria-hidden={!tooLong}
+          aria-live={tooLong ? 'polite' : 'off'}
+          className={cn(
+            'text-muted-foreground tabular-nums',
+            tooLong && 'text-destructive',
+            chars < BODY_MAX * 0.8 && 'invisible',
+          )}
         >
           {chars}/{BODY_MAX}
         </span>
@@ -98,20 +115,37 @@ export function CommentCompose({
             <button
               type="button"
               onClick={onCancel}
-              className="hover:text-foreground text-muted-foreground rounded-md px-2 py-1"
+              className="hover:text-foreground text-muted-foreground min-h-8 rounded-md px-2 py-1"
             >
               Cancel
             </button>
           )}
+          {/* `aria-disabled` et non `disabled` : désactiver le bouton pendant
+              la soumission le sort de l'ordre de tabulation, et le focus
+              retombe au <body> — au lecteur d'écran, on perd sa place. */}
           <button
             type="submit"
-            disabled={pending || chars === 0 || tooLong}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary/50 rounded-md px-3 py-1 font-medium outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-disabled={pending || chars === 0 || tooLong}
+            onClick={(e) => {
+              if (pending || chars === 0 || tooLong) e.preventDefault()
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary/50 min-h-8 rounded-md px-3 py-1 font-medium outline-none focus-visible:ring-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
           >
             {pending ? 'Posting…' : parentId ? 'Reply' : 'Post'}
           </button>
         </div>
       </div>
+      {/* Poster, éditer et supprimer étaient muets : rien n'annonçait le
+          succès, et le formulaire disparaissait simplement. */}
+      <p aria-live="polite" className="sr-only">
+        {pending
+          ? 'Posting your comment'
+          : state && 'ok' in state
+            ? parentId
+              ? 'Reply posted'
+              : 'Comment posted'
+            : ''}
+      </p>
       {state && 'error' in state && (
         <p className="text-destructive text-xs" role="alert">
           {state.error}

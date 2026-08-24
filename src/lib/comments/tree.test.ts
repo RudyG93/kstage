@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildCommentTree, sortTree, countVisible, type FlatComment } from './tree'
+import {
+  buildCommentThreads,
+  sortThreads,
+  countVisible,
+  type CommentNode,
+  type FlatComment,
+} from './tree'
 
 function c(over: Partial<FlatComment> & { id: string }): FlatComment {
   return {
@@ -17,96 +23,138 @@ function c(over: Partial<FlatComment> & { id: string }): FlatComment {
   }
 }
 
-describe('buildCommentTree', () => {
-  it('liste vide → racine vide', () => {
-    expect(buildCommentTree([])).toEqual([])
+const ids = (ns: readonly CommentNode[]) => ns.map((n) => n.id)
+
+describe('buildCommentThreads', () => {
+  it('liste vide → aucun fil', () => {
+    expect(buildCommentThreads([])).toEqual([])
   })
 
-  it('un seul commentaire root', () => {
-    const tree = buildCommentTree([c({ id: 'a' })])
-    expect(tree.length).toBe(1)
-    expect(tree[0].id).toBe('a')
-    expect(tree[0].children).toEqual([])
+  it('un commentaire seul est une tête sans réponse', () => {
+    const fils = buildCommentThreads([c({ id: 'a' })])
+    expect(fils.length).toBe(1)
+    expect(fils[0].id).toBe('a')
+    expect(fils[0].replies).toEqual([])
+    expect(fils[0].replyTo).toBeNull()
   })
 
-  it('deux roots indépendants', () => {
-    const tree = buildCommentTree([c({ id: 'a' }), c({ id: 'b' })])
-    expect(tree.map((t) => t.id).sort()).toEqual(['a', 'b'])
+  it('deux têtes indépendantes', () => {
+    expect(ids(buildCommentThreads([c({ id: 'a' }), c({ id: 'b' })])).sort()).toEqual(['a', 'b'])
   })
 
-  it('parent + child', () => {
-    const tree = buildCommentTree([c({ id: 'a' }), c({ id: 'b', parent_id: 'a' })])
-    expect(tree.length).toBe(1)
-    expect(tree[0].id).toBe('a')
-    expect(tree[0].children.length).toBe(1)
-    expect(tree[0].children[0].id).toBe('b')
+  it('une réponse directe se range sous sa tête, sans destinataire affiché', () => {
+    const fils = buildCommentThreads([c({ id: 'a' }), c({ id: 'b', parent_id: 'a' })])
+    expect(fils.length).toBe(1)
+    expect(ids(fils[0].replies)).toEqual(['b'])
+    // Répondre à la tête n'a pas besoin d'être annoncé : c'est le fil.
+    expect(fils[0].replies[0].replyTo).toBeNull()
   })
 
-  it('multi-level nesting (3 niveaux)', () => {
-    const tree = buildCommentTree([
-      c({ id: 'a' }),
-      c({ id: 'b', parent_id: 'a' }),
-      c({ id: 'c', parent_id: 'b' }),
+  it('APLATIT : une réponse de réponse remonte au même niveau, avec son destinataire', () => {
+    const fils = buildCommentThreads([
+      c({ id: 'a', author: { username: 'alice', avatar_url: null } }),
+      c({ id: 'b', parent_id: 'a', author: { username: 'bob', avatar_url: null } }),
+      c({ id: 'c', parent_id: 'b', author: { username: 'carol', avatar_url: null } }),
     ])
-    expect(tree[0].children[0].children[0].id).toBe('c')
+    expect(fils.length).toBe(1)
+    expect(ids(fils[0].replies)).toEqual(['b', 'c'])
+    expect(fils[0].replies[1].replyTo).toEqual({ id: 'b', username: 'bob' })
   })
 
-  it('orphan promu en root quand parent absent de la liste', () => {
-    // 'b' référence un parent inexistant → doit être en root.
-    const tree = buildCommentTree([c({ id: 'b', parent_id: 'ghost' })])
-    expect(tree.length).toBe(1)
-    expect(tree[0].id).toBe('b')
+  it('une chaîne profonde reste un seul fil à un niveau', () => {
+    const flat = [c({ id: 'r' })]
+    for (let i = 0; i < 30; i++) {
+      flat.push(
+        c({
+          id: `n${i}`,
+          parent_id: i === 0 ? 'r' : `n${i - 1}`,
+          created_at: `2026-05-29T00:${String(i).padStart(2, '0')}:00.000Z`,
+        }),
+      )
+    }
+    const fils = buildCommentThreads(flat)
+    expect(fils.length).toBe(1)
+    expect(fils[0].replies.length).toBe(30)
+    expect(fils[0].replies.every((r) => r.replies.length === 0)).toBe(true)
+  })
+
+  it('les réponses se lisent dans l’ordre où elles ont été écrites', () => {
+    const fils = buildCommentThreads([
+      c({ id: 'a' }),
+      c({ id: 'tard', parent_id: 'a', created_at: '2026-05-29T12:00:00.000Z', score: 99 }),
+      c({ id: 'tot', parent_id: 'a', created_at: '2026-05-29T08:00:00.000Z', score: 0 }),
+    ])
+    // Chronologique, pas par score : un échange trié par score se lit à l'envers.
+    expect(ids(fils[0].replies)).toEqual(['tot', 'tard'])
+  })
+
+  it('orphelin promu en tête quand son parent est absent de la liste', () => {
+    const fils = buildCommentThreads([c({ id: 'b', parent_id: 'ghost' })])
+    expect(ids(fils)).toEqual(['b'])
+  })
+
+  it('un cycle de parents ne boucle pas', () => {
+    // Impossible via l'app, mais une donnée corrompue ne doit pas figer le rendu.
+    const fils = buildCommentThreads([
+      c({ id: 'x', parent_id: 'y' }),
+      c({ id: 'y', parent_id: 'x' }),
+    ])
+    expect(Array.isArray(fils)).toBe(true)
   })
 })
 
-describe('sortTree', () => {
-  it("sort 'top' = score DESC", () => {
-    const flat = [
+describe('sortThreads', () => {
+  it("'top' = score DESC", () => {
+    const fils = buildCommentThreads([
       c({ id: 'low', score: 1 }),
       c({ id: 'high', score: 10 }),
       c({ id: 'mid', score: 5 }),
-    ]
-    const sorted = sortTree(buildCommentTree(flat), 'top')
-    expect(sorted.map((n) => n.id)).toEqual(['high', 'mid', 'low'])
+    ])
+    expect(ids(sortThreads(fils, 'top'))).toEqual(['high', 'mid', 'low'])
   })
 
-  it("sort 'top' tiebreaker created_at ASC", () => {
-    const flat = [
-      c({ id: 'younger', score: 5, created_at: '2026-05-29T10:00:00.000Z' }),
-      c({ id: 'older', score: 5, created_at: '2026-05-29T08:00:00.000Z' }),
-    ]
-    const sorted = sortTree(buildCommentTree(flat), 'top')
-    expect(sorted.map((n) => n.id)).toEqual(['older', 'younger'])
+  it("'top' départage par created_at ASC", () => {
+    const fils = buildCommentThreads([
+      c({ id: 'jeune', score: 5, created_at: '2026-05-29T10:00:00.000Z' }),
+      c({ id: 'vieux', score: 5, created_at: '2026-05-29T08:00:00.000Z' }),
+    ])
+    expect(ids(sortThreads(fils, 'top'))).toEqual(['vieux', 'jeune'])
   })
 
-  it("sort 'new' = created_at DESC", () => {
-    const flat = [
-      c({ id: 'old', created_at: '2026-05-29T08:00:00.000Z' }),
-      c({ id: 'fresh', created_at: '2026-05-29T12:00:00.000Z' }),
-      c({ id: 'mid', created_at: '2026-05-29T10:00:00.000Z' }),
-    ]
-    const sorted = sortTree(buildCommentTree(flat), 'new')
-    expect(sorted.map((n) => n.id)).toEqual(['fresh', 'mid', 'old'])
+  it("'new' = created_at DESC", () => {
+    const fils = buildCommentThreads([
+      c({ id: 'vieux', created_at: '2026-05-29T08:00:00.000Z' }),
+      c({ id: 'frais', created_at: '2026-05-29T12:00:00.000Z' }),
+      c({ id: 'milieu', created_at: '2026-05-29T10:00:00.000Z' }),
+    ])
+    expect(ids(sortThreads(fils, 'new'))).toEqual(['frais', 'milieu', 'vieux'])
   })
 
-  it('tri appliqué aussi aux children', () => {
-    const flat = [
-      c({ id: 'root' }),
-      c({ id: 'reply-low', parent_id: 'root', score: 1 }),
-      c({ id: 'reply-high', parent_id: 'root', score: 10 }),
-    ]
-    const sorted = sortTree(buildCommentTree(flat), 'top')
-    expect(sorted[0].children.map((n) => n.id)).toEqual(['reply-high', 'reply-low'])
+  it('un fil RETIRÉ tombe en fin de liste, quel que soit son score', () => {
+    // Les deux seules pages commentées de la prod s'ouvraient sur « [deleted] » :
+    // à score égal, le tri par created_at ASC mettait la tombstone devant.
+    const fils = buildCommentThreads([
+      c({
+        id: 'retire',
+        score: 99,
+        created_at: '2026-05-29T08:00:00.000Z',
+        deleted_at: '2026-05-29T09:00:00.000Z',
+      }),
+      c({ id: 'vivant', score: 0, created_at: '2026-05-29T10:00:00.000Z' }),
+    ])
+    expect(ids(sortThreads(fils, 'top'))).toEqual(['vivant', 'retire'])
+    expect(ids(sortThreads(fils, 'new'))).toEqual(['vivant', 'retire'])
   })
 })
 
 describe('countVisible', () => {
-  it('compte tout sauf soft-deleted', () => {
-    const flat = [
+  it('compte les têtes et les réponses, sauf les retirées', () => {
+    const fils = buildCommentThreads([
       c({ id: 'a' }),
       c({ id: 'b', parent_id: 'a' }),
       c({ id: 'c', parent_id: 'a', deleted_at: '2026-05-29T00:00:00.000Z' }),
-    ]
-    expect(countVisible(buildCommentTree(flat))).toBe(2)
+      c({ id: 'd', parent_id: 'b' }),
+    ])
+    expect(countVisible(fils)).toBe(3)
   })
 })
