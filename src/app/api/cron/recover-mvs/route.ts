@@ -24,8 +24,18 @@ export const maxDuration = 300
  * units au total (WayV 0→20, chungha 5→20, ZICO 4→17).
  */
 const THIN_CATALOG_MVS = 5
-// ~2 units/groupe : 120 groupes ≈ 240 units, marge énorme sur les 10 000/jour.
+// ~2 units/groupe : le budget YouTube n'a jamais été la contrainte ici (240
+// units sur 10 000). C'est le TEMPS qui l'est : chaque groupe enchaîne
+// plusieurs requêtes fandom séquentielles, et 120 groupes dépassaient les
+// 300 s de `maxDuration`. Mesuré sur les runs planifiés du créneau 10:20 UTC :
+// **3 échecs sur 4** — et un run tué n'écrit aucun `scrape_log`, donc l'échec
+// était invisible jusqu'à ce qu'on compte les runs GitHub.
 const MAX_GROUPS_PER_RUN = 120
+// Butoir de TEMPS plutôt qu'un nombre magique : il s'ajuste tout seul quand la
+// latence fandom bouge ou que le pool grossit. Le run s'arrête proprement,
+// journalise ce qu'il a fait, et le reste part au run du lendemain — c'est un
+// cron de rattrapage, rien n'y est urgent.
+const BUDGET_MS = 230_000
 
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
@@ -59,13 +69,21 @@ export async function GET(req: Request) {
   targets.sort((a, b) => a.n - b.n)
   const batch = targets.slice(0, MAX_GROUPS_PER_RUN)
 
+  const echeance = Date.now() + BUDGET_MS
   let inserted = 0
   let units = 0
+  let tronqueParLeTemps = false
+  let traites = 0
   let quotaExhausted = false
   const gains: Record<string, number> = {}
   const reasons: Record<string, number> = {}
 
   for (const t of batch) {
+    if (Date.now() > echeance) {
+      tronqueParLeTemps = true
+      break
+    }
+    traites++
     try {
       const res = await recoverMvsFromFandom(supabase, t.id, apiKey)
       inserted += res.inserted
@@ -81,6 +99,8 @@ export async function GET(req: Request) {
     }
   }
 
+  // Une troncature par le temps n'est PAS un échec : le pool est traité en
+  // plusieurs jours. Seul le quota épuisé mérite `partial`.
   const status: ScrapeStatus = quotaExhausted ? 'partial' : 'ok'
   await logScrapeRun(supabase, {
     source: 'recover_mvs',
@@ -88,7 +108,10 @@ export async function GET(req: Request) {
     startedAt,
     errorMsg: quotaExhausted ? 'quota YouTube épuisé — run tronqué' : null,
     details: {
-      scanned: batch.length,
+      scanned: traites,
+      truncatedByTime: tronqueParLeTemps,
+      remaining: Math.max(0, targets.length - traites),
+      batchSize: batch.length,
       pool: targets.length,
       inserted,
       units,
@@ -98,5 +121,12 @@ export async function GET(req: Request) {
     },
   })
 
-  return NextResponse.json({ scanned: batch.length, inserted, units, gains, reasons })
+  return NextResponse.json({
+    scanned: traites,
+    truncatedByTime: tronqueParLeTemps,
+    inserted,
+    units,
+    gains,
+    reasons,
+  })
 }

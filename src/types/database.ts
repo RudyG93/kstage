@@ -697,6 +697,7 @@ export type Database = {
           disbanded_on: string | null
           fandom_name: string | null
           id: string
+          image_checked_at: string | null
           image_landscape: string | null
           image_url: string | null
           is_solo: boolean
@@ -718,6 +719,7 @@ export type Database = {
           disbanded_on?: string | null
           fandom_name?: string | null
           id?: string
+          image_checked_at?: string | null
           image_landscape?: string | null
           image_url?: string | null
           is_solo?: boolean
@@ -739,6 +741,7 @@ export type Database = {
           disbanded_on?: string | null
           fandom_name?: string | null
           id?: string
+          image_checked_at?: string | null
           image_landscape?: string | null
           image_url?: string | null
           is_solo?: boolean
