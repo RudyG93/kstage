@@ -141,6 +141,13 @@ export async function refreshGroupImages(
     // un artiste titré « 스텔라이브 » ne matchera jamais « StelLive ».
     .from('groups')
     .select('id, slug, name, name_aliases, links, image_url, image_checked_at')
+    // Seuls les groupes qui ONT un lien Spotify entrent dans la file. Sans ce
+    // filtre, les 95 groupes sans lien (sur 269) occupaient la tête du tri
+    // `nullsFirst` en permanence — ils ne sont jamais horodatés puisqu'on ne
+    // les interroge pas — et la fenêtre de 40 ne les franchissait jamais :
+    // 40 lignes lues pour 24 appels réels dès le premier run, puis de moins en
+    // moins. Même prédicat que l'index partiel de la migration 0073.
+    .not('links->>spotify', 'is', null)
     // Les moins récemment vérifiés d'abord, jamais-vérifiés en tête. Trier par
     // nom revenait à interroger Spotify sur les 268 mêmes groupes chaque jour
     // pour 0 à 4 images changées — et l'API a coupé 12 h 40 le 2026-08-21.
@@ -160,11 +167,33 @@ export async function refreshGroupImages(
     aborted: null,
   }
 
+  /**
+   * Horodate le groupe QUOI QU'IL ARRIVE — c'est l'horodatage qui fait avancer
+   * la file, pas le succès. Un groupe introuvable chez Spotify, en erreur API
+   * ou dont le nom ne matche pas est un groupe qu'on VIENT d'examiner : ne pas
+   * le marquer le renvoie en tête du tri `nullsFirst` au run suivant, où il
+   * reprend un créneau de la fenêtre. Avec 40 créneaux et un cas durable
+   * (mismatch de nom), la file se bloque sur les mêmes groupes indéfiniment.
+   * Seul le `break` fatal n'horodate rien : là, on n'a rien examiné.
+   */
+  const horodater = async (id: string, slug: string, patch: Record<string, unknown> = {}) => {
+    const { error: upErr } = await supabase
+      .from('groups')
+      .update({ ...patch, image_checked_at: new Date().toISOString() })
+      .eq('id', id)
+    if (upErr) console.error(`refresh-images update ${slug}: ${upErr.message}`)
+    return !upErr
+  }
+
   for (const [index, g] of all.entries()) {
     const links = g.links as Record<string, string> | null
     const artistId = parseSpotifyArtistId(links?.spotify)
     if (!artistId) {
+      // Le filtre du SELECT exclut déjà les groupes sans lien : arriver ici
+      // signifie un lien présent mais illisible. On l'horodate quand même,
+      // sinon il squatte la fenêtre à chaque run.
       summary.noLink++
+      await horodater(g.id, g.slug)
       continue
     }
     const res = await spotifyArtistById(artistId, token)
@@ -179,27 +208,21 @@ export async function refreshGroupImages(
       }
       if (res.failure.reason === 'not_found') summary.notFound++
       else summary.apiErrors++
+      await horodater(g.id, g.slug)
       await sleep(200)
       continue
     }
     const artist = res.artist
     if (!spotifyNameMatches(g.name, artist.name, g.name_aliases ?? [])) {
       summary.mismatches.push(`${g.slug} (${g.name}) ≠ spotify:${artist.name}`)
+      await horodater(g.id, g.slug)
       await sleep(200)
       continue
     }
-    // L'horodatage est posé même quand rien ne change : c'est lui qui fait
-    // tourner la file, pas le succès de la mise à jour.
-    const patch: {
-      image_url?: string
-      spotify_followers?: number
-      image_checked_at: string
-    } = { image_checked_at: new Date().toISOString() }
+    const patch: { image_url?: string; spotify_followers?: number } = {}
     if (artist.image && artist.image !== g.image_url) patch.image_url = artist.image
     if (artist.followers != null) patch.spotify_followers = artist.followers
-    const { error: upErr } = await supabase.from('groups').update(patch).eq('id', g.id)
-    if (upErr) console.error(`refresh-images update ${g.slug}: ${upErr.message}`)
-    else if (patch.image_url) summary.updated++
+    if ((await horodater(g.id, g.slug, patch)) && patch.image_url) summary.updated++
     await sleep(200)
   }
   return summary
