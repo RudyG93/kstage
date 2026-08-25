@@ -229,7 +229,7 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
               return (
                 <div
                   key={e.id}
-                  className={`flex items-center gap-3 p-3${nonDiffuse ? 'opacity-60' : ''}`}
+                  className={`flex items-center gap-3 p-3 ${nonDiffuse ? 'opacity-60' : ''}`}
                 >
                   {e.groups?.image_url ? (
                     <Image
