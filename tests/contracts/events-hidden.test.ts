@@ -28,6 +28,11 @@ const EXEMPT = new Set([
   'lib/scrapers/youtube.ts',
   'lib/scrapers/comeback-ingest.ts',
   'lib/suggestions/actions.ts',
+  // Promotion d'un membre en soliste : la LECTURE (`eventsANommer`, les events
+  // du groupe qui nomment la personne) filtre bien `hidden` — un event masqué
+  // ne doit pas changer de fiche en silence. C'est l'UPDATE qui suit, un
+  // déplacement de `group_id`, qui tombe ici : une écriture, pas une surface.
+  'lib/roster/promote-soloist.ts',
 ])
 
 function walk(dir: string): string[] {
