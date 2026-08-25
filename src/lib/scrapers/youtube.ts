@@ -216,6 +216,62 @@ export async function resolveChannel(channelUrl: string, apiKey: string): Promis
   return { channelId: item.id, uploadsPlaylistId: uploads, subscriberCount }
 }
 
+/**
+ * Résolution GROUPÉE par channel_id — `channels.list` coûte 1 unit par APPEL,
+ * pas par id, et en accepte 50 d'un coup.
+ *
+ * Le cron appelait `resolveChannel` une fois par source, tous les jours : 351
+ * units pour relire un `uploadsPlaylistId` qui ne change jamais, soit 25 % du
+ * run (mesuré le 2026-08-24 : 1 370 units, minimum 2 units par source). Les
+ * 355 sources ne pointent que 280 chaînes distinctes — 6 appels suffisent.
+ *
+ * La facturation par appel est vérifiée sur les données de prod, pas seulement
+ * sur la documentation : le run `refresh_images` du 2026-08-24 journalise
+ * `channels: 235` pour `units: 5` (le même patron de lots existe déjà dans
+ * `src/lib/images/refresh.ts`).
+ *
+ * Une chaîne absente de la réponse n'est PAS retournée : l'appelant doit alors
+ * échouer sur cette source. Un repli silencieux la ferait horodater comme
+ * scrapée, `stale_sources` ne la verrait jamais, et une chaîne morte
+ * deviendrait invisible pour toujours.
+ */
+export async function resolveChannelsBatch(
+  channelIds: readonly string[],
+  apiKey: string,
+): Promise<{ channels: Map<string, ChannelMeta>; units: number }> {
+  const channels = new Map<string, ChannelMeta>()
+  const uniques = [...new Set(channelIds.filter(Boolean))]
+  let units = 0
+  for (let i = 0; i < uniques.length; i += 50) {
+    const lot = uniques.slice(i, i + 50)
+    units++
+    const data = (await ytFetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=contentDetails,statistics` +
+        `&id=${lot.join(',')}&maxResults=50&key=${apiKey}`,
+    )) as {
+      items?: {
+        id: string
+        contentDetails?: { relatedPlaylists?: { uploads?: string } }
+        statistics?: { subscriberCount?: string; hiddenSubscriberCount?: boolean }
+      }[]
+    }
+    for (const item of data.items ?? []) {
+      const uploads = item.contentDetails?.relatedPlaylists?.uploads
+      if (!uploads) continue
+      const stats = item.statistics
+      channels.set(item.id, {
+        channelId: item.id,
+        uploadsPlaylistId: uploads,
+        subscriberCount:
+          stats && !stats.hiddenSubscriberCount && stats.subscriberCount != null
+            ? Number(stats.subscriberCount)
+            : null,
+      })
+    }
+  }
+  return { channels, units }
+}
+
 /** playlistItems.list (1 unit) : une page de 50 uploads, plus récents d'abord. */
 export async function fetchUploadsPage(
   playlistId: string,
@@ -335,6 +391,28 @@ export async function fetchVideosAsUploads(
   return { items, units }
 }
 
+/**
+ * La page courante descend-elle DÉJÀ sous le MV le plus récent qu'on possède ?
+ * Si oui, la page suivante — forcément plus ancienne — ne peut rien apporter,
+ * et on arrête de payer.
+ *
+ * La preuve est toujours dans une page déjà payée, jamais une supposition :
+ * - sans repère (`plusRecentConnu` null, source neuve), on ne s'arrête jamais ;
+ * - une page vide n'autorise aucune conclusion ;
+ * - une chaîne qui publie plus d'une page entre deux runs garde sa vidéo la
+ *   plus ancienne AU-DESSUS du repère, la garde ne se déclenche pas, et la
+ *   pagination continue. Le cas se détecte tout seul.
+ */
+export function pageCouvreLeConnu(
+  items: readonly { publishedAt: string }[],
+  plusRecentConnu: number | null,
+): boolean {
+  if (plusRecentConnu === null || items.length === 0) return false
+  const dates = items.map((i) => Date.parse(i.publishedAt)).filter((n) => Number.isFinite(n))
+  if (dates.length === 0) return false
+  return Math.min(...dates) < plusRecentConnu
+}
+
 export async function scrapeGroup(
   source: { id: string; url: string; group_id: string },
   apiKey: string,
@@ -347,12 +425,26 @@ export async function scrapeGroup(
      * pipeline (gates titre/durée, dédup ±14 j, slug, mv_kind) inchangé —
      * cf. scripts/backfill-mv-search.ts. */
     uploads?: UploadItem[]
+    /** Chaîne déjà résolue par `resolveChannelsBatch` — évite 1 channels.list
+     * par source. Absente = résolution unitaire (repli). */
+    channel?: ChannelMeta
   } = {},
 ): Promise<ScrapeResult> {
   // 2 pages = 100 uploads les plus récents : large pour un run quotidien (un
   // nouveau MV est toujours en tête de playlist). Le backfill d'onboarding
   // d'une nouvelle source passe maxPages élevé pour remonter l'historique.
   const maxPages = opts.maxPages ?? 2
+  /**
+   * Arrêt anticipé de la pagination — UNIQUEMENT pour le run de routine, qui
+   * ne demande pas un nombre de pages précis. Tout appelant qui passe
+   * `maxPages` explicitement (deep scan, onboarding, backfill) veut remonter
+   * l'historique : la garde ne doit pas l'en empêcher.
+   *
+   * Mesuré le 2026-08-24 : 335 des 351 sources consommaient 2 pages, pour
+   * 40 000 vidéos relues par jour et 52 insertions au mieux — zéro certains
+   * jours. Une chaîne où rien n'a bougé coûtait 3 units au lieu de 1.
+   */
+  const arretSiDejaVu = opts.maxPages === undefined
   let units = 0
 
   // Résolution de chaîne SEULEMENT quand il faut paginer sa playlist. Avec des
@@ -361,8 +453,17 @@ export async function scrapeGroup(
   // de rookie vit sur la chaîne de son label). Économise aussi 1 unit.
   let channel: ChannelMeta | null = null
   if (!opts.uploads) {
-    units++
-    channel = await resolveChannel(source.url, apiKey)
+    // Chaîne déjà résolue par le lot du cron : 0 unit. Sinon repli sur la
+    // résolution unitaire (scripts, onboarding d'une source sans channel_id) —
+    // qui JETTE si la chaîne est introuvable, et c'est voulu : l'exception
+    // empêche `last_scraped_at` d'être posé, ce qui est le seul signal dont
+    // dispose le check `stale_sources`.
+    if (opts.channel) {
+      channel = opts.channel
+    } else {
+      units++
+      channel = await resolveChannel(source.url, apiKey)
+    }
   }
 
   // Charge le slug + name + aliases du groupe pour générer les slugs d'events.
@@ -424,6 +525,13 @@ export async function scrapeGroup(
       description: decodeHtmlEntities(it.description),
     }))
   } else {
+    // Le MV le plus récent qu'on possède déjà pour ce groupe : la page
+    // suivante ne contient QUE des vidéos plus anciennes, donc dès qu'une page
+    // descend sous ce repère, tout ce qui suit est forcément déjà vu. La preuve
+    // est toujours dans une page déjà payée — jamais une supposition. Sans MV
+    // connu (source neuve), pas de repère : on pagine normalement.
+    const plusRecentConnu = knownMvs.length ? Math.max(...knownMvs.map((m) => m.startAt)) : null
+
     items = []
     let pageToken: string | undefined
     for (let page = 0; page < maxPages; page++) {
@@ -431,6 +539,7 @@ export async function scrapeGroup(
       const res = await fetchUploadsPage(channel!.uploadsPlaylistId, apiKey, pageToken)
       items.push(...res.items)
       if (!res.nextPageToken) break
+      if (arretSiDejaVu && pageCouvreLeConnu(res.items, plusRecentConnu)) break
       pageToken = res.nextPageToken
     }
     opts.pageCache?.set(channel!.uploadsPlaylistId, items)
@@ -484,19 +593,13 @@ export async function scrapeGroup(
     candidates.push(item)
   }
 
-  // Détails premiere (scheduledStartTime) des candidats survivants.
-  let videoDetails = new Map<string, VideoDetails>()
-  if (candidates.length > 0) {
-    const res = await fetchVideoDetails(
-      candidates.map((c) => c.videoId),
-      apiKey,
-    )
-    videoDetails = res.details
-    units += res.calls
-  }
-
-  // Idempotence batchée : un seul SELECT pour tous les candidats (vs un par
-  // item avant P0.4).
+  // Idempotence batchée AVANT l'appel payant : un seul SELECT pour tous les
+  // candidats (vs un par item avant P0.4). L'ordre compte — `fetchVideoDetails`
+  // passait ici en premier et on payait un videos.list pour des vidéos déjà
+  // ingérées, dont le `details` n'était même jamais lu puisque le skip
+  // d'idempotence précède son usage. Mesuré le 2026-08-24 : 170 sources ont
+  // fait exactement 1 videos.list, 7 seulement ont produit un insert — 163
+  // units par jour pour rien, 12 % du run.
   const existingUrls = new Set<string>()
   if (candidates.length > 0) {
     const { data: existingRows } = await supabase
@@ -510,17 +613,27 @@ export async function scrapeGroup(
       if (row.source_url) existingUrls.add(row.source_url)
     }
   }
+  const nouveaux = candidates.filter(
+    (c) => !existingUrls.has(`https://www.youtube.com/watch?v=${c.videoId}`),
+  )
+  skipped += candidates.length - nouveaux.length
+
+  // Détails premiere (scheduledStartTime) des seuls candidats NOUVEAUX.
+  let videoDetails = new Map<string, VideoDetails>()
+  if (nouveaux.length > 0) {
+    const res = await fetchVideoDetails(
+      nouveaux.map((c) => c.videoId),
+      apiKey,
+    )
+    videoDetails = res.details
+    units += res.calls
+  }
 
   let inserted = 0
   let premieres = 0
 
-  for (const item of candidates) {
+  for (const item of nouveaux) {
     const sourceUrl = `https://www.youtube.com/watch?v=${item.videoId}`
-    if (existingUrls.has(sourceUrl)) {
-      skipped++
-      continue
-    }
-
     const details = videoDetails.get(item.videoId)
 
     // Gate durée (audit 2026-07-03) : un « MV » de moins de 75 s est un
