@@ -41,6 +41,14 @@ export const MONITORED_SOURCES: readonly SourceSpec[] = [
   // Hebdo (lundi) — non critique : un lundi raté se rattrape la semaine
   // suivante, la règle « périmé 2 cycles » ne s'applique qu'aux critiques.
   { source: 'channel_discovery', label: 'Channel discovery', cadenceHours: 168, critical: false },
+  // Ajoutés le 2026-08-25 : ils écrivaient dans `scrape_log` depuis le 21/08
+  // sans être surveillés. `recover-mvs` a échoué 3 runs planifiés sur 4 — tué
+  // à 304 s par son `maxDuration` de 300 — et un run tué n'écrit AUCUNE ligne,
+  // donc l'échec était invisible des deux côtés à la fois : pas de ligne en
+  // base, pas de source surveillée. Le cron le plus en panne était celui que
+  // le monitor ne regardait pas.
+  { source: 'recover_mvs', label: 'Récupération MV (fandom)', cadenceHours: 24, critical: true },
+  { source: 'aired_shows', label: 'Réconciliation music shows', cadenceHours: 8, critical: true },
 ]
 
 export type SourceCheck = {
