@@ -19,6 +19,7 @@ import { activityStatus } from '@/lib/groups/activity'
 import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { isOfficialMvTitle } from '@/lib/scrapers/is-official-mv'
 import { isPlaceholderRelease } from '@/lib/scrapers/comeback-ingest'
+import { fetchAllRows } from '@/lib/supabase/paginate'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -768,14 +769,28 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
 
   // 7. Stages manquants après fermeture de la fenêtre d'enrichissement.
   {
-    const { data: shows } = await supabase
-      .from('events')
-      .select('title, start_at, stage_url')
-      .eq('type', 'music_show')
-      .eq('hidden', false)
-      .lt('start_at', new Date(now.getTime() - STAGE_WINDOW_DAYS * 86_400_000).toISOString())
+    // Paginé : PostgREST plafonne DUR à 1 000 lignes et tronque en SILENCE.
+    // 745 `music_show` passés au 2026-08-25, +57/semaine — le mur tombe vers
+    // fin septembre 2026. Passé ce seuil, le check se met à SOUS-compter sans
+    // rien signaler : les épisodes les plus anciens sortent de la lecture, et
+    // l'indicateur baisse alors que la dette monte. C'est le pire cas d'un
+    // compteur de santé, et c'est justement l'un des rares qui bouge vraiment.
+    const shows = await fetchAllRows<{
+      title: string
+      start_at: string
+      stage_url: string | null
+    }>((from, to) =>
+      supabase
+        .from('events')
+        .select('title, start_at, stage_url')
+        .eq('type', 'music_show')
+        .eq('hidden', false)
+        .lt('start_at', new Date(now.getTime() - STAGE_WINDOW_DAYS * 86_400_000).toISOString())
+        .order('start_at', { ascending: false })
+        .range(from, to),
+    )
     const byEpisode = new Map<string, { total: number; withStage: number }>()
-    for (const e of shows ?? []) {
+    for (const e of shows) {
       const key = `${e.title} ${e.start_at.slice(0, 10)}`
       const cur = byEpisode.get(key) ?? { total: 0, withStage: 0 }
       cur.total++
