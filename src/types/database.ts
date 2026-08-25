@@ -413,6 +413,7 @@ export type Database = {
           hidden: boolean
           id: string
           image_url: string | null
+          lineup_state: string | null
           member_id: string | null
           mv_kind: Database["public"]["Enums"]["mv_kind"] | null
           slug: string | null
@@ -434,6 +435,7 @@ export type Database = {
           hidden?: boolean
           id?: string
           image_url?: string | null
+          lineup_state?: string | null
           member_id?: string | null
           mv_kind?: Database["public"]["Enums"]["mv_kind"] | null
           slug?: string | null
@@ -455,6 +457,7 @@ export type Database = {
           hidden?: boolean
           id?: string
           image_url?: string | null
+          lineup_state?: string | null
           member_id?: string | null
           mv_kind?: Database["public"]["Enums"]["mv_kind"] | null
           slug?: string | null

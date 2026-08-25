@@ -20,6 +20,7 @@ import { SHOW_DESCRIPTORS } from '@/lib/scrapers/music-shows/types'
 import { isOfficialMvTitle } from '@/lib/scrapers/is-official-mv'
 import { isPlaceholderRelease } from '@/lib/scrapers/comeback-ingest'
 import { fetchAllRows } from '@/lib/supabase/paginate'
+import { kstDayKey } from '@/lib/events/date'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
@@ -742,27 +743,32 @@ export async function runDataHealthChecks(supabase: SupabaseClient): Promise<Dat
     })
   }
 
-  // Passages annoncés qu'aucune vidéo du diffuseur ne confirme — relevés par
-  // le dernier run `aired-shows`. Deux causes possibles (lineup prévisionnel
-  // non réalisé, ou alias manquant) : revue humaine, jamais de purge auto.
+  // Passages annoncés qu'aucune vidéo du diffuseur ne confirme. Lu sur la
+  // colonne `lineup_state` (migration 0075) et non plus dans le `details` du
+  // dernier run : un état PERSISTANT, pas le résidu d'une exécution. Avant, le
+  // compteur repartait de zéro dès qu'un run couvrait une fenêtre différente,
+  // et il ne comptait que ce que le DERNIER run avait vu.
+  //
+  // Deux causes possibles (lineup prévisionnel non réalisé, ou alias manquant) :
+  // revue humaine, jamais de purge automatique — l'information est conservée.
   {
-    const { data: lastRun } = await supabase
-      .from('scrape_log')
-      .select('details')
-      .eq('source', 'aired_shows')
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    const details = (lastRun?.details ?? {}) as Record<string, unknown>
-    const unconfirmed = Array.isArray(details.unconfirmed) ? (details.unconfirmed as string[]) : []
+    const { data: rows } = await supabase
+      .from('events')
+      .select('title, start_at, groups!inner(name)')
+      .eq('type', 'music_show')
+      .eq('hidden', false)
+      .eq('lineup_state', 'unconfirmed')
+      .order('start_at', { ascending: false })
+      .range(0, 999)
+    const unconfirmed = (rows ?? []).map(
+      (e) =>
+        `${e.title} ${kstDayKey(e.start_at)} — ${(e.groups as unknown as { name: string } | null)?.name ?? '?'}`,
+    )
     checks.push({
       id: 'episodes_unconfirmed_lineup',
       label: 'Passages annoncés sans trace de diffusion',
       severity: 'warn',
-      count:
-        typeof details.unconfirmed_count === 'number'
-          ? details.unconfirmed_count
-          : unconfirmed.length,
+      count: unconfirmed.length,
       sample: unconfirmed.slice(0, SAMPLE_MAX),
     })
   }
