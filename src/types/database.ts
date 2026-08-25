@@ -702,6 +702,7 @@ export type Database = {
           image_url: string | null
           is_solo: boolean
           links: Json
+          mv_recovery_checked_at: string | null
           name: string
           name_aliases: string[]
           slug: string
@@ -724,6 +725,7 @@ export type Database = {
           image_url?: string | null
           is_solo?: boolean
           links?: Json
+          mv_recovery_checked_at?: string | null
           name: string
           name_aliases?: string[]
           slug: string
@@ -746,6 +748,7 @@ export type Database = {
           image_url?: string | null
           is_solo?: boolean
           links?: Json
+          mv_recovery_checked_at?: string | null
           name?: string
           name_aliases?: string[]
           slug?: string

@@ -30,7 +30,7 @@ const THIN_CATALOG_MVS = 5
 // 300 s de `maxDuration`. Mesuré sur les runs planifiés du créneau 10:20 UTC :
 // **3 échecs sur 4** — et un run tué n'écrit aucun `scrape_log`, donc l'échec
 // était invisible jusqu'à ce qu'on compte les runs GitHub.
-const MAX_GROUPS_PER_RUN = 120
+const MAX_GROUPS_PER_RUN = 20
 // Butoir de TEMPS plutôt qu'un nombre magique : il s'ajuste tout seul quand la
 // latence fandom bouge ou que le pool grossit. Le run s'arrête proprement,
 // journalise ce qu'il a fait, et le reste part au run du lendemain — c'est un
@@ -52,21 +52,48 @@ export async function GET(req: Request) {
 
   // Groupes actifs à catalogue maigre, les plus démunis d'abord (un groupe à
   // 0 MV est une page vide pour un fan — c'est là que ça se voit).
-  const targets: { id: string; slug: string; n: number }[] = []
+  const targets: { id: string; slug: string; n: number; verifieLe: string | null }[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from('groups')
-      .select('id, slug, disbanded_on, events(id, type, hidden)')
+      .select('id, slug, disbanded_on, mv_recovery_checked_at, events(id, type, hidden)')
       .range(from, from + 999)
     if (error) break
     for (const g of data ?? []) {
       if (g.disbanded_on) continue
       const n = (g.events ?? []).filter((e) => e.type === 'mv' && !e.hidden).length
-      if (n <= THIN_CATALOG_MVS) targets.push({ id: g.id, slug: g.slug, n })
+      if (n <= THIN_CATALOG_MVS)
+        targets.push({ id: g.id, slug: g.slug, n, verifieLe: g.mv_recovery_checked_at })
     }
     if (!data || data.length < 1000) break
   }
-  targets.sort((a, b) => a.n - b.n)
+
+  // ROTATION plutôt que fenêtre fixe. Le pool (89 groupes) tenait entièrement
+  // sous l'ancien plafond de 120 : les MÊMES groupes étaient donc re-scannés
+  // intégralement chaque jour, pour 0 à 3 insertions et ~95 % de refus stables
+  // (« aucun MV nouveau retenu par les gates » : 72 à 84 groupes). C'est ce
+  // volume qui a tué 3 runs sur 4 à 304 s contre un maxDuration de 300, les
+  // requêtes fandom étant séquentielles.
+  //
+  // Une fenêtre « ne pas revoir avant N jours » aurait créé un autre défaut :
+  // tous les horodatages étant posés le même jour, le cron aurait tout traité
+  // d'un coup puis rien pendant N jours. La rotation, elle, étale le pool par
+  // construction et son intervalle s'adapte : pool/MAX_GROUPS_PER_RUN jours,
+  // soit ~4,5 jours aujourd'hui, sans jamais dépasser le budget de temps.
+  //
+  // Jamais vérifiés d'abord, puis les plus anciennement vérifiés ; à égalité,
+  // le catalogue le plus maigre passe devant — un groupe à 0 MV est une page
+  // vide pour un fan, c'est là que ça se voit.
+  targets.sort(
+    (a, b) =>
+      (a.verifieLe === null
+        ? b.verifieLe === null
+          ? 0
+          : -1
+        : b.verifieLe === null
+          ? 1
+          : a.verifieLe.localeCompare(b.verifieLe)) || a.n - b.n,
+  )
   const batch = targets.slice(0, MAX_GROUPS_PER_RUN)
 
   const echeance = Date.now() + BUDGET_MS
@@ -77,6 +104,7 @@ export async function GET(req: Request) {
   let quotaExhausted = false
   const gains: Record<string, number> = {}
   const reasons: Record<string, number> = {}
+  const marques: string[] = []
 
   for (const t of batch) {
     if (Date.now() > echeance) {
@@ -92,11 +120,25 @@ export async function GET(req: Request) {
       else if (res.reason) reasons[res.reason] = (reasons[res.reason] ?? 0) + 1
     } catch (e) {
       if (e instanceof QuotaExceededError) {
+        // Quota épuisé : on n'a RIEN demandé à fandom pour ce groupe, donc on
+        // ne le marque pas — il doit rester en tête, pas repartir en fin de file.
         quotaExhausted = true
         break
       }
       reasons[String(e).slice(0, 80)] = (reasons[String(e).slice(0, 80)] ?? 0) + 1
     }
+    // Marqué à CHAQUE tentative, succès ou échec : c'est l'horodatage qui fait
+    // tourner la file. Ne marquer que les succès ramènerait indéfiniment en
+    // tête les groupes qui échouent — le défaut corrigé le même jour sur
+    // `image_checked_at`, où 95 groupes bloquaient la fenêtre pour toujours.
+    marques.push(t.id)
+  }
+  if (marques.length > 0) {
+    const { error } = await supabase
+      .from('groups')
+      .update({ mv_recovery_checked_at: new Date().toISOString() })
+      .in('id', marques)
+    if (error) console.error(`recover-mvs: horodatage échoué — ${error.message}`)
   }
 
   // Une troncature par le temps n'est PAS un échec : le pool est traité en
@@ -110,6 +152,9 @@ export async function GET(req: Request) {
     details: {
       scanned: traites,
       truncatedByTime: tronqueParLeTemps,
+      // `pool` = tous les groupes à catalogue maigre ; `batchSize` = ce que la
+      // rotation en prend ce tour-ci. Le rapport des deux donne la période de
+      // revisite en jours, lisible d'un coup d'œil dans le journal.
       remaining: Math.max(0, targets.length - traites),
       batchSize: batch.length,
       pool: targets.length,
