@@ -229,7 +229,12 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
               return (
                 <div
                   key={e.id}
-                  className={`flex items-center gap-3 p-3 ${nonDiffuse ? 'opacity-60' : ''}`}
+                  // L'état est porté par le LIBELLÉ, jamais par l'opacité seule :
+                  // atténuer la tuile entière faisait passer `text-muted-foreground`
+                  // sous le seuil de contraste WCAG (attrapé par la spec a11y sur
+                  // /show/inkigayo/2026-08-16, qui compte 7 non-confirmés). Seule
+                  // la vignette — décorative, `aria-hidden` — est atténuée.
+                  className="flex items-center gap-3 p-3"
                 >
                   {e.groups?.image_url ? (
                     <Image
@@ -238,7 +243,7 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
                       width={36}
                       height={36}
                       unoptimized
-                      className="size-9 shrink-0 rounded-md object-cover"
+                      className={`size-9 shrink-0 rounded-md object-cover ${nonDiffuse ? 'opacity-50' : ''}`}
                       aria-hidden
                     />
                   ) : (
