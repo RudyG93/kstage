@@ -20,6 +20,7 @@ import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import { enrichNewGroupMedia } from '../../src/lib/scrapers/debuts/ingest'
 import { mentionsArtist } from '../../src/lib/scrapers/group-match'
+import { NOM_TROP_COURT } from '../../src/lib/roster/promote-soloist'
 import type { Database } from '../../src/types/database'
 
 loadEnvConfig(process.cwd())
@@ -67,6 +68,18 @@ async function main() {
 
   console.log(`${groupe.name} (${groupe.slug})${groupe.is_solo ? ' — soliste' : ''}`)
   console.log(`  ${avant ?? 0} MV en base · ${sources?.length ?? 0} source(s) YouTube`)
+
+  // Un nom trop court matche n'importe quoi : `rm` vit dans « warm », `mj` dans
+  // « mjölnir », `q` partout. La découverte de chaîne retiendrait une chaîne
+  // étrangère et lui attribuerait tout son catalogue. Le backfill d'une source
+  // DÉJÀ posée reste permis : là, la chaîne a été validée à la main.
+  const nomNormalise = groupe.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (nomNormalise.length < NOM_TROP_COURT && (sources?.length ?? 0) === 0) {
+    console.error(
+      `REFUS — « ${groupe.name} » est trop court pour une découverte automatique de chaîne. Poser la source à la main, puis relancer.`,
+    )
+    process.exit(1)
+  }
   if (!APPLY) {
     console.log(
       `\n(dry-run — --apply lancerait ${sources?.length ? 'un backfill des sources existantes' : 'une découverte de chaîne (~201 units)'})`,
