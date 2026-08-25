@@ -4,6 +4,70 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-25 — Les crons : 88 % du quota YouTube partait en relecture, et mon correctif de la veille allait geler Spotify
+
+**Commits** : `48c678d`, `5898eb6` → `532e241`, puis `f82a749` sur `main`. CI verte sur `532e241`.
+
+### La mesure d'abord
+
+`scrape_log.details` porte le décompte par source. Il suffisait de le lire.
+
+| jour  | units | sources | vidéos relues | insérées | units sans aucun gain |
+| ----- | ----- | ------- | ------------- | -------- | --------------------- |
+| 24/08 | 1 370 | 352     | 40 277        | 52       | **1 209**             |
+| 23/08 | 1 387 | 348     | 41 482        | 34       | **1 253**             |
+| 21/08 | 1 372 | 342     | 42 602        | 3        | **1 360**             |
+| 20/08 | 1 255 | 326     | 37 748        | **0**    | **1 255**             |
+
+Environ **40 000 vidéos relues par jour** pour en retenir 52 au mieux. Le 20/08, 1 255 units pour zéro insertion.
+
+### Trois causes, toutes dans le même fichier
+
+1. **`channels.list` rappelé par source, chaque jour**, pour relire un `uploadsPlaylistId` qui ne change jamais : 351 units, un quart du run. L'appel coûte 1 unit **par appel**, pas par id, et en accepte 50. Vérifié sur les données de prod plutôt que sur la doc : `refresh_images` journalise `channels: 235` pour `units: 5`. Et les 355 sources ne pointent que **280 chaînes distinctes** → 6 appels suffisent.
+2. **La pagination ne s'arrêtait jamais tôt** : toujours 2 pages, soit 100 vidéos, même quand la première n'en contenait aucune de nouvelle. 335 sources sur 351 payaient cette 2ᵉ page.
+3. **`videos.list` payé AVANT le contrôle d'idempotence**, pour des vidéos déjà ingérées dont le `details` n'était même jamais lu — le skip précède son usage. 170 sources ont fait cet appel le 24/08, 7 ont produit un insert.
+
+Attendu : **~1 370 → ~530 units/jour**.
+
+La règle d'arrêt compare la plus ancienne vidéo de la page au MV le plus récent déjà en base : la preuve est donc toujours dans une page **déjà payée**, jamais une supposition. Elle ne s'arme que pour le run de routine — tout appelant qui passe `maxPages` explicitement veut son historique. Extraite en fonction pure (`pageCouvreLeConnu`) et testée sur les cas qui comptent : pas de repère, page vide, dates illisibles, égalité stricte, et la chaîne qui publie plus d'une page entre deux runs.
+
+### J'avais posé une mine la veille
+
+`SPOTIFY_PAR_RUN = 40` (hier) devait faire tourner la file d'images. Il l'aurait **gelée avant un seul tour complet**.
+
+`image_checked_at` n'était écrit que dans la branche succès. Les trois sorties en amont — pas de lien, introuvable, nom qui ne matche pas — sautaient l'horodatage. Or le tri est `nullsFirst` : un groupe non horodaté **revient en tête** au run suivant et reprend un créneau.
+
+Mesuré : 269 groupes, dont **95 sans aucune clé `spotify`**. La requête exacte du cron ramenait **40 lignes pour 24 groupes interrogeables**, et ce bloc de 95 ne pouvait jamais être franchi. La file se serait asséchée en une dizaine de runs, la majorité des groupes liés jamais revérifiés — le run restant `ok` avec `updated: 0`, sans qu'aucun check ne le signale.
+
+Attrapé **avant son premier run planifié** : le cap a été déployé à 12:51 UTC, le dernier run datait de 04:15. Corrigé aux deux bouts — le SELECT ne prend que les groupes ayant un lien (fenêtre 24 → 40 interrogeables, vérifié en base), et tout groupe examiné est horodaté, y compris en échec non fatal. Seul le `break` fatal n'horodate rien : là, on n'a rien examiné.
+
+### Le cron qui échoue le plus est celui que le monitor ne regarde pas
+
+`recover-mvs` échoue à **304 secondes** — le `maxDuration` de 300 — les 21, 22 et 24/08, réussissant le 23. **3 sur 4.** Un run tué n'écrit aucune ligne dans `scrape_log`, donc l'échec est invisible côté données ; seuls les runs GitHub Actions le disent.
+
+Et `MONITORED_SOURCES` ne couvre que **10 des 14 sources** de `scrape_log` : `recover_mvs`, `aired_shows` et `data_health` n'y sont pas. Le butoir de temps posé hier n'a pas encore connu un seul run planifié — à vérifier au prochain créneau 10:20 UTC.
+
+### Une correction datée
+
+`episodes_missing_stages` lisait tous les `music_show` passés sans pagination. 745 lignes, +57/semaine : le plafond dur PostgREST de 1 000 tombe vers le **2026-09-30**. Passé ce seuil le check sous-compte en silence, et dans le mauvais sens — les épisodes anciens sortent de la lecture, l'indicateur BAISSE pendant que la dette monte. C'est l'un des rares checks dont le chiffre bouge vraiment (17 → 23).
+
+### Vérification incidente
+
+Entre le run `aired-shows` de 12:12 et celui de 16:47, les passages « non confirmés » passent de **30 à 27** et **Oh My Girl disparaît des trois shows** : les alias hangul écrits quelques heures plus tôt ont pris effet dès le run suivant.
+
+### Ce qu'il ne faut PAS faire (réfuté, mesuré)
+
+- **Grouper les 14 déclenchements pour économiser des minutes GitHub Actions** : le repo est **public**, les minutes sont gratuites et illimitées. Gain nul.
+- **Chasser les `.range()` sans `.order()`** dans `checks.ts` : le fait est vrai, le risque ne l'est pas. Zéro chevauchement mesuré sur 34 runs (écart minimal 1 448 s pour une fenêtre de pagination de 4,9 s), et `synchronize_seqscans` ne s'arme qu'au-delà de 56 MB quand `events` pèse 3,4 MB. Ordre reproductible, vérifié par signature md5 sur deux transactions.
+- **Paginer le SELECT des sources de `scrape-youtube`** : correct sur le principe, mais le correctif est **unit-négatif** — restaurer la couverture à 1 000 sources porterait ce seul cron à ~3 890 units/jour. À 355 sources, rien ne tronque. À revoir si le roster double.
+- **Passer le rafraîchissement de `subscriber_count` en hebdomadaire** : ne rapporte que 5 units/jour de plus que le lot quotidien, au prix d'une planification et d'une question de fraîcheur.
+
+### Décisions
+
+- **Le journal du run portait déjà la réponse.** Les trois causes du gaspillage YouTube étaient dans `scrape_log.details` depuis des semaines — personne n'avait fait la somme.
+- **Un correctif non éprouvé n'est pas un correctif.** Deux des miens (cap Spotify, butoir `recover-mvs`) ont été déployés hier sans qu'aucun run planifié ne les ait exercés ; l'un des deux était faux.
+- **Une file d'attente doit avancer même en échec.** Tout élément examiné se marque, sinon il squatte sa place à vie — et c'est le cas DURABLE (un mismatch de nom) qui bloque, pas l'incident passager.
+
 ## 2026-08-24 (nuit) — La sortie de Miyeon était déjà en base, elle n'avait nulle part où atterrir
 
 **Commits** : `6673537`, `93996ac`, `ff1d149` → `ff50ca6` sur `main`.
