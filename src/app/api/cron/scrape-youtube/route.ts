@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/cron/auth'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { scrapeGroup, QuotaExceededError } from '@/lib/scrapers/youtube'
+import { scrapeGroup, resolveChannelsBatch, QuotaExceededError } from '@/lib/scrapers/youtube'
+import type { ChannelMeta } from '@/lib/scrapers/youtube'
 import { logScrapeRun } from '@/lib/scrapers/scrape-log'
 
 // P0.5 : la couverture est passée de 8 à ~90 sources. En séquentiel (~1-2 s/
@@ -34,11 +35,31 @@ export async function GET(req: Request) {
 
   const { data: sources, error } = await supabase
     .from('sources')
-    .select('id, url, group_id, last_deep_scan_at')
+    .select('id, url, group_id, last_deep_scan_at, channel_id')
     .eq('type', 'youtube_api')
     .not('group_id', 'is', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Résolution GROUPÉE des chaînes, avant tout scrape : `channels.list` coûte
+  // 1 unit par appel et accepte 50 ids. Les 355 sources ne pointent que 280
+  // chaînes distinctes — 6 appels au lieu de 351, soit un quart du run.
+  // Une chaîne absente du lot laisse `opts.channel` vide : `scrapeGroup`
+  // retombe alors sur la résolution unitaire, qui JETTE si la chaîne n'existe
+  // plus. C'est cette exception qui empêche `last_scraped_at` d'être posé et
+  // qui fait remonter la source dans le check `stale_sources` — un repli
+  // silencieux rendrait une chaîne morte invisible pour toujours.
+  // Un lot en échec ne doit pas condamner le run : on repart sur la résolution
+  // unitaire, plus chère mais qui porte déjà toutes les gardes (QuotaExceeded
+  // arrête proprement, chaîne introuvable fait échouer SA source).
+  const lot = await resolveChannelsBatch(
+    (sources ?? []).map((s) => s.channel_id).filter((id): id is string => !!id),
+    apiKey,
+  ).catch((e) => {
+    console.error(`scrape-youtube: lot de résolution en échec, repli unitaire — ${String(e)}`)
+    return { channels: new Map<string, ChannelMeta>(), units: 0 }
+  })
+  const unitsPrescan = lot.units
 
   // Sélection deep du run : jamais scannées d'abord (null), puis plus anciennes.
   const deepIds = new Set(
@@ -62,12 +83,12 @@ export async function GET(req: Request) {
     const batch = sourceList.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
       batch.map((source) =>
-        scrapeGroup(
-          source as { id: string; url: string; group_id: string },
-          apiKey,
-          supabase,
-          deepIds.has(source.id) ? { maxPages: DEEP_MAX_PAGES } : {},
-        ),
+        scrapeGroup(source as { id: string; url: string; group_id: string }, apiKey, supabase, {
+          ...(deepIds.has(source.id) ? { maxPages: DEEP_MAX_PAGES } : {}),
+          ...(source.channel_id && lot.channels.has(source.channel_id)
+            ? { channel: lot.channels.get(source.channel_id)! }
+            : {}),
+        }),
       ),
     )
     const deepDone: string[] = []
@@ -95,10 +116,10 @@ export async function GET(req: Request) {
   // Vercel Crons (qui ne signale que les non-2xx) et pour scrape_log (0 ligne).
   const sourceIds = Object.keys(results)
   const failed = sourceIds.filter((id) => 'error' in results[id])
-  const totalUnits = Object.values(results).reduce(
-    (sum, r) => sum + ('units' in r ? r.units : 0),
-    0,
-  )
+  // Les units du lot de résolution comptent dans le total : sans elles, le
+  // journal sous-estimerait le coût réel du run.
+  const totalUnits =
+    unitsPrescan + Object.values(results).reduce((sum, r) => sum + ('units' in r ? r.units : 0), 0)
   // Seuil de tolérance (nuit 2026-08-21) : UNE source cassée sur 326 mettait le
   // run en `partial` à chaque exécution depuis des jours (playlist uploads
   // introuvable côté TOZ). Résultat : le statut criait au loup en permanence,
