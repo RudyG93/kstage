@@ -4,6 +4,59 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-25 (soir) — Les solistes : un détecteur, et 25 fiches qui naissent peuplées
+
+**Commits** : `1d74cdb` → `2494957`, puis `a2f292e`.
+
+### Le signal, et pourquoi Deezer n'en est pas un
+
+kpop.fandom maintient `Category:Female soloists` et `Category:Male soloists` — 1 600 pages — et un membre y entre **sur sa propre page** dès qu'il sort en solo ; l'infobox porte alors `solo_debut`. C'est le seul signal de masse.
+
+Deezer ne sert qu'à **trier**, jamais à découvrir : un soliste encore en groupe voit ses sorties créditées sous le groupe. Miyeon y compte 136 fans, contre 6 630 sous sa vraie fiche. Un gate d'admission fondé sur Deezer ne verra jamais passer un membre qui débute en solo.
+
+### L'appariement se fait sur la date de naissance
+
+Jamais sur le nom seul : « Soyeon » existe chez i-dle **et** LABOUM, « Jaehyun » sur 4 rows. La règle stricte — date **et** nom — rend **103 candidats** là où un appariement nom+groupe en rendait 142. C'est un choix assumé : la version large produisait des faux positifs qu'il fallait rattraper à la main, dont Minhee (CRAVITY) apparié à un homonyme né en 1991 — son `solo_debut` de 2009 aurait dû alerter, il avait 6 ans.
+
+Corroboration incidente : le détecteur sort `ohmygirl-mimi`, solo du 20/08/2026. C'est exactement la vidéo « 미미 (오마이걸) 'Bish Bash Bosh' » que le run `aired-shows` avait captée la veille.
+
+### Première vague : 25, choisies parce qu'elles naissent peuplées
+
+Les events du groupe dont le titre nomme le membre **en mot entier** suivent la personne : **43 events déplacés, sans un seul appel YouTube**.
+
+Promouvoir les 103 d'un coup aurait produit **77 pages vides** — exactement la « fiche bâclée » qu'on refuse — et 22 000 units d'enrichissement contre un quota de 10 000/jour. D'où les vagues, chacune enrichie avant la suivante.
+
+Enrichissement de la vague : 4 660 units, 19 MV insérés, **zéro MV mal attribué** (contrôle mot-entier sur chaque insertion). État final vérifié en base : **25/25 avec events, 25/25 avec MV, 25/25 avec image**, 13/25 avec liens streaming.
+
+### Structure
+
+Les gardes vivaient dans le script unitaire ; le lot les aurait dupliquées, donc fait diverger. Elles sont extraites dans `src/lib/roster/promote-soloist.ts`, et les deux scripts l'appellent. Trois fichiers, une seule source de vérité :
+
+- `detect-soloist-members.ts` — read-only, sort la liste ;
+- `promote-member-to-soloist.ts` — un membre, à la main ;
+- `promote-soloists-batch.ts` — la vague, triée par « déjà peuplée » d'abord.
+
+`enrich-group-media` refuse désormais la découverte de chaîne pour un nom de moins de 4 caractères (`rm`, `jin`, `mj`, `q`) : la recherche retiendrait une chaîne étrangère et lui attribuerait tout son catalogue. Le backfill d'une source **déjà validée** reste permis.
+
+### Deux gardes du dépôt ont fait leur travail
+
+- Le contrat `events-hidden` a rattrapé **deux** `.from('events')` sans filtre. La lecture filtre maintenant `hidden` — un event masqué ne doit pas changer de fiche en silence — et l'`UPDATE`, qui est une écriture et non une surface, rejoint la liste d'exemptions prévue pour les writers.
+- **La spec a11y a rattrapé une régression que j'avais introduite** : `opacity-60` sur la tuile d'un passage non diffusé faisait passer `text-muted-foreground` sous 4,5:1, sur `/show/inkigayo/2026-08-16` (7 non-confirmés). Corrigé pour deux raisons, pas une : le contraste, et le principe — une information ne doit jamais être portée par l'opacité **seule**. Le libellé dit l'état ; seule la vignette, décorative et `aria-hidden`, reste atténuée.
+
+### Vérification
+
+25 fiches en prod, `/artists/{rm,soyeon,mimi,bobby}` en 200 avec leurs clips, `/groups/{rm,soyeon}` en 307. 1 002 tests unitaires verts ; suite E2E complète rejouée **en mode CI local** (build de prod servi par `next start`) : 37 passed, 0 failed.
+
+### Décisions
+
+- **Une règle stricte qui trouve moins vaut mieux qu'une règle large qu'il faut corriger à la main.** 103 sûrs plutôt que 142 dont deux faux.
+- **Une vague se choisit par ce qu'elle rend utile immédiatement**, pas par ordre alphabétique ni par audience : les fiches qui héritent d'events du groupe sont peuplées sans dépenser un seul appel.
+- **Ne jamais dupliquer une garde entre deux appelants.** Un lot qui recopie les contrôles d'un script unitaire est un lot qui finira par en manquer un.
+
+### Reste
+
+77 candidats, et 1 refus légitime (Chaeyoung — slug déjà pris par une fiche solo existante, à promouvoir sous un slug désambiguïsé si besoin).
+
 ## 2026-08-25 (après-midi) — Une page de groupe n'affirme plus des passages qui n'ont pas eu lieu
 
 **Commits** : `6b254c5` → `60d8f98`, puis le correctif `p-3opacity-60`. Migration 0075 appliquée.
