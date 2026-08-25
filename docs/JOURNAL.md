@@ -4,6 +4,53 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-25 (après-midi) — Une page de groupe n'affirme plus des passages qui n'ont pas eu lieu
+
+**Commits** : `6b254c5` → `60d8f98`, puis le correctif `p-3opacity-60`. Migration 0075 appliquée.
+
+### Le défaut
+
+Deux chaînes écrivaient dans `events` sur la même clé sans se distinguer : `scrape-music-shows` insère les lineups **annoncés** (170 des 227 passages du dernier mois), `aired-shows` crée ceux que **prouve une vidéo** du diffuseur. Une fois en base, rien ne les séparait.
+
+Cas de référence, vérifié en prod : M Countdown du 13/08, le spécial « Summer Camp », affichait **22 stages**. 12 créés le 21/08 par la preuve vidéo — tous en ont une. 10 insérés le 07/08 par l'annonce, **dont 9 sans aucune vidéo**. Et `/groups/kissoflife` liait **4 fois** vers ce passage qui n'a jamais eu lieu.
+
+### Le calcul existait déjà, il n'avait nulle part où atterrir
+
+`aired-lineups.ts` étape 5 produisait exactement ces ensembles à chaque run — et les poussait dans un log. La colonne `lineup_state` (`announced` / `aired` / `unconfirmed`) leur donne une destination.
+
+**La preuve est `videosByGroup`, pas `stage_url`.** Sur 30 jours, 39 passages n'ont pas de `stage_url` mais seulement 30 n'ont aucune vidéo : les 9 autres sont bien passés, leur vidéo n'a simplement pas franchi le scoring ou la durée. Déduire l'état de `stage_url` aurait inventé 9 fantômes par mois.
+
+### Trois gardes
+
+- **Seuls les épisodes bien moissonnés concluent** (≥ 8 vidéos, ≥ 3 groupes reconnus). En dessous, on ne dégrade rien : les rows gardent leur état.
+- **La colonne est nullable et rien n'est rétro-marqué.** Poser `announced` par défaut sur les 775 lignes existantes aurait affirmé ce qu'on n'a pas vérifié. `NULL` veut dire « pas évalué », et l'affichage le traite comme avant. Le remplissage vient de la preuve, jamais d'un `UPDATE` en masse.
+- **Rien n'est jamais supprimé.** C'est la garantie demandée — « oui tant pis, au moins pour l'information ». Un passage requalifié reste en base et reste consultable ; il cesse seulement d'être présenté comme un fait.
+
+### Affichage
+
+- `getGroupStages` exclut les `unconfirmed`. Filtre en `.or('lineup_state.is.null,lineup_state.neq.unconfirmed')` et **non** `.neq` seul, qui exclut les NULL en SQL et aurait masqué les 617 passages non évalués.
+- La page épisode distingue trois libellés là où « Stage video pending » couvrait deux réalités opposées, et son compteur ne les additionne plus.
+- Le check santé lit la colonne au lieu du `details` du dernier run : un état **persistant**, pas le résidu d'une exécution.
+
+### Vérification
+
+Run `aired-shows` déclenché après déploiement : **58 lignes écrites**, `stateChanged` présent sur les 6 shows. En base : **133 `aired`, 28 `unconfirmed`, 617 non évalués**.
+
+En prod :
+
+- `/show/m-countdown/2026-08-13` → « **Stages — 13 · 9 announced, not aired** » (au lieu de « Stages — 22 »)
+- `/groups/kissoflife` → **0 lien** vers cet épisode (4 avant)
+
+Le premier déclenchement n'avait rien écrit : j'avais tapé l'endpoint une minute après le push, avant que Vercel n'ait déployé. La leçon vaut d'être notée — un `HTTP 200` ne prouve pas que c'est le nouveau code qui a répondu ; c'est la présence de `stateChanged` dans la réponse qui l'a prouvé.
+
+Et le HTML de prod a révélé un défaut que les tests ne voyaient pas : `` `p-3${...}` `` produisait `p-3opacity-60`, une classe inexistante — le libellé s'affichait, l'atténuation non.
+
+### Décisions
+
+- **Une preuve doit désigner ce qu'elle prouve.** `stage_url` prouve qu'on a un lien vers la scène, pas que la scène a eu lieu. Les deux se ressemblent et diffèrent de 9 cas par mois.
+- **NULL vaut mieux qu'une valeur par défaut plausible** sur une colonne d'état : il dit « pas évalué » là où `announced` aurait affirmé quelque chose.
+- **Vérifier le HTML rendu, pas seulement la base.** Le filtre était bon, le compteur juste, et une classe CSS concaténée sans espace passait au travers des 1 002 tests.
+
 ## 2026-08-25 — Les crons : 88 % du quota YouTube partait en relecture, et mon correctif de la veille allait geler Spotify
 
 **Commits** : `48c678d`, `5898eb6` → `532e241`, puis `f82a749` sur `main`. CI verte sur `532e241`.
