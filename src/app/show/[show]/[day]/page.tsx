@@ -101,7 +101,7 @@ const getEpisodeLineup = cache(async (episode: Episode) => {
   const { from, to } = kstDayBounds(episode.start_at)
   const { data: rows } = await supabase
     .from('events')
-    .select('id, title, start_at, stage_url, groups!inner(slug, name, image_url)')
+    .select('id, title, start_at, stage_url, lineup_state, groups!inner(slug, name, image_url)')
     .eq('type', 'music_show')
     .eq('title', episode.show_title)
     .eq('hidden', false)
@@ -201,11 +201,22 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
     getCommentsForTarget({ episodeId: episode.id }, viewerId),
   ])
   const commentThreads = sortThreads(buildCommentThreads(flatComments), 'top')
+  const nonDiffuses = lineup.filter((e) => e.lineup_state === 'unconfirmed').length
 
   return (
     <>
       <Panel>
-        <PanelHeader label={`Stages — ${lineup.length}`} />
+        {/* Le compteur ne mélange plus deux réalités opposées : « Stages — 22 »
+            comptait 13 passages réels ET 9 groupes annoncés qui ne sont jamais
+            venus (M Countdown du 13/08). On compte les passages tenus, et on
+            mentionne les autres à part. */}
+        <PanelHeader
+          label={
+            nonDiffuses > 0
+              ? `Stages — ${lineup.length - nonDiffuses} · ${nonDiffuses} announced, not aired`
+              : `Stages — ${lineup.length}`
+          }
+        />
         {lineup.length === 0 ? (
           <p className="text-muted-foreground px-3 py-4 text-sm">
             No lineup details for this episode yet.
@@ -214,8 +225,12 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
           <div className="grid grid-cols-1 gap-px sm:grid-cols-2">
             {lineup.map((e) => {
               const videoId = e.stage_url ? extractYouTubeId(e.stage_url) : null
+              const nonDiffuse = e.lineup_state === 'unconfirmed'
               return (
-                <div key={e.id} className="flex items-center gap-3 p-3">
+                <div
+                  key={e.id}
+                  className={`flex items-center gap-3 p-3${nonDiffuse ? 'opacity-60' : ''}`}
+                >
                   {e.groups?.image_url ? (
                     <Image
                       src={faceCrop(e.groups.image_url, 72, 72)}
@@ -252,7 +267,17 @@ async function EpisodeBody({ episode, path }: { episode: Episode; path: string }
                         <ExternalLink className="size-3" aria-label="Opens YouTube" />
                       </a>
                     ) : (
-                      <span className="text-muted-foreground text-xs">Stage video pending</span>
+                      // Trois réalités, trois libellés. « Stage video pending »
+                      // les couvrait toutes : le fan ne pouvait pas distinguer
+                      // une vidéo pas encore postée d'un passage qui n'a jamais
+                      // eu lieu.
+                      <span className="text-muted-foreground text-xs">
+                        {nonDiffuse
+                          ? 'Announced — not aired'
+                          : e.lineup_state === 'announced'
+                            ? 'Announced'
+                            : 'Stage video pending'}
+                      </span>
                     )}
                   </div>
                   {videoId && (

@@ -312,6 +312,11 @@ export async function GET(req: Request) {
         episode_number: lineup.episodeNumber,
         start_at: episodeStartIso,
         status: lineup.isHighlight ? 'tentative' : 'confirmed',
+        // Une ANNONCE, pas un fait : `aired-shows` la requalifiera en `aired`
+        // ou `unconfirmed` une fois l'épisode diffusé et moissonné. Sans cette
+        // distinction, un passage annoncé jamais diffusé s'affiche exactement
+        // comme un passage réel — 9 cas prouvés sur M Countdown du 13/08.
+        lineup_state: 'announced',
       })
       if (insertErr) {
         console.error(`music-shows insert failed: ${insertErr.message}`)

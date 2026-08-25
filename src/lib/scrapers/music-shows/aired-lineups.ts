@@ -70,6 +70,8 @@ export interface AiredShowStats {
   stageCandidates: number
   /** Passages en base qu'AUCUNE vidéo de l'épisode ne confirme. */
   unconfirmed: string[]
+  /** Rows dont `lineup_state` a changé ce run (aired ou unconfirmed). */
+  stateChanged: number
 }
 
 export interface AiredScanResult {
@@ -209,6 +211,7 @@ export async function scanAiredShows(
       episodes: 0,
       episodesCreated: 0,
       numbersFilled: 0,
+      stateChanged: 0,
       eventsCreated: 0,
       stagesLinked: 0,
       stagePending: 0,
@@ -383,7 +386,7 @@ async function applyEpisode(
   const { from, to } = dayBounds(kstDay)
   const { data: existingRows } = await supabase
     .from('events')
-    .select('id, group_id, stage_url, start_at')
+    .select('id, group_id, stage_url, start_at, lineup_state')
     .eq('type', 'music_show')
     .eq('title', showTitle)
     .gte('start_at', from)
@@ -414,9 +417,12 @@ async function applyEpisode(
         title: showTitle,
         start_at: startAt,
         status: 'confirmed',
+        // Créé PARCE QU'une vidéo du diffuseur nomme ce groupe sur cet
+        // épisode : c'est un passage prouvé, pas une annonce.
+        lineup_state: 'aired',
         ...(episodeNumber != null ? { episode_number: episodeNumber } : {}),
       })
-      .select('id, group_id, stage_url, start_at')
+      .select('id, group_id, stage_url, start_at, lineup_state')
       .maybeSingle()
     if (error) {
       result.errors.push(`insert ${showTitle} ${kstDay}: ${error.message}`)
@@ -486,15 +492,36 @@ async function applyEpisode(
     }
   }
 
-  // 5. Passages annoncés qu'aucune vidéo ne confirme. On les SIGNALE sans
-  // toucher à la base : un diffuseur ne poste pas toujours toutes ses scènes.
-  // Seuls les épisodes bien couverts sont concluants (M Countdown EP.941 du
-  // 13/08 : 22 vidéos, spécial « Summer Camp » — 9 des 10 groupes annoncés
-  // n'y sont jamais passés).
+  // 5. État de chaque passage de l'épisode : `aired` si une vidéo du diffuseur
+  // nomme le groupe, `unconfirmed` sinon. La preuve est `videosByGroup`, PAS
+  // `stage_url` — sur 30 jours, 39 passages n'ont pas de `stage_url` mais
+  // seulement 30 n'ont aucune vidéo : les 9 autres sont bien passés, leur
+  // vidéo n'a simplement pas franchi le scoring ou la durée.
+  //
+  // Seuls les épisodes BIEN COUVERTS sont concluants : un diffuseur ne poste
+  // pas toujours toutes ses scènes, et sur un épisode mal moissonné l'absence
+  // de vidéo ne prouve rien. En dessous du seuil on ne touche à rien — les
+  // rows gardent leur état précédent plutôt que d'être dégradées à tort.
+  // (M Countdown EP.941 du 13/08 : 22 vidéos, spécial « Summer Camp » — 9 des
+  // 10 groupes annoncés n'y sont jamais passés.)
   const wellCovered = videos.length >= 8 && videosByGroup.size >= 3
   if (!wellCovered) return
-  for (const groupId of existingByGroup.keys()) {
-    if (videosByGroup.has(groupId)) continue
-    stats.unconfirmed.push(`${showTitle} ${kstDay} — ${roster.nameById.get(groupId) ?? groupId}`)
+
+  const parEtat: Record<'aired' | 'unconfirmed', string[]> = { aired: [], unconfirmed: [] }
+  for (const [groupId, event] of existingByGroup) {
+    const etat = videosByGroup.has(groupId) ? 'aired' : 'unconfirmed'
+    if (etat === 'unconfirmed')
+      stats.unconfirmed.push(`${showTitle} ${kstDay} — ${roster.nameById.get(groupId) ?? groupId}`)
+    if (event.lineup_state !== etat) parEtat[etat].push(event.id)
+  }
+  stats.stateChanged = parEtat.aired.length + parEtat.unconfirmed.length
+  if (!apply) return
+  for (const etat of ['aired', 'unconfirmed'] as const) {
+    if (parEtat[etat].length === 0) continue
+    const { error } = await supabase
+      .from('events')
+      .update({ lineup_state: etat })
+      .in('id', parEtat[etat])
+    if (error) result.errors.push(`lineup_state ${etat} ${showTitle} ${kstDay}: ${error.message}`)
   }
 }

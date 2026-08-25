@@ -181,6 +181,17 @@ export async function getGroupMvs(slug: string, limit = 48) {
  * - **`total` séparé de `rows`.** Les pages affichaient `rows.length` comme
  *   compteur, or `rows` est plafonné : 13 groupes dépassaient la limite et
  *   annonçaient donc le plafond au lieu de leur total.
+ *
+ * Troisième correction, 2026-08-25 : **exclusion des `unconfirmed`.** Retirer
+ * le filtre `stage_url` avait la bonne raison ci-dessus, mais il laissait aussi
+ * passer les passages ANNONCÉS QUI N'ONT JAMAIS EU LIEU — `/groups/kissoflife`
+ * liait 4 fois vers M Countdown du 13/08, un épisode spécial où 9 des 10
+ * groupes annoncés ne sont pas passés. C'est ici que le mensonge coûte le plus
+ * cher : un fan lit « ce groupe est passé à cette date ». `lineup_state` permet
+ * de garder le gain de 2026-08-22 sans garder les fantômes — un passage récent
+ * dont la vidéo n'est pas encore postée reste `announced` ou `aired`, donc
+ * visible ; seul `unconfirmed`, prouvé par un épisode bien moissonné, sort.
+ * NULL (non évalué) reste affiché : on ne masque que ce qu'on a vérifié.
  */
 export async function getGroupStages(slug: string, limit = 24) {
   const supabase = await createClient()
@@ -194,6 +205,9 @@ export async function getGroupStages(slug: string, limit = 24) {
     .eq('groups.slug', slug)
     .eq('type', 'music_show')
     .eq('hidden', false)
+    // `or` plutôt que `neq` : `neq` exclut les NULL en SQL, ce qui masquerait
+    // les 775 passages pas encore évalués (cf. mémoire « NOT ILIKE exclut NULL »).
+    .or('lineup_state.is.null,lineup_state.neq.unconfirmed')
     .lt('start_at', new Date().toISOString())
     .order('start_at', { ascending: false })
     .limit(limit)
