@@ -31,14 +31,43 @@ export function isOwnStorageUrl(url: string): boolean {
 }
 
 /**
- * Recadre une image distante (ex. Deezer) via Cloudinary fetch, centré
- * automatiquement sur le sujet/visage (`g_auto`). `f_auto,q_auto` = format et
- * qualité optimisés par Cloudinary. Si le cloud name n'est pas configuré, on
- * renvoie l'URL d'origine (dégradation gracieuse).
+ * L'image vient-elle du CDN Spotify ?
+ *
+ * Ancré sur le HOST, jamais sur une sous-chaîne : `image_url` est alimenté par
+ * un scraper, et un `https://attaquant.example/?x=i.scdn.co` passerait un test
+ * `includes()`. Même règle que `isOwnStorageUrl` ci-dessus, pour la même raison.
+ */
+export function isSpotifyImage(url: string): boolean {
+  try {
+    const h = new URL(url).host
+    return h === 'i.scdn.co' || h.endsWith('.scdn.co')
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Redimensionne une image distante via Cloudinary fetch. `f_auto,q_auto` =
+ * format et qualité optimisés. Sans cloud name configuré, on renvoie l'URL
+ * d'origine (dégradation gracieuse).
+ *
+ * DEUX TRANSFORMATIONS, selon l'origine :
+ *
+ * - **Spotify** → `c_fit` : redimensionnement SANS recadrage. Les Design
+ *   Guidelines Spotify sont explicites — « Artwork must be kept in its original
+ *   form », « Don't crop the artwork in any way » — alors que les Developer
+ *   Terms IV.2.1(b) autorisent nommément l'inverse : « You may adjust the size
+ *   of metadata or cover art as necessary ». On redimensionne donc, jamais on
+ *   ne rogne. Sur une source carrée dans une boîte carrée — le cas de tous les
+ *   avatars — `c_fit` et `c_fill` rendent la même image : le correctif ne coûte
+ *   rien visuellement là où il ne change rien juridiquement.
+ * - **tout le reste** (fandom, notre bucket, YouTube) → `c_fill,g_auto`,
+ *   centré sur le sujet.
  */
 export function faceCrop(url: string, width: number, height: number): string {
   if (!CLOUD || !isRemote(url)) return url
-  const t = `c_fill,g_auto,w_${width},h_${height},f_auto,q_auto`
+  const cadrage = isSpotifyImage(url) ? 'c_fit' : 'c_fill,g_auto'
+  const t = `${cadrage},w_${width},h_${height},f_auto,q_auto`
   return `https://res.cloudinary.com/${CLOUD}/image/fetch/${t}/${encodeURIComponent(url)}`
 }
 
