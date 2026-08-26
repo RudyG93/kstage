@@ -4,6 +4,51 @@
 >
 > Format : `## AAAA-MM-JJ — titre` puis **Branche/commit** · **Quoi** · **Pourquoi** · **Vérification** · **Décisions**.
 
+## 2026-08-25 (nuit) — Conformité Spotify : le rapport se trompait de violation
+
+**Commit** : `3348933` → `25f723b`.
+
+### J'ai lu les textes, pas le rapport
+
+La prospection de sources affirmait que « ton pipeline est en infraction dès qu'il ré-héberge ». **C'est faux, et la vérification l'établit** : les 114 images du bucket sont des `group-photos/<slug>.webp` issues de **fandom** ; les 185 images Spotify sont des **hotlinks**. Rien de Spotify n'est stocké. L'article IV.3.1(a) — « you may not store, aggregate or create compilations or databases of Spotify Content » — n'est donc pas engagé.
+
+C'est un rappel utile : un rapport d'agent, même détaillé et sourcé, se vérifie avant qu'on agisse dessus. Celui-ci désignait la mauvaise clause.
+
+### La vraie violation, elle, était réelle
+
+Les **Design Guidelines** sont sans ambiguïté sur l'artwork :
+
+> « Artwork must be kept in its original form. » · « Don't crop the artwork in any way. »
+
+Et les **Developer Terms IV.2.1(b)** autorisent nommément l'inverse :
+
+> « You may adjust the size of metadata or cover art as necessary. »
+
+Or `faceCrop` servait `c_fill,g_auto` — un recadrage — sur les 185 groupes dont l'`image_url` pointe sur `i.scdn.co`, et `groupBannerSrc` étirait ce carré en bandeau 3,2:1 pour **34** d'entre eux.
+
+### Deux correctifs, l'un gratuit, l'autre assumé
+
+- **`faceCrop` bascule en `c_fit` pour une source Spotify** — redimensionnement sans rognage — et garde `c_fill,g_auto` partout ailleurs (fandom, bucket, YouTube). Sur une image carrée dans une boîte carrée, c'est-à-dire **tous les avatars**, les deux rendus sont identiques : le correctif ne coûte rien visuellement là où il ne change rien juridiquement.
+- **Plus de bandeau tiré d'un carré Spotify.** Il n'existe pas de version conforme d'un carré rendu en 3,2:1 : mieux vaut pas de bandeau. Les appelants savaient déjà gérer le `null` que la fonction renvoyait par ailleurs.
+
+`isSpotifyImage` est ancré sur le **host**, jamais sur une sous-chaîne — `image_url` est alimenté par un scraper, et `https://attaquant.example/?x=i.scdn.co` passerait un `includes()`. Même classe de faille que `isOwnStorageUrl`, testée de la même façon (8 tests de contrat).
+
+### Ce qui reste ouvert — et c'est une décision produit
+
+Les guidelines exigent aussi que tout contenu Spotify affiché soit « accompanied by the Spotify brand ». Deux issues : coller un logo Spotify sur chaque avatar de groupe, dans chaque liste ; ou cesser d'afficher des images Spotify.
+
+`scripts/roster/adopt-youtube-avatars.ts` prépare la seconde, vérifié à blanc : **129 des 185 images** remplaçables par l'avatar de la chaîne YouTube de l'artiste, pour **3 units**.
+
+La garde est ce qui fait la valeur du script. Beaucoup de groupes sont scrapés depuis la chaîne de leur **label**, pas la leur — AKMU depuis YG ENTERTAINMENT, AB6IX depuis BRANDNEW MUSIC, EXO depuis SMTOWN, ITZY depuis JYP. Adopter cet avatar mettrait le logo du label en photo du groupe. **49 chaînes sont écartées à ce titre**, et 7 groupes n'ont pas de chaîne du tout.
+
+Je ne l'ai pas lancé. Beaucoup d'avatars de chaînes officielles sont des **logos** plutôt que des photos : c'est un changement visuel sur la moitié du roster, et il appartient à Rudy de le vouloir.
+
+### Décisions
+
+- **Vérifier la clause, pas seulement l'alerte.** Le rapport pointait le stockage ; le problème était le recadrage. Agir sur le premier n'aurait rien corrigé et aurait cassé le bucket fandom.
+- **Un correctif de conformité qui ne change rien à l'écran est un correctif gratuit** — le chercher avant d'accepter un compromis visuel.
+- **Ne pas confondre conformité et refonte.** Le recadrage était à corriger sans discussion ; remplacer la moitié des images du roster est un choix produit, et se présente comme tel.
+
 ## 2026-08-25 (soir) — Les solistes : un détecteur, et 25 fiches qui naissent peuplées
 
 **Commits** : `1d74cdb` → `2494957`, puis `a2f292e`.
